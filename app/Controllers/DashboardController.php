@@ -22,6 +22,10 @@ class DashboardController
             Router::redirect('/painel/trocar-senha');
         }
 
+        if ($user['role_slug'] === 'cliente' && !$user['email_verified_at']) {
+            Router::redirect('/painel/verificar-email');
+        }
+
         $role = $user['role_slug'];
         $data = ['user' => $user];
 

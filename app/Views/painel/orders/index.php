@@ -1,4 +1,5 @@
 <?php
+use App\Core\Csrf;
 use App\Core\View;
 $statusLabels = [
     'em_andamento' => 'Em andamento',
@@ -6,10 +7,16 @@ $statusLabels = [
     'verificado' => 'Verificado',
     'cancelado' => 'Cancelado',
 ];
+$errors = $errors ?? [];
+$values = $values ?? [];
+$items = $items ?? [];
+$isLicenciado = ($user['role_slug'] ?? '') === 'licenciado';
+$preselectClientId = (int) ($_GET['cliente_id'] ?? 0);
+$openModal = isset($_GET['novo']) || $errors;
 ?>
 <div class="page-header">
     <h1>Pedidos de Venda</h1>
-    <a href="/painel/pedidos/novo" class="btn btn-primary">+ Incluir Pedido</a>
+    <button type="button" class="btn btn-primary" data-modal-open="modal-order">+ Incluir Pedido</button>
 </div>
 
 <form method="get" class="filter-bar">
@@ -47,3 +54,42 @@ $statusLabels = [
         </tbody>
     </table>
 </div>
+
+<dialog class="modal" id="modal-order" <?= $openModal ? 'data-autoopen="1"' : '' ?>>
+    <div class="modal-header">
+        <h2>Incluir Pedido</h2>
+        <button type="button" class="modal-close" data-modal-close aria-label="Fechar">&times;</button>
+    </div>
+    <div class="modal-body">
+        <form action="/painel/pedidos" method="post" class="panel-form panel-form-wide ajax-form" id="order-form">
+            <?= Csrf::field() ?>
+            <?php include __DIR__ . '/_fields.php'; ?>
+            <div class="modal-form-actions">
+                <button type="submit" class="btn btn-primary">Salvar Pedido</button>
+                <button type="button" class="btn btn-outline" data-modal-close>Cancelar</button>
+            </div>
+        </form>
+    </div>
+</dialog>
+
+<dialog class="modal" id="modal-client-inline">
+    <div class="modal-header">
+        <h2>Novo cliente</h2>
+        <button type="button" class="modal-close" data-modal-close aria-label="Fechar">&times;</button>
+    </div>
+    <div class="modal-body">
+        <form action="/painel/clientes?redirect_to=pedido-novo" method="post" class="panel-form ajax-form">
+            <?= Csrf::field() ?>
+            <?php $formValues = []; $formErrors = []; ?>
+            <label for="ci-name">Nome / Razão social</label>
+            <input type="text" id="ci-name" name="name" required>
+            <p class="field-error" data-error-for="name"></p>
+            <label for="ci-whatsapp">WhatsApp</label>
+            <input type="text" id="ci-whatsapp" name="whatsapp">
+            <div class="modal-form-actions">
+                <button type="submit" class="btn btn-primary">Salvar cliente</button>
+                <button type="button" class="btn btn-outline" data-modal-close>Cancelar</button>
+            </div>
+        </form>
+    </div>
+</dialog>

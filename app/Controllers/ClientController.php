@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Core\Auth;
 use App\Core\Csrf;
+use App\Core\Response;
 use App\Core\Router;
 use App\Core\View;
 use App\Models\Client;
@@ -23,12 +24,7 @@ class ClientController
     public function create(): void
     {
         Auth::requireRole(['admin', 'gerente', 'supervisor', 'licenciado']);
-
-        View::render('painel/clients/form', [
-            'user' => Auth::user(),
-            'editing' => null,
-            'errors' => [],
-        ]);
+        Router::redirect('/painel/clientes?novo=1');
     }
 
     public function store(): void
@@ -36,29 +32,38 @@ class ClientController
         Auth::requireRole(['admin', 'gerente', 'supervisor', 'licenciado']);
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
-            Router::redirect('/painel/clientes/novo?erro=1');
+            if (Response::isAjax()) {
+                Response::json(['ok' => false, 'errors' => ['name' => 'Sessão expirada, recarregue a página.']]);
+            }
+            Router::redirect('/painel/clientes?erro=1');
         }
 
         $errors = $this->validate($_POST);
 
         if ($errors) {
-            View::render('painel/clients/form', [
+            if (Response::isAjax()) {
+                Response::json(['ok' => false, 'errors' => $errors]);
+            }
+            View::render('painel/clients/index', [
                 'user' => Auth::user(),
-                'editing' => null,
+                'clients' => Client::all(),
                 'errors' => $errors,
-                'old' => $_POST,
+                'values' => $_POST,
             ]);
             return;
         }
 
         $clientId = Client::create($_POST);
-
         $redirectTo = $_GET['redirect_to'] ?? null;
-        if ($redirectTo === 'pedido-novo') {
-            Router::redirect('/painel/pedidos/novo?cliente_id=' . $clientId);
+        $target = $redirectTo === 'pedido-novo'
+            ? '/painel/pedidos?novo=1&cliente_id=' . $clientId
+            : '/painel/clientes?sucesso=1';
+
+        if (Response::isAjax()) {
+            Response::json(['ok' => true, 'id' => $clientId, 'redirect' => $target]);
         }
 
-        Router::redirect('/painel/clientes?sucesso=1');
+        Router::redirect($target);
     }
 
     public function edit(string $id): void

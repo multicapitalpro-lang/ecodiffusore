@@ -53,9 +53,11 @@ class User
 
     public static function create(array $data): int
     {
+        $emailVerified = array_key_exists('email_verified', $data) ? !empty($data['email_verified']) : true;
+
         $stmt = Database::connection()->prepare(
-            'INSERT INTO users (role_id, name, email, whatsapp, password_hash, status, commission_pct, must_change_password)
-             VALUES (:role_id, :name, :email, :whatsapp, :password_hash, :status, :commission_pct, :must_change_password)'
+            'INSERT INTO users (role_id, name, email, whatsapp, password_hash, status, commission_pct, must_change_password, email_verified_at)
+             VALUES (:role_id, :name, :email, :whatsapp, :password_hash, :status, :commission_pct, :must_change_password, :email_verified_at)'
         );
         $stmt->execute([
             'role_id' => $data['role_id'],
@@ -66,9 +68,47 @@ class User
             'status' => $data['status'] ?? 'active',
             'commission_pct' => $data['commission_pct'] ?? null,
             'must_change_password' => !empty($data['must_change_password']) ? 1 : 0,
+            'email_verified_at' => $emailVerified ? date('Y-m-d H:i:s') : null,
         ]);
 
         return (int) Database::connection()->lastInsertId();
+    }
+
+    public static function setVerificationCode(int $id, string $code): void
+    {
+        $stmt = Database::connection()->prepare(
+            'UPDATE users SET verification_code_hash = :hash, verification_expires_at = DATE_ADD(NOW(), INTERVAL 30 MINUTE)
+             WHERE id = :id'
+        );
+        $stmt->execute(['hash' => password_hash($code, PASSWORD_DEFAULT), 'id' => $id]);
+    }
+
+    public static function verifyEmailCode(int $id, string $code): bool
+    {
+        $stmt = Database::connection()->prepare(
+            'SELECT verification_code_hash, verification_expires_at FROM users
+             WHERE id = :id AND email_verified_at IS NULL'
+        );
+        $stmt->execute(['id' => $id]);
+        $row = $stmt->fetch();
+
+        if (!$row || !$row['verification_code_hash'] || !$row['verification_expires_at']) {
+            return false;
+        }
+        if ($row['verification_expires_at'] < date('Y-m-d H:i:s')) {
+            return false;
+        }
+        if (!password_verify($code, $row['verification_code_hash'])) {
+            return false;
+        }
+
+        $update = Database::connection()->prepare(
+            'UPDATE users SET email_verified_at = NOW(), verification_code_hash = NULL, verification_expires_at = NULL
+             WHERE id = :id'
+        );
+        $update->execute(['id' => $id]);
+
+        return true;
     }
 
     public static function update(int $id, array $data): void

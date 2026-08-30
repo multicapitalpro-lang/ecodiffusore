@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Core\Auth;
 use App\Core\Csrf;
+use App\Core\Response;
 use App\Core\Router;
 use App\Core\View;
 use App\Models\Client;
@@ -38,23 +39,17 @@ class OrderController
             'user' => $user,
             'orders' => Order::all($filters),
             'filters' => $filters,
+            'clients' => Client::all(),
+            'products' => Product::all(true),
+            'sellers' => User::allByRole('licenciado'),
         ]);
     }
 
     public function create(): void
     {
         Auth::requireRole(['admin', 'gerente', 'supervisor', 'licenciado']);
-
-        View::render('painel/orders/form', [
-            'user' => Auth::user(),
-            'editing' => null,
-            'items' => [],
-            'clients' => Client::all(),
-            'products' => Product::all(true),
-            'sellers' => User::allByRole('licenciado'),
-            'preselectClientId' => (int) ($_GET['cliente_id'] ?? 0),
-            'errors' => [],
-        ]);
+        $qs = isset($_GET['cliente_id']) ? '&cliente_id=' . (int) $_GET['cliente_id'] : '';
+        Router::redirect('/painel/pedidos?novo=1' . $qs);
     }
 
     public function store(): void
@@ -62,7 +57,10 @@ class OrderController
         Auth::requireRole(['admin', 'gerente', 'supervisor', 'licenciado']);
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
-            Router::redirect('/painel/pedidos/novo?erro=1');
+            if (Response::isAjax()) {
+                Response::json(['ok' => false, 'errors' => ['client_id' => 'Sessão expirada, recarregue a página.']]);
+            }
+            Router::redirect('/painel/pedidos?erro=1');
         }
 
         $user = Auth::user();
@@ -70,15 +68,19 @@ class OrderController
         $errors = $this->validate($_POST, $items);
 
         if ($errors) {
-            View::render('painel/orders/form', [
+            if (Response::isAjax()) {
+                Response::json(['ok' => false, 'errors' => $errors]);
+            }
+            View::render('painel/orders/index', [
                 'user' => $user,
-                'editing' => $_POST,
-                'items' => $items,
+                'orders' => Order::all($user['role_slug'] === 'licenciado' ? ['seller_id' => $user['id']] : []),
+                'filters' => [],
                 'clients' => Client::all(),
                 'products' => Product::all(true),
                 'sellers' => User::allByRole('licenciado'),
-                'preselectClientId' => 0,
                 'errors' => $errors,
+                'values' => $_POST,
+                'items' => $items,
             ]);
             return;
         }
@@ -92,7 +94,13 @@ class OrderController
             'notes' => $_POST['notes'] ?? '',
         ], $items);
 
-        Router::redirect("/painel/pedidos/{$orderId}?sucesso=1");
+        $target = "/painel/pedidos/{$orderId}?sucesso=1";
+
+        if (Response::isAjax()) {
+            Response::json(['ok' => true, 'redirect' => $target]);
+        }
+
+        Router::redirect($target);
     }
 
     public function show(string $id): void

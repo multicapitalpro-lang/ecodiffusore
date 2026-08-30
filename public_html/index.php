@@ -58,6 +58,9 @@ $router->get('/painel/esqueci-senha', [App\Controllers\AuthController::class, 's
 $router->post('/painel/esqueci-senha', [App\Controllers\AuthController::class, 'sendResetCode']);
 $router->get('/painel/redefinir-senha', [App\Controllers\AuthController::class, 'showResetForm']);
 $router->post('/painel/redefinir-senha', [App\Controllers\AuthController::class, 'resetPassword']);
+$router->get('/painel/verificar-email', [App\Controllers\AuthController::class, 'showVerifyEmail']);
+$router->post('/painel/verificar-email', [App\Controllers\AuthController::class, 'verifyEmail']);
+$router->post('/painel/verificar-email/reenviar', [App\Controllers\AuthController::class, 'resendVerificationCode']);
 
 // Painel
 $router->get('/painel', [App\Controllers\DashboardController::class, 'index']);

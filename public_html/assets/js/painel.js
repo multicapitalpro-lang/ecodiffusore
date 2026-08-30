@@ -74,4 +74,90 @@
 
         recalcAll();
     });
+
+    // Menu mobile (drawer)
+    document.addEventListener('DOMContentLoaded', function () {
+        var toggle = document.getElementById('painel-menu-toggle');
+        var sidebar = document.getElementById('painel-sidebar');
+        var overlay = document.getElementById('painel-overlay');
+        if (!toggle || !sidebar || !overlay) return;
+
+        function closeSidebar() {
+            sidebar.classList.remove('is-open');
+            overlay.classList.remove('is-open');
+        }
+
+        toggle.addEventListener('click', function () {
+            sidebar.classList.toggle('is-open');
+            overlay.classList.toggle('is-open');
+        });
+        overlay.addEventListener('click', closeSidebar);
+        sidebar.querySelectorAll('a').forEach(function (a) {
+            a.addEventListener('click', closeSidebar);
+        });
+    });
+
+    // Modais (dialog nativo)
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('[data-modal-open]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var modal = document.getElementById(btn.getAttribute('data-modal-open'));
+                if (modal) modal.showModal();
+            });
+        });
+
+        document.querySelectorAll('[data-modal-close]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var dialog = btn.closest('dialog');
+                if (dialog) dialog.close();
+            });
+        });
+
+        document.querySelectorAll('dialog[data-autoopen]').forEach(function (dialog) {
+            dialog.showModal();
+        });
+
+        document.querySelectorAll('dialog.modal').forEach(function (dialog) {
+            dialog.addEventListener('click', function (e) {
+                if (e.target === dialog) dialog.close();
+            });
+        });
+
+        // Envio via AJAX (fica na mesma tela, sem navegar pra outra pagina)
+        document.querySelectorAll('form.ajax-form').forEach(function (form) {
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+
+                var submitBtn = form.querySelector('button[type=submit]');
+                if (submitBtn) submitBtn.disabled = true;
+
+                form.querySelectorAll('.field-error').forEach(function (el) { el.textContent = ''; });
+                form.querySelectorAll('.has-error').forEach(function (el) { el.classList.remove('has-error'); });
+
+                fetch(form.getAttribute('action'), {
+                    method: 'POST',
+                    body: new FormData(form),
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        if (data.ok) {
+                            window.location.href = data.redirect;
+                            return;
+                        }
+                        Object.keys(data.errors || {}).forEach(function (field) {
+                            var errEl = form.querySelector('[data-error-for="' + field + '"]');
+                            if (errEl) errEl.textContent = data.errors[field];
+                            var input = form.querySelector('[name="' + field + '"]');
+                            if (input) input.classList.add('has-error');
+                        });
+                        if (submitBtn) submitBtn.disabled = false;
+                    })
+                    .catch(function () {
+                        alert('Erro ao salvar. Verifique sua conexão e tente novamente.');
+                        if (submitBtn) submitBtn.disabled = false;
+                    });
+            });
+        });
+    });
 })();

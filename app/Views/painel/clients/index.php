@@ -1,10 +1,14 @@
 <?php
+use App\Core\Csrf;
 use App\Core\View;
 $sucesso = isset($_GET['sucesso']);
+$errors = $errors ?? [];
+$values = $values ?? [];
+$openModal = isset($_GET['novo']) || $errors;
 ?>
 <div class="page-header">
     <h1>Clientes</h1>
-    <a href="/painel/clientes/novo" class="btn btn-primary">+ Novo cliente</a>
+    <button type="button" class="btn btn-primary" data-modal-open="modal-client">+ Novo cliente</button>
 </div>
 
 <?php if ($sucesso): ?>
@@ -33,3 +37,20 @@ $sucesso = isset($_GET['sucesso']);
         </tbody>
     </table>
 </div>
+
+<dialog class="modal" id="modal-client" <?= $openModal ? 'data-autoopen="1"' : '' ?>>
+    <div class="modal-header">
+        <h2>Novo cliente</h2>
+        <button type="button" class="modal-close" data-modal-close aria-label="Fechar">&times;</button>
+    </div>
+    <div class="modal-body">
+        <form action="/painel/clientes" method="post" class="panel-form ajax-form">
+            <?= Csrf::field() ?>
+            <?php include __DIR__ . '/_fields.php'; ?>
+            <div class="modal-form-actions">
+                <button type="submit" class="btn btn-primary">Salvar cliente</button>
+                <button type="button" class="btn btn-outline" data-modal-close>Cancelar</button>
+            </div>
+        </form>
+    </div>
+</dialog>

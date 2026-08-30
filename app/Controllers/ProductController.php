@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Core\Auth;
 use App\Core\Csrf;
+use App\Core\Response;
 use App\Core\Router;
 use App\Core\View;
 use App\Models\Product;
@@ -23,12 +24,7 @@ class ProductController
     public function create(): void
     {
         Auth::requireRole(['admin']);
-
-        View::render('painel/products/form', [
-            'user' => Auth::user(),
-            'editing' => null,
-            'errors' => [],
-        ]);
+        Router::redirect('/painel/produtos?novo=1');
     }
 
     public function store(): void
@@ -36,22 +32,32 @@ class ProductController
         Auth::requireRole(['admin']);
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
-            Router::redirect('/painel/produtos/novo?erro=1');
+            if (Response::isAjax()) {
+                Response::json(['ok' => false, 'errors' => ['sku' => 'Sessão expirada, recarregue a página.']]);
+            }
+            Router::redirect('/painel/produtos?erro=1');
         }
 
         $errors = $this->validate($_POST);
 
         if ($errors) {
-            View::render('painel/products/form', [
+            if (Response::isAjax()) {
+                Response::json(['ok' => false, 'errors' => $errors]);
+            }
+            View::render('painel/products/index', [
                 'user' => Auth::user(),
-                'editing' => null,
+                'products' => Product::all(),
                 'errors' => $errors,
-                'old' => $_POST,
+                'values' => $_POST,
             ]);
             return;
         }
 
         Product::create($_POST + ['active' => isset($_POST['active'])]);
+
+        if (Response::isAjax()) {
+            Response::json(['ok' => true, 'redirect' => '/painel/produtos?sucesso=1']);
+        }
 
         Router::redirect('/painel/produtos?sucesso=1');
     }
