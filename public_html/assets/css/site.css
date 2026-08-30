@@ -74,6 +74,8 @@ a { color: inherit; text-decoration: none; }
 .btn-primary:hover { background: var(--green-dark); }
 .btn-outline { background: transparent; color: var(--navy); border: 2px solid var(--navy); }
 .btn-outline:hover { background: var(--navy); color: var(--white); }
+.hero .btn-outline, .licenciado .btn-outline { color: var(--white); border-color: var(--white); }
+.hero .btn-outline:hover, .licenciado .btn-outline:hover { background: var(--white); color: var(--navy); }
 .btn-whatsapp { background: #25D366; color: #fff; }
 .btn-whatsapp:hover { background: #1ebe5a; }
 
