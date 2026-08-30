@@ -21,10 +21,9 @@
         <text x="120" y="118" text-anchor="middle" textLength="196" lengthAdjust="spacingAndGlyphs" font-family="Poppins, Arial, sans-serif" font-weight="800" font-size="26" fill="#ffffff">
             <tspan fill="#8dc63f">ECO</tspan>DIFFUSORE
         </text>
-        <text x="120" y="138" text-anchor="middle" textLength="90" lengthAdjust="spacingAndGlyphs" font-family="Poppins, Arial, sans-serif" font-weight="700" font-size="15" fill="#ffffff">BRASIL</text>
-        <text x="120" y="154" text-anchor="middle" textLength="184" lengthAdjust="spacingAndGlyphs" font-family="Inter, Arial, sans-serif" font-weight="600" font-size="8.5" fill="#8dc63f">ECOLOGIA · POTÊNCIA · ECONOMIA</text>
+        <text x="120" y="140" text-anchor="middle" textLength="90" lengthAdjust="spacingAndGlyphs" font-family="Poppins, Arial, sans-serif" font-weight="700" font-size="15" fill="#ffffff">BRASIL</text>
 
-        <text x="120" y="188" text-anchor="middle" textLength="176" lengthAdjust="spacingAndGlyphs" font-family="Poppins, Arial, sans-serif" font-weight="800" font-size="19" fill="#ffffff">CAMINHÕES</text>
-        <text x="120" y="211" text-anchor="middle" textLength="196" lengthAdjust="spacingAndGlyphs" font-family="Poppins, Arial, sans-serif" font-weight="800" font-size="19" fill="#ffffff">TRATORES · ÔNIBUS</text>
+        <text x="120" y="188" text-anchor="middle" textLength="170" lengthAdjust="spacingAndGlyphs" font-family="Poppins, Arial, sans-serif" font-weight="800" font-size="19" fill="#ffffff">CAMINHÕES</text>
+        <text x="120" y="211" text-anchor="middle" textLength="180" lengthAdjust="spacingAndGlyphs" font-family="Poppins, Arial, sans-serif" font-weight="800" font-size="17" fill="#ffffff">TRATORES · ÔNIBUS</text>
     </g>
 </svg>
