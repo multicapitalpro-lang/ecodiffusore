@@ -16,7 +16,7 @@ $roleLabels = [
     <meta charset="UTF-8">
     <title>Painel — Ecodiffusore Brasil</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="/assets/css/painel.css">
+    <link rel="stylesheet" href="<?= View::asset('/assets/css/painel.css') ?>">
 </head>
 <body>
 <div class="painel-wrap">

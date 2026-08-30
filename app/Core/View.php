@@ -30,4 +30,11 @@ class View
     {
         return htmlspecialchars($value ?? '', ENT_QUOTES, 'UTF-8');
     }
+
+    public static function asset(string $path): string
+    {
+        $file = BASE_PATH . '/public_html' . $path;
+        $version = file_exists($file) ? filemtime($file) : time();
+        return $path . '?v=' . $version;
+    }
 }

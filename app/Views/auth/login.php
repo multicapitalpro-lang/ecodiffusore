@@ -1,5 +1,6 @@
 <?php
 use App\Core\Csrf;
+use App\Core\View;
 $erro = isset($_GET['erro']);
 ?><!doctype html>
 <html lang="pt-BR">
@@ -7,7 +8,7 @@ $erro = isset($_GET['erro']);
     <meta charset="UTF-8">
     <title>Entrar — Painel Ecodiffusore Brasil</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="/assets/css/painel.css">
+    <link rel="stylesheet" href="<?= View::asset('/assets/css/painel.css') ?>">
 </head>
 <body class="auth-body">
 <div class="auth-box">
