@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="Ecodiffusore Brasil">
+    <defs>
+        <clipPath id="circleClip">
+            <circle cx="120" cy="120" r="118"/>
+        </clipPath>
+    </defs>
+    <g clip-path="url(#circleClip)">
+        <rect x="0" y="0" width="240" height="240" fill="#0d1b3d"/>
+        <path d="M0 150 Q120 110 240 150 L240 240 L0 240 Z" fill="#8dc63f"/>
+
+        <g transform="translate(120,88)">
+            <g stroke="#8dc63f" stroke-width="6" stroke-linecap="round">
+                <line x1="0" y1="-26" x2="0" y2="26" transform="rotate(0)"/>
+                <line x1="0" y1="-26" x2="0" y2="26" transform="rotate(45)"/>
+                <line x1="0" y1="-26" x2="0" y2="26" transform="rotate(90)"/>
+                <line x1="0" y1="-26" x2="0" y2="26" transform="rotate(135)"/>
+            </g>
+            <circle r="6" fill="#8dc63f"/>
+        </g>
+
+        <text x="120" y="102" text-anchor="middle" font-family="Poppins, Arial, sans-serif" font-weight="800" font-size="30" fill="#ffffff">
+            <tspan fill="#8dc63f">ECO</tspan>DIFFUSORE
+        </text>
+        <text x="120" y="122" text-anchor="middle" font-family="Poppins, Arial, sans-serif" font-weight="700" font-size="15" letter-spacing="2" fill="#ffffff">BRASIL</text>
+        <text x="120" y="140" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-weight="600" font-size="8.5" letter-spacing="1" fill="#8dc63f">ECOLOGIA · POTÊNCIA · ECONOMIA</text>
+
+        <text x="120" y="182" text-anchor="middle" font-family="Poppins, Arial, sans-serif" font-weight="800" font-size="19" fill="#ffffff">CAMINHÕES</text>
+        <text x="120" y="205" text-anchor="middle" font-family="Poppins, Arial, sans-serif" font-weight="800" font-size="19" fill="#ffffff">TRATORES · ÔNIBUS</text>
+    </g>
+</svg>

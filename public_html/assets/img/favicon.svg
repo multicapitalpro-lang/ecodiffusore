@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+    <circle cx="32" cy="32" r="31" fill="#0d1b3d"/>
+    <path d="M1 40 Q32 30 63 40 L63 63 L1 63 Z" fill="#8dc63f"/>
+    <g transform="translate(32,26)" stroke="#8dc63f" stroke-width="3" stroke-linecap="round">
+        <line x1="0" y1="-10" x2="0" y2="10" transform="rotate(0)"/>
+        <line x1="0" y1="-10" x2="0" y2="10" transform="rotate(45)"/>
+        <line x1="0" y1="-10" x2="0" y2="10" transform="rotate(90)"/>
+        <line x1="0" y1="-10" x2="0" y2="10" transform="rotate(135)"/>
+    </g>
+</svg>
