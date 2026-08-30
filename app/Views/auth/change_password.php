@@ -12,7 +12,7 @@ $erro = $_GET['erro'] ?? null;
 </head>
 <body class="auth-body">
 <div class="auth-box">
-    <img src="/assets/img/logo-mark.svg" alt="Ecodiffusore Brasil" class="auth-logo">
+    <img src="<?= View::asset('/assets/img/logo-mark.svg') ?>" alt="Ecodiffusore Brasil" class="auth-logo">
     <h1>Defina sua nova senha</h1>
     <p class="auth-hint">Por segurança, você precisa criar uma senha nova antes de continuar.</p>
     <?php if ($erro === '1'): ?>

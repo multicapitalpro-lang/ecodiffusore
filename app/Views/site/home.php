@@ -1,5 +1,6 @@
 <?php
 use App\Core\Csrf;
+use App\Core\View;
 $sucesso = isset($_GET['sucesso']);
 $erro = isset($_GET['erro']);
 ?>
@@ -21,7 +22,7 @@ $erro = isset($_GET['erro']);
             </ul>
         </div>
         <div class="hero-media">
-            <video controls poster="/assets/img/video-poster.svg" class="hero-video">
+            <video controls poster="<?= View::asset('/assets/img/video-poster.svg') ?>" class="hero-video">
                 <source src="" type="video/mp4">
                 Seu navegador não suporta vídeo HTML5.
             </video>

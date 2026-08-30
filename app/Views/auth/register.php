@@ -12,7 +12,7 @@ $old = $old ?? [];
 </head>
 <body class="auth-body">
 <div class="auth-box">
-    <img src="/assets/img/logo-mark.svg" alt="Ecodiffusore Brasil" class="auth-logo">
+    <img src="<?= View::asset('/assets/img/logo-mark.svg') ?>" alt="Ecodiffusore Brasil" class="auth-logo">
     <h1>Criar minha conta de cliente</h1>
     <p class="auth-hint">Cadastro para clientes compradores. Se você é licenciado, gerente, supervisor ou admin, peça ao administrador para criar seu acesso.</p>
     <form action="/painel/cadastro" method="post" class="auth-form">

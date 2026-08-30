@@ -8,7 +8,7 @@ use App\Core\View;
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Ecodiffusore Brasil — Economize Diesel e Eleve a Performance</title>
     <meta name="description" content="Sistema patenteado que reduz o consumo de diesel em até 20% e aumenta a performance de caminhões. Economia real, payback rápido, garantia de 30 dias.">
-    <link rel="icon" href="/assets/img/favicon.svg">
+    <link rel="icon" href="<?= View::asset('/assets/img/favicon.svg') ?>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -17,7 +17,7 @@ use App\Core\View;
 <body>
 <header class="site-header">
     <div class="site-container site-header-inner">
-        <img src="/assets/img/logo.svg" alt="Ecodiffusore Brasil" class="site-logo">
+        <img src="<?= View::asset('/assets/img/logo.svg') ?>" alt="Ecodiffusore Brasil" class="site-logo">
         <nav class="site-nav">
             <a href="#beneficios">Benefícios</a>
             <a href="#precos">Modelos</a>
@@ -38,7 +38,7 @@ use App\Core\View;
 <footer class="site-footer">
     <div class="site-container site-footer-inner">
         <div>
-            <img src="/assets/img/logo.svg" alt="Ecodiffusore Brasil" class="site-footer-logo">
+            <img src="<?= View::asset('/assets/img/logo.svg') ?>" alt="Ecodiffusore Brasil" class="site-footer-logo">
             <p>R. Albino Kaminski, 886, Bairro Alto, Curitiba/PR</p>
             <p>(41) 3308-6831 · (41) 98896-2839</p>
             <p>contato@ecodiffusorebrasil.com.br</p>

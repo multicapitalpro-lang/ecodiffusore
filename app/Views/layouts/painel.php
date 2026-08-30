@@ -22,7 +22,7 @@ $roleLabels = [
 <div class="painel-wrap">
     <aside class="painel-sidebar">
         <div class="painel-logo">
-            <img src="/assets/img/logo-mark.svg" alt="Ecodiffusore Brasil">
+            <img src="<?= View::asset('/assets/img/logo-mark.svg') ?>" alt="Ecodiffusore Brasil">
         </div>
         <nav>
             <a href="/painel">Início</a>

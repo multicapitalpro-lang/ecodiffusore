@@ -13,7 +13,7 @@ $recuperada = isset($_GET['recuperada']);
 </head>
 <body class="auth-body">
 <div class="auth-box">
-    <img src="/assets/img/logo-mark.svg" alt="Ecodiffusore Brasil" class="auth-logo">
+    <img src="<?= View::asset('/assets/img/logo-mark.svg') ?>" alt="Ecodiffusore Brasil" class="auth-logo">
     <h1>Área do Cliente / Licenciado</h1>
     <?php if ($erro): ?>
         <p class="form-msg form-msg-erro">E-mail ou senha inválidos.</p>
