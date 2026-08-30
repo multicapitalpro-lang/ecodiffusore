@@ -61,6 +61,12 @@ class Auth
         if (!self::check()) {
             Router::redirect('/painel/login');
         }
+
+        $user = self::user();
+        if (!$user || $user['status'] !== 'active') {
+            self::logout();
+            Router::redirect('/painel/login');
+        }
     }
 
     public static function requireRole(array $roles): void
