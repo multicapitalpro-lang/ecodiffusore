@@ -11,7 +11,7 @@ use App\Core\View;
 </head>
 <body class="auth-body">
 <div class="auth-box">
-    <img src="/assets/img/logo.svg" alt="Ecodiffusore Brasil" class="auth-logo">
+    <img src="/assets/img/logo-mark.svg" alt="Ecodiffusore Brasil" class="auth-logo">
     <h1>Redefinir senha</h1>
     <p class="auth-hint">Digite o código recebido por e-mail e a nova senha.</p>
     <?php if (!empty($errors['code'])): ?>

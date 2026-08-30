@@ -1,29 +1,20 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="Ecodiffusore Brasil">
-    <defs>
-        <clipPath id="circleClip">
-            <circle cx="120" cy="120" r="118"/>
-        </clipPath>
-    </defs>
-    <g clip-path="url(#circleClip)">
-        <rect x="0" y="0" width="240" height="240" fill="#0d1b3d"/>
-        <path d="M0 150 Q120 110 240 150 L240 240 L0 240 Z" fill="#8dc63f"/>
-
-        <g transform="translate(120,82)">
-            <g stroke="#8dc63f" stroke-width="5" stroke-linecap="round">
-                <line x1="0" y1="-20" x2="0" y2="20" transform="rotate(0)"/>
-                <line x1="0" y1="-20" x2="0" y2="20" transform="rotate(45)"/>
-                <line x1="0" y1="-20" x2="0" y2="20" transform="rotate(90)"/>
-                <line x1="0" y1="-20" x2="0" y2="20" transform="rotate(135)"/>
-            </g>
-            <circle r="5" fill="#8dc63f"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 140" role="img" aria-label="Ecodiffusore Brasil">
+    <circle cx="70" cy="65" r="58" fill="#0d1b3d"/>
+    <g transform="translate(70,65)">
+        <g fill="#8dc63f">
+            <path d="M0 -34 C 7 -34 12 -22 7 -7 C 5 -1 0 0 0 0 C 0 0 -5 -1 -7 -7 C -12 -22 -7 -34 0 -34 Z"/>
+            <path d="M0 -34 C 7 -34 12 -22 7 -7 C 5 -1 0 0 0 0 C 0 0 -5 -1 -7 -7 C -12 -22 -7 -34 0 -34 Z" transform="rotate(72)"/>
+            <path d="M0 -34 C 7 -34 12 -22 7 -7 C 5 -1 0 0 0 0 C 0 0 -5 -1 -7 -7 C -12 -22 -7 -34 0 -34 Z" transform="rotate(144)"/>
+            <path d="M0 -34 C 7 -34 12 -22 7 -7 C 5 -1 0 0 0 0 C 0 0 -5 -1 -7 -7 C -12 -22 -7 -34 0 -34 Z" transform="rotate(216)"/>
+            <path d="M0 -34 C 7 -34 12 -22 7 -7 C 5 -1 0 0 0 0 C 0 0 -5 -1 -7 -7 C -12 -22 -7 -34 0 -34 Z" transform="rotate(288)"/>
         </g>
-
-        <text x="120" y="118" text-anchor="middle" textLength="196" lengthAdjust="spacingAndGlyphs" font-family="Poppins, Arial, sans-serif" font-weight="800" font-size="26" fill="#ffffff">
-            <tspan fill="#8dc63f">ECO</tspan>DIFFUSORE
-        </text>
-        <text x="120" y="140" text-anchor="middle" textLength="90" lengthAdjust="spacingAndGlyphs" font-family="Poppins, Arial, sans-serif" font-weight="700" font-size="15" fill="#ffffff">BRASIL</text>
-
-        <text x="120" y="182" text-anchor="middle" textLength="170" lengthAdjust="spacingAndGlyphs" font-family="Poppins, Arial, sans-serif" font-weight="800" font-size="19" fill="#ffffff">CAMINHÕES</text>
-        <text x="120" y="204" text-anchor="middle" textLength="156" lengthAdjust="spacingAndGlyphs" font-family="Poppins, Arial, sans-serif" font-weight="800" font-size="16" fill="#ffffff">TRATORES · ÔNIBUS</text>
+        <circle r="7" fill="#0d1b3d" stroke="#8dc63f" stroke-width="2.5"/>
     </g>
+
+    <text x="150" y="66" textLength="270" lengthAdjust="spacingAndGlyphs" font-family="Poppins, Arial, sans-serif" font-weight="800" font-size="38" fill="#0d1b3d">
+        <tspan fill="#8dc63f">ECO</tspan>DIFFUSORE
+    </text>
+    <rect x="150" y="80" width="86" height="26" rx="13" fill="#8dc63f"/>
+    <text x="193" y="98" text-anchor="middle" font-family="Poppins, Arial, sans-serif" font-weight="700" font-size="15" letter-spacing="2" fill="#0d1b3d">BRASIL</text>
+    <text x="150" y="124" font-family="Inter, Arial, sans-serif" font-weight="600" font-size="13" letter-spacing="0.5" fill="#5a6474">CAMINHÕES · TRATORES · ÔNIBUS</text>
 </svg>

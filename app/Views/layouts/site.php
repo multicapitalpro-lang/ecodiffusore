@@ -25,7 +25,7 @@ use App\Core\View;
             <a href="#licenciado">Seja Licenciado</a>
             <a href="/painel/login" class="site-nav-login">Área do Cliente</a>
         </nav>
-        <a href="https://wa.me/5541988962839" target="_blank" rel="noopener" class="btn btn-whatsapp site-header-cta">Falar no WhatsApp</a>
+        <a href="/painel/cadastro" class="btn btn-primary site-header-cta">Criar Conta</a>
     </div>
 </header>
 
