@@ -61,6 +61,7 @@ class UserController
             'whatsapp' => trim($_POST['whatsapp'] ?? ''),
             'password' => $_POST['password'],
             'status' => $_POST['status'] ?? 'active',
+            'must_change_password' => true,
         ]);
 
         Router::redirect('/painel/usuarios?sucesso=1');

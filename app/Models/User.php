@@ -45,7 +45,7 @@ class User
     {
         $stmt = Database::connection()->prepare(
             'INSERT INTO users (role_id, name, email, whatsapp, password_hash, status, must_change_password)
-             VALUES (:role_id, :name, :email, :whatsapp, :password_hash, :status, 1)'
+             VALUES (:role_id, :name, :email, :whatsapp, :password_hash, :status, :must_change_password)'
         );
         $stmt->execute([
             'role_id' => $data['role_id'],
@@ -54,6 +54,7 @@ class User
             'whatsapp' => $data['whatsapp'] ?: null,
             'password_hash' => password_hash($data['password'], PASSWORD_DEFAULT),
             'status' => $data['status'] ?? 'active',
+            'must_change_password' => !empty($data['must_change_password']) ? 1 : 0,
         ]);
 
         return (int) Database::connection()->lastInsertId();

@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="Ecodiffusore Brasil">
+    <defs>
+        <clipPath id="circleClipA">
+            <circle cx="120" cy="120" r="118"/>
+        </clipPath>
+    </defs>
+    <circle cx="120" cy="120" r="119" fill="#8dc63f"/>
+    <g clip-path="url(#circleClipA)">
+        <rect x="0" y="0" width="240" height="240" fill="#0d1b3d"/>
+        <path d="M-5 166 Q120 142 245 166 L245 245 L-5 245 Z" fill="#8dc63f"/>
+
+        <g transform="translate(120,78)">
+            <g fill="#8dc63f">
+                <path d="M0 -28 C 6 -28 10 -18 6 -6 C 4 -1 0 0 0 0 C 0 0 -4 -1 -6 -6 C -10 -18 -6 -28 0 -28 Z"/>
+                <path d="M0 -28 C 6 -28 10 -18 6 -6 C 4 -1 0 0 0 0 C 0 0 -4 -1 -6 -6 C -10 -18 -6 -28 0 -28 Z" transform="rotate(72)"/>
+                <path d="M0 -28 C 6 -28 10 -18 6 -6 C 4 -1 0 0 0 0 C 0 0 -4 -1 -6 -6 C -10 -18 -6 -28 0 -28 Z" transform="rotate(144)"/>
+                <path d="M0 -28 C 6 -28 10 -18 6 -6 C 4 -1 0 0 0 0 C 0 0 -4 -1 -6 -6 C -10 -18 -6 -28 0 -28 Z" transform="rotate(216)"/>
+                <path d="M0 -28 C 6 -28 10 -18 6 -6 C 4 -1 0 0 0 0 C 0 0 -4 -1 -6 -6 C -10 -18 -6 -28 0 -28 Z" transform="rotate(288)"/>
+            </g>
+            <circle r="5.5" fill="#0d1b3d" stroke="#8dc63f" stroke-width="2"/>
+        </g>
+
+        <text x="120" y="115" text-anchor="middle" textLength="192" lengthAdjust="spacingAndGlyphs" font-family="Poppins, Arial, sans-serif" font-weight="800" font-size="25" fill="#ffffff">
+            <tspan fill="#8dc63f">ECO</tspan>DIFFUSORE
+        </text>
+        <text x="120" y="135" text-anchor="middle" textLength="70" lengthAdjust="spacingAndGlyphs" font-family="Poppins, Arial, sans-serif" font-weight="700" font-size="14" letter-spacing="3" fill="#8dc63f">BRASIL</text>
+
+        <text x="120" y="196" text-anchor="middle" textLength="168" lengthAdjust="spacingAndGlyphs" font-family="Inter, Arial, sans-serif" font-weight="700" font-size="13" fill="#0d1b3d">CAMINHÕES · TRATORES</text>
+        <text x="120" y="213" text-anchor="middle" textLength="70" lengthAdjust="spacingAndGlyphs" font-family="Inter, Arial, sans-serif" font-weight="700" font-size="13" fill="#0d1b3d">ÔNIBUS</text>
+    </g>
+    <circle cx="120" cy="120" r="118" fill="none" stroke="#ffffff" stroke-width="1.5" opacity="0.15"/>
+</svg>

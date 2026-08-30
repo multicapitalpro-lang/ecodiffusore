@@ -2,6 +2,7 @@
 use App\Core\Csrf;
 use App\Core\View;
 $erro = isset($_GET['erro']);
+$recuperada = isset($_GET['recuperada']);
 ?><!doctype html>
 <html lang="pt-BR">
 <head>
@@ -17,6 +18,9 @@ $erro = isset($_GET['erro']);
     <?php if ($erro): ?>
         <p class="form-msg form-msg-erro">E-mail ou senha inválidos.</p>
     <?php endif; ?>
+    <?php if ($recuperada): ?>
+        <p class="form-msg form-msg-ok">Senha redefinida! Faça login com a nova senha.</p>
+    <?php endif; ?>
     <form action="/painel/login" method="post" class="auth-form">
         <?= Csrf::field() ?>
         <label for="email">E-mail</label>
@@ -25,6 +29,9 @@ $erro = isset($_GET['erro']);
         <input type="password" id="password" name="password" required>
         <button type="submit" class="btn btn-primary">Entrar</button>
     </form>
+    <p class="auth-links">
+        <a href="/painel/esqueci-senha">Esqueci minha senha</a> · <a href="/painel/cadastro">Criar conta de cliente</a>
+    </p>
     <a class="auth-back" href="/">&larr; Voltar para o site</a>
 </div>
 </body>
