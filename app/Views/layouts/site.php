@@ -38,7 +38,7 @@ use App\Core\View;
 <footer class="site-footer">
     <div class="site-container site-footer-inner">
         <div>
-            <img src="<?= View::asset('/assets/img/logo.svg') ?>" alt="Ecodiffusore Brasil" class="site-footer-logo">
+            <img src="<?= View::asset('/assets/img/logo-on-dark.svg') ?>" alt="Ecodiffusore Brasil" class="site-footer-logo">
             <p>R. Albino Kaminski, 886, Bairro Alto, Curitiba/PR</p>
             <p>(41) 3308-6831 · (41) 98896-2839</p>
             <p>contato@ecodiffusorebrasil.com.br</p>
