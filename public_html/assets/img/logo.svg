@@ -8,23 +8,23 @@
         <rect x="0" y="0" width="240" height="240" fill="#0d1b3d"/>
         <path d="M0 150 Q120 110 240 150 L240 240 L0 240 Z" fill="#8dc63f"/>
 
-        <g transform="translate(120,88)">
-            <g stroke="#8dc63f" stroke-width="6" stroke-linecap="round">
-                <line x1="0" y1="-26" x2="0" y2="26" transform="rotate(0)"/>
-                <line x1="0" y1="-26" x2="0" y2="26" transform="rotate(45)"/>
-                <line x1="0" y1="-26" x2="0" y2="26" transform="rotate(90)"/>
-                <line x1="0" y1="-26" x2="0" y2="26" transform="rotate(135)"/>
+        <g transform="translate(120,82)">
+            <g stroke="#8dc63f" stroke-width="5" stroke-linecap="round">
+                <line x1="0" y1="-20" x2="0" y2="20" transform="rotate(0)"/>
+                <line x1="0" y1="-20" x2="0" y2="20" transform="rotate(45)"/>
+                <line x1="0" y1="-20" x2="0" y2="20" transform="rotate(90)"/>
+                <line x1="0" y1="-20" x2="0" y2="20" transform="rotate(135)"/>
             </g>
-            <circle r="6" fill="#8dc63f"/>
+            <circle r="5" fill="#8dc63f"/>
         </g>
 
-        <text x="120" y="102" text-anchor="middle" font-family="Poppins, Arial, sans-serif" font-weight="800" font-size="30" fill="#ffffff">
+        <text x="120" y="118" text-anchor="middle" textLength="196" lengthAdjust="spacingAndGlyphs" font-family="Poppins, Arial, sans-serif" font-weight="800" font-size="26" fill="#ffffff">
             <tspan fill="#8dc63f">ECO</tspan>DIFFUSORE
         </text>
-        <text x="120" y="122" text-anchor="middle" font-family="Poppins, Arial, sans-serif" font-weight="700" font-size="15" letter-spacing="2" fill="#ffffff">BRASIL</text>
-        <text x="120" y="140" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-weight="600" font-size="8.5" letter-spacing="1" fill="#8dc63f">ECOLOGIA · POTÊNCIA · ECONOMIA</text>
+        <text x="120" y="138" text-anchor="middle" textLength="90" lengthAdjust="spacingAndGlyphs" font-family="Poppins, Arial, sans-serif" font-weight="700" font-size="15" fill="#ffffff">BRASIL</text>
+        <text x="120" y="154" text-anchor="middle" textLength="184" lengthAdjust="spacingAndGlyphs" font-family="Inter, Arial, sans-serif" font-weight="600" font-size="8.5" fill="#8dc63f">ECOLOGIA · POTÊNCIA · ECONOMIA</text>
 
-        <text x="120" y="182" text-anchor="middle" font-family="Poppins, Arial, sans-serif" font-weight="800" font-size="19" fill="#ffffff">CAMINHÕES</text>
-        <text x="120" y="205" text-anchor="middle" font-family="Poppins, Arial, sans-serif" font-weight="800" font-size="19" fill="#ffffff">TRATORES · ÔNIBUS</text>
+        <text x="120" y="188" text-anchor="middle" textLength="176" lengthAdjust="spacingAndGlyphs" font-family="Poppins, Arial, sans-serif" font-weight="800" font-size="19" fill="#ffffff">CAMINHÕES</text>
+        <text x="120" y="211" text-anchor="middle" textLength="196" lengthAdjust="spacingAndGlyphs" font-family="Poppins, Arial, sans-serif" font-weight="800" font-size="19" fill="#ffffff">TRATORES · ÔNIBUS</text>
     </g>
 </svg>
