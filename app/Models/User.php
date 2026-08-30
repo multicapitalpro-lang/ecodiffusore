@@ -41,11 +41,21 @@ class User
         return $stmt->fetchAll();
     }
 
+    public static function allByRole(string $roleSlug): array
+    {
+        $stmt = Database::connection()->prepare(
+            "SELECT u.* FROM users u JOIN roles r ON r.id = u.role_id
+             WHERE r.slug = :slug AND u.status = 'active' ORDER BY u.name"
+        );
+        $stmt->execute(['slug' => $roleSlug]);
+        return $stmt->fetchAll();
+    }
+
     public static function create(array $data): int
     {
         $stmt = Database::connection()->prepare(
-            'INSERT INTO users (role_id, name, email, whatsapp, password_hash, status, must_change_password)
-             VALUES (:role_id, :name, :email, :whatsapp, :password_hash, :status, :must_change_password)'
+            'INSERT INTO users (role_id, name, email, whatsapp, password_hash, status, commission_pct, must_change_password)
+             VALUES (:role_id, :name, :email, :whatsapp, :password_hash, :status, :commission_pct, :must_change_password)'
         );
         $stmt->execute([
             'role_id' => $data['role_id'],
@@ -54,6 +64,7 @@ class User
             'whatsapp' => $data['whatsapp'] ?: null,
             'password_hash' => password_hash($data['password'], PASSWORD_DEFAULT),
             'status' => $data['status'] ?? 'active',
+            'commission_pct' => $data['commission_pct'] ?? null,
             'must_change_password' => !empty($data['must_change_password']) ? 1 : 0,
         ]);
 
@@ -64,7 +75,7 @@ class User
     {
         $stmt = Database::connection()->prepare(
             'UPDATE users SET role_id = :role_id, name = :name, email = :email,
-                whatsapp = :whatsapp, status = :status WHERE id = :id'
+                whatsapp = :whatsapp, status = :status, commission_pct = :commission_pct WHERE id = :id'
         );
         $stmt->execute([
             'id' => $id,
@@ -72,6 +83,7 @@ class User
             'name' => $data['name'],
             'email' => $data['email'],
             'whatsapp' => $data['whatsapp'] ?: null,
+            'commission_pct' => $data['commission_pct'] ?? null,
             'status' => $data['status'],
         ]);
     }

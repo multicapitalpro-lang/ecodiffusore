@@ -110,3 +110,52 @@ a { text-decoration: none; color: inherit; }
 .auth-back { display: inline-block; margin-top: 20px; font-size: .85rem; color: var(--gray-text); }
 .auth-links { margin-top: 16px; font-size: .82rem; }
 .auth-links a { color: var(--green-dark); font-weight: 700; }
+
+/* Fase 2: CRM / Vendas / Financeiro */
+.filter-bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 20px; }
+.filter-bar input, .filter-bar select {
+    padding: 9px 12px; border-radius: 8px; border: 1.5px solid var(--border); font-size: .85rem;
+}
+.filter-bar label { font-size: .8rem; font-weight: 600; color: var(--gray-text); display: flex; align-items: center; gap: 6px; }
+
+.section-title { font-size: 1rem; font-family: 'Poppins', sans-serif; margin: 28px 0 14px; }
+.two-col { display: grid; gap: 22px; grid-template-columns: 1fr; }
+@media (min-width: 900px) { .two-col { grid-template-columns: 1fr 1fr; } }
+.cards-grid-2 { display: grid; gap: 22px; grid-template-columns: 1fr; }
+@media (min-width: 1000px) { .cards-grid-2 { grid-template-columns: 1fr 1fr; } }
+
+.text-green { color: var(--green-dark); }
+.text-red { color: #c53030; }
+
+.dash-card small { font-size: .76rem; font-weight: 700; }
+
+.chart-box { background: #fff; border-radius: 14px; padding: 20px; box-shadow: 0 6px 18px rgba(13,27,61,.05); }
+.chart-svg { width: 100%; height: auto; display: block; }
+.chart-legend { margin: 10px 0 0; font-size: .78rem; color: var(--gray-text); display: flex; align-items: center; gap: 6px; }
+.dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-left: 10px; }
+.dot:first-child { margin-left: 0; }
+.dot-current { background: #6ea62c; }
+.dot-previous { background: #c9cfdc; }
+
+.form-grid-2 { display: grid; gap: 16px; grid-template-columns: 1fr; }
+@media (min-width: 760px) { .form-grid-2 { grid-template-columns: 1fr 1fr; } }
+.panel-form-wide { max-width: 100%; }
+.panel-form-wide textarea {
+    padding: 11px 14px; border-radius: 8px; border: 1.5px solid var(--border); font-family: inherit; font-size: .92rem;
+    min-height: 80px; resize: vertical;
+}
+.link-small { display: inline-block; margin-top: 6px; font-size: .78rem; color: var(--green-dark); font-weight: 700; }
+
+.btn-sm { padding: 8px 16px; font-size: .82rem; margin-top: 10px; }
+.btn-danger { background: #fde8e8; color: #c53030; }
+.btn-danger:hover { background: #fbd0d0; }
+.btn-remove-row { background: none; border: none; color: #c53030; font-size: 1.1rem; cursor: pointer; padding: 0 8px; }
+
+.order-total { text-align: right; font-size: 1rem; margin: 14px 0; }
+.order-total strong { color: var(--navy); font-family: 'Poppins', sans-serif; font-size: 1.2rem; }
+.order-summary { background: #fff; border-radius: 12px; padding: 18px 22px; margin-bottom: 20px; box-shadow: 0 6px 18px rgba(13,27,61,.05); }
+.order-summary p { margin: 4px 0; font-size: .9rem; }
+.order-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+.inline-form { display: inline; }
+.hint-text { font-size: .8rem; color: var(--gray-text); margin-top: 10px; }
+.hint-inline { font-size: .76rem; color: var(--gray-text); font-weight: 400; }

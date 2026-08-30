@@ -61,6 +61,7 @@ class UserController
             'whatsapp' => trim($_POST['whatsapp'] ?? ''),
             'password' => $_POST['password'],
             'status' => $_POST['status'] ?? 'active',
+            'commission_pct' => !empty($_POST['commission_pct']) ? $_POST['commission_pct'] : null,
             'must_change_password' => true,
         ]);
 
@@ -111,6 +112,7 @@ class UserController
             'email' => trim($_POST['email']),
             'whatsapp' => trim($_POST['whatsapp'] ?? ''),
             'status' => $_POST['status'] ?? 'active',
+            'commission_pct' => !empty($_POST['commission_pct']) ? $_POST['commission_pct'] : null,
         ]);
 
         if (!empty($_POST['reset_password'])) {

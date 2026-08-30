@@ -70,4 +70,38 @@ $router->post('/painel/usuarios/{id}', [App\Controllers\UserController::class, '
 
 $router->get('/painel/leads', [App\Controllers\LeadController::class, 'index']);
 
+// Clientes
+$router->get('/painel/clientes', [App\Controllers\ClientController::class, 'index']);
+$router->get('/painel/clientes/novo', [App\Controllers\ClientController::class, 'create']);
+$router->post('/painel/clientes', [App\Controllers\ClientController::class, 'store']);
+$router->get('/painel/clientes/{id}/editar', [App\Controllers\ClientController::class, 'edit']);
+$router->post('/painel/clientes/{id}', [App\Controllers\ClientController::class, 'update']);
+
+// Produtos
+$router->get('/painel/produtos', [App\Controllers\ProductController::class, 'index']);
+$router->get('/painel/produtos/novo', [App\Controllers\ProductController::class, 'create']);
+$router->post('/painel/produtos', [App\Controllers\ProductController::class, 'store']);
+$router->get('/painel/produtos/{id}/editar', [App\Controllers\ProductController::class, 'edit']);
+$router->post('/painel/produtos/{id}', [App\Controllers\ProductController::class, 'update']);
+
+// Pedidos
+$router->get('/painel/pedidos', [App\Controllers\OrderController::class, 'index']);
+$router->get('/painel/pedidos/novo', [App\Controllers\OrderController::class, 'create']);
+$router->post('/painel/pedidos', [App\Controllers\OrderController::class, 'store']);
+$router->get('/painel/pedidos/{id}', [App\Controllers\OrderController::class, 'show']);
+$router->get('/painel/pedidos/{id}/editar', [App\Controllers\OrderController::class, 'edit']);
+$router->post('/painel/pedidos/{id}', [App\Controllers\OrderController::class, 'update']);
+$router->post('/painel/pedidos/{id}/status', [App\Controllers\OrderController::class, 'markStatus']);
+
+// Desempenho
+$router->get('/painel/desempenho/vendedores', [App\Controllers\PerformanceController::class, 'sellers']);
+
+// Financeiro
+$router->get('/painel/financeiro/caixas-bancos', [App\Controllers\FinanceController::class, 'accounts']);
+$router->post('/painel/financeiro/caixas-bancos/contas', [App\Controllers\FinanceController::class, 'storeAccount']);
+$router->post('/painel/financeiro/lancamentos', [App\Controllers\FinanceController::class, 'storeTransaction']);
+$router->get('/painel/financeiro/contas-a-pagar', [App\Controllers\FinanceController::class, 'payable']);
+$router->get('/painel/financeiro/contas-a-receber', [App\Controllers\FinanceController::class, 'receivable']);
+$router->get('/painel/financeiro/comissoes', [App\Controllers\FinanceController::class, 'commissions']);
+
 $router->dispatch($_SERVER['REQUEST_METHOD'], $_SERVER['REQUEST_URI']);

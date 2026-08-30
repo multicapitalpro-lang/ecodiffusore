@@ -133,6 +133,14 @@ class AuthController
             'must_change_password' => false,
         ]);
 
+        \App\Models\Client::create([
+            'user_id' => $userId,
+            'name' => $name,
+            'email' => $email,
+            'whatsapp' => $whatsapp,
+            'status' => 'ativo',
+        ]);
+
         session_regenerate_id(true);
         $_SESSION['user_id'] = $userId;
 

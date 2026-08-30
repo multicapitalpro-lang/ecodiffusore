@@ -32,6 +32,10 @@ $values = $editing ?? ($old ?? []);
     </select>
     <?php if (!empty($errors['role_id'])): ?><p class="field-error"><?= View::e($errors['role_id']) ?></p><?php endif; ?>
 
+    <label for="commission_pct">Comissão padrão (%) — só para papel Licenciado</label>
+    <input type="number" id="commission_pct" name="commission_pct" step="0.01" min="0" max="100"
+           value="<?= View::e((string) ($values['commission_pct'] ?? '')) ?>" placeholder="Ex: 5.00">
+
     <label for="status">Status</label>
     <select id="status" name="status">
         <option value="active" <?= ($values['status'] ?? 'active') === 'active' ? 'selected' : '' ?>>Ativo</option>

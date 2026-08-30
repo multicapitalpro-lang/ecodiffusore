@@ -28,16 +28,28 @@ $roleLabels = [
             <a href="/painel">Início</a>
             <?php if (in_array($role, ['admin', 'gerente', 'supervisor', 'licenciado'], true)): ?>
                 <a href="/painel/leads">Leads</a>
+                <a href="/painel/pedidos">Pedidos</a>
+                <a href="/painel/clientes">Clientes</a>
+            <?php endif; ?>
+            <?php if ($role === 'admin'): ?>
+                <a href="/painel/produtos">Produtos</a>
+            <?php endif; ?>
+            <?php if (in_array($role, ['admin', 'gerente', 'supervisor'], true)): ?>
+                <a href="/painel/desempenho/vendedores">Desempenho</a>
+                <a href="/painel/financeiro/caixas-bancos">Caixas e Bancos</a>
+                <a href="/painel/financeiro/contas-a-pagar">Contas a Pagar</a>
+                <a href="/painel/financeiro/contas-a-receber">Contas a Receber</a>
+            <?php endif; ?>
+            <?php if (in_array($role, ['admin', 'gerente', 'supervisor', 'licenciado'], true)): ?>
+                <a href="/painel/financeiro/comissoes">Comissões</a>
             <?php endif; ?>
             <?php if ($role === 'admin'): ?>
                 <a href="/painel/usuarios">Usuários</a>
             <?php endif; ?>
 
             <p class="painel-nav-soon">Em breve</p>
-            <span class="painel-nav-disabled">CRM / Vendas</span>
-            <span class="painel-nav-disabled">Financeiro</span>
-            <span class="painel-nav-disabled">Comissões</span>
-            <span class="painel-nav-disabled">Relatórios</span>
+            <span class="painel-nav-disabled">Relatórios agendados</span>
+            <span class="painel-nav-disabled">NF-e / Remessa</span>
         </nav>
     </aside>
 
