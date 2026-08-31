@@ -77,8 +77,12 @@ $financeiroOpen = $anyActive(['/painel/financeiro']);
                             <a href="/painel/financeiro/caixas-bancos" class="<?= $isActive('/painel/financeiro/caixas-bancos') ? 'is-active' : '' ?>">Caixas e Bancos</a>
                             <a href="/painel/financeiro/contas-a-pagar" class="<?= $isActive('/painel/financeiro/contas-a-pagar') ? 'is-active' : '' ?>">Contas a Pagar</a>
                             <a href="/painel/financeiro/contas-a-receber" class="<?= $isActive('/painel/financeiro/contas-a-receber') ? 'is-active' : '' ?>">Contas a Receber</a>
+                            <a href="/painel/financeiro/remessas" class="<?= $isActive('/painel/financeiro/remessas') ? 'is-active' : '' ?>">Remessa e Retorno</a>
                         <?php endif; ?>
                         <a href="/painel/financeiro/comissoes" class="<?= $isActive('/painel/financeiro/comissoes') ? 'is-active' : '' ?>">Comissões</a>
+                        <?php if (in_array($role, $managerRoles, true)): ?>
+                            <a href="/painel/financeiro/relatorios" class="<?= $isActive('/painel/financeiro/relatorios') ? 'is-active' : '' ?>">Relatórios</a>
+                        <?php endif; ?>
                     </div>
                 </details>
             <?php endif; ?>
@@ -87,9 +91,10 @@ $financeiroOpen = $anyActive(['/painel/financeiro']);
                 <a href="/painel/usuarios" class="<?= $isActive('/painel/usuarios') ? 'is-active' : '' ?>"><?= $icon('gear') ?> Usuários</a>
             <?php endif; ?>
 
-            <p class="painel-nav-soon">Em breve</p>
-            <span class="painel-nav-disabled">Relatórios agendados</span>
-            <span class="painel-nav-disabled">NF-e / Remessa</span>
+            <?php if (in_array($role, $managerRoles, true)): ?>
+                <p class="painel-nav-soon">Em breve</p>
+                <span class="painel-nav-disabled">NF-e</span>
+            <?php endif; ?>
         </nav>
     </aside>
 

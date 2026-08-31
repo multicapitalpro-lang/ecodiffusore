@@ -45,7 +45,7 @@ $openModal = !empty($errors);
 <h3 class="section-title">Movimentações</h3>
 <div class="table-scroll">
     <table class="data-table">
-        <thead><tr><th>Data</th><th>Categoria</th><th>Histórico</th><th>Cliente/Fornecedor</th><th>Conta</th><th>Valor</th><th>Situação</th></tr></thead>
+        <thead><tr><th>Data</th><th>Categoria</th><th>Histórico</th><th>Cliente/Fornecedor</th><th>Conta</th><th>Valor</th><th>Situação</th><th>Anexos</th></tr></thead>
         <tbody>
             <?php foreach ($transactions as $t): ?>
                 <tr>
@@ -58,10 +58,11 @@ $openModal = !empty($errors);
                         <?= $t['type'] === 'entrada' ? '+' : '-' ?> R$ <?= number_format((float) $t['amount'], 2, ',', '.') ?>
                     </td>
                     <td><span class="status-badge status-<?= $t['status'] === 'pendente' ? 'contatado' : 'active' ?>"><?= $statusLabels[$t['status']] ?? $t['status'] ?></span></td>
+                    <td><?php $items = $attachmentsByTransaction[$t['id']] ?? []; include __DIR__ . '/_attachments_cell.php'; ?></td>
                 </tr>
             <?php endforeach; ?>
             <?php if (!$transactions): ?>
-                <tr><td colspan="7">Nenhuma movimentação registrada.</td></tr>
+                <tr><td colspan="8">Nenhuma movimentação registrada.</td></tr>
             <?php endif; ?>
         </tbody>
     </table>

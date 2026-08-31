@@ -109,5 +109,21 @@ $router->post('/painel/financeiro/contas', [App\Controllers\FinanceController::c
 $router->post('/painel/financeiro/contas/{id}/baixar', [App\Controllers\FinanceController::class, 'markPaid']);
 $router->get('/painel/financeiro/anexos/{id}', [App\Controllers\FinanceController::class, 'downloadAttachment']);
 $router->get('/painel/financeiro/comissoes', [App\Controllers\FinanceController::class, 'commissions']);
+$router->post('/painel/financeiro/comissoes/{id}/baixar', [App\Controllers\FinanceController::class, 'markCommissionPaid']);
+
+// Remessa e Retorno
+$router->get('/painel/financeiro/remessas', [App\Controllers\RemittanceController::class, 'index']);
+$router->get('/painel/financeiro/remessas/nova', [App\Controllers\RemittanceController::class, 'create']);
+$router->post('/painel/financeiro/remessas', [App\Controllers\RemittanceController::class, 'store']);
+$router->get('/painel/financeiro/remessas/{id}', [App\Controllers\RemittanceController::class, 'show']);
+$router->post('/painel/financeiro/remessas/{id}/enviar', [App\Controllers\RemittanceController::class, 'send']);
+$router->post('/painel/financeiro/remessas/{id}/retorno', [App\Controllers\RemittanceController::class, 'returnBack']);
+
+// Relatorios financeiros + agendamento
+$router->get('/painel/financeiro/relatorios', [App\Controllers\ReportController::class, 'index']);
+$router->get('/painel/financeiro/relatorios/agendamentos', [App\Controllers\ReportController::class, 'schedules']);
+$router->post('/painel/financeiro/relatorios/agendamentos', [App\Controllers\ReportController::class, 'storeSchedule']);
+$router->post('/painel/financeiro/relatorios/agendamentos/{id}/excluir', [App\Controllers\ReportController::class, 'deleteSchedule']);
+$router->get('/painel/financeiro/relatorios/{type}', [App\Controllers\ReportController::class, 'show']);
 
 $router->dispatch($_SERVER['REQUEST_METHOD'], $_SERVER['REQUEST_URI']);

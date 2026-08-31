@@ -15,6 +15,27 @@ class FinancialAttachment
         return $stmt->fetchAll();
     }
 
+    /** @return array<int,array> lista de anexos indexada por transaction_id */
+    public static function forTransactions(array $transactionIds): array
+    {
+        if (!$transactionIds) {
+            return [];
+        }
+
+        $placeholders = implode(',', array_fill(0, count($transactionIds), '?'));
+        $stmt = Database::connection()->prepare(
+            "SELECT * FROM financial_attachments WHERE transaction_id IN ($placeholders) ORDER BY id"
+        );
+        $stmt->execute(array_values($transactionIds));
+
+        $byTransaction = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $byTransaction[(int) $row['transaction_id']][] = $row;
+        }
+
+        return $byTransaction;
+    }
+
     public static function find(int $id): ?array
     {
         $stmt = Database::connection()->prepare('SELECT * FROM financial_attachments WHERE id = :id');

@@ -27,10 +27,13 @@ class FinanceController
         }
         unset($account);
 
+        $transactions = FinancialTransaction::all();
+
         View::render('painel/finance/accounts', [
             'user' => Auth::user(),
             'accounts' => $accounts,
-            'transactions' => FinancialTransaction::all(),
+            'transactions' => $transactions,
+            'attachmentsByTransaction' => FinancialAttachment::forTransactions(array_column($transactions, 'id')),
             'categoryGroups' => FinancialCategory::grouped(),
             'clients' => Client::all(),
             'errors' => [],
@@ -123,10 +126,20 @@ class FinanceController
     private function renderLedger(string $type, string $title, array $errors = [], array $values = []): void
     {
         $transactions = FinancialTransaction::all(['type' => $type]);
-        $openTotal = 0.0;
+        $today = date('Y-m-d');
+
+        $summary = ['open_count' => 0, 'open_total' => 0.0, 'paid_total' => 0.0, 'overdue_count' => 0, 'overdue_total' => 0.0];
         foreach ($transactions as $t) {
+            $total = FinancialTransaction::totalValue($t);
             if ($t['status'] === 'pendente') {
-                $openTotal += FinancialTransaction::totalValue($t);
+                $summary['open_count']++;
+                $summary['open_total'] += $total;
+                if ($t['due_date'] < $today) {
+                    $summary['overdue_count']++;
+                    $summary['overdue_total'] += $total;
+                }
+            } else {
+                $summary['paid_total'] += $total;
             }
         }
 
@@ -135,7 +148,8 @@ class FinanceController
             'title' => $title,
             'type' => $type,
             'transactions' => $transactions,
-            'openTotal' => $openTotal,
+            'summary' => $summary,
+            'attachmentsByTransaction' => FinancialAttachment::forTransactions(array_column($transactions, 'id')),
             'accounts' => FinancialAccount::all(),
             'categoryGroups' => FinancialCategory::grouped($type),
             'clients' => Client::all(),
@@ -251,10 +265,33 @@ class FinanceController
             $filters['seller_id'] = $user['id'];
         }
 
+        $commissions = Commission::all($filters);
+        $summary = ['total' => 0.0, 'pago' => 0.0, 'pendente' => 0.0, 'count' => count($commissions)];
+        foreach ($commissions as $c) {
+            $summary['total'] += (float) $c['amount'];
+            $summary[$c['status']] += (float) $c['amount'];
+        }
+
         View::render('painel/finance/commissions', [
             'user' => $user,
-            'commissions' => Commission::all($filters),
+            'commissions' => $commissions,
+            'summary' => $summary,
+            'bySeller' => Commission::bySeller($filters),
+            'canManage' => in_array($user['role_slug'], ['admin', 'gerente', 'supervisor'], true),
         ]);
+    }
+
+    public function markCommissionPaid(string $id): void
+    {
+        Auth::requireRole(['admin', 'gerente', 'supervisor']);
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            Router::redirect('/painel/financeiro/comissoes');
+        }
+
+        Commission::markPaid((int) $id);
+
+        Router::redirect('/painel/financeiro/comissoes?sucesso=1');
     }
 
     private function storeAttachments(int $transactionId, ?array $filesInput): void
@@ -290,10 +327,13 @@ class FinanceController
         }
         unset($account);
 
+        $transactions = FinancialTransaction::all();
+
         View::render('painel/finance/accounts', [
             'user' => Auth::user(),
             'accounts' => $accounts,
-            'transactions' => FinancialTransaction::all(),
+            'transactions' => $transactions,
+            'attachmentsByTransaction' => FinancialAttachment::forTransactions(array_column($transactions, 'id')),
             'categoryGroups' => FinancialCategory::grouped(),
             'clients' => Client::all(),
             'errors' => $errors,
