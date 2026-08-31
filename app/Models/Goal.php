@@ -30,8 +30,8 @@ class Goal
         $today = date('Y-m-d');
         $sql = 'SELECT g.*, u.name AS seller_name FROM goals g
                 LEFT JOIN users u ON u.id = g.seller_id
-                WHERE g.start_date <= :today AND g.end_date >= :today';
-        $params = ['today' => $today];
+                WHERE g.start_date <= :today1 AND g.end_date >= :today2';
+        $params = ['today1' => $today, 'today2' => $today];
 
         if ($sellerId !== null) {
             $sql .= ' AND (g.seller_id IS NULL OR g.seller_id = :seller_id)';
