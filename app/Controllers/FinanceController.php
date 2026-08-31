@@ -4,9 +4,15 @@ namespace App\Controllers;
 
 use App\Core\Auth;
 use App\Core\Csrf;
+use App\Core\FileUpload;
+use App\Core\Response;
 use App\Core\Router;
 use App\Core\View;
+use App\Models\Client;
+use App\Models\Commission;
 use App\Models\FinancialAccount;
+use App\Models\FinancialAttachment;
+use App\Models\FinancialCategory;
 use App\Models\FinancialTransaction;
 
 class FinanceController
@@ -25,6 +31,10 @@ class FinanceController
             'user' => Auth::user(),
             'accounts' => $accounts,
             'transactions' => FinancialTransaction::all(),
+            'categoryGroups' => FinancialCategory::grouped(),
+            'clients' => Client::all(),
+            'errors' => [],
+            'values' => [],
         ]);
     }
 
@@ -50,54 +60,185 @@ class FinanceController
         Auth::requireRole(['admin', 'gerente', 'supervisor']);
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            if (Response::isAjax()) {
+                Response::json(['ok' => false, 'errors' => ['description' => 'Sessão expirada, recarregue a página.']]);
+            }
             Router::redirect('/painel/financeiro/caixas-bancos?erro=1');
         }
 
-        $errors = [];
-        if (empty($_POST['account_id'])) {
-            $errors[] = 'conta';
-        }
-        if (empty($_POST['category'])) {
-            $errors[] = 'categoria';
-        }
-        if (empty($_POST['amount']) || !is_numeric($_POST['amount'])) {
-            $errors[] = 'valor';
-        }
-        if (empty($_POST['due_date'])) {
-            $errors[] = 'data';
-        }
+        $errors = $this->validateTransaction($_POST);
 
         if ($errors) {
-            Router::redirect('/painel/financeiro/caixas-bancos?erro=1');
+            if (Response::isAjax()) {
+                Response::json(['ok' => false, 'errors' => $errors]);
+            }
+            $this->renderAccountsWithErrors($errors, $_POST);
+            return;
         }
 
-        FinancialTransaction::create($_POST);
+        $type = $_POST['type'] ?? 'saida';
+        $dueDate = $_POST['due_date'];
 
-        Router::redirect('/painel/financeiro/caixas-bancos?sucesso=1');
+        $transactionId = FinancialTransaction::create([
+            'account_id' => (int) $_POST['account_id'],
+            'client_id' => $_POST['client_id'] ?: null,
+            'category_id' => $_POST['category_id'] ?: null,
+            'type' => $type,
+            'description' => trim($_POST['description'] ?? ''),
+            'amount' => (float) $_POST['amount'],
+            'due_date' => $dueDate,
+            'competencia' => $_POST['competencia'] ?: null,
+            'paid_date' => $dueDate,
+            'status' => 'pago',
+        ]);
+
+        try {
+            $this->storeAttachments($transactionId, $_FILES['attachments'] ?? null);
+        } catch (\RuntimeException $e) {
+            // Lancamento ja foi salvo; so avisamos sobre o anexo.
+            if (Response::isAjax()) {
+                Response::json(['ok' => true, 'redirect' => '/painel/financeiro/caixas-bancos?sucesso=1&aviso=' . urlencode($e->getMessage())]);
+            }
+        }
+
+        $target = '/painel/financeiro/caixas-bancos?sucesso=1';
+        if (Response::isAjax()) {
+            Response::json(['ok' => true, 'redirect' => $target]);
+        }
+        Router::redirect($target);
     }
 
     public function payable(): void
     {
         Auth::requireRole(['admin', 'gerente', 'supervisor']);
-
-        View::render('painel/finance/ledger', [
-            'user' => Auth::user(),
-            'title' => 'Contas a Pagar',
-            'type' => 'saida',
-            'transactions' => FinancialTransaction::all(['type' => 'saida']),
-        ]);
+        $this->renderLedger('saida', 'Contas a Pagar');
     }
 
     public function receivable(): void
     {
         Auth::requireRole(['admin', 'gerente', 'supervisor']);
+        $this->renderLedger('entrada', 'Contas a Receber');
+    }
+
+    private function renderLedger(string $type, string $title, array $errors = [], array $values = []): void
+    {
+        $transactions = FinancialTransaction::all(['type' => $type]);
+        $openTotal = 0.0;
+        foreach ($transactions as $t) {
+            if ($t['status'] === 'pendente') {
+                $openTotal += FinancialTransaction::totalValue($t);
+            }
+        }
 
         View::render('painel/finance/ledger', [
             'user' => Auth::user(),
-            'title' => 'Contas a Receber',
-            'type' => 'entrada',
-            'transactions' => FinancialTransaction::all(['type' => 'entrada']),
+            'title' => $title,
+            'type' => $type,
+            'transactions' => $transactions,
+            'openTotal' => $openTotal,
+            'accounts' => FinancialAccount::all(),
+            'categoryGroups' => FinancialCategory::grouped($type),
+            'clients' => Client::all(),
+            'errors' => $errors,
+            'values' => $values,
         ]);
+    }
+
+    public function storePayable(): void
+    {
+        Auth::requireRole(['admin', 'gerente', 'supervisor']);
+
+        $type = ($_POST['type'] ?? 'saida') === 'entrada' ? 'entrada' : 'saida';
+        $backTo = $type === 'entrada' ? '/painel/financeiro/contas-a-receber' : '/painel/financeiro/contas-a-pagar';
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            if (Response::isAjax()) {
+                Response::json(['ok' => false, 'errors' => ['client_id' => 'Sessão expirada, recarregue a página.']]);
+            }
+            Router::redirect($backTo . '?erro=1');
+        }
+
+        $errors = $this->validatePayable($_POST);
+
+        if ($errors) {
+            if (Response::isAjax()) {
+                Response::json(['ok' => false, 'errors' => $errors]);
+            }
+            $this->renderLedger($type, $type === 'entrada' ? 'Contas a Receber' : 'Contas a Pagar', $errors, $_POST);
+            return;
+        }
+
+        $dandoBaixa = !empty($_POST['salvar_e_dar_baixa']);
+
+        $transactionId = FinancialTransaction::create([
+            'account_id' => (int) $_POST['account_id'],
+            'client_id' => (int) $_POST['client_id'],
+            'category_id' => $_POST['category_id'] ?: null,
+            'type' => $type,
+            'description' => trim($_POST['description'] ?? ''),
+            'amount' => (float) $_POST['amount'],
+            'issue_date' => $_POST['issue_date'],
+            'competencia' => $_POST['competencia'],
+            'due_date' => $_POST['due_date'],
+            'payment_method' => $_POST['payment_method'] ?: null,
+            'document_number' => $_POST['document_number'] ?: null,
+            'interest_pct' => (float) ($_POST['interest_pct'] ?: 0),
+            'penalty_pct' => (float) ($_POST['penalty_pct'] ?: 0),
+            'status' => $dandoBaixa ? 'pago' : 'pendente',
+            'paid_date' => $dandoBaixa ? date('Y-m-d') : null,
+        ]);
+
+        try {
+            $this->storeAttachments($transactionId, $_FILES['attachments'] ?? null);
+        } catch (\RuntimeException $e) {
+            // Segue o fluxo; o lancamento principal ja foi salvo.
+        }
+
+        $target = $backTo . '?sucesso=1';
+        if (Response::isAjax()) {
+            Response::json(['ok' => true, 'redirect' => $target]);
+        }
+        Router::redirect($target);
+    }
+
+    public function markPaid(string $id): void
+    {
+        Auth::requireRole(['admin', 'gerente', 'supervisor']);
+        $id = (int) $id;
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            Router::redirect($_SERVER['HTTP_REFERER'] ?? '/painel/financeiro/contas-a-pagar');
+        }
+
+        $transaction = FinancialTransaction::find($id);
+        if ($transaction) {
+            FinancialTransaction::markPaid($id, date('Y-m-d'));
+        }
+
+        Router::redirect($_SERVER['HTTP_REFERER'] ?? '/painel/financeiro/contas-a-pagar');
+    }
+
+    public function downloadAttachment(string $id): void
+    {
+        Auth::requireRole(['admin', 'gerente', 'supervisor']);
+
+        $attachment = FinancialAttachment::find((int) $id);
+        if (!$attachment) {
+            http_response_code(404);
+            exit('Anexo não encontrado.');
+        }
+
+        $path = FileUpload::path($attachment['stored_name']);
+        if (!file_exists($path)) {
+            http_response_code(404);
+            exit('Arquivo não encontrado.');
+        }
+
+        header('Content-Type: ' . $attachment['mime_type']);
+        header('Content-Disposition: inline; filename="' . rawurlencode($attachment['original_name']) . '"');
+        header('Content-Length: ' . filesize($path));
+        readfile($path);
+        exit;
     }
 
     public function commissions(): void
@@ -112,7 +253,88 @@ class FinanceController
 
         View::render('painel/finance/commissions', [
             'user' => $user,
-            'commissions' => \App\Models\Commission::all($filters),
+            'commissions' => Commission::all($filters),
         ]);
+    }
+
+    private function storeAttachments(int $transactionId, ?array $filesInput): void
+    {
+        if (!$filesInput) {
+            return;
+        }
+
+        $count = count($filesInput['name']);
+        for ($i = 0; $i < $count; $i++) {
+            if (($filesInput['error'][$i] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+                continue;
+            }
+            $file = [
+                'name' => $filesInput['name'][$i],
+                'type' => $filesInput['type'][$i],
+                'tmp_name' => $filesInput['tmp_name'][$i],
+                'error' => $filesInput['error'][$i],
+                'size' => $filesInput['size'][$i],
+            ];
+            $stored = FileUpload::storeFinancialAttachment($file);
+            if ($stored) {
+                FinancialAttachment::create($stored + ['transaction_id' => $transactionId]);
+            }
+        }
+    }
+
+    private function renderAccountsWithErrors(array $errors, array $values): void
+    {
+        $accounts = FinancialAccount::all();
+        foreach ($accounts as &$account) {
+            $account['balance'] = FinancialAccount::currentBalance((int) $account['id']);
+        }
+        unset($account);
+
+        View::render('painel/finance/accounts', [
+            'user' => Auth::user(),
+            'accounts' => $accounts,
+            'transactions' => FinancialTransaction::all(),
+            'categoryGroups' => FinancialCategory::grouped(),
+            'clients' => Client::all(),
+            'errors' => $errors,
+            'values' => $values,
+        ]);
+    }
+
+    private function validateTransaction(array $input): array
+    {
+        $errors = [];
+
+        if (empty($input['account_id'])) {
+            $errors['account_id'] = 'Selecione a conta financeira.';
+        }
+        if (!is_numeric($input['amount'] ?? null) || (float) $input['amount'] <= 0) {
+            $errors['amount'] = 'Informe um valor válido.';
+        }
+        if (trim($input['description'] ?? '') === '') {
+            $errors['description'] = 'Informe o histórico do lançamento.';
+        }
+
+        return $errors;
+    }
+
+    private function validatePayable(array $input): array
+    {
+        $errors = [];
+
+        if (empty($input['client_id'])) {
+            $errors['client_id'] = 'Selecione um cliente/fornecedor.';
+        }
+        if (empty($input['account_id'])) {
+            $errors['account_id'] = 'Selecione a conta financeira.';
+        }
+        if (!is_numeric($input['amount'] ?? null) || (float) $input['amount'] <= 0) {
+            $errors['amount'] = 'Informe um valor válido.';
+        }
+        if (empty($input['due_date'])) {
+            $errors['due_date'] = 'Informe o vencimento.';
+        }
+
+        return $errors;
     }
 }

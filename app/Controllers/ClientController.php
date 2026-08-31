@@ -55,9 +55,13 @@ class ClientController
 
         $clientId = Client::create($_POST);
         $redirectTo = $_GET['redirect_to'] ?? null;
-        $target = $redirectTo === 'pedido-novo'
-            ? '/painel/pedidos?novo=1&cliente_id=' . $clientId
-            : '/painel/clientes?sucesso=1';
+
+        if ($redirectTo && str_starts_with($redirectTo, '/painel/')) {
+            $sep = str_contains($redirectTo, '?') ? '&' : '?';
+            $target = $redirectTo . $sep . 'novo=1&cliente_id=' . $clientId;
+        } else {
+            $target = '/painel/clientes?sucesso=1';
+        }
 
         if (Response::isAjax()) {
             Response::json(['ok' => true, 'id' => $clientId, 'redirect' => $target]);

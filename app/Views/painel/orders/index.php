@@ -72,24 +72,4 @@ $openModal = isset($_GET['novo']) || $errors;
     </div>
 </dialog>
 
-<dialog class="modal" id="modal-client-inline">
-    <div class="modal-header">
-        <h2>Novo cliente</h2>
-        <button type="button" class="modal-close" data-modal-close aria-label="Fechar">&times;</button>
-    </div>
-    <div class="modal-body">
-        <form action="/painel/clientes?redirect_to=pedido-novo" method="post" class="panel-form ajax-form">
-            <?= Csrf::field() ?>
-            <?php $formValues = []; $formErrors = []; ?>
-            <label for="ci-name">Nome / Razão social</label>
-            <input type="text" id="ci-name" name="name" required>
-            <p class="field-error" data-error-for="name"></p>
-            <label for="ci-whatsapp">WhatsApp</label>
-            <input type="text" id="ci-whatsapp" name="whatsapp">
-            <div class="modal-form-actions">
-                <button type="submit" class="btn btn-primary">Salvar cliente</button>
-                <button type="button" class="btn btn-outline" data-modal-close>Cancelar</button>
-            </div>
-        </form>
-    </div>
-</dialog>
+<?php $redirectTo = '/painel/pedidos'; include __DIR__ . '/../_client_quick_modal.php'; ?>

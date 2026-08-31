@@ -105,6 +105,9 @@ $router->post('/painel/financeiro/caixas-bancos/contas', [App\Controllers\Financ
 $router->post('/painel/financeiro/lancamentos', [App\Controllers\FinanceController::class, 'storeTransaction']);
 $router->get('/painel/financeiro/contas-a-pagar', [App\Controllers\FinanceController::class, 'payable']);
 $router->get('/painel/financeiro/contas-a-receber', [App\Controllers\FinanceController::class, 'receivable']);
+$router->post('/painel/financeiro/contas', [App\Controllers\FinanceController::class, 'storePayable']);
+$router->post('/painel/financeiro/contas/{id}/baixar', [App\Controllers\FinanceController::class, 'markPaid']);
+$router->get('/painel/financeiro/anexos/{id}', [App\Controllers\FinanceController::class, 'downloadAttachment']);
 $router->get('/painel/financeiro/comissoes', [App\Controllers\FinanceController::class, 'commissions']);
 
 $router->dispatch($_SERVER['REQUEST_METHOD'], $_SERVER['REQUEST_URI']);

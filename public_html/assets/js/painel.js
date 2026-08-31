@@ -123,20 +123,66 @@
             });
         });
 
+        // Area de anexos (arrastar e soltar)
+        document.querySelectorAll('[data-file-drop]').forEach(function (drop) {
+            var input = drop.querySelector('input[type=file]');
+            var list = drop.parentElement.querySelector('[data-file-list]');
+            var label = drop.querySelector('[data-file-drop-label]');
+
+            function renderList() {
+                list.innerHTML = '';
+                Array.from(input.files).forEach(function (file) {
+                    var li = document.createElement('li');
+                    li.textContent = file.name + ' (' + Math.round(file.size / 1024) + ' KB)';
+                    list.appendChild(li);
+                });
+                if (label) {
+                    label.textContent = input.files.length
+                        ? input.files.length + ' arquivo(s) selecionado(s) — clique para trocar'
+                        : 'Solte seus arquivos aqui ou clique para adicionar (PDF, JPG, PNG — até 5MB cada)';
+                }
+            }
+
+            input.addEventListener('change', renderList);
+
+            ['dragover', 'dragleave', 'drop'].forEach(function (evt) {
+                drop.addEventListener(evt, function (e) {
+                    e.preventDefault();
+                    drop.classList.toggle('is-dragover', evt === 'dragover');
+                });
+            });
+            drop.addEventListener('drop', function (e) {
+                if (e.dataTransfer.files.length) {
+                    input.files = e.dataTransfer.files;
+                    renderList();
+                }
+            });
+        });
+
         // Envio via AJAX (fica na mesma tela, sem navegar pra outra pagina)
         document.querySelectorAll('form.ajax-form').forEach(function (form) {
             form.addEventListener('submit', function (e) {
                 e.preventDefault();
 
-                var submitBtn = form.querySelector('button[type=submit]');
-                if (submitBtn) submitBtn.disabled = true;
+                var submitBtn = e.submitter || form.querySelector('button[type=submit]');
+                form.querySelectorAll('button[type=submit]').forEach(function (b) { b.disabled = true; });
 
                 form.querySelectorAll('.field-error').forEach(function (el) { el.textContent = ''; });
                 form.querySelectorAll('.has-error').forEach(function (el) { el.classList.remove('has-error'); });
 
+                var formData;
+                try {
+                    formData = new FormData(form, e.submitter);
+                } catch (err) {
+                    formData = new FormData(form);
+                    if (e.submitter && e.submitter.name) {
+                        formData.append(e.submitter.name, e.submitter.value);
+                    }
+                }
+
                 fetch(form.getAttribute('action'), {
                     method: 'POST',
-                    body: new FormData(form),
+                    body: formData,
                     headers: { 'X-Requested-With': 'XMLHttpRequest' }
                 })
                     .then(function (r) { return r.json(); })
@@ -151,11 +197,11 @@
                             var input = form.querySelector('[name="' + field + '"]');
                             if (input) input.classList.add('has-error');
                         });
-                        if (submitBtn) submitBtn.disabled = false;
+                        form.querySelectorAll('button[type=submit]').forEach(function (b) { b.disabled = false; });
                     })
                     .catch(function () {
                         alert('Erro ao salvar. Verifique sua conexão e tente novamente.');
-                        if (submitBtn) submitBtn.disabled = false;
+                        form.querySelectorAll('button[type=submit]').forEach(function (b) { b.disabled = false; });
                     });
             });
         });
