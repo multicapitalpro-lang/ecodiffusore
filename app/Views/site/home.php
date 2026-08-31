@@ -10,7 +10,7 @@ $erro = isset($_GET['erro']);
         <div class="hero-text">
             <span class="badge">Produto Patenteado · Registro INPI</span>
             <h1>Economize Diesel e <span>Eleve a Performance</span></h1>
-            <p class="hero-sub">O sistema Ecodiffusore potencializa a combustão, melhora o rendimento e reduz desperdícios. Mais força, mais economia, mais resultado para o seu caminhão.</p>
+            <p class="hero-sub">O sistema Ecodiffusore potencializa a combustão, melhora o rendimento e reduz desperdícios. Mais força, mais economia, mais resultado — para caminhões, máquinas agrícolas e geradores a diesel.</p>
             <div class="hero-ctas">
                 <a href="#contato" class="btn btn-primary">Quero Economizar Agora</a>
                 <a href="https://wa.me/5541988962839" target="_blank" rel="noopener" class="btn btn-outline">Falar no WhatsApp</a>
@@ -27,6 +27,35 @@ $erro = isset($_GET['erro']);
                 Seu navegador não suporta vídeo HTML5.
             </video>
             <p class="hero-media-note">Vídeo de apresentação em breve — envie o arquivo final para publicarmos aqui.</p>
+        </div>
+    </div>
+</section>
+
+<section class="publico">
+    <div class="site-container">
+        <h2>Para quem é o Ecodiffusore</h2>
+        <p class="section-sub">Um único sistema, compatível com praticamente qualquer motor a diesel — não importa o setor.</p>
+        <div class="grid-4">
+            <div class="publico-item">
+                <span class="beneficio-icon">🚛</span>
+                <h3>Caminhoneiros autônomos</h3>
+                <p>Mais economia no bolso de quem vive na estrada.</p>
+            </div>
+            <div class="publico-item">
+                <span class="beneficio-icon">📦</span>
+                <h3>Transportadoras e frotas</h3>
+                <p>Redução de custo multiplicada por cada veículo da frota.</p>
+            </div>
+            <div class="publico-item">
+                <span class="beneficio-icon">🚜</span>
+                <h3>Agronegócio</h3>
+                <p>Tratores, colheitadeiras e máquinas agrícolas a diesel.</p>
+            </div>
+            <div class="publico-item">
+                <span class="beneficio-icon">⚡</span>
+                <h3>Geração de energia</h3>
+                <p>Geradores a diesel de obras, sítios e indústrias.</p>
+            </div>
         </div>
     </div>
 </section>
@@ -68,6 +97,31 @@ $erro = isset($_GET['erro']);
                 <span class="beneficio-icon">🔧</span>
                 <h3>Instalação Simples</h3>
                 <p>Rápida e prática, compatível com a grande maioria dos caminhões a diesel.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="tecnologia">
+    <div class="site-container">
+        <span class="badge">Tecnologia Patenteada</span>
+        <h2>Como funciona, de fato</h2>
+        <p class="section-sub">Sem promessa vazia: o Ecodiffusore é um sistema mecânico com princípio de funcionamento claro e patente registrada no INPI.</p>
+        <div class="grid-2 tecnologia-grid">
+            <div class="tecnologia-card">
+                <h3>Onde e como é instalado</h3>
+                <p>O Ecodiffusore é acoplado entre o corpo de admissão (TBI) e o filtro de ar do motor. Suas lâminas helicoidais magnetizadas potencializam a sucção de ar para dentro do motor, melhorando a mistura ar/combustível antes da queima na câmara de combustão.</p>
+                <p>O resultado é uma combustão mais completa: menos diesel desperdiçado sem queimar, mais torque disponível e menor liberação de fumaça e poluentes no escapamento.</p>
+            </div>
+            <div class="tecnologia-card">
+                <h3>Validação e fabricação</h3>
+                <ul class="check-list">
+                    <li>Produto e marca com registro de patente no INPI (Instituto Nacional da Propriedade Industrial)</li>
+                    <li>Fabricado no Brasil, por indústria especializada em tecnologia para motores a diesel desde 2002</li>
+                    <li>Compatível com motores a diesel de caminhões, máquinas agrícolas e geradores</li>
+                    <li>Sem eletrônica, sem manutenção — peça mecânica de instalação única</li>
+                </ul>
+                <p class="tecnologia-nota">Laudos técnicos e documentação de validação completa estão disponíveis mediante solicitação. Fale com um licenciado para receber o material técnico.</p>
             </div>
         </div>
     </div>
@@ -204,7 +258,7 @@ $erro = isset($_GET['erro']);
         <div class="faq-list">
             <details>
                 <summary>O Ecodiffusore funciona em qualquer caminhão?</summary>
-                <p>Sim. É compatível com a grande maioria dos caminhões movidos a diesel (Scania, Volvo, Iveco, Mercedes, DAF e outras marcas). Nossa equipe confirma a compatibilidade antes do envio.</p>
+                <p>Sim. É compatível com a grande maioria dos caminhões movidos a diesel (Scania, Volvo, Iveco, Mercedes, DAF e outras marcas). Também atende máquinas agrícolas (tratores, colheitadeiras) e geradores a diesel. Nossa equipe confirma a compatibilidade antes do envio.</p>
             </details>
             <details>
                 <summary>A instalação é difícil? Precisa de mecânico?</summary>

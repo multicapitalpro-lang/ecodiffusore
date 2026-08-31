@@ -7,7 +7,7 @@ use App\Core\View;
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Ecodiffusore Brasil — Economize Diesel e Eleve a Performance</title>
-    <meta name="description" content="Sistema patenteado que reduz o consumo de diesel em até 20% e aumenta a performance de caminhões. Economia real, payback rápido, garantia de 30 dias.">
+    <meta name="description" content="Sistema patenteado (INPI) que reduz o consumo de diesel e aumenta a performance de caminhões, máquinas agrícolas e geradores. Economia real, payback rápido, garantia de 30 dias.">
     <link rel="icon" href="<?= View::asset('/assets/img/favicon.svg') ?>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
