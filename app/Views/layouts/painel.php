@@ -31,8 +31,9 @@ $icon = function (string $name) use ($icons) {
 
 $managerRoles = ['admin', 'gerente', 'supervisor'];
 $staffRoles = ['admin', 'gerente', 'supervisor', 'licenciado'];
-$vendasOpen = $anyActive(['/painel/leads', '/painel/pedidos', '/painel/clientes', '/painel/produtos']);
+$vendasOpen = $anyActive(['/painel/leads', '/painel/pedidos', '/painel/orcamentos', '/painel/clientes', '/painel/produtos']);
 $financeiroOpen = $anyActive(['/painel/financeiro']);
+$desempenhoOpen = $anyActive(['/painel/desempenho', '/painel/metas']);
 ?><!doctype html>
 <html lang="pt-BR">
 <head>
@@ -57,6 +58,7 @@ $financeiroOpen = $anyActive(['/painel/financeiro']);
                     <div class="nav-subitems">
                         <a href="/painel/leads" class="<?= $isActive('/painel/leads') ? 'is-active' : '' ?>">Leads</a>
                         <a href="/painel/pedidos" class="<?= $isActive('/painel/pedidos') ? 'is-active' : '' ?>">Pedidos</a>
+                        <a href="/painel/orcamentos" class="<?= $isActive('/painel/orcamentos') ? 'is-active' : '' ?>">Orçamentos</a>
                         <a href="/painel/clientes" class="<?= $isActive('/painel/clientes') ? 'is-active' : '' ?>">Clientes</a>
                         <?php if ($role === 'admin'): ?>
                             <a href="/painel/produtos" class="<?= $isActive('/painel/produtos') ? 'is-active' : '' ?>">Produtos</a>
@@ -66,7 +68,13 @@ $financeiroOpen = $anyActive(['/painel/financeiro']);
             <?php endif; ?>
 
             <?php if (in_array($role, $managerRoles, true)): ?>
-                <a href="/painel/desempenho/vendedores" class="<?= $isActive('/painel/desempenho') ? 'is-active' : '' ?>"><?= $icon('chart') ?> Desempenho</a>
+                <details class="nav-group" <?= $desempenhoOpen ? 'open' : '' ?>>
+                    <summary><?= $icon('chart') ?> Desempenho</summary>
+                    <div class="nav-subitems">
+                        <a href="/painel/desempenho/vendedores" class="<?= $isActive('/painel/desempenho') ? 'is-active' : '' ?>">Vendedores</a>
+                        <a href="/painel/metas" class="<?= $isActive('/painel/metas') ? 'is-active' : '' ?>">Metas</a>
+                    </div>
+                </details>
             <?php endif; ?>
 
             <?php if (in_array($role, $staffRoles, true)): ?>

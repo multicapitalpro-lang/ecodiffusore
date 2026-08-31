@@ -35,9 +35,28 @@ $hasMetrics = isset($metrics);
         </div>
     </div>
 
+    <?php if (!empty($goals)): ?>
+        <div class="page-header">
+            <h3 class="section-title" style="margin:28px 0 0;">Metas em andamento</h3>
+            <?php if (in_array($role, ['admin', 'gerente', 'supervisor'], true)): ?>
+                <a href="/painel/metas" class="link-small">Ver todas</a>
+            <?php endif; ?>
+        </div>
+        <div class="cards-grid">
+            <?php foreach ($goals as $g): ?>
+                <div class="dash-card goal-card">
+                    <span><?= View::e($g['name']) ?></span>
+                    <div class="progress-bar"><div class="progress-fill" style="width:<?= $g['progress']['pct'] ?>%"></div></div>
+                    <strong><?= $g['progress']['pct'] ?>%</strong>
+                    <span class="hint-inline">R$ <?= number_format($g['progress']['achieved'], 2, ',', '.') ?> de R$ <?= number_format($g['progress']['target'], 2, ',', '.') ?></span>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
+
     <h3 class="section-title">Valor total de pedidos por dia</h3>
     <div class="chart-box">
-        <?= $chartSvg ?>
+        <div class="chart-svg-wrap"><?= $chartSvg ?></div>
         <p class="chart-legend"><span class="dot dot-current"></span> Período atual &nbsp; <span class="dot dot-previous"></span> Período anterior</p>
     </div>
 

@@ -23,7 +23,7 @@ $openModal = isset($_GET['novo']) || $errors;
         <tbody>
             <?php foreach ($clients as $c): ?>
                 <tr>
-                    <td><?= View::e($c['name']) ?></td>
+                    <td><a href="/painel/clientes/<?= (int) $c['id'] ?>"><?= View::e($c['name']) ?></a></td>
                     <td><?= View::e($c['document'] ?: '—') ?></td>
                     <td><?= View::e(trim(($c['city'] ?: '') . ($c['state'] ? '/' . $c['state'] : '')) ?: '—') ?></td>
                     <td><?= View::e($c['whatsapp'] ?: '—') ?></td>

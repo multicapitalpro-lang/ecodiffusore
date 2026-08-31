@@ -7,6 +7,7 @@ use App\Core\Chart;
 use App\Core\DateRange;
 use App\Core\Router;
 use App\Core\View;
+use App\Models\Goal;
 use App\Models\Lead;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -58,6 +59,10 @@ class DashboardController
                 $prevFrom
             );
             $data['topProducts'] = OrderItem::topProducts($from, $to, $sellerId);
+            $data['goals'] = array_map(
+                fn ($g) => $g + ['progress' => Goal::progress($g)],
+                Goal::activeFor($role === 'licenciado' ? (int) $user['id'] : null)
+            );
         }
 
         if ($role === 'admin') {

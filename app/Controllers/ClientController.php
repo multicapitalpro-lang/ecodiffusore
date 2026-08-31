@@ -8,6 +8,9 @@ use App\Core\Response;
 use App\Core\Router;
 use App\Core\View;
 use App\Models\Client;
+use App\Models\ClientNote;
+use App\Models\FinancialTransaction;
+use App\Models\Order;
 
 class ClientController
 {
@@ -68,6 +71,39 @@ class ClientController
         }
 
         Router::redirect($target);
+    }
+
+    public function show(string $id): void
+    {
+        Auth::requireRole(['admin', 'gerente', 'supervisor', 'licenciado']);
+        $id = (int) $id;
+
+        $client = Client::find($id);
+        if (!$client) {
+            Router::redirect('/painel/clientes');
+        }
+
+        View::render('painel/clients/show', [
+            'user' => Auth::user(),
+            'client' => $client,
+            'orders' => Order::all(['client_id' => $id]),
+            'transactions' => FinancialTransaction::all(['client_id' => $id]),
+            'notes' => ClientNote::forClient($id),
+        ]);
+    }
+
+    public function storeNote(string $id): void
+    {
+        Auth::requireRole(['admin', 'gerente', 'supervisor', 'licenciado']);
+        $id = (int) $id;
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null) || trim($_POST['note'] ?? '') === '') {
+            Router::redirect("/painel/clientes/{$id}");
+        }
+
+        ClientNote::create($id, (int) Auth::user()['id'], trim($_POST['note']));
+
+        Router::redirect("/painel/clientes/{$id}#notas");
     }
 
     public function edit(string $id): void

@@ -6,6 +6,7 @@ use App\Core\Auth;
 use App\Core\Csrf;
 use App\Core\DateRange;
 use App\Core\FinancialReports;
+use App\Core\Pdf;
 use App\Core\Router;
 use App\Core\View;
 use App\Models\ReportSchedule;
@@ -39,6 +40,22 @@ class ReportController
             'to' => $to,
             'report' => FinancialReports::generate($type, $from, $to),
         ]);
+    }
+
+    public function pdf(string $type): void
+    {
+        Auth::requireRole(self::ALLOWED_ROLES);
+
+        [$from, $to] = DateRange::fromRequest();
+        $title = FinancialReports::title($type);
+        $report = FinancialReports::generate($type, $from, $to);
+
+        ob_start();
+        View::render('painel/reports/pdf', compact('title', 'from', 'to', 'report'), null);
+        $html = ob_get_clean();
+
+        $filename = 'relatorio-' . $type . '-' . date('Y-m-d') . '.pdf';
+        Pdf::download($html, $filename);
     }
 
     public function schedules(): void

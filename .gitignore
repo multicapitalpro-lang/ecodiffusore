@@ -2,5 +2,6 @@
 /storage/logs/*.log
 /storage/uploads/
 /scratch/
+/vendor/
 .DS_Store
 Thumbs.db

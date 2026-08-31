@@ -79,6 +79,8 @@ $router->get('/painel/clientes/novo', [App\Controllers\ClientController::class, 
 $router->post('/painel/clientes', [App\Controllers\ClientController::class, 'store']);
 $router->get('/painel/clientes/{id}/editar', [App\Controllers\ClientController::class, 'edit']);
 $router->post('/painel/clientes/{id}', [App\Controllers\ClientController::class, 'update']);
+$router->get('/painel/clientes/{id}', [App\Controllers\ClientController::class, 'show']);
+$router->post('/painel/clientes/{id}/notas', [App\Controllers\ClientController::class, 'storeNote']);
 
 // Produtos
 $router->get('/painel/produtos', [App\Controllers\ProductController::class, 'index']);
@@ -96,8 +98,23 @@ $router->get('/painel/pedidos/{id}/editar', [App\Controllers\OrderController::cl
 $router->post('/painel/pedidos/{id}', [App\Controllers\OrderController::class, 'update']);
 $router->post('/painel/pedidos/{id}/status', [App\Controllers\OrderController::class, 'markStatus']);
 
+// Orcamentos
+$router->get('/painel/orcamentos', [App\Controllers\QuoteController::class, 'index']);
+$router->get('/painel/orcamentos/novo', [App\Controllers\QuoteController::class, 'create']);
+$router->post('/painel/orcamentos', [App\Controllers\QuoteController::class, 'store']);
+$router->get('/painel/orcamentos/{id}', [App\Controllers\QuoteController::class, 'show']);
+$router->get('/painel/orcamentos/{id}/editar', [App\Controllers\QuoteController::class, 'edit']);
+$router->post('/painel/orcamentos/{id}', [App\Controllers\QuoteController::class, 'update']);
+$router->post('/painel/orcamentos/{id}/status', [App\Controllers\QuoteController::class, 'markStatus']);
+$router->post('/painel/orcamentos/{id}/converter', [App\Controllers\QuoteController::class, 'convert']);
+
 // Desempenho
 $router->get('/painel/desempenho/vendedores', [App\Controllers\PerformanceController::class, 'sellers']);
+
+// Metas
+$router->get('/painel/metas', [App\Controllers\GoalController::class, 'index']);
+$router->post('/painel/metas', [App\Controllers\GoalController::class, 'store']);
+$router->post('/painel/metas/{id}/excluir', [App\Controllers\GoalController::class, 'delete']);
 
 // Financeiro
 $router->get('/painel/financeiro/caixas-bancos', [App\Controllers\FinanceController::class, 'accounts']);
@@ -124,6 +141,7 @@ $router->get('/painel/financeiro/relatorios', [App\Controllers\ReportController:
 $router->get('/painel/financeiro/relatorios/agendamentos', [App\Controllers\ReportController::class, 'schedules']);
 $router->post('/painel/financeiro/relatorios/agendamentos', [App\Controllers\ReportController::class, 'storeSchedule']);
 $router->post('/painel/financeiro/relatorios/agendamentos/{id}/excluir', [App\Controllers\ReportController::class, 'deleteSchedule']);
+$router->get('/painel/financeiro/relatorios/{type}/pdf', [App\Controllers\ReportController::class, 'pdf']);
 $router->get('/painel/financeiro/relatorios/{type}', [App\Controllers\ReportController::class, 'show']);
 
 $router->dispatch($_SERVER['REQUEST_METHOD'], $_SERVER['REQUEST_URI']);

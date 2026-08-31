@@ -13,11 +13,11 @@ class Chart
     public static function dailyLine(array $current, array $previous, string $from, string $to, string $prevFrom): string
     {
         $width = 680;
-        $height = 260;
+        $height = 190;
         $padLeft = 58;
         $padRight = 16;
-        $padTop = 16;
-        $padBottom = 32;
+        $padTop = 14;
+        $padBottom = 28;
         $usableWidth = $width - $padLeft - $padRight;
         $usableHeight = $height - $padTop - $padBottom;
 
@@ -39,8 +39,8 @@ class Chart
             $previousValues[] = $previous[$d] ?? 0.0;
         }
 
-        $max = max(array_merge($currentValues, $previousValues, [1]));
-        $niceMax = self::niceCeil($max);
+        $max = max(array_merge($currentValues, $previousValues, [0]));
+        $niceMax = $max > 0 ? self::niceCeil($max) : 100.0;
 
         $xFor = fn (int $i) => $padLeft + ($count > 1 ? ($i / ($count - 1)) * $usableWidth : $usableWidth / 2);
         $yFor = fn (float $v) => $padTop + $usableHeight - ($niceMax > 0 ? ($v / $niceMax) * $usableHeight : 0);

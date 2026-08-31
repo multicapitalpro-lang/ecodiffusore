@@ -32,6 +32,10 @@ class Order
             $sql .= ' AND o.seller_id = :seller_id';
             $params['seller_id'] = $filters['seller_id'];
         }
+        if (!empty($filters['client_id'])) {
+            $sql .= ' AND o.client_id = :client_id';
+            $params['client_id'] = $filters['client_id'];
+        }
 
         $sql .= ' ORDER BY o.order_date DESC, o.id DESC';
 

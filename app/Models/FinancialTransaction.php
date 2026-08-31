@@ -28,6 +28,10 @@ class FinancialTransaction
             $sql .= ' AND ft.status = :status';
             $params['status'] = $filters['status'];
         }
+        if (!empty($filters['client_id'])) {
+            $sql .= ' AND ft.client_id = :client_id';
+            $params['client_id'] = $filters['client_id'];
+        }
 
         $sql .= ' ORDER BY ft.due_date DESC, ft.id DESC';
 

@@ -1,0 +1,12 @@
+{
+    "name": "ecodiffusore/painel",
+    "description": "Painel administrativo Ecodiffusore Brasil",
+    "type": "project",
+    "require": {
+        "php": ">=8.1",
+        "dompdf/dompdf": "^3.1"
+    },
+    "config": {
+        "optimize-autoloader": true
+    }
+}

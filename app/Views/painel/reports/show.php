@@ -1,9 +1,13 @@
 <?php
 use App\Core\View;
+$qs = http_build_query(['from' => $from, 'to' => $to]);
 ?>
 <div class="page-header">
     <h1><?= View::e($title) ?></h1>
-    <a href="/painel/financeiro/relatorios" class="btn btn-outline">← Todos os relatórios</a>
+    <div class="page-header-actions">
+        <a href="/painel/financeiro/relatorios/<?= View::e($type) ?>/pdf?<?= $qs ?>" class="btn btn-primary" target="_blank">Baixar PDF</a>
+        <a href="/painel/financeiro/relatorios" class="btn btn-outline">← Todos os relatórios</a>
+    </div>
 </div>
 
 <form method="get" class="filter-bar">
@@ -12,25 +16,4 @@ use App\Core\View;
     <button type="submit" class="btn btn-outline">Visualizar</button>
 </form>
 
-<div class="table-scroll">
-    <table class="data-table">
-        <thead>
-            <tr><?php foreach ($report['columns'] as $col): ?><th><?= View::e($col) ?></th><?php endforeach; ?></tr>
-        </thead>
-        <tbody>
-            <?php foreach ($report['rows'] as $row): ?>
-                <tr><?php foreach ($row as $cell): ?><td><?= View::e((string) $cell) ?></td><?php endforeach; ?></tr>
-            <?php endforeach; ?>
-            <?php if (!$report['rows']): ?>
-                <tr><td colspan="<?= count($report['columns']) ?>">Nenhum dado no período selecionado.</td></tr>
-            <?php endif; ?>
-        </tbody>
-        <?php if (!empty($report['totals'])): ?>
-            <tfoot>
-                <?php foreach ($report['totals'] as $label => $value): ?>
-                    <tr><td colspan="<?= count($report['columns']) - 1 ?>" style="text-align:right"><strong><?= View::e($label) ?></strong></td><td><strong><?= View::e($value) ?></strong></td></tr>
-                <?php endforeach; ?>
-            </tfoot>
-        <?php endif; ?>
-    </table>
-</div>
+<?php include __DIR__ . '/_report_body.php'; ?>

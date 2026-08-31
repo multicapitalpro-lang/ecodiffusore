@@ -2,8 +2,6 @@
 
 namespace App\Core;
 
-use App\Core\Database;
-
 class FinancialReports
 {
     public static function catalog(): array
@@ -49,118 +47,240 @@ class FinancialReports
             'pagamentos' => self::movimentos($from, $to, 'saida'),
             'recebimentos' => self::movimentos($from, $to, 'entrada'),
             'controle_caixa' => self::controleCaixa($from, $to),
-            default => ['columns' => [], 'rows' => [], 'totals' => []],
+            default => ['kind' => 'simple', 'columns' => [], 'rows' => [], 'totals' => []],
         };
     }
 
+    // ---- Balancete: linhas por categoria (Despesas/Receitas) em colunas semanais + Resultado ----
     private static function balancete(string $from, string $to): array
     {
-        $stmt = Database::connection()->prepare(
-            "SELECT type, COALESCE(SUM(amount), 0) AS total FROM financial_transactions
-             WHERE status IN ('pago','conciliado') AND paid_date BETWEEN :from AND :to
-             GROUP BY type"
-        );
-        $stmt->execute(['from' => $from, 'to' => $to]);
-        $sums = ['entrada' => 0.0, 'saida' => 0.0];
-        foreach ($stmt->fetchAll() as $row) {
-            $sums[$row['type']] = (float) $row['total'];
-        }
+        $buckets = self::weeklyBuckets($from, $to);
+        $saldoInicial = self::balanceBefore($from);
 
-        return [
-            'columns' => ['Indicador', 'Valor'],
-            'rows' => [
-                ['Entradas', self::money($sums['entrada'])],
-                ['Saídas', self::money($sums['saida'])],
-                ['Saldo do período', self::money($sums['entrada'] - $sums['saida'])],
-            ],
-            'totals' => [],
-        ];
-    }
+        $despesasPorCategoria = [];
+        $receitasPorCategoria = [];
+        $totaisEntrada = array_fill(0, count($buckets), 0.0);
+        $totaisSaida = array_fill(0, count($buckets), 0.0);
 
-    private static function dre(string $from, string $to): array
-    {
-        $stmt = Database::connection()->prepare(
-            "SELECT fc.name AS categoria, COALESCE(fc.parent_id, fc.id) AS grupo_id,
-                    COALESCE(p.name, fc.name) AS grupo, ft.type,
-                    COALESCE(SUM(ft.amount), 0) AS total
-             FROM financial_transactions ft
-             LEFT JOIN financial_categories fc ON fc.id = ft.category_id
-             LEFT JOIN financial_categories p ON p.id = fc.parent_id
-             WHERE ft.status IN ('pago','conciliado') AND ft.paid_date BETWEEN :from AND :to
-             GROUP BY grupo, ft.type"
-        );
-        $stmt->execute(['from' => $from, 'to' => $to]);
-
-        $receitas = 0.0;
-        $custos = 0.0;
-        $despesas = 0.0;
-        $rows = [];
-        foreach ($stmt->fetchAll() as $row) {
-            $label = $row['grupo'] ?: 'Sem categoria';
-            $valor = (float) $row['total'];
-            if ($row['type'] === 'entrada') {
-                $receitas += $valor;
-                $rows[] = ['Receita — ' . $label, self::money($valor)];
-            } elseif (stripos($label, 'custo') !== false) {
-                $custos += $valor;
-                $rows[] = ['Custo — ' . $label, self::money($valor)];
-            } else {
-                $despesas += $valor;
-                $rows[] = ['Despesa — ' . $label, self::money($valor)];
+        foreach ($buckets as $i => $bucket) {
+            $rows = self::sumByCategory($bucket['from'], $bucket['to']);
+            foreach ($rows as $r) {
+                $label = $r['categoria'];
+                $target = $r['type'] === 'entrada' ? 'receitasPorCategoria' : 'despesasPorCategoria';
+                if (!isset(${$target}[$label])) {
+                    ${$target}[$label] = array_fill(0, count($buckets), 0.0);
+                }
+                ${$target}[$label][$i] = (float) $r['total'];
+                if ($r['type'] === 'entrada') {
+                    $totaisEntrada[$i] += (float) $r['total'];
+                } else {
+                    $totaisSaida[$i] += (float) $r['total'];
+                }
             }
         }
 
-        $resultado = $receitas - $custos - $despesas;
-        $rows[] = ['— Total Receitas', self::money($receitas)];
-        $rows[] = ['— Total Custos', self::money($custos)];
-        $rows[] = ['— Total Despesas', self::money($despesas)];
-        $rows[] = ['Resultado do período', self::money($resultado)];
+        $rows = [];
+        $rows[] = self::matrixRow('Saldo inicial', array_fill(0, count($buckets), $saldoInicial), true);
 
-        return ['columns' => ['Linha', 'Valor'], 'rows' => $rows, 'totals' => []];
+        if ($despesasPorCategoria) {
+            $rows[] = self::matrixRow('Despesas', array_fill(0, count($buckets), null), true, true);
+            foreach ($despesasPorCategoria as $label => $values) {
+                $rows[] = self::matrixRow($label, $values);
+            }
+        }
+        if ($receitasPorCategoria) {
+            $rows[] = self::matrixRow('Receitas', array_fill(0, count($buckets), null), true, true);
+            foreach ($receitasPorCategoria as $label => $values) {
+                $rows[] = self::matrixRow($label, $values);
+            }
+        }
+
+        $resultadoPorBucket = [];
+        $saldoAcumulado = $saldoInicial;
+        foreach ($buckets as $i => $b) {
+            $resultadoPorBucket[$i] = $totaisEntrada[$i] - $totaisSaida[$i];
+            $saldoAcumulado += $resultadoPorBucket[$i];
+        }
+
+        $rows[] = self::matrixRow('Resultado', array_fill(0, count($buckets), null), true, true);
+        $rows[] = self::matrixRow('Total de receitas', $totaisEntrada);
+        $rows[] = self::matrixRow('Total de despesas', $totaisSaida);
+        $rows[] = self::matrixRow('Receitas - Despesas', $resultadoPorBucket);
+
+        $saldoFinalPorBucket = [];
+        $running = $saldoInicial;
+        foreach ($buckets as $i => $b) {
+            $running += $resultadoPorBucket[$i];
+            $saldoFinalPorBucket[$i] = $running;
+        }
+        $rows[] = self::matrixRow('Saldo final', $saldoFinalPorBucket, true);
+
+        return [
+            'kind' => 'matrix',
+            'periods' => array_column($buckets, 'label'),
+            'rows' => $rows,
+        ];
+    }
+
+    // ---- DRE: estrutura contabil padrao, colunas = meses do ano de $from ----
+    private static function dre(string $from, string $to): array
+    {
+        $year = (int) date('Y', strtotime($from));
+        $months = self::monthlyBucketsForYear($year);
+
+        $byMonthCategory = [];
+        foreach ($months as $i => $m) {
+            $byMonthCategory[$i] = self::sumByCategory($m['from'], $m['to']);
+        }
+
+        $lines = [
+            'receita_bruta' => array_fill(0, 12, 0.0),
+            'deducoes' => array_fill(0, 12, 0.0),
+            'custos' => array_fill(0, 12, 0.0),
+            'despesas_operacionais' => array_fill(0, 12, 0.0),
+            'receita_financeira' => array_fill(0, 12, 0.0),
+            'despesa_financeira' => array_fill(0, 12, 0.0),
+            'outras_receitas' => array_fill(0, 12, 0.0),
+            'outras_despesas' => array_fill(0, 12, 0.0),
+            'ir_csll' => array_fill(0, 12, 0.0),
+        ];
+
+        $deducaoCategorias = ['Devoluções de vendas', 'Descontos incondicionais'];
+        $financeiraCategorias = ['Taxas bancárias', 'Taxas de cartão / gateway'];
+
+        foreach ($byMonthCategory as $i => $rows) {
+            foreach ($rows as $r) {
+                $cat = $r['categoria'];
+                $grupo = $r['grupo'];
+                $valor = (float) $r['total'];
+
+                if ($r['type'] === 'entrada') {
+                    if ($grupo === 'Vendas' || $cat === 'Sem categoria') {
+                        $lines['receita_bruta'][$i] += $valor;
+                    } elseif ($grupo === 'Financeiro') {
+                        $lines['receita_financeira'][$i] += $valor;
+                    } elseif ($grupo === 'Outras Receitas') {
+                        $lines['outras_receitas'][$i] += $valor;
+                    } else {
+                        $lines['receita_bruta'][$i] += $valor;
+                    }
+                } else {
+                    if (in_array($cat, $deducaoCategorias, true)) {
+                        $lines['deducoes'][$i] += $valor;
+                    } elseif (in_array($cat, $financeiraCategorias, true)) {
+                        $lines['despesa_financeira'][$i] += $valor;
+                    } elseif ($grupo === 'Custos') {
+                        $lines['custos'][$i] += $valor;
+                    } elseif (in_array($grupo, ['Despesas Administrativas', 'Despesas com Pessoal', 'Despesas Comerciais'], true)) {
+                        $lines['despesas_operacionais'][$i] += $valor;
+                    } elseif ($grupo === 'Impostos e Taxas') {
+                        $lines['ir_csll'][$i] += $valor;
+                    } elseif ($grupo === 'Outras Despesas') {
+                        $lines['outras_despesas'][$i] += $valor;
+                    } else {
+                        $lines['despesas_operacionais'][$i] += $valor;
+                    }
+                }
+            }
+        }
+
+        $receitaLiquida = self::subtractSeries($lines['receita_bruta'], $lines['deducoes']);
+        $resultadoBruto = self::subtractSeries($receitaLiquida, $lines['custos']);
+        $resultadoAntesFinanceiro = self::subtractSeries($resultadoBruto, $lines['despesas_operacionais']);
+        $comFinanceira = self::addSeries($resultadoAntesFinanceiro, $lines['receita_financeira']);
+        $comFinanceira = self::subtractSeries($comFinanceira, $lines['despesa_financeira']);
+        $comOutras = self::addSeries($comFinanceira, $lines['outras_receitas']);
+        $resultadoAntesIr = self::subtractSeries($comOutras, $lines['outras_despesas']);
+        $resultadoLiquido = self::subtractSeries($resultadoAntesIr, $lines['ir_csll']);
+
+        $rows = [
+            self::matrixRow('(+) Receita Operacional Bruta', $lines['receita_bruta']),
+            self::matrixRow('(-) Deduções da Receita Bruta', $lines['deducoes']),
+            self::matrixRow('(=) Receita Operacional Líquida', $receitaLiquida, true),
+            self::matrixRow('(-) Custos das Mercadorias', $lines['custos']),
+            self::matrixRow('(=) Resultado Operacional Bruto', $resultadoBruto, true),
+            self::matrixRow('(-) Despesas Operacionais', $lines['despesas_operacionais']),
+            self::matrixRow('(+) Receita Financeira', $lines['receita_financeira']),
+            self::matrixRow('(-) Despesa Financeira', $lines['despesa_financeira']),
+            self::matrixRow('(+) Outras Receitas', $lines['outras_receitas']),
+            self::matrixRow('(-) Outras Despesas', $lines['outras_despesas']),
+            self::matrixRow('(=) Resultado antes do IR e CSLL', $resultadoAntesIr, true),
+            self::matrixRow('(-) IR e CSLL', $lines['ir_csll']),
+            self::matrixRow('(=) Resultado Líquido do Exercício', $resultadoLiquido, true),
+        ];
+
+        return [
+            'kind' => 'matrix',
+            'periods' => array_column($months, 'label'),
+            'rows' => $rows,
+            'yearLabel' => 'Ano ' . $year,
+        ];
     }
 
     private static function fluxoCaixa(string $from, string $to): array
     {
-        $stmt = Database::connection()->prepare(
-            "SELECT due_date, type, SUM(amount) AS total FROM financial_transactions
-             WHERE due_date BETWEEN :from AND :to GROUP BY due_date, type ORDER BY due_date"
-        );
-        $stmt->execute(['from' => $from, 'to' => $to]);
+        $buckets = self::weeklyBuckets($from, $to);
+        $saldoInicial = self::balanceBefore($from);
 
-        $byDate = [];
-        foreach ($stmt->fetchAll() as $row) {
-            $byDate[$row['due_date']][$row['type']] = (float) $row['total'];
+        $entradas = [];
+        $saidas = [];
+        foreach ($buckets as $i => $b) {
+            $stmt = Database::connection()->prepare(
+                "SELECT type, COALESCE(SUM(amount), 0) AS total FROM financial_transactions
+                 WHERE status IN ('pago','conciliado') AND paid_date BETWEEN :from AND :to GROUP BY type"
+            );
+            $stmt->execute(['from' => $b['from'], 'to' => $b['to']]);
+            $entradas[$i] = 0.0;
+            $saidas[$i] = 0.0;
+            foreach ($stmt->fetchAll() as $r) {
+                if ($r['type'] === 'entrada') {
+                    $entradas[$i] = (float) $r['total'];
+                } else {
+                    $saidas[$i] = (float) $r['total'];
+                }
+            }
         }
 
-        $saldo = 0.0;
-        $rows = [];
-        foreach ($byDate as $date => $values) {
-            $entrada = $values['entrada'] ?? 0.0;
-            $saida = $values['saida'] ?? 0.0;
-            $saldo += $entrada - $saida;
-            $rows[] = [date('d/m/Y', strtotime($date)), self::money($entrada), self::money($saida), self::money($saldo)];
+        $saldoAcumulado = [];
+        $running = $saldoInicial;
+        foreach ($buckets as $i => $b) {
+            $running += $entradas[$i] - $saidas[$i];
+            $saldoAcumulado[$i] = $running;
         }
 
-        return ['columns' => ['Data', 'Entradas', 'Saídas', 'Saldo acumulado'], 'rows' => $rows, 'totals' => []];
+        $rows = [
+            self::matrixRow('Saldo inicial', array_fill(0, count($buckets), $saldoInicial), true),
+            self::matrixRow('Entradas', $entradas),
+            self::matrixRow('Saídas', $saidas),
+            self::matrixRow('Saldo acumulado', $saldoAcumulado, true),
+        ];
+
+        return ['kind' => 'matrix', 'periods' => array_column($buckets, 'label'), 'rows' => $rows];
     }
 
     private static function porCategoria(string $from, string $to): array
     {
-        $stmt = Database::connection()->prepare(
-            "SELECT COALESCE(fc.name, 'Sem categoria') AS categoria, ft.type, COALESCE(SUM(ft.amount), 0) AS total
-             FROM financial_transactions ft
-             LEFT JOIN financial_categories fc ON fc.id = ft.category_id
-             WHERE ft.status IN ('pago','conciliado') AND ft.paid_date BETWEEN :from AND :to
-             GROUP BY categoria, ft.type ORDER BY total DESC"
-        );
-        $stmt->execute(['from' => $from, 'to' => $to]);
+        $rows = self::sumByCategory($from, $to);
 
-        $rows = array_map(
-            fn ($r) => [$r['categoria'], $r['type'] === 'entrada' ? 'Entrada' : 'Saída', self::money((float) $r['total'])],
-            $stmt->fetchAll()
-        );
+        $entradas = array_values(array_filter($rows, fn ($r) => $r['type'] === 'entrada'));
+        $saidas = array_values(array_filter($rows, fn ($r) => $r['type'] === 'saida'));
 
-        return ['columns' => ['Categoria', 'Tipo', 'Valor'], 'rows' => $rows, 'totals' => []];
+        usort($entradas, fn ($a, $b) => $b['total'] <=> $a['total']);
+        usort($saidas, fn ($a, $b) => $b['total'] <=> $a['total']);
+
+        return [
+            'kind' => 'split',
+            'left' => [
+                'title' => 'Entradas',
+                'rows' => array_map(fn ($r) => [$r['categoria'], self::money((float) $r['total'])], $entradas),
+                'total' => self::money(array_sum(array_column($entradas, 'total'))),
+            ],
+            'right' => [
+                'title' => 'Saídas',
+                'rows' => array_map(fn ($r) => [$r['categoria'], self::money((float) $r['total'])], $saidas),
+                'total' => self::money(array_sum(array_column($saidas, 'total'))),
+            ],
+        ];
     }
 
     private static function porCliente(string $from, string $to): array
@@ -179,7 +299,7 @@ class FinancialReports
             $stmt->fetchAll()
         );
 
-        return ['columns' => ['Cliente/Fornecedor', 'Tipo', 'Valor'], 'rows' => $rows, 'totals' => []];
+        return ['kind' => 'simple', 'columns' => ['Cliente/Fornecedor', 'Tipo', 'Valor'], 'rows' => $rows, 'totals' => []];
     }
 
     private static function movimentos(string $from, string $to, string $type): array
@@ -205,6 +325,7 @@ class FinancialReports
         }
 
         return [
+            'kind' => 'simple',
             'columns' => ['Data', $type === 'saida' ? 'Fornecedor' : 'Cliente', 'Descrição', 'Valor'],
             'rows' => $rows,
             'totals' => ['Total' => self::money($total)],
@@ -221,7 +342,7 @@ class FinancialReports
         );
         $stmt->execute(['from' => $from, 'to' => $to]);
 
-        $saldo = 0.0;
+        $saldo = self::balanceBefore($from);
         $rows = [];
         foreach ($stmt->fetchAll() as $r) {
             $saldo += $r['type'] === 'entrada' ? (float) $r['amount'] : -(float) $r['amount'];
@@ -234,7 +355,93 @@ class FinancialReports
             ];
         }
 
-        return ['columns' => ['Data', 'Conta', 'Histórico', 'Valor', 'Saldo'], 'rows' => $rows, 'totals' => []];
+        return ['kind' => 'simple', 'columns' => ['Data', 'Conta', 'Histórico', 'Valor', 'Saldo'], 'rows' => $rows, 'totals' => []];
+    }
+
+    // ---- Helpers ----
+
+    private static function sumByCategory(string $from, string $to): array
+    {
+        $stmt = Database::connection()->prepare(
+            "SELECT COALESCE(fc.name, 'Sem categoria') AS categoria,
+                    COALESCE(p.name, fc.name, 'Sem categoria') AS grupo,
+                    ft.type, COALESCE(SUM(ft.amount), 0) AS total
+             FROM financial_transactions ft
+             LEFT JOIN financial_categories fc ON fc.id = ft.category_id
+             LEFT JOIN financial_categories p ON p.id = fc.parent_id
+             WHERE ft.status IN ('pago','conciliado') AND ft.paid_date BETWEEN :from AND :to
+             GROUP BY categoria, grupo, ft.type
+             HAVING total != 0"
+        );
+        $stmt->execute(['from' => $from, 'to' => $to]);
+        return $stmt->fetchAll();
+    }
+
+    private static function balanceBefore(string $date): float
+    {
+        $stmt = Database::connection()->prepare(
+            "SELECT COALESCE(SUM(fa.initial_balance), 0) FROM financial_accounts fa"
+        );
+        $stmt->execute();
+        $initial = (float) $stmt->fetchColumn();
+
+        $stmt = Database::connection()->prepare(
+            "SELECT COALESCE(SUM(CASE WHEN type = 'entrada' THEN amount ELSE -amount END), 0)
+             FROM financial_transactions WHERE status IN ('pago','conciliado') AND paid_date < :date"
+        );
+        $stmt->execute(['date' => $date]);
+
+        return $initial + (float) $stmt->fetchColumn();
+    }
+
+    private static function weeklyBuckets(string $from, string $to): array
+    {
+        $buckets = [];
+        $cursor = strtotime($from);
+        $end = strtotime($to);
+        if ($cursor > $end) {
+            return [['from' => $from, 'to' => $to, 'label' => date('d/m', $cursor)]];
+        }
+
+        while ($cursor <= $end) {
+            $bucketEndTs = min(strtotime('+6 days', $cursor), $end);
+            $buckets[] = [
+                'from' => date('Y-m-d', $cursor),
+                'to' => date('Y-m-d', $bucketEndTs),
+                'label' => date('d/m', $cursor) . ' a ' . date('d/m', $bucketEndTs),
+            ];
+            $cursor = strtotime('+7 days', $cursor);
+        }
+
+        return $buckets;
+    }
+
+    private static function monthlyBucketsForYear(int $year): array
+    {
+        $months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+        $buckets = [];
+        foreach ($months as $i => $label) {
+            $m = $i + 1;
+            $monthFrom = sprintf('%04d-%02d-01', $year, $m);
+            $buckets[] = ['from' => $monthFrom, 'to' => date('Y-m-t', strtotime($monthFrom)), 'label' => $label];
+        }
+        return $buckets;
+    }
+
+    private static function matrixRow(string $label, array $values, bool $bold = false, bool $isHeader = false): array
+    {
+        $total = $isHeader ? null : array_sum(array_map(fn ($v) => $v ?? 0, $values));
+        return ['label' => $label, 'values' => $values, 'total' => $total, 'bold' => $bold, 'header' => $isHeader];
+    }
+
+    private static function addSeries(array $a, array $b): array
+    {
+        return array_map(fn ($x, $y) => $x + $y, $a, $b);
+    }
+
+    private static function subtractSeries(array $a, array $b): array
+    {
+        return array_map(fn ($x, $y) => $x - $y, $a, $b);
     }
 
     private static function money(float $value): string
