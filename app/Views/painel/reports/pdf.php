@@ -16,7 +16,7 @@
     .report-letterhead-title { margin: 4px 0; font-size: 18px; }
     .report-letterhead-meta { display: flex; justify-content: space-between; color: #666; font-size: 10px; }
     table.data-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
-    table.data-table th, table.data-table td { border: 1px solid #ddd; padding: 5px 7px; text-align: left; }
+    table.data-table th, table.data-table td { border: 1px solid #ddd; padding: 5px 7px; text-align: left; white-space: nowrap; }
     table.data-table th { background: #f0f4f2; font-weight: bold; }
     table.data-table td:not(:first-child), table.data-table th:not(:first-child) { text-align: right; }
     tr.report-row-header td { background: #f7f7f7; font-weight: bold; }
