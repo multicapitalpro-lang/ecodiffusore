@@ -123,5 +123,6 @@ $desempenhoOpen = $anyActive(['/painel/desempenho', '/painel/metas']);
     </div>
 </div>
 <script src="<?= View::asset('/assets/js/painel.js') ?>"></script>
+<script src="<?= View::asset('/assets/js/password-toggle.js') ?>"></script>
 </body>
 </html>

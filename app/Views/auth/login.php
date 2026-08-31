@@ -14,7 +14,7 @@ $recuperada = isset($_GET['recuperada']);
 <body class="auth-body">
 <div class="auth-box">
     <img src="<?= View::asset('/assets/img/logo-mark.svg') ?>" alt="Ecodiffusore Brasil" class="auth-logo">
-    <h1>Área do Cliente / Licenciado</h1>
+    <h1>Entrar no Painel</h1>
     <?php if ($erro): ?>
         <p class="form-msg form-msg-erro">E-mail ou senha inválidos.</p>
     <?php endif; ?>
@@ -26,7 +26,10 @@ $recuperada = isset($_GET['recuperada']);
         <label for="email">E-mail</label>
         <input type="email" id="email" name="email" required autofocus>
         <label for="password">Senha</label>
-        <input type="password" id="password" name="password" required>
+        <div class="password-field">
+            <input type="password" id="password" name="password" required>
+            <?= View::passwordToggle('password') ?>
+        </div>
         <button type="submit" class="btn btn-primary">Entrar</button>
     </form>
     <p class="auth-links">
@@ -34,5 +37,6 @@ $recuperada = isset($_GET['recuperada']);
     </p>
     <a class="auth-back" href="/">&larr; Voltar para o site</a>
 </div>
+<script src="<?= View::asset('/assets/js/password-toggle.js') ?>"></script>
 </body>
 </html>

@@ -30,14 +30,21 @@ $old = $old ?? [];
         <?php if (!empty($errors['whatsapp'])): ?><p class="field-error"><?= View::e($errors['whatsapp']) ?></p><?php endif; ?>
 
         <label for="password">Senha</label>
-        <input type="password" id="password" name="password" minlength="8" required>
+        <div class="password-field">
+            <input type="password" id="password" name="password" minlength="8" required>
+            <?= View::passwordToggle('password') ?>
+        </div>
         <label for="password_confirm">Confirme a senha</label>
-        <input type="password" id="password_confirm" name="password_confirm" minlength="8" required>
+        <div class="password-field">
+            <input type="password" id="password_confirm" name="password_confirm" minlength="8" required>
+            <?= View::passwordToggle('password_confirm') ?>
+        </div>
         <?php if (!empty($errors['password'])): ?><p class="field-error"><?= View::e($errors['password']) ?></p><?php endif; ?>
 
         <button type="submit" class="btn btn-primary">Criar conta</button>
     </form>
     <a class="auth-back" href="/painel/login">Já tenho conta — entrar</a>
 </div>
+<script src="<?= View::asset('/assets/js/password-toggle.js') ?>"></script>
 </body>
 </html>

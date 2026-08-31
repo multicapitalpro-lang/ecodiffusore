@@ -56,7 +56,10 @@ $values = $editing ?? ($old ?? []);
 
     <?php if (!$isEdit): ?>
         <label for="password">Senha inicial</label>
-        <input type="password" id="password" name="password" minlength="8" required>
+        <div class="password-field">
+            <input type="password" id="password" name="password" minlength="8" required>
+            <?= View::passwordToggle('password') ?>
+        </div>
         <?php if (!empty($errors['password'])): ?><p class="field-error"><?= View::e($errors['password']) ?></p><?php endif; ?>
     <?php else: ?>
         <label class="checkbox-label">

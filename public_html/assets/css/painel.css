@@ -192,6 +192,19 @@ a { text-decoration: none; color: inherit; }
 .auth-links { margin-top: 16px; font-size: .82rem; }
 .auth-links a { color: var(--green-dark); font-weight: 700; }
 
+.password-field { position: relative; }
+.password-field input { width: 100%; padding-right: 42px; box-sizing: border-box; }
+.password-toggle {
+    position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+    width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+    background: none; border: none; cursor: pointer; color: var(--gray-text); padding: 0; border-radius: 6px;
+}
+.password-toggle:hover { color: var(--navy); background: var(--gray-bg); }
+.password-toggle svg { width: 18px; height: 18px; }
+.password-toggle .icon-eye-off { display: none; }
+.password-toggle.is-showing .icon-eye { display: none; }
+.password-toggle.is-showing .icon-eye-off { display: block; }
+
 /* Fase 2: CRM / Vendas / Financeiro */
 .filter-bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 20px; }
 .filter-bar input, .filter-bar select {

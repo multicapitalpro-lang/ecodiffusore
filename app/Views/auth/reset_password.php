@@ -26,14 +26,21 @@ use App\Core\View;
         <input type="text" id="code" name="code" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" required autofocus>
 
         <label for="password">Nova senha</label>
-        <input type="password" id="password" name="password" minlength="8" required>
+        <div class="password-field">
+            <input type="password" id="password" name="password" minlength="8" required>
+            <?= View::passwordToggle('password') ?>
+        </div>
         <label for="password_confirm">Confirme a nova senha</label>
-        <input type="password" id="password_confirm" name="password_confirm" minlength="8" required>
+        <div class="password-field">
+            <input type="password" id="password_confirm" name="password_confirm" minlength="8" required>
+            <?= View::passwordToggle('password_confirm') ?>
+        </div>
         <?php if (!empty($errors['password'])): ?><p class="field-error"><?= View::e($errors['password']) ?></p><?php endif; ?>
 
         <button type="submit" class="btn btn-primary">Salvar nova senha</button>
     </form>
     <a class="auth-back" href="/painel/esqueci-senha">Não recebeu? Pedir novo código</a>
 </div>
+<script src="<?= View::asset('/assets/js/password-toggle.js') ?>"></script>
 </body>
 </html>

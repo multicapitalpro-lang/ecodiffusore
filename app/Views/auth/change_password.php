@@ -23,11 +23,18 @@ $erro = $_GET['erro'] ?? null;
     <form action="/painel/trocar-senha" method="post" class="auth-form">
         <?= Csrf::field() ?>
         <label for="password">Nova senha</label>
-        <input type="password" id="password" name="password" minlength="8" required autofocus>
+        <div class="password-field">
+            <input type="password" id="password" name="password" minlength="8" required autofocus>
+            <?= View::passwordToggle('password') ?>
+        </div>
         <label for="password_confirm">Confirme a nova senha</label>
-        <input type="password" id="password_confirm" name="password_confirm" minlength="8" required>
+        <div class="password-field">
+            <input type="password" id="password_confirm" name="password_confirm" minlength="8" required>
+            <?= View::passwordToggle('password_confirm') ?>
+        </div>
         <button type="submit" class="btn btn-primary">Salvar senha</button>
     </form>
 </div>
+<script src="<?= View::asset('/assets/js/password-toggle.js') ?>"></script>
 </body>
 </html>
