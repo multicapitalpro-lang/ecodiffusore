@@ -16,8 +16,8 @@ $erro = isset($_GET['erro']);
                 <a href="https://wa.me/5541988962839" target="_blank" rel="noopener" class="btn btn-outline">Falar no WhatsApp</a>
             </div>
             <ul class="hero-stats">
-                <li><strong>5% a 20%</strong><span>de economia de diesel</span></li>
-                <li><strong>Até R$ 6 mil</strong><span>de economia mensal por caminhão</span></li>
+                <li><strong>8% a 15%</strong><span>de economia de diesel</span></li>
+                <li><strong>Até R$ 5 mil</strong><span>de economia mensal por caminhão</span></li>
                 <li><strong>30 dias</strong><span>de garantia real</span></li>
             </ul>
         </div>
@@ -81,7 +81,7 @@ $erro = isset($_GET['erro']);
             <div class="beneficio-item">
                 <span class="beneficio-icon">⛽</span>
                 <h3>Economia de Combustível</h3>
-                <p>Entre 5% e 20% de redução no consumo de diesel.</p>
+                <p>Entre 8% e 15% de redução no consumo de diesel.</p>
             </div>
             <div class="beneficio-item">
                 <span class="beneficio-icon">⚙️</span>
@@ -136,9 +136,9 @@ $erro = isset($_GET['erro']);
                 <thead>
                     <tr>
                         <th>Indicador</th>
-                        <th>Economia 5%</th>
                         <th>Economia 8%</th>
-                        <th>Economia 12%</th>
+                        <th>Economia 11%</th>
+                        <th>Economia 15%</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -150,31 +150,32 @@ $erro = isset($_GET['erro']);
                     </tr>
                     <tr>
                         <td>Economia líquida mensal</td>
-                        <td>R$ 1.750,00</td>
                         <td>R$ 2.800,00</td>
-                        <td>R$ 4.200,00</td>
+                        <td>R$ 3.850,00</td>
+                        <td>R$ 5.250,00</td>
                     </tr>
                     <tr>
                         <td>Payback do equipamento</td>
-                        <td>2,2 meses</td>
-                        <td>1,4 meses</td>
-                        <td>0,9 meses</td>
+                        <td>1,1 meses</td>
+                        <td>0,8 meses</td>
+                        <td>0,6 meses</td>
                     </tr>
                     <tr>
                         <td>Economia líquida no 1º ano</td>
-                        <td>R$ 17.110,00</td>
-                        <td>R$ 29.710,00</td>
-                        <td>R$ 46.510,00</td>
+                        <td>R$ 30.469,00</td>
+                        <td>R$ 43.069,00</td>
+                        <td>R$ 59.869,00</td>
                     </tr>
                     <tr>
                         <td>Economia líquida em 5 anos</td>
-                        <td>R$ 101.110,00</td>
-                        <td>R$ 164.110,00</td>
-                        <td>R$ 248.110,00</td>
+                        <td>R$ 164.869,00</td>
+                        <td>R$ 227.869,00</td>
+                        <td>R$ 311.869,00</td>
                     </tr>
                 </tbody>
             </table>
         </div>
+        <p class="calc-disclaimer">*Payback calculado sobre o preço de referência do Ecodiffusore (R$ 3.131,00, linha Scania NTG/DAF). Valores aproximados, podem variar por modelo e uso.</p>
     </div>
 </section>
 
@@ -187,17 +188,17 @@ $erro = isset($_GET['erro']);
             <input type="range" id="calc-km" min="5000" max="30000" step="1000" value="12000">
             <div class="calc-results">
                 <div class="calc-result calc-min">
-                    <span>Economia mínima (5%)</span>
+                    <span>Economia mínima (8%)</span>
                     <strong id="calc-min-month">R$ 0</strong>
                     <small><span id="calc-min-year">R$ 0</span>/ano · <span id="calc-min-5y">R$ 0</span> em 5 anos</small>
                 </div>
                 <div class="calc-result calc-avg">
-                    <span>Economia média (10%)</span>
+                    <span>Economia média (12%)</span>
                     <strong id="calc-avg-month">R$ 0</strong>
                     <small><span id="calc-avg-year">R$ 0</span>/ano · <span id="calc-avg-5y">R$ 0</span> em 5 anos</small>
                 </div>
                 <div class="calc-result calc-max">
-                    <span>Economia máxima (20%)</span>
+                    <span>Economia máxima (15%)</span>
                     <strong id="calc-max-month">R$ 0</strong>
                     <small><span id="calc-max-year">R$ 0</span>/ano · <span id="calc-max-5y">R$ 0</span> em 5 anos</small>
                 </div>
