@@ -114,7 +114,10 @@ $desempenhoOpen = $anyActive(['/painel/desempenho', '/painel/metas']);
             <button type="button" class="painel-menu-toggle" id="painel-menu-toggle" aria-label="Abrir menu">
                 <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 6h14M3 10h14M3 14h14"/></svg>
             </button>
-            <span>Olá, <strong><?= View::e($user['name'] ?? '') ?></strong> — <?= View::e($roleLabels[$role] ?? $role) ?></span>
+            <span class="painel-user">
+                <span class="user-avatar"><?= View::e(mb_strtoupper(mb_substr($user['name'] ?? '?', 0, 1))) ?></span>
+                <span>Olá, <strong><?= View::e($user['name'] ?? '') ?></strong> — <?= View::e($roleLabels[$role] ?? $role) ?></span>
+            </span>
             <a class="painel-logout" href="/painel/logout">Sair</a>
         </header>
         <main class="painel-content">
