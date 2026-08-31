@@ -170,14 +170,9 @@
                 form.querySelectorAll('.field-error').forEach(function (el) { el.textContent = ''; });
                 form.querySelectorAll('.has-error').forEach(function (el) { el.classList.remove('has-error'); });
 
-                var formData;
-                try {
-                    formData = new FormData(form, e.submitter);
-                } catch (err) {
-                    formData = new FormData(form);
-                    if (e.submitter && e.submitter.name) {
-                        formData.append(e.submitter.name, e.submitter.value);
-                    }
+                var formData = new FormData(form);
+                if (submitBtn && submitBtn.name) {
+                    formData.set(submitBtn.name, submitBtn.value);
                 }
 
                 fetch(form.getAttribute('action'), {
