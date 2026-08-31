@@ -97,6 +97,7 @@ $router->get('/painel/pedidos/{id}', [App\Controllers\OrderController::class, 's
 $router->get('/painel/pedidos/{id}/editar', [App\Controllers\OrderController::class, 'edit']);
 $router->post('/painel/pedidos/{id}', [App\Controllers\OrderController::class, 'update']);
 $router->post('/painel/pedidos/{id}/status', [App\Controllers\OrderController::class, 'markStatus']);
+$router->post('/painel/pedidos/{id}/cobranca', [App\Controllers\PaymentController::class, 'generateForOrder']);
 
 // Orcamentos
 $router->get('/painel/orcamentos', [App\Controllers\QuoteController::class, 'index']);
@@ -107,6 +108,10 @@ $router->get('/painel/orcamentos/{id}/editar', [App\Controllers\QuoteController:
 $router->post('/painel/orcamentos/{id}', [App\Controllers\QuoteController::class, 'update']);
 $router->post('/painel/orcamentos/{id}/status', [App\Controllers\QuoteController::class, 'markStatus']);
 $router->post('/painel/orcamentos/{id}/converter', [App\Controllers\QuoteController::class, 'convert']);
+$router->post('/painel/orcamentos/{id}/cobranca', [App\Controllers\PaymentController::class, 'generateForQuote']);
+
+// Webhook Asaas (publico)
+$router->post('/webhooks/asaas', [App\Controllers\PaymentController::class, 'webhook']);
 
 // Desempenho
 $router->get('/painel/desempenho/vendedores', [App\Controllers\PerformanceController::class, 'sellers']);

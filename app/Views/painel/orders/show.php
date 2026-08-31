@@ -50,6 +50,14 @@ $erro = $_GET['erro'] ?? null;
     </table>
 </div>
 
+<?php
+$allowGenerateCharge = $order['status'] !== 'cancelado' && $order['status'] !== 'verificado';
+if ($payments || $allowGenerateCharge):
+    $chargeAction = "/painel/pedidos/{$order['id']}/cobranca";
+    include __DIR__ . '/../_payments_section.php';
+endif;
+?>
+
 <?php if ($order['status'] !== 'cancelado' && $order['status'] !== 'verificado'): ?>
 <div class="order-actions">
     <?php if ($order['status'] === 'em_andamento'): ?>

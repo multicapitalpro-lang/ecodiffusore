@@ -8,11 +8,9 @@ use App\Core\Response;
 use App\Core\Router;
 use App\Core\View;
 use App\Models\Client;
-use App\Models\Commission;
-use App\Models\FinancialAccount;
-use App\Models\FinancialTransaction;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Payment;
 use App\Models\Product;
 use App\Models\User;
 
@@ -111,6 +109,7 @@ class OrderController
             'user' => Auth::user(),
             'order' => $order,
             'items' => OrderItem::forOrder((int) $id),
+            'payments' => Payment::forPayable('order', (int) $id),
         ]);
     }
 
@@ -187,20 +186,10 @@ class OrderController
             Router::redirect("/painel/pedidos/{$id}?erro=1");
         }
 
-        Order::updateStatus($id, $status);
-
-        if ($status === 'verificado' && $order['seller_id']) {
-            Commission::createCascadeForOrder($id, (int) $order['seller_id'], (float) $order['total_value']);
-
-            $accountId = FinancialAccount::defaultAccountId();
-            if ($accountId) {
-                FinancialTransaction::createForOrderReceivable(
-                    $id,
-                    $accountId,
-                    (float) $order['total_value'],
-                    date('Y-m-d')
-                );
-            }
+        if ($status === 'verificado') {
+            Order::markVerifiedWithCommission($id);
+        } else {
+            Order::updateStatus($id, $status);
         }
 
         Router::redirect("/painel/pedidos/{$id}?sucesso=1");

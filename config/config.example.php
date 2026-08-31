@@ -18,4 +18,11 @@ return [
         'name' => 'ecodiffusore_sess',
         'lifetime' => 60 * 60 * 8, // 8 horas
     ],
+
+    'asaas' => [
+        'env' => 'production', // 'sandbox' | 'production'
+        'base_url' => 'https://api.asaas.com/v3', // sandbox: https://api-sandbox.asaas.com/v3
+        'api_key' => 'TROQUE_AQUI',
+        'webhook_token' => 'TROQUE_AQUI', // gerado com bin2hex(random_bytes(32)), configurado tambem no Asaas
+    ],
 ];

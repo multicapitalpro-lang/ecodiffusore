@@ -46,6 +46,14 @@ $sucesso = isset($_GET['sucesso']);
     </table>
 </div>
 
+<?php
+$allowGenerateCharge = in_array($quote['status'], ['aberto', 'aprovado'], true);
+if ($payments || $allowGenerateCharge):
+    $chargeAction = "/painel/orcamentos/{$quote['id']}/cobranca";
+    include __DIR__ . '/../_payments_section.php';
+endif;
+?>
+
 <?php if ($quote['status'] === 'aberto'): ?>
 <div class="order-actions">
     <form action="/painel/orcamentos/<?= (int) $quote['id'] ?>/status" method="post" class="inline-form">

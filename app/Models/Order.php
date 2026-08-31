@@ -139,6 +139,30 @@ class Order
         $stmt->execute(['status' => $status, 'id' => $id]);
     }
 
+    /**
+     * Marca o pedido como verificado e roda a mesma rotina de sempre: comissao em cascata
+     * (Commission::createCascadeForOrder) + lancamento em Contas a Receber. Usado tanto pelo
+     * botao manual "Marcar como Verificado" quanto pelo webhook do Asaas quando o cliente paga.
+     */
+    public static function markVerifiedWithCommission(int $id): void
+    {
+        $order = self::find($id);
+        if (!$order || $order['status'] === 'verificado') {
+            return;
+        }
+
+        self::updateStatus($id, 'verificado');
+
+        if ($order['seller_id']) {
+            Commission::createCascadeForOrder($id, (int) $order['seller_id'], (float) $order['total_value']);
+        }
+
+        $accountId = FinancialAccount::defaultAccountId();
+        if ($accountId) {
+            FinancialTransaction::createForOrderReceivable($id, $accountId, (float) $order['total_value'], date('Y-m-d'));
+        }
+    }
+
     public static function metrics(string $from, string $to, ?int $sellerId = null): array
     {
         $sql = 'SELECT COUNT(*) AS order_count, COALESCE(SUM(total_value), 0) AS total_value,

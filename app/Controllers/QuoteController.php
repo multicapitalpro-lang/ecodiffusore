@@ -8,6 +8,7 @@ use App\Core\Response;
 use App\Core\Router;
 use App\Core\View;
 use App\Models\Client;
+use App\Models\Payment;
 use App\Models\Product;
 use App\Models\Quote;
 use App\Models\QuoteItem;
@@ -86,6 +87,7 @@ class QuoteController
             'user' => Auth::user(),
             'quote' => $quote,
             'items' => QuoteItem::forQuote((int) $id),
+            'payments' => Payment::forPayable('quote', (int) $id),
         ]);
     }
 

@@ -1,0 +1,160 @@
+<?php
+
+namespace App\Controllers;
+
+use App\Core\AsaasClient;
+use App\Core\Auth;
+use App\Core\Config;
+use App\Core\Csrf;
+use App\Core\Router;
+use App\Models\Client;
+use App\Models\Order;
+use App\Models\Payment;
+use App\Models\Quote;
+
+class PaymentController
+{
+    private const ALLOWED_ROLES = ['admin', 'gerente', 'supervisor', 'licenciado'];
+
+    public function generateForOrder(string $id): void
+    {
+        Auth::requireRole(self::ALLOWED_ROLES);
+        $id = (int) $id;
+        $order = Order::find($id);
+        if (!$order) {
+            Router::redirect('/painel/pedidos');
+        }
+
+        $this->authorizeOwnership((int) $order['seller_id']);
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            Router::redirect("/painel/pedidos/{$id}?erro=1");
+        }
+
+        try {
+            $this->generateCharge('order', $id, (int) $order['client_id'], (float) $order['total_value'], "Pedido #{$id} — Ecodiffusore Brasil");
+        } catch (\Throwable $e) {
+            Router::redirect("/painel/pedidos/{$id}?erro_cobranca=" . urlencode($e->getMessage()));
+        }
+
+        Router::redirect("/painel/pedidos/{$id}?sucesso=1");
+    }
+
+    public function generateForQuote(string $id): void
+    {
+        Auth::requireRole(self::ALLOWED_ROLES);
+        $id = (int) $id;
+        $quote = Quote::find($id);
+        if (!$quote) {
+            Router::redirect('/painel/orcamentos');
+        }
+
+        $this->authorizeOwnership((int) $quote['seller_id']);
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            Router::redirect("/painel/orcamentos/{$id}?erro=1");
+        }
+
+        try {
+            $this->generateCharge('quote', $id, (int) $quote['client_id'], (float) $quote['total_value'], "Orçamento #{$id} — Ecodiffusore Brasil");
+        } catch (\Throwable $e) {
+            Router::redirect("/painel/orcamentos/{$id}?erro_cobranca=" . urlencode($e->getMessage()));
+        }
+
+        Router::redirect("/painel/orcamentos/{$id}?sucesso=1");
+    }
+
+    /** Webhook publico do Asaas — sem Auth::requireLogin, autenticado pelo header asaas-access-token */
+    public function webhook(): void
+    {
+        $expected = Config::get('asaas', [])['webhook_token'] ?? '';
+        $received = $_SERVER['HTTP_ASAAS_ACCESS_TOKEN'] ?? '';
+
+        if ($expected === '' || !hash_equals($expected, $received)) {
+            http_response_code(403);
+            exit;
+        }
+
+        $body = json_decode(file_get_contents('php://input') ?: '[]', true) ?? [];
+        $event = $body['event'] ?? '';
+        $chargeId = $body['payment']['id'] ?? null;
+
+        if (!in_array($event, ['PAYMENT_CONFIRMED', 'PAYMENT_RECEIVED'], true) || !$chargeId) {
+            http_response_code(200);
+            exit;
+        }
+
+        $payment = Payment::findByChargeId($chargeId);
+        if (!$payment || $payment['status'] === 'pago') {
+            http_response_code(200);
+            exit;
+        }
+
+        Payment::markPaid((int) $payment['id']);
+
+        if ($payment['payable_type'] === 'order') {
+            Order::markVerifiedWithCommission((int) $payment['payable_id']);
+        } elseif ($payment['payable_type'] === 'quote') {
+            $quote = Quote::find((int) $payment['payable_id']);
+            if ($quote && $quote['status'] !== 'convertido') {
+                $orderId = Quote::convertToOrder((int) $payment['payable_id']);
+                Order::markVerifiedWithCommission($orderId);
+            }
+        }
+
+        http_response_code(200);
+    }
+
+    private function generateCharge(string $payableType, int $payableId, int $clientId, float $amount, string $description): void
+    {
+        $client = Client::find($clientId);
+        if (!$client) {
+            throw new \RuntimeException('Cliente não encontrado.');
+        }
+
+        $billingType = in_array($_POST['billing_type'] ?? '', ['PIX', 'BOLETO', 'CREDIT_CARD'], true)
+            ? $_POST['billing_type']
+            : 'PIX';
+
+        $asaas = new AsaasClient();
+        $customerId = $asaas->createOrFindCustomer($client);
+
+        $dueDate = date('Y-m-d', strtotime('+3 days'));
+        $charge = $asaas->createCharge([
+            'customer' => $customerId,
+            'billing_type' => $billingType,
+            'value' => $amount,
+            'due_date' => $dueDate,
+            'description' => $description,
+            'external_reference' => $payableType . ':' . $payableId,
+        ]);
+
+        $pixPayload = null;
+        if ($billingType === 'PIX') {
+            $pix = $asaas->getPixQrCode($charge['id']);
+            $pixPayload = $pix['payload'] ?? null;
+        }
+
+        Payment::create([
+            'payable_type' => $payableType,
+            'payable_id' => $payableId,
+            'asaas_customer_id' => $customerId,
+            'asaas_charge_id' => $charge['id'],
+            'method' => $billingType,
+            'amount' => $amount,
+            'checkout_url' => $charge['invoiceUrl'] ?? null,
+            'pix_payload' => $pixPayload,
+            'due_date' => $dueDate,
+        ]);
+    }
+
+    private function authorizeOwnership(?int $sellerId): void
+    {
+        $user = Auth::user();
+        if ($user['role_slug'] === 'licenciado' && $sellerId !== (int) $user['id']) {
+            http_response_code(403);
+            require BASE_PATH . '/app/Views/errors/403.php';
+            exit;
+        }
+    }
+}
