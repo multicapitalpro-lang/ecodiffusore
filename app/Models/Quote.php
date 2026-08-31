@@ -19,6 +19,15 @@ class Quote
             $sql .= ' AND q.seller_id = :seller_id';
             $params['seller_id'] = $filters['seller_id'];
         }
+        if (!empty($filters['seller_ids'])) {
+            $names = [];
+            foreach (array_values($filters['seller_ids']) as $i => $sid) {
+                $key = "sid{$i}";
+                $names[] = ":{$key}";
+                $params[$key] = $sid;
+            }
+            $sql .= ' AND q.seller_id IN (' . implode(',', $names) . ')';
+        }
         if (!empty($filters['status'])) {
             $sql .= ' AND q.status = :status';
             $params['status'] = $filters['status'];

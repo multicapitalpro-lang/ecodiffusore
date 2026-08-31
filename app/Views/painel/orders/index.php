@@ -16,7 +16,10 @@ $openModal = isset($_GET['novo']) || $errors;
 ?>
 <div class="page-header">
     <h1>Pedidos de Venda</h1>
-    <button type="button" class="btn btn-primary" data-modal-open="modal-order">+ Incluir Pedido</button>
+    <div class="page-header-actions">
+        <a href="/painel/pedidos/exportar?<?= http_build_query($filters ?? []) ?>" class="btn btn-outline">Exportar CSV</a>
+        <button type="button" class="btn btn-primary" data-modal-open="modal-order">+ Incluir Pedido</button>
+    </div>
 </div>
 
 <form method="get" class="filter-bar">

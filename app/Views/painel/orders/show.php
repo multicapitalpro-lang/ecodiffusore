@@ -31,6 +31,8 @@ $erro = $_GET['erro'] ?? null;
     <?php if ($order['notes']): ?><p><strong>Obs.:</strong> <?= nl2br(View::e($order['notes'])) ?></p><?php endif; ?>
 </div>
 
+<?php include __DIR__ . '/../_approval_banner.php'; ?>
+
 <div class="table-scroll">
     <table class="data-table">
         <thead><tr><th>Produto</th><th>Qtd.</th><th>Preço unit.</th><th>Subtotal</th></tr></thead>
@@ -67,11 +69,13 @@ endif;
             <button type="submit" class="btn btn-outline">Marcar como Atendido</button>
         </form>
     <?php endif; ?>
-    <form action="/painel/pedidos/<?= (int) $order['id'] ?>/status" method="post" class="inline-form">
-        <?= Csrf::field() ?>
-        <input type="hidden" name="status" value="verificado">
-        <button type="submit" class="btn btn-primary">Marcar como Verificado</button>
-    </form>
+    <?php if (!$approval): ?>
+        <form action="/painel/pedidos/<?= (int) $order['id'] ?>/status" method="post" class="inline-form">
+            <?= Csrf::field() ?>
+            <input type="hidden" name="status" value="verificado">
+            <button type="submit" class="btn btn-primary">Marcar como Verificado</button>
+        </form>
+    <?php endif; ?>
     <form action="/painel/pedidos/<?= (int) $order['id'] ?>/status" method="post" class="inline-form">
         <?= Csrf::field() ?>
         <input type="hidden" name="status" value="cancelado">

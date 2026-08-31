@@ -4,7 +4,10 @@ use App\Core\View;
 $statusLabels = ['pendente' => 'Pendente', 'pago' => 'Pago'];
 $sucesso = isset($_GET['sucesso']);
 ?>
-<h1>Comissões</h1>
+<div class="page-header">
+    <h1>Comissões</h1>
+    <a href="/painel/financeiro/comissoes/exportar" class="btn btn-outline">Exportar CSV</a>
+</div>
 
 <?php if ($sucesso): ?>
     <p class="form-msg form-msg-ok">Atualizado com sucesso.</p>

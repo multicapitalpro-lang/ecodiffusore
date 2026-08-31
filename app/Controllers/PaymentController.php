@@ -7,6 +7,7 @@ use App\Core\Auth;
 use App\Core\Config;
 use App\Core\Csrf;
 use App\Core\Router;
+use App\Models\Approval;
 use App\Models\Client;
 use App\Models\Order;
 use App\Models\Payment;
@@ -96,7 +97,7 @@ class PaymentController
             Order::markVerifiedWithCommission((int) $payment['payable_id']);
         } elseif ($payment['payable_type'] === 'quote') {
             $quote = Quote::find((int) $payment['payable_id']);
-            if ($quote && $quote['status'] !== 'convertido') {
+            if ($quote && $quote['status'] !== 'convertido' && !Approval::pendingFor('quote', (int) $payment['payable_id'])) {
                 $orderId = Quote::convertToOrder((int) $payment['payable_id']);
                 Order::markVerifiedWithCommission($orderId);
             }

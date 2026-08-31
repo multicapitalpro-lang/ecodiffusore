@@ -100,6 +100,7 @@ $desempenhoOpen = $anyActive(['/painel/desempenho', '/painel/metas']);
 
             <?php if ($role === 'admin'): ?>
                 <a href="/painel/usuarios" class="<?= $isActive('/painel/usuarios') ? 'is-active' : '' ?>"><?= $icon('gear') ?> Usuários</a>
+                <a href="/painel/auditoria" class="<?= $isActive('/painel/auditoria') ? 'is-active' : '' ?>"><?= $icon('chart') ?> Auditoria</a>
             <?php endif; ?>
 
             <?php if (in_array($role, $managerRoles, true)): ?>

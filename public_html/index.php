@@ -72,12 +72,15 @@ $router->get('/painel/usuarios/{id}/editar', [App\Controllers\UserController::cl
 $router->post('/painel/usuarios/{id}', [App\Controllers\UserController::class, 'update']);
 
 $router->get('/painel/leads', [App\Controllers\LeadController::class, 'index']);
+$router->post('/painel/leads/{id}/status', [App\Controllers\LeadController::class, 'updateStatus']);
+$router->post('/painel/leads/{id}/atribuir', [App\Controllers\LeadController::class, 'assign']);
 
 // Clientes
 $router->get('/painel/clientes', [App\Controllers\ClientController::class, 'index']);
 $router->get('/painel/clientes/novo', [App\Controllers\ClientController::class, 'create']);
 $router->post('/painel/clientes', [App\Controllers\ClientController::class, 'store']);
 $router->post('/painel/clientes/vincular-vendedor', [App\Controllers\ClientController::class, 'bulkAssignSeller']);
+$router->get('/painel/clientes/exportar', [App\Controllers\ClientController::class, 'export']);
 $router->get('/painel/clientes/{id}/editar', [App\Controllers\ClientController::class, 'edit']);
 $router->post('/painel/clientes/{id}', [App\Controllers\ClientController::class, 'update']);
 $router->get('/painel/clientes/{id}', [App\Controllers\ClientController::class, 'show']);
@@ -94,6 +97,7 @@ $router->post('/painel/produtos/{id}', [App\Controllers\ProductController::class
 $router->get('/painel/pedidos', [App\Controllers\OrderController::class, 'index']);
 $router->get('/painel/pedidos/novo', [App\Controllers\OrderController::class, 'create']);
 $router->post('/painel/pedidos', [App\Controllers\OrderController::class, 'store']);
+$router->get('/painel/pedidos/exportar', [App\Controllers\OrderController::class, 'export']);
 $router->get('/painel/pedidos/{id}', [App\Controllers\OrderController::class, 'show']);
 $router->get('/painel/pedidos/{id}/editar', [App\Controllers\OrderController::class, 'edit']);
 $router->post('/painel/pedidos/{id}', [App\Controllers\OrderController::class, 'update']);
@@ -102,6 +106,7 @@ $router->post('/painel/pedidos/{id}/cobranca', [App\Controllers\PaymentControlle
 
 // Orcamentos
 $router->get('/painel/orcamentos', [App\Controllers\QuoteController::class, 'index']);
+$router->get('/painel/orcamentos/kanban', [App\Controllers\QuoteController::class, 'kanban']);
 $router->get('/painel/orcamentos/novo', [App\Controllers\QuoteController::class, 'create']);
 $router->post('/painel/orcamentos', [App\Controllers\QuoteController::class, 'store']);
 $router->get('/painel/orcamentos/{id}', [App\Controllers\QuoteController::class, 'show']);
@@ -110,6 +115,11 @@ $router->post('/painel/orcamentos/{id}', [App\Controllers\QuoteController::class
 $router->post('/painel/orcamentos/{id}/status', [App\Controllers\QuoteController::class, 'markStatus']);
 $router->post('/painel/orcamentos/{id}/converter', [App\Controllers\QuoteController::class, 'convert']);
 $router->post('/painel/orcamentos/{id}/cobranca', [App\Controllers\PaymentController::class, 'generateForQuote']);
+
+$router->get('/painel/auditoria', [App\Controllers\AuditController::class, 'index']);
+
+// Aprovacao de desconto
+$router->post('/painel/aprovacoes/{id}/decidir', [App\Controllers\ApprovalController::class, 'decide']);
 
 // Webhook Asaas (publico)
 $router->post('/webhooks/asaas', [App\Controllers\PaymentController::class, 'webhook']);
@@ -133,6 +143,7 @@ $router->post('/painel/financeiro/contas', [App\Controllers\FinanceController::c
 $router->post('/painel/financeiro/contas/{id}/baixar', [App\Controllers\FinanceController::class, 'markPaid']);
 $router->get('/painel/financeiro/anexos/{id}', [App\Controllers\FinanceController::class, 'downloadAttachment']);
 $router->get('/painel/financeiro/comissoes', [App\Controllers\FinanceController::class, 'commissions']);
+$router->get('/painel/financeiro/comissoes/exportar', [App\Controllers\FinanceController::class, 'exportCommissions']);
 $router->post('/painel/financeiro/comissoes/{id}/baixar', [App\Controllers\FinanceController::class, 'markCommissionPaid']);
 
 // Remessa e Retorno

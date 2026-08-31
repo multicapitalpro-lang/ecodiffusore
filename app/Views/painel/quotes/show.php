@@ -27,6 +27,8 @@ $sucesso = isset($_GET['sucesso']);
     <?php if ($quote['notes']): ?><p><strong>Obs.:</strong> <?= nl2br(View::e($quote['notes'])) ?></p><?php endif; ?>
 </div>
 
+<?php include __DIR__ . '/../_approval_banner.php'; ?>
+
 <div class="table-scroll">
     <table class="data-table">
         <thead><tr><th>Produto</th><th>Qtd.</th><th>Preço unit.</th><th>Subtotal</th></tr></thead>
@@ -67,7 +69,7 @@ endif;
         <button type="submit" class="btn btn-danger">Marcar como Recusado</button>
     </form>
 </div>
-<?php elseif ($quote['status'] === 'aprovado'): ?>
+<?php elseif ($quote['status'] === 'aprovado' && !$approval): ?>
 <div class="order-actions">
     <form action="/painel/orcamentos/<?= (int) $quote['id'] ?>/converter" method="post" class="inline-form">
         <?= Csrf::field() ?>

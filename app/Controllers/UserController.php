@@ -6,6 +6,7 @@ use App\Core\Auth;
 use App\Core\Csrf;
 use App\Core\Router;
 use App\Core\View;
+use App\Models\AuditLog;
 use App\Models\Role;
 use App\Models\User;
 
@@ -116,6 +117,11 @@ class UserController
             return;
         }
 
+        $before = User::find($id);
+
+        $commissionPct = !empty($_POST['commission_pct']) ? $_POST['commission_pct'] : null;
+        $discountLimitPct = $_POST['discount_limit_pct'] !== '' ? $_POST['discount_limit_pct'] : null;
+
         User::update($id, [
             'role_id' => (int) $_POST['role_id'],
             'manager_id' => $managerId,
@@ -123,8 +129,13 @@ class UserController
             'email' => trim($_POST['email']),
             'whatsapp' => trim($_POST['whatsapp'] ?? ''),
             'status' => $_POST['status'] ?? 'active',
-            'commission_pct' => !empty($_POST['commission_pct']) ? $_POST['commission_pct'] : null,
+            'commission_pct' => $commissionPct,
+            'discount_limit_pct' => $discountLimitPct,
         ]);
+
+        $this->logIfChanged($before, 'commission_pct', $commissionPct, $id);
+        $this->logIfChanged($before, 'discount_limit_pct', $discountLimitPct, $id);
+        $this->logIfChanged($before, 'manager_id', $managerId, $id);
 
         if (!empty($_POST['reset_password'])) {
             $temp = substr(bin2hex(random_bytes(6)), 0, 10);
@@ -133,6 +144,23 @@ class UserController
         }
 
         Router::redirect('/painel/usuarios?sucesso=1');
+    }
+
+    private function logIfChanged(array $before, string $field, mixed $newValue, int $userId): void
+    {
+        $oldValue = $before[$field] ?? null;
+        if ((string) $oldValue === (string) $newValue) {
+            return;
+        }
+
+        AuditLog::record(
+            (int) Auth::user()['id'],
+            "usuario_{$field}_alterado",
+            'user',
+            $userId,
+            [$field => $oldValue],
+            [$field => $newValue]
+        );
     }
 
     private function createsCycle(int $userId, int $candidateManagerId): bool

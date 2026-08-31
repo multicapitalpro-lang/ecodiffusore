@@ -7,6 +7,8 @@ use App\Core\Csrf;
 use App\Core\Response;
 use App\Core\Router;
 use App\Core\View;
+use App\Models\Approval;
+use App\Models\AuditLog;
 use App\Models\Client;
 use App\Models\Payment;
 use App\Models\Product;
@@ -21,15 +23,42 @@ class QuoteController
         Auth::requireRole(['admin', 'gerente', 'supervisor', 'licenciado']);
         $user = Auth::user();
 
-        $filters = $user['role_slug'] === 'licenciado' ? ['seller_id' => $user['id']] : [];
-
         View::render('painel/quotes/index', [
             'user' => $user,
-            'quotes' => Quote::all($filters),
+            'quotes' => Quote::all($this->scopeFilters($user)),
             'clients' => Client::all(),
             'products' => Product::all(true),
             'sellers' => User::allByRole('licenciado'),
         ]);
+    }
+
+    public function kanban(): void
+    {
+        Auth::requireRole(['admin', 'gerente', 'supervisor', 'licenciado']);
+        $user = Auth::user();
+
+        $quotes = Quote::all($this->scopeFilters($user));
+        $columns = [];
+        foreach (['aberto', 'aprovado', 'recusado', 'convertido'] as $status) {
+            $columns[$status] = array_values(array_filter($quotes, fn ($q) => $q['status'] === $status));
+        }
+
+        View::render('painel/quotes/kanban', [
+            'user' => $user,
+            'columns' => $columns,
+        ]);
+    }
+
+    private function scopeFilters(array $user): array
+    {
+        if ($user['role_slug'] === 'admin') {
+            return [];
+        }
+        if ($user['role_slug'] === 'licenciado') {
+            return ['seller_id' => $user['id']];
+        }
+
+        return ['seller_ids' => User::downlineIds((int) $user['id'])];
     }
 
     public function create(): void
@@ -70,6 +99,10 @@ class QuoteController
             'notes' => $_POST['notes'] ?? '',
         ], $items);
 
+        if ($sellerId) {
+            Approval::checkAndRequest('quote', $quoteId, $items, (int) $sellerId, (int) $user['id']);
+        }
+
         $target = "/painel/orcamentos/{$quoteId}?sucesso=1";
 
         if (Response::isAjax()) {
@@ -88,6 +121,7 @@ class QuoteController
             'quote' => $quote,
             'items' => QuoteItem::forQuote((int) $id),
             'payments' => Payment::forPayable('quote', (int) $id),
+            'approval' => Approval::pendingFor('quote', (int) $id),
         ]);
     }
 
@@ -148,6 +182,10 @@ class QuoteController
             'notes' => $_POST['notes'] ?? '',
         ], $items);
 
+        if ($sellerId) {
+            Approval::checkAndRequest('quote', $id, $items, (int) $sellerId, (int) $user['id']);
+        }
+
         Router::redirect("/painel/orcamentos/{$id}?sucesso=1");
     }
 
@@ -163,6 +201,7 @@ class QuoteController
         $status = $_POST['status'] ?? '';
         if (in_array($status, ['aprovado', 'recusado'], true)) {
             Quote::updateStatus($id, $status);
+            AuditLog::record((int) Auth::user()['id'], "orcamento_{$status}", 'quote', $id, ['status' => $quote['status']], ['status' => $status]);
         }
 
         Router::redirect("/painel/orcamentos/{$id}?sucesso=1");
@@ -177,7 +216,12 @@ class QuoteController
             Router::redirect("/painel/orcamentos/{$id}");
         }
 
+        if (Approval::pendingFor('quote', $id)) {
+            Router::redirect("/painel/orcamentos/{$id}?erro=3");
+        }
+
         $orderId = Quote::convertToOrder($id);
+        AuditLog::record((int) Auth::user()['id'], 'orcamento_convertido', 'quote', $id, ['status' => $quote['status']], ['order_id' => $orderId]);
 
         Router::redirect("/painel/pedidos/{$orderId}?sucesso=1");
     }

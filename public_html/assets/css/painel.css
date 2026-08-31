@@ -289,6 +289,39 @@ tr.report-row-bold td { font-weight: 700; }
 .team-node-meta { display: flex; gap: 14px; font-size: .82rem; color: var(--gray-text); }
 .team-children { padding-left: 26px; border-left: 2px dashed var(--border); margin: 0 0 14px 10px; }
 
+/* Kanban (Leads / Orcamentos) */
+.kanban-board { display: flex; gap: 16px; overflow-x: auto; padding-bottom: 8px; align-items: flex-start; }
+.kanban-col { background: var(--gray-bg); border-radius: 12px; width: 260px; flex-shrink: 0; display: flex; flex-direction: column; max-height: calc(100vh - 220px); }
+.kanban-col-header {
+    display: flex; justify-content: space-between; align-items: center; padding: 12px 14px;
+    font-weight: 700; font-size: .88rem; color: var(--navy); border-bottom: 1px solid var(--border);
+}
+.kanban-count { background: #fff; border-radius: 20px; padding: 1px 9px; font-size: .74rem; color: var(--gray-text); box-shadow: var(--shadow-sm); }
+.kanban-col-body { padding: 10px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; flex: 1; transition: background .15s ease; border-radius: 0 0 12px 12px; }
+.kanban-col-body.is-dragover { background: rgba(141,198,63,.12); }
+.kanban-card {
+    background: #fff; border-radius: 10px; padding: 12px 14px; box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border); display: flex; flex-direction: column; gap: 5px; cursor: grab;
+    transition: box-shadow .15s ease, opacity .15s ease;
+}
+.kanban-card:hover { box-shadow: var(--shadow-md); }
+.kanban-card.is-dragging { opacity: .4; }
+.kanban-card strong { font-size: .92rem; color: var(--navy); }
+.kanban-card-meta { font-size: .76rem; color: var(--gray-text); }
+.kanban-card select { margin-top: 4px; padding: 6px 8px; font-size: .78rem; border-radius: 6px; border: 1px solid var(--border); }
+.kanban-empty { text-align: center; padding: 20px 0; margin: 0; }
+@media (max-width: 700px) { .kanban-col { width: 82vw; } }
+
+/* Aprovacao de desconto */
+.approval-banner {
+    background: #fff4dc; border: 1px solid #f0c975; border-radius: 12px; padding: 16px 20px;
+    display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+.approval-banner strong { color: #8a5a00; }
+.approval-banner p { margin: 4px 0 0; font-size: .88rem; color: #6b4a0a; }
+.approval-banner-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
 .btn-sm { padding: 8px 16px; font-size: .82rem; margin-top: 10px; }
 .btn-danger { background: #fde8e8; color: #c53030; }
 .btn-danger:hover { background: #fbd0d0; }

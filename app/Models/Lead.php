@@ -42,6 +42,47 @@ class Lead
         return $stmt->fetchAll();
     }
 
+    /** Leads atribuidos a algum dos $userIds, opcionalmente incluindo os ainda sem responsavel */
+    public static function forScope(array $userIds, bool $includeUnassigned): array
+    {
+        if (!$userIds && !$includeUnassigned) {
+            return [];
+        }
+
+        $conditions = [];
+        $params = [];
+
+        if ($userIds) {
+            $placeholders = implode(',', array_fill(0, count($userIds), '?'));
+            $conditions[] = "l.assigned_to_user_id IN ({$placeholders})";
+            $params = array_merge($params, $userIds);
+        }
+        if ($includeUnassigned) {
+            $conditions[] = 'l.assigned_to_user_id IS NULL';
+        }
+
+        $sql = 'SELECT l.*, u.name AS assigned_name FROM leads l
+                LEFT JOIN users u ON u.id = l.assigned_to_user_id
+                WHERE ' . implode(' OR ', $conditions) . '
+                ORDER BY l.created_at DESC';
+
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
+    public static function updateStatus(int $id, string $status): void
+    {
+        $stmt = Database::connection()->prepare('UPDATE leads SET status = :status WHERE id = :id');
+        $stmt->execute(['status' => $status, 'id' => $id]);
+    }
+
+    public static function assignTo(int $id, ?int $userId): void
+    {
+        $stmt = Database::connection()->prepare('UPDATE leads SET assigned_to_user_id = :uid WHERE id = :id');
+        $stmt->execute(['uid' => $userId, 'id' => $id]);
+    }
+
     public static function count(): int
     {
         return (int) Database::connection()->query('SELECT COUNT(*) FROM leads')->fetchColumn();

@@ -68,6 +68,34 @@ class User
         return $stmt->fetchAll();
     }
 
+    /**
+     * Desce a hierarquia: retorna os ids de $userId + todo mundo que reporta (direta ou
+     * indiretamente) pra ele, ate 5 niveis pra evitar loop. Usado pra escopar Leads/Orcamentos
+     * por papel (licenciado ve so ele mesmo, supervisor ve sua equipe, gerente ve tudo abaixo dele).
+     */
+    public static function downlineIds(int $userId): array
+    {
+        $ids = [$userId => true];
+        $frontier = [$userId];
+
+        for ($i = 0; $i < 5 && $frontier; $i++) {
+            $placeholders = implode(',', array_fill(0, count($frontier), '?'));
+            $stmt = Database::connection()->prepare("SELECT id FROM users WHERE manager_id IN ({$placeholders})");
+            $stmt->execute($frontier);
+            $next = [];
+            foreach ($stmt->fetchAll() as $row) {
+                $id = (int) $row['id'];
+                if (!isset($ids[$id])) {
+                    $ids[$id] = true;
+                    $next[] = $id;
+                }
+            }
+            $frontier = $next;
+        }
+
+        return array_keys($ids);
+    }
+
     /** Sobe a cadeia de gestao a partir de um usuario (nao inclui ele mesmo), ate 5 niveis pra evitar loop */
     public static function managerChain(int $userId): array
     {
@@ -157,7 +185,8 @@ class User
     {
         $stmt = Database::connection()->prepare(
             'UPDATE users SET role_id = :role_id, manager_id = :manager_id, name = :name, email = :email,
-                whatsapp = :whatsapp, status = :status, commission_pct = :commission_pct WHERE id = :id'
+                whatsapp = :whatsapp, status = :status, commission_pct = :commission_pct,
+                discount_limit_pct = :discount_limit_pct WHERE id = :id'
         );
         $stmt->execute([
             'id' => $id,
@@ -167,6 +196,7 @@ class User
             'email' => $data['email'],
             'whatsapp' => $data['whatsapp'] ?: null,
             'commission_pct' => $data['commission_pct'] ?? null,
+            'discount_limit_pct' => $data['discount_limit_pct'] ?? null,
             'status' => $data['status'],
         ]);
     }

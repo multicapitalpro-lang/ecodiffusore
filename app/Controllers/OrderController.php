@@ -4,9 +4,12 @@ namespace App\Controllers;
 
 use App\Core\Auth;
 use App\Core\Csrf;
+use App\Core\Csv;
 use App\Core\Response;
 use App\Core\Router;
 use App\Core\View;
+use App\Models\Approval;
+use App\Models\AuditLog;
 use App\Models\Client;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -41,6 +44,34 @@ class OrderController
             'products' => Product::all(true),
             'sellers' => User::allByRole('licenciado'),
         ]);
+    }
+
+    public function export(): void
+    {
+        Auth::requireRole(['admin', 'gerente', 'supervisor', 'licenciado']);
+        $user = Auth::user();
+
+        $filters = [
+            'status' => $_GET['status'] ?? null,
+            'from' => $_GET['from'] ?? null,
+            'to' => $_GET['to'] ?? null,
+        ];
+        if ($user['role_slug'] === 'licenciado') {
+            $filters['seller_id'] = $user['id'];
+        }
+
+        $statusLabels = ['em_andamento' => 'Em andamento', 'atendido' => 'Atendido', 'verificado' => 'Verificado', 'cancelado' => 'Cancelado'];
+
+        $rows = array_map(fn ($o) => [
+            $o['id'],
+            $o['client_name'],
+            $o['seller_name'] ?: '',
+            $o['order_date'],
+            number_format((float) $o['total_value'], 2, ',', '.'),
+            $statusLabels[$o['status']] ?? $o['status'],
+        ], Order::all($filters));
+
+        Csv::download('pedidos.csv', ['ID', 'Cliente', 'Vendedor', 'Data', 'Total', 'Situação'], $rows);
     }
 
     public function create(): void
@@ -92,6 +123,10 @@ class OrderController
             'notes' => $_POST['notes'] ?? '',
         ], $items);
 
+        if ($sellerId) {
+            Approval::checkAndRequest('order', $orderId, $items, (int) $sellerId, (int) $user['id']);
+        }
+
         $target = "/painel/pedidos/{$orderId}?sucesso=1";
 
         if (Response::isAjax()) {
@@ -110,6 +145,7 @@ class OrderController
             'order' => $order,
             'items' => OrderItem::forOrder((int) $id),
             'payments' => Payment::forPayable('order', (int) $id),
+            'approval' => Approval::pendingFor('order', (int) $id),
         ]);
     }
 
@@ -169,6 +205,10 @@ class OrderController
             'notes' => $_POST['notes'] ?? '',
         ], $items);
 
+        if ($sellerId) {
+            Approval::checkAndRequest('order', $id, $items, (int) $sellerId, (int) $user['id']);
+        }
+
         Router::redirect("/painel/pedidos/{$id}?sucesso=1");
     }
 
@@ -187,11 +227,15 @@ class OrderController
         }
 
         if ($status === 'verificado') {
-            Order::markVerifiedWithCommission($id);
-        } else {
-            Order::updateStatus($id, $status);
+            $ok = Order::markVerifiedWithCommission($id);
+            if ($ok) {
+                AuditLog::record((int) Auth::user()['id'], 'pedido_verificado', 'order', $id, ['status' => $order['status']], ['status' => 'verificado']);
+            }
+            Router::redirect("/painel/pedidos/{$id}?" . ($ok ? 'sucesso=1' : 'erro=3'));
+            return;
         }
 
+        Order::updateStatus($id, $status);
         Router::redirect("/painel/pedidos/{$id}?sucesso=1");
     }
 

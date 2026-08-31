@@ -143,12 +143,17 @@ class Order
      * Marca o pedido como verificado e roda a mesma rotina de sempre: comissao em cascata
      * (Commission::createCascadeForOrder) + lancamento em Contas a Receber. Usado tanto pelo
      * botao manual "Marcar como Verificado" quanto pelo webhook do Asaas quando o cliente paga.
+     * Retorna false (sem fazer nada) se houver uma aprovacao de desconto pendente pra esse pedido.
      */
-    public static function markVerifiedWithCommission(int $id): void
+    public static function markVerifiedWithCommission(int $id): bool
     {
         $order = self::find($id);
         if (!$order || $order['status'] === 'verificado') {
-            return;
+            return false;
+        }
+
+        if (Approval::pendingFor('order', $id)) {
+            return false;
         }
 
         self::updateStatus($id, 'verificado');
@@ -161,6 +166,8 @@ class Order
         if ($accountId) {
             FinancialTransaction::createForOrderReceivable($id, $accountId, (float) $order['total_value'], date('Y-m-d'));
         }
+
+        return true;
     }
 
     public static function metrics(string $from, string $to, ?int $sellerId = null): array

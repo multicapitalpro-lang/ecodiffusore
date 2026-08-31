@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Core\Auth;
 use App\Core\Csrf;
+use App\Core\Csv;
 use App\Core\Response;
 use App\Core\Router;
 use App\Core\View;
@@ -30,6 +31,26 @@ class ClientController
     {
         Auth::requireRole(['admin', 'gerente', 'supervisor', 'licenciado']);
         Router::redirect('/painel/clientes?novo=1');
+    }
+
+    public function export(): void
+    {
+        Auth::requireRole(['admin', 'gerente', 'supervisor', 'licenciado']);
+
+        $rows = array_map(fn ($c) => [
+            $c['id'],
+            $c['name'],
+            $c['document'] ?: '',
+            $c['person_type'] === 'juridica' ? 'Jurídica' : 'Física',
+            $c['email'] ?: '',
+            $c['whatsapp'] ?: '',
+            $c['city'] ?: '',
+            $c['state'] ?: '',
+            $c['seller_name'] ?: '',
+            $c['status'] === 'ativo' ? 'Ativo' : 'Inativo',
+        ], Client::all());
+
+        Csv::download('clientes.csv', ['ID', 'Nome', 'Documento', 'Tipo', 'E-mail', 'WhatsApp', 'Cidade', 'UF', 'Vendedor', 'Status'], $rows);
     }
 
     public function store(): void

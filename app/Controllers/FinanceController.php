@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Core\Auth;
 use App\Core\Csrf;
+use App\Core\Csv;
 use App\Core\FileUpload;
 use App\Core\Response;
 use App\Core\Router;
@@ -279,6 +280,32 @@ class FinanceController
             'bySeller' => Commission::byBeneficiary($filters),
             'canManage' => in_array($user['role_slug'], ['admin', 'gerente', 'supervisor'], true),
         ]);
+    }
+
+    public function exportCommissions(): void
+    {
+        Auth::requireRole(['admin', 'gerente', 'supervisor', 'licenciado']);
+        $user = Auth::user();
+
+        $filters = [];
+        if ($user['role_slug'] === 'licenciado') {
+            $filters['beneficiary_id'] = $user['id'];
+        }
+
+        $roleLabels = ['licenciado' => 'Licenciado', 'supervisor' => 'Supervisor', 'gerente' => 'Gerente'];
+
+        $rows = array_map(fn ($c) => [
+            $c['order_id'],
+            $c['beneficiary_name'],
+            $roleLabels[$c['role_slug']] ?? $c['role_slug'],
+            $c['client_name'],
+            $c['order_date'],
+            number_format((float) $c['percentage'], 2, ',', '.'),
+            number_format((float) $c['amount'], 2, ',', '.'),
+            $c['status'] === 'pago' ? 'Pago' : 'Pendente',
+        ], Commission::all($filters));
+
+        Csv::download('comissoes.csv', ['Pedido', 'Beneficiário', 'Papel', 'Cliente', 'Data', '%', 'Valor', 'Situação'], $rows);
     }
 
     public function markCommissionPaid(string $id): void

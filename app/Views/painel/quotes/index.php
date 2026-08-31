@@ -11,7 +11,10 @@ $openModal = isset($_GET['novo']) || $errors;
 ?>
 <div class="page-header">
     <h1>Orçamentos</h1>
-    <button type="button" class="btn btn-primary" data-modal-open="modal-quote">+ Gerar Orçamento</button>
+    <div class="page-header-actions">
+        <a href="/painel/orcamentos/kanban" class="btn btn-outline">Ver como Kanban</a>
+        <button type="button" class="btn btn-primary" data-modal-open="modal-quote">+ Gerar Orçamento</button>
+    </div>
 </div>
 
 <div class="table-scroll">

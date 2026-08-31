@@ -10,7 +10,10 @@ $canAssignSeller = in_array($user['role_slug'] ?? '', ['admin', 'gerente', 'supe
 ?>
 <div class="page-header">
     <h1>Clientes</h1>
-    <button type="button" class="btn btn-primary" data-modal-open="modal-client">+ Novo cliente</button>
+    <div class="page-header-actions">
+        <a href="/painel/clientes/exportar" class="btn btn-outline">Exportar CSV</a>
+        <button type="button" class="btn btn-primary" data-modal-open="modal-client">+ Novo cliente</button>
+    </div>
 </div>
 
 <?php if ($sucesso): ?>
