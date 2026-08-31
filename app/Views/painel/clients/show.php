@@ -28,11 +28,24 @@ $totalComprado = array_sum(array_map(fn ($o) => $o['status'] !== 'cancelado' ? (
 
 <div class="two-col">
     <div class="order-summary">
+        <p><strong>Tipo:</strong> <?= $client['person_type'] === 'juridica' ? 'Pessoa Jurídica' : 'Pessoa Física' ?></p>
         <p><strong>Documento:</strong> <?= View::e($client['document'] ?: '—') ?></p>
+        <p><strong>Inscrição Estadual:</strong> <?= View::e($client['state_registration'] ?: '—') ?></p>
         <p><strong>E-mail:</strong> <?= View::e($client['email'] ?: '—') ?></p>
         <p><strong>WhatsApp:</strong> <?= View::e($client['whatsapp'] ?: '—') ?></p>
         <p><strong>Cidade/UF:</strong> <?= View::e(trim(($client['city'] ?: '') . ($client['state'] ? '/' . $client['state'] : '')) ?: '—') ?></p>
         <p><strong>Endereço:</strong> <?= View::e($client['address'] ?: '—') ?></p>
+        <p><strong>Limite de crédito:</strong> <?php
+            if ($client['credit_limit_type'] === 'valor') {
+                echo 'R$ ' . number_format((float) $client['credit_limit_value'], 2, ',', '.');
+            } elseif ($client['credit_limit_type'] === 'zero') {
+                echo 'Zero (sem crédito)';
+            } else {
+                echo 'Ilimitado';
+            }
+        ?></p>
+        <p><strong>Condição de pagamento:</strong> <?= View::e($client['payment_terms'] ?: '—') ?></p>
+        <p><strong>Vendedor:</strong> <?= View::e($client['seller_name'] ?: '—') ?></p>
         <p><strong>Cliente desde:</strong> <?= View::e(date('d/m/Y', strtotime($client['created_at']))) ?></p>
     </div>
 

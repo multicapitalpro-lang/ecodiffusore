@@ -77,6 +77,7 @@ $router->get('/painel/leads', [App\Controllers\LeadController::class, 'index']);
 $router->get('/painel/clientes', [App\Controllers\ClientController::class, 'index']);
 $router->get('/painel/clientes/novo', [App\Controllers\ClientController::class, 'create']);
 $router->post('/painel/clientes', [App\Controllers\ClientController::class, 'store']);
+$router->post('/painel/clientes/vincular-vendedor', [App\Controllers\ClientController::class, 'bulkAssignSeller']);
 $router->get('/painel/clientes/{id}/editar', [App\Controllers\ClientController::class, 'edit']);
 $router->post('/painel/clientes/{id}', [App\Controllers\ClientController::class, 'update']);
 $router->get('/painel/clientes/{id}', [App\Controllers\ClientController::class, 'show']);

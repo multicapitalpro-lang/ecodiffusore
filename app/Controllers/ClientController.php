@@ -11,6 +11,7 @@ use App\Models\Client;
 use App\Models\ClientNote;
 use App\Models\FinancialTransaction;
 use App\Models\Order;
+use App\Models\User;
 
 class ClientController
 {
@@ -21,6 +22,7 @@ class ClientController
         View::render('painel/clients/index', [
             'user' => Auth::user(),
             'clients' => Client::all(),
+            'sellers' => User::allByRole('licenciado'),
         ]);
     }
 
@@ -50,6 +52,7 @@ class ClientController
             View::render('painel/clients/index', [
                 'user' => Auth::user(),
                 'clients' => Client::all(),
+                'sellers' => User::allByRole('licenciado'),
                 'errors' => $errors,
                 'values' => $_POST,
             ]);
@@ -118,6 +121,7 @@ class ClientController
         View::render('painel/clients/form', [
             'user' => Auth::user(),
             'editing' => $client,
+            'sellers' => User::allByRole('licenciado'),
             'errors' => [],
         ]);
     }
@@ -137,12 +141,31 @@ class ClientController
             View::render('painel/clients/form', [
                 'user' => Auth::user(),
                 'editing' => array_merge(['id' => $id], $_POST),
+                'sellers' => User::allByRole('licenciado'),
                 'errors' => $errors,
             ]);
             return;
         }
 
         Client::update($id, $_POST);
+
+        Router::redirect('/painel/clientes?sucesso=1');
+    }
+
+    public function bulkAssignSeller(): void
+    {
+        Auth::requireRole(['admin', 'gerente', 'supervisor']);
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            Router::redirect('/painel/clientes?erro=1');
+        }
+
+        $clientIds = $_POST['client_ids'] ?? [];
+        $sellerId = !empty($_POST['seller_id']) ? (int) $_POST['seller_id'] : null;
+
+        if ($clientIds) {
+            Client::bulkAssignSeller($clientIds, $sellerId);
+        }
 
         Router::redirect('/painel/clientes?sucesso=1');
     }
