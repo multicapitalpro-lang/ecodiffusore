@@ -51,16 +51,58 @@ class User
         return $stmt->fetchAll();
     }
 
+    /** Candidatos a "reporta para": todo mundo com papel gerente ou supervisor, exceto a propria pessoa */
+    public static function managerCandidates(?int $exceptId = null): array
+    {
+        $sql = "SELECT u.id, u.name, r.slug AS role_slug FROM users u JOIN roles r ON r.id = u.role_id
+                WHERE r.slug IN ('gerente', 'supervisor') AND u.status = 'active'";
+        $params = [];
+        if ($exceptId !== null) {
+            $sql .= ' AND u.id != :id';
+            $params['id'] = $exceptId;
+        }
+        $sql .= ' ORDER BY r.slug, u.name';
+
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
+    /** Sobe a cadeia de gestao a partir de um usuario (nao inclui ele mesmo), ate 5 niveis pra evitar loop */
+    public static function managerChain(int $userId): array
+    {
+        $chain = [];
+        $current = self::find($userId);
+        $seen = [$userId => true];
+
+        for ($i = 0; $i < 5 && $current && $current['manager_id']; $i++) {
+            $managerId = (int) $current['manager_id'];
+            if (isset($seen[$managerId])) {
+                break;
+            }
+            $manager = self::find($managerId);
+            if (!$manager) {
+                break;
+            }
+            $chain[] = $manager;
+            $seen[$managerId] = true;
+            $current = $manager;
+        }
+
+        return $chain;
+    }
+
     public static function create(array $data): int
     {
         $emailVerified = array_key_exists('email_verified', $data) ? !empty($data['email_verified']) : true;
 
         $stmt = Database::connection()->prepare(
-            'INSERT INTO users (role_id, name, email, whatsapp, password_hash, status, commission_pct, must_change_password, email_verified_at)
-             VALUES (:role_id, :name, :email, :whatsapp, :password_hash, :status, :commission_pct, :must_change_password, :email_verified_at)'
+            'INSERT INTO users (role_id, manager_id, name, email, whatsapp, password_hash, status, commission_pct, must_change_password, email_verified_at)
+             VALUES (:role_id, :manager_id, :name, :email, :whatsapp, :password_hash, :status, :commission_pct, :must_change_password, :email_verified_at)'
         );
         $stmt->execute([
             'role_id' => $data['role_id'],
+            'manager_id' => $data['manager_id'] ?: null,
             'name' => $data['name'],
             'email' => $data['email'],
             'whatsapp' => $data['whatsapp'] ?: null,
@@ -114,12 +156,13 @@ class User
     public static function update(int $id, array $data): void
     {
         $stmt = Database::connection()->prepare(
-            'UPDATE users SET role_id = :role_id, name = :name, email = :email,
+            'UPDATE users SET role_id = :role_id, manager_id = :manager_id, name = :name, email = :email,
                 whatsapp = :whatsapp, status = :status, commission_pct = :commission_pct WHERE id = :id'
         );
         $stmt->execute([
             'id' => $id,
             'role_id' => $data['role_id'],
+            'manager_id' => $data['manager_id'] ?: null,
             'name' => $data['name'],
             'email' => $data['email'],
             'whatsapp' => $data['whatsapp'] ?: null,

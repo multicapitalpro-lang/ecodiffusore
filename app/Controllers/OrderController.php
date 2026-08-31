@@ -190,10 +190,7 @@ class OrderController
         Order::updateStatus($id, $status);
 
         if ($status === 'verificado' && $order['seller_id']) {
-            $seller = User::find((int) $order['seller_id']);
-            $percentage = $seller['commission_pct'] !== null ? (float) $seller['commission_pct'] : 5.0;
-
-            Commission::createForOrder($id, (int) $order['seller_id'], (float) $order['total_value'], $percentage);
+            Commission::createCascadeForOrder($id, (int) $order['seller_id'], (float) $order['total_value']);
 
             $accountId = FinancialAccount::defaultAccountId();
             if ($accountId) {

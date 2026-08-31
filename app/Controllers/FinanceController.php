@@ -262,7 +262,7 @@ class FinanceController
 
         $filters = [];
         if ($user['role_slug'] === 'licenciado') {
-            $filters['seller_id'] = $user['id'];
+            $filters['beneficiary_id'] = $user['id'];
         }
 
         $commissions = Commission::all($filters);
@@ -276,7 +276,7 @@ class FinanceController
             'user' => $user,
             'commissions' => $commissions,
             'summary' => $summary,
-            'bySeller' => Commission::bySeller($filters),
+            'bySeller' => Commission::byBeneficiary($filters),
             'canManage' => in_array($user['role_slug'], ['admin', 'gerente', 'supervisor'], true),
         ]);
     }

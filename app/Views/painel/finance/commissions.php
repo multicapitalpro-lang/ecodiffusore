@@ -30,10 +30,10 @@ $sucesso = isset($_GET['sucesso']);
 </div>
 
 <?php if (count($bySeller) > 1 || !$canManage): ?>
-<h3 class="section-title">Resumo por vendedor</h3>
+<h3 class="section-title">Resumo por beneficiário</h3>
 <div class="table-scroll">
     <table class="data-table">
-        <thead><tr><th>Vendedor</th><th>Qtd.</th><th>Total gerado</th><th>Pago</th><th>Pendente</th></tr></thead>
+        <thead><tr><th>Beneficiário</th><th>Qtd.</th><th>Total gerado</th><th>Pago</th><th>Pendente</th></tr></thead>
         <tbody>
             <?php foreach ($bySeller as $s): ?>
                 <tr>
@@ -52,12 +52,19 @@ $sucesso = isset($_GET['sucesso']);
 <h3 class="section-title">Lançamentos</h3>
 <div class="table-scroll">
     <table class="data-table">
-        <thead><tr><th>Pedido</th><th>Vendedor</th><th>Cliente</th><th>Data</th><th>%</th><th>Comissão</th><th>Situação</th><?php if ($canManage): ?><th></th><?php endif; ?></tr></thead>
+        <thead><tr><th>Pedido</th><th>Beneficiário</th><th>Papel</th><th>Cliente</th><th>Data</th><th>%</th><th>Comissão</th><th>Situação</th><?php if ($canManage): ?><th></th><?php endif; ?></tr></thead>
         <tbody>
+            <?php $roleLabels = ['licenciado' => 'Licenciado', 'supervisor' => 'Supervisor', 'gerente' => 'Gerente']; ?>
             <?php foreach ($commissions as $c): ?>
                 <tr>
                     <td>#<?= (int) $c['order_id'] ?></td>
-                    <td><?= View::e($c['seller_name']) ?></td>
+                    <td>
+                        <?= View::e($c['beneficiary_name']) ?>
+                        <?php if ((int) $c['beneficiary_id'] !== (int) $c['seller_id']): ?>
+                            <br><small class="hint-text">pedido de <?= View::e($c['seller_name']) ?></small>
+                        <?php endif; ?>
+                    </td>
+                    <td><?= View::e($roleLabels[$c['role_slug']] ?? $c['role_slug']) ?></td>
                     <td><?= View::e($c['client_name']) ?></td>
                     <td><?= View::e(date('d/m/Y', strtotime($c['order_date']))) ?></td>
                     <td><?= number_format((float) $c['percentage'], 2, ',', '.') ?>%</td>
@@ -76,7 +83,7 @@ $sucesso = isset($_GET['sucesso']);
                 </tr>
             <?php endforeach; ?>
             <?php if (!$commissions): ?>
-                <tr><td colspan="<?= $canManage ? 8 : 7 ?>">Nenhuma comissão gerada ainda.</td></tr>
+                <tr><td colspan="<?= $canManage ? 9 : 8 ?>">Nenhuma comissão gerada ainda.</td></tr>
             <?php endif; ?>
         </tbody>
     </table>

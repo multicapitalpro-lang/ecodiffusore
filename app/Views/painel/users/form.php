@@ -32,9 +32,21 @@ $values = $editing ?? ($old ?? []);
     </select>
     <?php if (!empty($errors['role_id'])): ?><p class="field-error"><?= View::e($errors['role_id']) ?></p><?php endif; ?>
 
-    <label for="commission_pct">Comissão padrão (%) — só para papel Licenciado</label>
+    <label for="manager_id">Reporta para (supervisor/gerente)</label>
+    <select id="manager_id" name="manager_id">
+        <option value="">Ninguém (topo da hierarquia)</option>
+        <?php foreach ($managers as $m): ?>
+            <option value="<?= (int) $m['id'] ?>" <?= (int) ($values['manager_id'] ?? 0) === (int) $m['id'] ? 'selected' : '' ?>>
+                <?= View::e($m['name']) ?> (<?= $m['role_slug'] === 'gerente' ? 'Gerente' : 'Supervisor' ?>)
+            </option>
+        <?php endforeach; ?>
+    </select>
+    <?php if (!empty($errors['manager_id'])): ?><p class="field-error"><?= View::e($errors['manager_id']) ?></p><?php endif; ?>
+
+    <label for="commission_pct">Comissão desta pessoa (%) sobre as vendas que contam pra ela</label>
     <input type="number" id="commission_pct" name="commission_pct" step="0.01" min="0" max="100"
            value="<?= View::e((string) ($values['commission_pct'] ?? '')) ?>" placeholder="Ex: 5.00">
+    <p class="hint-text">Para licenciado: % sobre os próprios pedidos verificados. Para supervisor/gerente: % sobre os pedidos verificados de toda a equipe abaixo dele.</p>
 
     <label for="status">Status</label>
     <select id="status" name="status">

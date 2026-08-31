@@ -71,7 +71,10 @@ $desempenhoOpen = $anyActive(['/painel/desempenho', '/painel/metas']);
                 <details class="nav-group" <?= $desempenhoOpen ? 'open' : '' ?>>
                     <summary><?= $icon('chart') ?> Desempenho</summary>
                     <div class="nav-subitems">
-                        <a href="/painel/desempenho/vendedores" class="<?= $isActive('/painel/desempenho') ? 'is-active' : '' ?>">Vendedores</a>
+                        <a href="/painel/desempenho/vendedores" class="<?= $isActive('/painel/desempenho/vendedores') ? 'is-active' : '' ?>">Vendedores</a>
+                        <?php if ($role === 'admin'): ?>
+                            <a href="/painel/desempenho/equipe" class="<?= $isActive('/painel/desempenho/equipe') ? 'is-active' : '' ?>">Equipe</a>
+                        <?php endif; ?>
                         <a href="/painel/metas" class="<?= $isActive('/painel/metas') ? 'is-active' : '' ?>">Metas</a>
                     </div>
                 </details>

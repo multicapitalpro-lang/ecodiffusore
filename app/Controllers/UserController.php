@@ -28,6 +28,7 @@ class UserController
         View::render('painel/users/form', [
             'user' => Auth::user(),
             'roles' => Role::all(),
+            'managers' => User::managerCandidates(),
             'editing' => null,
             'errors' => [],
         ]);
@@ -47,6 +48,7 @@ class UserController
             View::render('painel/users/form', [
                 'user' => Auth::user(),
                 'roles' => Role::all(),
+                'managers' => User::managerCandidates(),
                 'editing' => null,
                 'errors' => $errors,
                 'old' => $_POST,
@@ -56,6 +58,7 @@ class UserController
 
         User::create([
             'role_id' => (int) $_POST['role_id'],
+            'manager_id' => !empty($_POST['manager_id']) ? (int) $_POST['manager_id'] : null,
             'name' => trim($_POST['name']),
             'email' => trim($_POST['email']),
             'whatsapp' => trim($_POST['whatsapp'] ?? ''),
@@ -80,6 +83,7 @@ class UserController
         View::render('painel/users/form', [
             'user' => Auth::user(),
             'roles' => Role::all(),
+            'managers' => User::managerCandidates((int) $id),
             'editing' => $editing,
             'errors' => [],
         ]);
@@ -96,10 +100,16 @@ class UserController
 
         $errors = $this->validate($_POST, $id);
 
+        $managerId = !empty($_POST['manager_id']) ? (int) $_POST['manager_id'] : null;
+        if ($managerId !== null && $this->createsCycle($id, $managerId)) {
+            $errors['manager_id'] = 'Essa escolha criaria um ciclo na hierarquia (ex: A reporta pra B que reporta pra A).';
+        }
+
         if ($errors) {
             View::render('painel/users/form', [
                 'user' => Auth::user(),
                 'roles' => Role::all(),
+                'managers' => User::managerCandidates($id),
                 'editing' => array_merge(['id' => $id], $_POST),
                 'errors' => $errors,
             ]);
@@ -108,6 +118,7 @@ class UserController
 
         User::update($id, [
             'role_id' => (int) $_POST['role_id'],
+            'manager_id' => $managerId,
             'name' => trim($_POST['name']),
             'email' => trim($_POST['email']),
             'whatsapp' => trim($_POST['whatsapp'] ?? ''),
@@ -122,6 +133,21 @@ class UserController
         }
 
         Router::redirect('/painel/usuarios?sucesso=1');
+    }
+
+    private function createsCycle(int $userId, int $candidateManagerId): bool
+    {
+        if ($candidateManagerId === $userId) {
+            return true;
+        }
+
+        foreach (User::managerChain($candidateManagerId) as $manager) {
+            if ((int) $manager['id'] === $userId) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function validate(array $input, ?int $exceptId): array

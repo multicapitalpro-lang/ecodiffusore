@@ -110,6 +110,7 @@ $router->post('/painel/orcamentos/{id}/converter', [App\Controllers\QuoteControl
 
 // Desempenho
 $router->get('/painel/desempenho/vendedores', [App\Controllers\PerformanceController::class, 'sellers']);
+$router->get('/painel/desempenho/equipe', [App\Controllers\PerformanceController::class, 'team']);
 
 // Metas
 $router->get('/painel/metas', [App\Controllers\GoalController::class, 'index']);
