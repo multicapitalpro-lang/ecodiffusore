@@ -45,6 +45,9 @@ $router = new Router();
 // Site público
 $router->get('/', [App\Controllers\PublicController::class, 'home']);
 $router->post('/contato', [App\Controllers\PublicController::class, 'submitLead']);
+$router->get('/comprar', [App\Controllers\PublicController::class, 'buy']);
+$router->post('/comprar/iniciar', [App\Controllers\PublicController::class, 'startCheckout']);
+$router->post('/comprar/pagamento', [App\Controllers\PublicController::class, 'checkout']);
 
 // Autenticação
 $router->get('/painel/login', [App\Controllers\AuthController::class, 'showLogin']);

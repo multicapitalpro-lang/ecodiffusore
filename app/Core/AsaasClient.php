@@ -52,6 +52,17 @@ class AsaasClient
             'externalReference' => $data['external_reference'] ?? null,
         ];
 
+        // Cartao parcelado: manda o total (Asaas divide em N parcelas iguais) em vez de 'value'.
+        // Nao usar o endpoint dedicado de parcelamento (/v3/installments) -- esse exige os dados
+        // crus do cartao no corpo da requisicao, o que colocaria a aplicacao no escopo PCI-DSS.
+        // Esse endpoint (/payments) devolve invoiceUrl hospedado pela propria Asaas, onde o cliente
+        // digita o cartao -- nenhum dado de cartao passa pelo nosso servidor.
+        if (!empty($data['installment_count']) && (int) $data['installment_count'] > 1) {
+            $payload['installmentCount'] = (int) $data['installment_count'];
+            $payload['totalValue'] = $data['value'];
+            unset($payload['value']);
+        }
+
         $result = $this->request('POST', '/payments', $payload);
 
         if (empty($result['id'])) {

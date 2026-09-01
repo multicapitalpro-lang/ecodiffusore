@@ -39,6 +39,73 @@
 })();
 
 (function () {
+    document.querySelectorAll('dialog[data-autoopen]').forEach(function (dialog) {
+        dialog.showModal();
+    });
+})();
+
+(function () {
+    var form = document.getElementById('buy-form');
+    if (!form) return;
+
+    var CARD_FEE_PCT = 0.0299;
+    var ANTECIPACAO_MES_PCT = 0.017;
+    var TAXA_FIXA = 0.49;
+
+    var fmt = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+
+    var productSelect = document.getElementById('buy-product');
+    var methodInputs = form.querySelectorAll('input[name=billing_type]');
+    var installmentsRow = document.getElementById('buy-installments-row');
+    var installmentsSelect = document.getElementById('buy-installments');
+    var summary = document.getElementById('buy-price-summary');
+
+    function basePrice() {
+        var opt = productSelect.options[productSelect.selectedIndex];
+        return opt ? parseFloat(opt.dataset.price || '0') : 0;
+    }
+
+    function chargeAmount(price, installments) {
+        if (installments <= 1) {
+            return (price + TAXA_FIXA) / (1 - CARD_FEE_PCT);
+        }
+        var mesesMedios = (installments + 1) / 2;
+        var pct = CARD_FEE_PCT + ANTECIPACAO_MES_PCT * mesesMedios;
+        return (price + TAXA_FIXA) / (1 - pct);
+    }
+
+    function selectedMethod() {
+        var checked = form.querySelector('input[name=billing_type]:checked');
+        return checked ? checked.value : 'PIX';
+    }
+
+    function update() {
+        var price = basePrice();
+        var method = selectedMethod();
+        var isCard = method === 'CREDIT_CARD';
+        installmentsRow.classList.toggle('is-visible', isCard);
+
+        if (!isCard) {
+            summary.innerHTML = 'Valor à vista: <strong>' + fmt.format(price) + '</strong>';
+            return;
+        }
+
+        var n = parseInt(installmentsSelect.value, 10) || 1;
+        var total = chargeAmount(price, n);
+        var parcela = total / n;
+
+        summary.innerHTML = n === 1
+            ? 'Valor no cartão à vista: <strong>' + fmt.format(total) + '</strong>'
+            : n + 'x de <strong>' + fmt.format(parcela) + '</strong> (total ' + fmt.format(total) + ')';
+    }
+
+    productSelect.addEventListener('change', update);
+    installmentsSelect.addEventListener('change', update);
+    methodInputs.forEach(function (input) { input.addEventListener('change', update); });
+    update();
+})();
+
+(function () {
     var carousel = document.getElementById('install-carousel');
     if (!carousel) return;
 

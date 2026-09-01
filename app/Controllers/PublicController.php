@@ -2,15 +2,25 @@
 
 namespace App\Controllers;
 
+use App\Core\AsaasClient;
+use App\Core\CardPricing;
 use App\Core\Csrf;
 use App\Core\Router;
 use App\Core\View;
+use App\Models\Client;
 use App\Models\Lead;
+use App\Models\Order;
+use App\Models\Payment;
+use App\Models\Product;
+use App\Models\User;
 
 class PublicController
 {
+    private const REF_COOKIE = 'eco_ref';
+
     public function home(): void
     {
+        $this->trackReferral();
         View::render('site/home', [], 'site');
     }
 
@@ -30,7 +40,7 @@ class PublicController
             Router::redirect('/?erro=1#contato');
         }
 
-        Lead::create([
+        $leadId = Lead::create([
             'name' => mb_substr($name, 0, 120),
             'whatsapp' => mb_substr($whatsapp, 0, 30),
             'city' => mb_substr($city, 0, 120),
@@ -39,6 +49,189 @@ class PublicController
             'source' => 'landing_page',
         ]);
 
+        $ref = $this->trackReferral();
+        if ($ref) {
+            Lead::assignTo($leadId, $ref);
+        }
+
         Router::redirect('/?sucesso=1#contato');
+    }
+
+    public function buy(): void
+    {
+        $ref = $this->trackReferral();
+
+        View::render('site/buy', [
+            'showPopup' => empty($_SESSION['checkout_lead_id']),
+            'checkoutName' => $_SESSION['checkout_name'] ?? '',
+            'checkoutWhatsapp' => $_SESSION['checkout_whatsapp'] ?? '',
+            'checkoutCity' => $_SESSION['checkout_city'] ?? '',
+            'products' => Product::all(true),
+            'ref' => $ref,
+            'erro' => $_GET['erro'] ?? null,
+        ], 'site');
+    }
+
+    public function startCheckout(): void
+    {
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            Router::redirect('/comprar?erro=csrf');
+        }
+
+        $name = trim($_POST['name'] ?? '');
+        $whatsapp = trim($_POST['whatsapp'] ?? '');
+        $city = trim($_POST['city'] ?? '');
+
+        if ($name === '' || $whatsapp === '') {
+            Router::redirect('/comprar?erro=1');
+        }
+
+        $ref = $this->trackReferral();
+
+        $leadId = Lead::create([
+            'name' => mb_substr($name, 0, 120),
+            'whatsapp' => mb_substr($whatsapp, 0, 30),
+            'city' => mb_substr($city, 0, 120),
+            'truck_brand' => null,
+            'message' => null,
+            'source' => 'checkout',
+        ]);
+
+        if ($ref) {
+            Lead::assignTo($leadId, $ref);
+        }
+
+        $_SESSION['checkout_lead_id'] = $leadId;
+        $_SESSION['checkout_name'] = $name;
+        $_SESSION['checkout_whatsapp'] = $whatsapp;
+        $_SESSION['checkout_city'] = $city;
+
+        Router::redirect('/comprar');
+    }
+
+    public function checkout(): void
+    {
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            Router::redirect('/comprar?erro=csrf');
+        }
+
+        $name = trim($_POST['name'] ?? '');
+        $whatsapp = trim($_POST['whatsapp'] ?? '');
+        $city = trim($_POST['city'] ?? '');
+        $email = trim($_POST['email'] ?? '');
+        $document = trim($_POST['document'] ?? '');
+        $productId = (int) ($_POST['product_id'] ?? 0);
+        $billingType = in_array($_POST['billing_type'] ?? '', ['PIX', 'BOLETO', 'CREDIT_CARD'], true)
+            ? $_POST['billing_type']
+            : 'PIX';
+        $installments = $billingType === 'CREDIT_CARD' ? max(1, min(12, (int) ($_POST['installments'] ?? 1))) : 1;
+
+        $product = Product::find($productId);
+
+        if ($name === '' || $whatsapp === '' || $document === '' || !$product) {
+            Router::redirect('/comprar?erro=1');
+        }
+
+        $ref = $this->trackReferral();
+
+        $documentDigits = preg_replace('/\D/', '', $document);
+
+        $clientId = Client::create([
+            'name' => $name,
+            'whatsapp' => $whatsapp,
+            'city' => $city,
+            'email' => $email,
+            'document' => $document,
+            'person_type' => strlen($documentDigits) > 11 ? 'juridica' : 'fisica',
+            'seller_id' => $ref,
+        ]);
+
+        $basePrice = (float) $product['price_cash'];
+
+        $orderId = Order::create([
+            'client_id' => $clientId,
+            'seller_id' => $ref,
+            'order_date' => date('Y-m-d'),
+            'notes' => 'Pedido via checkout público' . ($ref ? " (indicação #{$ref})" : ''),
+        ], [
+            ['product_id' => $productId, 'quantity' => 1, 'unit_price' => $basePrice],
+        ]);
+
+        $chargeAmount = $billingType === 'CREDIT_CARD'
+            ? CardPricing::chargeAmount($basePrice, $installments)
+            : $basePrice;
+
+        try {
+            $this->generatePublicCharge($orderId, $clientId, $chargeAmount, $billingType, $installments, $product['name']);
+        } catch (\Throwable $e) {
+            Router::redirect('/comprar?erro_cobranca=' . urlencode($e->getMessage()));
+        }
+    }
+
+    /** Gera a cobrança e redireciona direto pro invoiceUrl hospedado da Asaas — nenhum dado de
+     *  cartão passa pelo nosso servidor em nenhum momento. */
+    private function generatePublicCharge(int $orderId, int $clientId, float $amount, string $billingType, int $installments, string $productName): void
+    {
+        $client = Client::find($clientId);
+        if (!$client) {
+            throw new \RuntimeException('Cliente não encontrado.');
+        }
+
+        $asaas = new AsaasClient();
+        $customerId = $asaas->createOrFindCustomer($client);
+
+        $dueDate = date('Y-m-d', strtotime('+3 days'));
+        $charge = $asaas->createCharge([
+            'customer' => $customerId,
+            'billing_type' => $billingType,
+            'value' => $amount,
+            'installment_count' => $installments > 1 ? $installments : null,
+            'due_date' => $dueDate,
+            'description' => "Pedido #{$orderId} — {$productName} — Ecodiffusore Brasil",
+            'external_reference' => 'order:' . $orderId,
+        ]);
+
+        Payment::create([
+            'payable_type' => 'order',
+            'payable_id' => $orderId,
+            'asaas_customer_id' => $customerId,
+            'asaas_charge_id' => $charge['id'],
+            'method' => $billingType,
+            'amount' => $amount,
+            'checkout_url' => $charge['invoiceUrl'] ?? null,
+            'pix_payload' => null,
+            'due_date' => $dueDate,
+        ]);
+
+        unset($_SESSION['checkout_lead_id'], $_SESSION['checkout_name'], $_SESSION['checkout_whatsapp'], $_SESSION['checkout_city']);
+
+        if (!empty($charge['invoiceUrl'])) {
+            Router::redirect($charge['invoiceUrl']);
+        }
+
+        Router::redirect('/comprar?erro_cobranca=' . urlencode('Não foi possível gerar o link de pagamento.'));
+    }
+
+    /**
+     * Le/grava o cookie de indicacao por Licenciado (?ref=<id>). Nunca confia no valor sem validar
+     * contra User::find() -- o cookie pode ser forjado por qualquer visitante.
+     */
+    private function trackReferral(): ?int
+    {
+        $candidate = $_GET['ref'] ?? $_COOKIE[self::REF_COOKIE] ?? null;
+        if (!$candidate || !ctype_digit((string) $candidate)) {
+            return null;
+        }
+
+        $user = User::find((int) $candidate);
+        if (!$user || $user['role_slug'] !== 'licenciado' || $user['status'] !== 'active') {
+            return null;
+        }
+
+        if (isset($_GET['ref'])) {
+            setcookie(self::REF_COOKIE, (string) $user['id'], time() + 30 * 86400, '/');
+        }
+
+        return (int) $user['id'];
     }
 }
