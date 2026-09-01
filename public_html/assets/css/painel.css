@@ -283,7 +283,7 @@ tr.report-row-bold td { font-weight: 700; }
 /* Estrutura de equipe */
 .team-branch { margin-bottom: 18px; }
 .team-node { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
-.team-node-gerente { border-left: 4px solid var(--navy); }
+.team-node-gestor { border-left: 4px solid var(--navy); }
 .team-node-supervisor { border-left: 4px solid var(--green-dark); }
 .team-node-name { font-weight: 700; color: var(--navy); }
 .team-node-meta { display: flex; gap: 14px; font-size: .82rem; color: var(--gray-text); }

@@ -20,7 +20,7 @@ use App\Models\User;
 
 class FinanceController
 {
-    /** Licenciado ve so a propria regiao; Admin/Gerente mantem o comportamento que ja tinham */
+    /** Licenciado ve so a propria regiao; Admin/Gestor mantem o comportamento que ja tinham */
     private function scopeFilters(array $user): array
     {
         if ($user['role_slug'] === Roles::REGIONAL_OWNER) {
@@ -271,12 +271,13 @@ class FinanceController
     }
 
     /**
-     * Vendedor ve so as proprias comissoes; Licenciado ve a propria regiao. Admin/Gerente mantem
-     * o comportamento que ja tinham (sem filtro) -- mesmo escopo combinado usado em scopeFilters().
+     * Vendedor/Gerente/Supervisor veem so as proprias comissoes (sao beneficiarios individuais,
+     * nao gestores de pool). Licenciado ve a propria regiao. Admin/Gestor mantem o comportamento
+     * que ja tinham (sem filtro) -- mesmo escopo combinado usado em scopeFilters().
      */
     private function commissionFilters(array $user): array
     {
-        if ($user['role_slug'] === Roles::SELLER) {
+        if (in_array($user['role_slug'], [Roles::SELLER, 'gerente', 'supervisor'], true)) {
             return ['beneficiary_id' => $user['id']];
         }
         if ($user['role_slug'] === Roles::REGIONAL_OWNER) {
@@ -316,7 +317,7 @@ class FinanceController
 
         $filters = $this->commissionFilters($user);
 
-        $roleLabels = ['licenciado' => 'Licenciado', 'gerente' => 'Gerente', 'vendedor' => 'Vendedor'];
+        $roleLabels = ['licenciado' => 'Licenciado', 'gestor' => 'Gestor', 'vendedor' => 'Vendedor', 'gerente' => 'Gerente', 'supervisor' => 'Supervisor'];
 
         $rows = array_map(fn ($c) => [
             $c['order_id'],

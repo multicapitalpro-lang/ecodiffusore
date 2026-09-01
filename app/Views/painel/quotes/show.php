@@ -1,12 +1,14 @@
 <?php
 use App\Core\Csrf;
+use App\Core\Roles;
 use App\Core\View;
 $statusLabels = ['aberto' => 'Aberto', 'aprovado' => 'Aprovado', 'recusado' => 'Recusado', 'convertido' => 'Convertido'];
 $sucesso = isset($_GET['sucesso']);
+$isViewOnly = in_array($user['role_slug'] ?? '', Roles::NATIONAL_SUPPORT, true);
 ?>
 <div class="page-header">
     <h1>Orçamento #<?= (int) $quote['id'] ?></h1>
-    <?php if ($quote['status'] === 'aberto'): ?>
+    <?php if ($quote['status'] === 'aberto' && !$isViewOnly): ?>
         <a href="/painel/orcamentos/<?= (int) $quote['id'] ?>/editar" class="btn btn-outline">Editar</a>
     <?php endif; ?>
 </div>
@@ -49,14 +51,15 @@ $sucesso = isset($_GET['sucesso']);
 </div>
 
 <?php
-$allowGenerateCharge = in_array($quote['status'], ['aberto', 'aprovado'], true);
+$allowGenerateCharge = in_array($quote['status'], ['aberto', 'aprovado'], true) && !$isViewOnly;
 if ($payments || $allowGenerateCharge):
     $chargeAction = "/painel/orcamentos/{$quote['id']}/cobranca";
     include __DIR__ . '/../_payments_section.php';
 endif;
 ?>
 
-<?php if ($quote['status'] === 'aberto'): ?>
+<?php if ($isViewOnly): ?>
+<?php elseif ($quote['status'] === 'aberto'): ?>
 <div class="order-actions">
     <form action="/painel/orcamentos/<?= (int) $quote['id'] ?>/status" method="post" class="inline-form">
         <?= Csrf::field() ?>

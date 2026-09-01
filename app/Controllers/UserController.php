@@ -15,7 +15,7 @@ class UserController
 {
     public function index(): void
     {
-        Auth::requireRole(Roles::MANAGEMENT);
+        Auth::requireRole(Roles::USER_MANAGEMENT);
         $user = Auth::user();
 
         if ($user['role_slug'] === 'admin') {
@@ -33,7 +33,7 @@ class UserController
 
     public function create(): void
     {
-        Auth::requireRole(Roles::MANAGEMENT);
+        Auth::requireRole(Roles::USER_MANAGEMENT);
         $user = Auth::user();
 
         View::render('painel/users/form', [
@@ -48,7 +48,7 @@ class UserController
 
     public function store(): void
     {
-        Auth::requireRole(Roles::MANAGEMENT);
+        Auth::requireRole(Roles::USER_MANAGEMENT);
         $user = Auth::user();
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
@@ -90,7 +90,7 @@ class UserController
 
     public function edit(string $id): void
     {
-        Auth::requireRole(Roles::MANAGEMENT);
+        Auth::requireRole(Roles::USER_MANAGEMENT);
         $user = Auth::user();
         $id = (int) $id;
 
@@ -113,7 +113,7 @@ class UserController
 
     public function update(string $id): void
     {
-        Auth::requireRole(Roles::MANAGEMENT);
+        Auth::requireRole(Roles::USER_MANAGEMENT);
         $user = Auth::user();
         $id = (int) $id;
 
@@ -180,10 +180,13 @@ class UserController
             return $all;
         }
         if ($user['role_slug'] === Roles::REGIONAL_OWNER) {
-            return array_values(array_filter($all, fn ($r) => in_array($r['slug'], ['gerente', 'vendedor'], true)));
+            return array_values(array_filter($all, fn ($r) => in_array($r['slug'], ['gestor', 'vendedor'], true)));
+        }
+        if ($user['role_slug'] === 'gerente') {
+            return array_values(array_filter($all, fn ($r) => $r['slug'] === 'supervisor'));
         }
 
-        // gerente: so pode cadastrar vendedor
+        // gestor: so pode cadastrar vendedor
         return array_values(array_filter($all, fn ($r) => $r['slug'] === 'vendedor'));
     }
 
@@ -195,19 +198,26 @@ class UserController
         }
         if ($user['role_slug'] === Roles::REGIONAL_OWNER) {
             $downline = User::downlineIds((int) $user['id']);
-            $gerentes = array_values(array_filter(User::allByRole('gerente'), fn ($g) => in_array((int) $g['id'], $downline, true)));
-            $gerentes = array_map(fn ($g) => $g + ['role_slug' => 'gerente'], $gerentes);
-            return array_merge([['id' => $user['id'], 'name' => $user['name'], 'role_slug' => 'licenciado']], $gerentes);
+            $gestores = array_values(array_filter(User::allByRole('gestor'), fn ($g) => in_array((int) $g['id'], $downline, true)));
+            $gestores = array_map(fn ($g) => $g + ['role_slug' => 'gestor'], $gestores);
+            return array_merge([['id' => $user['id'], 'name' => $user['name'], 'role_slug' => 'licenciado']], $gestores);
+        }
+        if ($user['role_slug'] === 'gerente') {
+            return [['id' => $user['id'], 'name' => $user['name'], 'role_slug' => 'gerente']];
         }
 
-        // gerente: unica opcao e ele mesmo
-        return [['id' => $user['id'], 'name' => $user['name'], 'role_slug' => 'gerente']];
+        // gestor: unica opcao e ele mesmo
+        return [['id' => $user['id'], 'name' => $user['name'], 'role_slug' => 'gestor']];
     }
 
-    /** Gerente nao define comissao de ninguem -- so o licenciado controla o quanto repassa do proprio pool */
+    /**
+     * So admin e licenciado definem commission_pct de alguem: licenciado controla o quanto repassa
+     * do proprio pool (gestor/vendedor); admin define o % contratual do licenciado e o % de
+     * gerente/supervisor (pago direto pela Ecodiffusore). Gestor/Gerente nunca definem comissao.
+     */
     private function canSetCommission(array $user): bool
     {
-        return $user['role_slug'] !== 'gerente';
+        return in_array($user['role_slug'], ['admin', Roles::REGIONAL_OWNER], true);
     }
 
     private function resolveManagerId(array $user, array $input, ?int $targetId): ?int
@@ -223,17 +233,17 @@ class UserController
             return $current && $current['manager_id'] !== null ? (int) $current['manager_id'] : null;
         }
 
-        if ($user['role_slug'] === 'gerente') {
+        if (in_array($user['role_slug'], ['gestor', 'gerente'], true)) {
             return (int) $user['id'];
         }
 
-        // licenciado: so aceita a si mesmo ou um dos proprios gerentes
+        // licenciado: so aceita a si mesmo ou um dos proprios gestores
         $allowed = array_map(fn ($m) => (int) $m['id'], $this->managerOptions($user, null));
         $chosen = !empty($input['manager_id']) ? (int) $input['manager_id'] : (int) $user['id'];
         return in_array($chosen, $allowed, true) ? $chosen : (int) $user['id'];
     }
 
-    /** Bloqueia edicao/leitura de gente fora da propria regiao (licenciado/gerente) */
+    /** Bloqueia edicao/leitura de gente fora da propria regiao/equipe */
     private function authorizeTarget(array $user, int $targetId): void
     {
         if ($user['role_slug'] === 'admin') {
@@ -313,5 +323,59 @@ class UserController
         }
 
         return $errors;
+    }
+
+    public function licenciados(): void
+    {
+        Auth::requireRole(Roles::SUPERVISOR_ASSIGNMENT);
+        $user = Auth::user();
+
+        $supervisors = User::allByRole('supervisor');
+        if ($user['role_slug'] === 'gerente') {
+            $supervisors = array_values(array_filter($supervisors, fn ($s) => (int) $s['manager_id'] === (int) $user['id']));
+        }
+
+        View::render('painel/users/licenciados', [
+            'user' => $user,
+            'licenciados' => User::allByRole('licenciado'),
+            'supervisors' => $supervisors,
+        ]);
+    }
+
+    public function assignSupervisor(string $id): void
+    {
+        Auth::requireRole(Roles::SUPERVISOR_ASSIGNMENT);
+        $user = Auth::user();
+        $id = (int) $id;
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            Router::redirect('/painel/licenciados?erro=1');
+        }
+
+        $licenciado = User::find($id);
+        if (!$licenciado || $licenciado['role_slug'] !== 'licenciado') {
+            Router::redirect('/painel/licenciados?erro=1');
+        }
+
+        $supervisorId = !empty($_POST['supervisor_id']) ? (int) $_POST['supervisor_id'] : null;
+
+        if ($supervisorId !== null) {
+            $supervisor = User::find($supervisorId);
+            // Gerente so pode apontar pra um Supervisor da propria equipe -- sem isso, um Gerente
+            // poderia atribuir licenciados a supervisor de outro Gerente via POST direto.
+            $allowed = $user['role_slug'] === 'admin'
+                || ($supervisor && $supervisor['role_slug'] === 'supervisor' && (int) $supervisor['manager_id'] === (int) $user['id']);
+            if (!$supervisor || $supervisor['role_slug'] !== 'supervisor' || !$allowed) {
+                Router::redirect('/painel/licenciados?erro=1');
+            }
+        }
+
+        $before = $licenciado['supervisor_id'] ?? null;
+        User::setSupervisor($id, $supervisorId);
+        if ((string) $before !== (string) $supervisorId) {
+            AuditLog::record((int) $user['id'], 'licenciado_supervisor_alterado', 'user', $id, ['supervisor_id' => $before], ['supervisor_id' => $supervisorId]);
+        }
+
+        Router::redirect('/painel/licenciados?sucesso=1');
     }
 }

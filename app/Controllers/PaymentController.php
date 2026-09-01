@@ -158,6 +158,13 @@ class PaymentController
             return;
         }
 
+        // Gerente/Supervisor sao papel de suporte nacional -- so visualizam, nunca geram cobranca
+        if (in_array($user['role_slug'], Roles::NATIONAL_SUPPORT, true)) {
+            http_response_code(403);
+            require BASE_PATH . '/app/Views/errors/403.php';
+            exit;
+        }
+
         $allowed = $user['role_slug'] === Roles::SELLER
             ? $sellerId === (int) $user['id']
             : in_array($sellerId, User::downlineIds((int) $user['id']), true);

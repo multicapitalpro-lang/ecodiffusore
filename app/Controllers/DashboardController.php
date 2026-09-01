@@ -38,11 +38,16 @@ class DashboardController
             [$from, $to] = DateRange::fromRequest();
             [$prevFrom, $prevTo] = DateRange::previousPeriod($from, $to);
 
-            // Vendedor ve so as proprias vendas; gerente/licenciado veem a equipe/regiao agregada; admin ve tudo
+            // Vendedor ve so as proprias vendas; gestor/licenciado veem a equipe/regiao agregada;
+            // supervisor/gerente veem a rede nacional que cuidam (visualizacao); admin ve tudo
             $sellerId = null;
             $sellerIds = null;
             if ($role === Roles::SELLER) {
                 $sellerId = (int) $user['id'];
+            } elseif ($role === 'supervisor') {
+                $sellerIds = User::supervisedIds((int) $user['id']);
+            } elseif ($role === 'gerente') {
+                $sellerIds = User::nationalIds((int) $user['id']);
             } elseif ($role !== 'admin') {
                 $sellerIds = User::downlineIds((int) $user['id']);
             }

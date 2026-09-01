@@ -25,6 +25,10 @@ class LeadController
             $leads = Lead::all();
         } elseif ($role === Roles::SELLER) {
             $leads = Lead::forScope(User::downlineIds((int) $user['id']), false);
+        } elseif ($role === 'supervisor') {
+            $leads = Lead::forScope(User::supervisedIds((int) $user['id']), false);
+        } elseif ($role === 'gerente') {
+            $leads = Lead::forScope(User::nationalIds((int) $user['id']), false);
         } else {
             $leads = Lead::forScope(User::downlineIds((int) $user['id']), true);
         }
@@ -34,17 +38,25 @@ class LeadController
             $columns[$status] = array_values(array_filter($leads, fn ($l) => $l['status'] === $status));
         }
 
+        $isViewOnly = in_array($role, array_merge([Roles::SELLER], Roles::NATIONAL_SUPPORT), true);
+
         View::render('painel/leads/index', [
             'user' => $user,
             'columns' => $columns,
-            'canAssign' => $role !== Roles::SELLER,
-            'sellers' => $role !== Roles::SELLER ? User::allByRole('vendedor') : [],
+            'canAssign' => !$isViewOnly,
+            'isViewOnly' => $isViewOnly,
+            'sellers' => !$isViewOnly ? User::allByRole('vendedor') : [],
         ]);
     }
 
     public function updateStatus(string $id): void
     {
         Auth::requireRole(Roles::STAFF);
+        if (in_array(Auth::user()['role_slug'], Roles::NATIONAL_SUPPORT, true)) {
+            http_response_code(403);
+            require BASE_PATH . '/app/Views/errors/403.php';
+            exit;
+        }
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
             if (Response::isAjax()) {

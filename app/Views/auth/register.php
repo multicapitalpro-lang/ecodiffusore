@@ -14,7 +14,7 @@ $old = $old ?? [];
 <div class="auth-box">
     <img src="<?= View::asset('/assets/img/logo-mark.svg') ?>" alt="Ecodiffusore Brasil" class="auth-logo">
     <h1>Criar minha conta de cliente</h1>
-    <p class="auth-hint">Cadastro para clientes compradores. Se você é licenciado, gerente, vendedor ou admin, peça ao administrador para criar seu acesso.</p>
+    <p class="auth-hint">Cadastro para clientes compradores. Se você é licenciado, gestor, vendedor, gerente, supervisor ou admin, peça ao administrador para criar seu acesso.</p>
     <form action="/painel/cadastro" method="post" class="auth-form">
         <?= Csrf::field() ?>
         <label for="name">Nome completo</label>

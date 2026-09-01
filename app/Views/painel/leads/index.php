@@ -8,9 +8,10 @@ $statusLabels = [
     'descartado' => 'Descartado',
 ];
 $csrfToken = Csrf::token();
+$isViewOnly = $isViewOnly ?? false;
 ?>
 <h1>Leads</h1>
-<p class="section-sub">Arraste o card entre as colunas para atualizar o status.</p>
+<p class="section-sub"><?= $isViewOnly ? 'Visualização somente leitura.' : 'Arraste o card entre as colunas para atualizar o status.' ?></p>
 
 <div class="kanban-board" id="leads-board">
     <?php foreach ($statusLabels as $status => $label): ?>
@@ -21,7 +22,7 @@ $csrfToken = Csrf::token();
             </div>
             <div class="kanban-col-body" data-drop-status="<?= $status ?>">
                 <?php foreach ($columns[$status] as $lead): ?>
-                    <div class="kanban-card" draggable="true" data-lead-id="<?= (int) $lead['id'] ?>">
+                    <div class="kanban-card" draggable="<?= $isViewOnly ? 'false' : 'true' ?>" data-lead-id="<?= (int) $lead['id'] ?>">
                         <strong><?= View::e($lead['name']) ?></strong>
                         <a href="https://wa.me/55<?= preg_replace('/\D/', '', $lead['whatsapp']) ?>" target="_blank" rel="noopener" class="link-small"><?= View::e($lead['whatsapp']) ?></a>
                         <span class="kanban-card-meta"><?= View::e($lead['city'] ?: '—') ?> · <?= View::e($lead['truck_brand'] ?: '—') ?></span>

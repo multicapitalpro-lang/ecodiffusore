@@ -24,7 +24,7 @@ class Goal
         return $row ?: null;
     }
 
-    /** Metas ativas hoje, visiveis para o usuario informado (todas se admin/gerente/licenciado; so as suas + gerais se vendedor) */
+    /** Metas ativas hoje, visiveis para o usuario informado (todas se admin/gestor/licenciado; so as suas + gerais se vendedor) */
     public static function activeFor(?int $sellerId): array
     {
         $today = date('Y-m-d');

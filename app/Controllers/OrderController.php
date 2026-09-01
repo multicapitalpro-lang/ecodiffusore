@@ -76,6 +76,7 @@ class OrderController
     public function store(): void
     {
         Auth::requireRole(Roles::STAFF);
+        $this->assertNotViewOnly(Auth::user());
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
             if (Response::isAjax()) {
@@ -165,6 +166,7 @@ class OrderController
     {
         $order = $this->authorizeOrder((int) $id);
         $id = (int) $id;
+        $this->assertNotViewOnly(Auth::user());
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
             Router::redirect("/painel/pedidos/{$id}/editar?erro=1");
@@ -208,6 +210,7 @@ class OrderController
     {
         $order = $this->authorizeOrder((int) $id);
         $id = (int) $id;
+        $this->assertNotViewOnly(Auth::user());
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
             Router::redirect("/painel/pedidos/{$id}?erro=1");
@@ -250,7 +253,8 @@ class OrderController
         return $order;
     }
 
-    /** Filtro de escopo pra listar pedidos: vendedor so os proprios, gerente/licenciado a regiao, admin tudo */
+    /** Filtro de escopo pra listar pedidos: vendedor so os proprios, gestor/licenciado a regiao,
+     *  supervisor/gerente a rede que cuidam (visualizacao, nao vendem), admin tudo */
     private function scopeFilters(array $user): array
     {
         if ($user['role_slug'] === 'admin') {
@@ -258,6 +262,12 @@ class OrderController
         }
         if ($user['role_slug'] === Roles::SELLER) {
             return ['seller_id' => $user['id']];
+        }
+        if ($user['role_slug'] === 'supervisor') {
+            return ['seller_ids' => User::supervisedIds((int) $user['id'])];
+        }
+        if ($user['role_slug'] === 'gerente') {
+            return ['seller_ids' => User::nationalIds((int) $user['id'])];
         }
 
         return ['seller_ids' => User::downlineIds((int) $user['id'])];
@@ -275,6 +285,16 @@ class OrderController
         return array_values(array_filter($sellers, fn ($s) => in_array((int) $s['id'], $downline, true)));
     }
 
+    /** Gerente/Supervisor sao papel de suporte nacional -- so visualizam, nunca criam/editam pedido */
+    private function assertNotViewOnly(array $user): void
+    {
+        if (in_array($user['role_slug'], Roles::NATIONAL_SUPPORT, true)) {
+            http_response_code(403);
+            require BASE_PATH . '/app/Views/errors/403.php';
+            exit;
+        }
+    }
+
     private function canAccessSeller(array $user, int $sellerId): bool
     {
         if ($user['role_slug'] === 'admin') {
@@ -282,6 +302,12 @@ class OrderController
         }
         if ($user['role_slug'] === Roles::SELLER) {
             return $sellerId === (int) $user['id'];
+        }
+        if ($user['role_slug'] === 'supervisor') {
+            return in_array($sellerId, User::supervisedIds((int) $user['id']), true);
+        }
+        if ($user['role_slug'] === 'gerente') {
+            return in_array($sellerId, User::nationalIds((int) $user['id']), true);
         }
 
         return in_array($sellerId, User::downlineIds((int) $user['id']), true);

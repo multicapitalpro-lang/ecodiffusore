@@ -6,9 +6,11 @@ use App\Core\View;
 $role = $user['role_slug'] ?? '';
 $roleLabels = [
     'admin' => 'Administrador',
-    'gerente' => 'Gerente',
+    'gestor' => 'Gestor',
     'licenciado' => 'Licenciado',
     'vendedor' => 'Vendedor',
+    'gerente' => 'Gerente',
+    'supervisor' => 'Supervisor',
     'cliente' => 'Cliente',
 ];
 $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
@@ -32,6 +34,8 @@ $icon = function (string $name) use ($icons) {
 
 $managerRoles = Roles::MANAGEMENT;
 $staffRoles = Roles::STAFF;
+$userManagementRoles = Roles::USER_MANAGEMENT;
+$supervisorAssignmentRoles = Roles::SUPERVISOR_ASSIGNMENT;
 $vendasOpen = $anyActive(['/painel/leads', '/painel/pedidos', '/painel/orcamentos', '/painel/clientes', '/painel/produtos']);
 $financeiroOpen = $anyActive(['/painel/financeiro']);
 $desempenhoOpen = $anyActive(['/painel/desempenho', '/painel/metas']);
@@ -97,8 +101,11 @@ $desempenhoOpen = $anyActive(['/painel/desempenho', '/painel/metas']);
                 </details>
             <?php endif; ?>
 
-            <?php if (in_array($role, $managerRoles, true)): ?>
+            <?php if (in_array($role, $userManagementRoles, true)): ?>
                 <a href="/painel/usuarios" class="<?= $isActive('/painel/usuarios') ? 'is-active' : '' ?>"><?= $icon('gear') ?> Usuários</a>
+            <?php endif; ?>
+            <?php if (in_array($role, $supervisorAssignmentRoles, true)): ?>
+                <a href="/painel/licenciados" class="<?= $isActive('/painel/licenciados') ? 'is-active' : '' ?>"><?= $icon('users') ?> Licenciados</a>
             <?php endif; ?>
             <?php if ($role === 'admin'): ?>
                 <a href="/painel/auditoria" class="<?= $isActive('/painel/auditoria') ? 'is-active' : '' ?>"><?= $icon('chart') ?> Auditoria</a>

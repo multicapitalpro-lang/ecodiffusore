@@ -47,6 +47,7 @@ class QuoteController
         View::render('painel/quotes/kanban', [
             'user' => $user,
             'columns' => $columns,
+            'isViewOnly' => in_array($user['role_slug'], Roles::NATIONAL_SUPPORT, true),
         ]);
     }
 
@@ -57,6 +58,12 @@ class QuoteController
         }
         if ($user['role_slug'] === Roles::SELLER) {
             return ['seller_id' => $user['id']];
+        }
+        if ($user['role_slug'] === 'supervisor') {
+            return ['seller_ids' => User::supervisedIds((int) $user['id'])];
+        }
+        if ($user['role_slug'] === 'gerente') {
+            return ['seller_ids' => User::nationalIds((int) $user['id'])];
         }
 
         return ['seller_ids' => User::downlineIds((int) $user['id'])];
@@ -81,8 +88,24 @@ class QuoteController
         if ($user['role_slug'] === Roles::SELLER) {
             return $sellerId === (int) $user['id'];
         }
+        if ($user['role_slug'] === 'supervisor') {
+            return in_array($sellerId, User::supervisedIds((int) $user['id']), true);
+        }
+        if ($user['role_slug'] === 'gerente') {
+            return in_array($sellerId, User::nationalIds((int) $user['id']), true);
+        }
 
         return in_array($sellerId, User::downlineIds((int) $user['id']), true);
+    }
+
+    /** Gerente/Supervisor sao papel de suporte nacional -- so visualizam, nunca criam/editam orcamento */
+    private function assertNotViewOnly(array $user): void
+    {
+        if (in_array($user['role_slug'], Roles::NATIONAL_SUPPORT, true)) {
+            http_response_code(403);
+            require BASE_PATH . '/app/Views/errors/403.php';
+            exit;
+        }
     }
 
     public function create(): void
@@ -94,6 +117,7 @@ class QuoteController
     public function store(): void
     {
         Auth::requireRole(Roles::STAFF);
+        $this->assertNotViewOnly(Auth::user());
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
             if (Response::isAjax()) {
@@ -174,6 +198,7 @@ class QuoteController
     {
         $quote = $this->authorize((int) $id);
         $id = (int) $id;
+        $this->assertNotViewOnly(Auth::user());
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
             Router::redirect("/painel/orcamentos/{$id}/editar?erro=1");
@@ -218,6 +243,7 @@ class QuoteController
     {
         $quote = $this->authorize((int) $id);
         $id = (int) $id;
+        $this->assertNotViewOnly(Auth::user());
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
             Router::redirect("/painel/orcamentos/{$id}");
@@ -236,6 +262,7 @@ class QuoteController
     {
         $quote = $this->authorize((int) $id);
         $id = (int) $id;
+        $this->assertNotViewOnly(Auth::user());
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null) || $quote['status'] === 'convertido') {
             Router::redirect("/painel/orcamentos/{$id}");

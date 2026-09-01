@@ -51,11 +51,11 @@ class User
         return $stmt->fetchAll();
     }
 
-    /** Candidatos a "reporta para": todo mundo com papel gerente ou licenciado, exceto a propria pessoa */
+    /** Candidatos a "reporta para": todo mundo com papel gestor ou licenciado, exceto a propria pessoa */
     public static function managerCandidates(?int $exceptId = null): array
     {
         $sql = "SELECT u.id, u.name, r.slug AS role_slug FROM users u JOIN roles r ON r.id = u.role_id
-                WHERE r.slug IN ('gerente', 'licenciado') AND u.status = 'active'";
+                WHERE r.slug IN ('gestor', 'licenciado') AND u.status = 'active'";
         $params = [];
         if ($exceptId !== null) {
             $sql .= ' AND u.id != :id';
@@ -71,7 +71,7 @@ class User
     /**
      * Desce a hierarquia: retorna os ids de $userId + todo mundo que reporta (direta ou
      * indiretamente) pra ele, ate 5 niveis pra evitar loop. Usado pra escopar Leads/Orcamentos
-     * por papel (vendedor ve so ele mesmo, gerente ve sua equipe, licenciado ve toda a regiao).
+     * por papel (vendedor ve so ele mesmo, gestor ve sua equipe, licenciado ve toda a regiao).
      */
     public static function downlineIds(int $userId): array
     {
@@ -118,6 +118,52 @@ class User
         }
 
         return $chain;
+    }
+
+    /**
+     * Tudo sob a responsabilidade de um Supervisor: ele mesmo + cada licenciado que o Gerente
+     * atribuiu a ele (supervisor_id) + a downline normal (manager_id: gestor/vendedor) de cada um.
+     */
+    public static function supervisedIds(int $supervisorId): array
+    {
+        $ids = [$supervisorId];
+
+        $stmt = Database::connection()->prepare('SELECT id FROM users WHERE supervisor_id = :sid');
+        $stmt->execute(['sid' => $supervisorId]);
+
+        foreach ($stmt->fetchAll() as $row) {
+            $ids = array_merge($ids, self::downlineIds((int) $row['id']));
+        }
+
+        return array_values(array_unique($ids));
+    }
+
+    /**
+     * Tudo sob a responsabilidade nacional de um Gerente: ele mesmo + cada Supervisor que
+     * cadastrou (manager_id, 1 nivel) + o supervisedIds() de cada um.
+     */
+    public static function nationalIds(int $gerenteId): array
+    {
+        $ids = [$gerenteId];
+
+        $stmt = Database::connection()->prepare('SELECT id FROM users WHERE manager_id = :gid');
+        $stmt->execute(['gid' => $gerenteId]);
+
+        foreach ($stmt->fetchAll() as $row) {
+            $ids = array_merge($ids, self::supervisedIds((int) $row['id']));
+        }
+
+        return array_values(array_unique($ids));
+    }
+
+    /**
+     * Atribui/troca o supervisor de um licenciado. Acao separada de update() porque quem chama
+     * isso (o Gerente) nao tem permissao de editar o resto do cadastro do licenciado.
+     */
+    public static function setSupervisor(int $licenciadoId, ?int $supervisorId): void
+    {
+        $stmt = Database::connection()->prepare('UPDATE users SET supervisor_id = :supervisor_id WHERE id = :id');
+        $stmt->execute(['supervisor_id' => $supervisorId, 'id' => $licenciadoId]);
     }
 
     public static function create(array $data): int

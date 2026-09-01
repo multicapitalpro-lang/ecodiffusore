@@ -37,7 +37,10 @@ $values = $editing ?? ($old ?? []);
         <?php if ($user['role_slug'] === 'admin'): ?><option value="">Ninguém (topo da hierarquia)</option><?php endif; ?>
         <?php foreach ($managers as $m): ?>
             <option value="<?= (int) $m['id'] ?>" <?= (int) ($values['manager_id'] ?? ($user['role_slug'] !== 'admin' ? $managers[0]['id'] : 0)) === (int) $m['id'] ? 'selected' : '' ?>>
-                <?= View::e($m['name']) ?> (<?= $m['role_slug'] === 'gerente' ? 'Gerente' : ($m['role_slug'] === 'licenciado' ? 'Licenciado' : 'Supervisor') ?>)
+                <?php
+                $managerRoleLabels = ['gestor' => 'Gestor', 'licenciado' => 'Licenciado', 'gerente' => 'Gerente'];
+                ?>
+                <?= View::e($m['name']) ?> (<?= $managerRoleLabels[$m['role_slug']] ?? $m['role_slug'] ?>)
             </option>
         <?php endforeach; ?>
     </select>
@@ -47,13 +50,13 @@ $values = $editing ?? ($old ?? []);
         <label for="commission_pct">Comissão desta pessoa (%)</label>
         <input type="number" id="commission_pct" name="commission_pct" step="0.01" min="0" max="100"
                value="<?= View::e((string) ($values['commission_pct'] ?? '')) ?>" placeholder="Ex: 15.00">
-        <p class="hint-text">Para licenciado: % fixo contratual sobre o total do pedido (define o "pool" da região). Para gerente/vendedor: % do pool do licenciado que será repassado a esta pessoa.</p>
+        <p class="hint-text">Para licenciado: % fixo contratual sobre o total do pedido (define o "pool" da região). Para gestor/vendedor: % do pool do licenciado que será repassado a esta pessoa. Para gerente/supervisor: % do total do pedido pago direto pela Ecodiffusore (não sai do pool de ninguém).</p>
     <?php endif; ?>
 
     <label for="discount_limit_pct">Limite de desconto sem aprovação (%)</label>
     <input type="number" id="discount_limit_pct" name="discount_limit_pct" step="0.01" min="0" max="100"
            value="<?= View::e((string) ($values['discount_limit_pct'] ?? '')) ?>" placeholder="Vazio = sem limite (nunca precisa aprovar)">
-    <p class="hint-text">Se o desconto do pedido/orçamento passar desse %, fica travado até um gerente/licenciado/admin aprovar.</p>
+    <p class="hint-text">Se o desconto do pedido/orçamento passar desse %, fica travado até um gestor/licenciado/admin aprovar.</p>
 
     <label for="status">Status</label>
     <select id="status" name="status">

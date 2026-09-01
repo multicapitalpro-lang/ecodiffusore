@@ -33,7 +33,7 @@ class PerformanceController
         Auth::requireRole(Roles::MANAGEMENT);
         $user = Auth::user();
 
-        // Admin ve todas as regioes; Licenciado/Gerente veem so a propria (ninguem enxerga a
+        // Admin ve todas as regioes; Licenciado/Gestor veem so a propria (ninguem enxerga a
         // estrutura de outra regiao por aqui, mesmo path de escopo usado no Financeiro).
         if ($user['role_slug'] === 'admin') {
             $users = User::all();

@@ -1,5 +1,6 @@
 <?php
 use App\Core\Csrf;
+use App\Core\Roles;
 use App\Core\View;
 $statusLabels = [
     'em_andamento' => 'Em andamento',
@@ -11,14 +12,17 @@ $errors = $errors ?? [];
 $values = $values ?? [];
 $items = $items ?? [];
 $isVendedor = ($user['role_slug'] ?? '') === 'vendedor';
+$isViewOnly = in_array($user['role_slug'] ?? '', Roles::NATIONAL_SUPPORT, true);
 $preselectClientId = (int) ($_GET['cliente_id'] ?? 0);
-$openModal = isset($_GET['novo']) || $errors;
+$openModal = (isset($_GET['novo']) || $errors) && !$isViewOnly;
 ?>
 <div class="page-header">
     <h1>Pedidos de Venda</h1>
     <div class="page-header-actions">
         <a href="/painel/pedidos/exportar?<?= http_build_query($filters ?? []) ?>" class="btn btn-outline">Exportar CSV</a>
-        <button type="button" class="btn btn-primary" data-modal-open="modal-order">+ Incluir Pedido</button>
+        <?php if (!$isViewOnly): ?>
+            <button type="button" class="btn btn-primary" data-modal-open="modal-order">+ Incluir Pedido</button>
+        <?php endif; ?>
     </div>
 </div>
 

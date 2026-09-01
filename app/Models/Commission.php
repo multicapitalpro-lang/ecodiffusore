@@ -7,12 +7,18 @@ use App\Core\Database;
 class Commission
 {
     /**
-     * Comissao em pool: o Licenciado (dono da regiao) recebe um % fixo contratual sobre o
-     * total do pedido -- isso forma o "pool". A partir do pool, Gerente e Vendedor recebem
-     * o % que o proprio Licenciado configurou pra cada um (commission_pct deles = % do pool,
-     * nao % do pedido). O que sobra do pool depois de pagar Gerente/Vendedor fica com o
-     * Licenciado. Sem Licenciado no topo (ou sem % contratual definido), nao ha pool e
-     * ninguem recebe -- a comissao so existe porque o Licenciado tem contrato com a Ecodiffusore.
+     * Duas cascatas independentes disparam a partir do mesmo Licenciado:
+     *
+     * 1) Pool regional: o Licenciado (dono da regiao) recebe um % fixo contratual sobre o total
+     *    do pedido -- isso forma o "pool". A partir do pool, Gestor e Vendedor recebem o % que o
+     *    proprio Licenciado configurou pra cada um (commission_pct deles = % do pool, nao % do
+     *    pedido). O que sobra do pool fica com o Licenciado. Sem % contratual definido, nao ha
+     *    pool e ninguem desse nivel recebe.
+     *
+     * 2) Comissao nacional: se o Licenciado tiver um Supervisor atribuido (supervisor_id, definido
+     *    pelo Gerente em /painel/licenciados), Supervisor e Gerente recebem um % do TOTAL do
+     *    pedido -- paga direto pela Ecodiffusore, nunca sai do pool acima. Por isso roda num bloco
+     *    totalmente a parte, mesmo se o Licenciado nao tiver pool configurado ainda.
      */
     public static function createCascadeForOrder(int $orderId, int $sellerId, float $orderTotal): void
     {
@@ -31,37 +37,55 @@ class Commission
             }
         }
 
-        if (!$licenciado || (float) ($licenciado['commission_pct'] ?? 0) <= 0) {
-            return;
-        }
+        if ($licenciado && (float) ($licenciado['commission_pct'] ?? 0) > 0) {
+            $pool = round($orderTotal * (float) $licenciado['commission_pct'] / 100, 2);
+            $distribuido = 0.0;
 
-        $pool = round($orderTotal * (float) $licenciado['commission_pct'] / 100, 2);
-        $distribuido = 0.0;
+            foreach ($chain as $p) {
+                if ((int) $p['id'] === (int) $licenciado['id']) {
+                    continue;
+                }
 
-        foreach ($chain as $p) {
-            if ((int) $p['id'] === (int) $licenciado['id']) {
-                continue;
+                $sharePct = (float) ($p['commission_pct'] ?? 0);
+                if ($sharePct <= 0) {
+                    continue;
+                }
+
+                $amount = round($pool * $sharePct / 100, 2);
+                $distribuido += $amount;
+                self::insertRow($orderId, $sellerId, (int) $p['id'], $p['role_slug'], $sharePct, $amount);
             }
 
-            $sharePct = (float) ($p['commission_pct'] ?? 0);
-            if ($sharePct <= 0) {
-                continue;
+            $restante = max(0, round($pool - $distribuido, 2));
+            if ($restante > 0) {
+                self::insertRow($orderId, $sellerId, (int) $licenciado['id'], 'licenciado', (float) $licenciado['commission_pct'], $restante);
             }
-
-            $amount = round($pool * $sharePct / 100, 2);
-            $distribuido += $amount;
-            self::insertRow($orderId, $sellerId, (int) $p['id'], $p['role_slug'], $sharePct, $amount);
         }
 
-        $restante = max(0, round($pool - $distribuido, 2));
-        if ($restante > 0) {
-            self::insertRow($orderId, $sellerId, (int) $licenciado['id'], 'licenciado', (float) $licenciado['commission_pct'], $restante);
+        if ($licenciado && !empty($licenciado['supervisor_id'])) {
+            $supervisor = User::find((int) $licenciado['supervisor_id']);
+
+            if ($supervisor && $supervisor['role_slug'] === 'supervisor') {
+                if ((float) ($supervisor['commission_pct'] ?? 0) > 0) {
+                    $pct = (float) $supervisor['commission_pct'];
+                    self::insertRow($orderId, $sellerId, (int) $supervisor['id'], 'supervisor', $pct, round($orderTotal * $pct / 100, 2));
+                }
+
+                if (!empty($supervisor['manager_id'])) {
+                    $gerente = User::find((int) $supervisor['manager_id']);
+                    if ($gerente && $gerente['role_slug'] === 'gerente' && (float) ($gerente['commission_pct'] ?? 0) > 0) {
+                        $pct = (float) $gerente['commission_pct'];
+                        self::insertRow($orderId, $sellerId, (int) $gerente['id'], 'gerente', $pct, round($orderTotal * $pct / 100, 2));
+                    }
+                }
+            }
         }
     }
 
     /**
      * `percentage` guardado aqui significa coisas diferentes por papel: pro Licenciado e o %
-     * contratual sobre o total do pedido; pro Gerente/Vendedor e o % do pool do Licenciado.
+     * contratual sobre o total do pedido; pro Gestor/Vendedor e o % do pool do Licenciado; pro
+     * Supervisor/Gerente e o % do total do pedido pago direto pela Ecodiffusore (fora do pool).
      */
     private static function insertRow(int $orderId, int $sellerId, int $beneficiaryId, string $roleSlug, float $percentage, float $amount): void
     {

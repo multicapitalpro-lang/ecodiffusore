@@ -71,6 +71,8 @@ $router->get('/painel/usuarios/novo', [App\Controllers\UserController::class, 'c
 $router->post('/painel/usuarios', [App\Controllers\UserController::class, 'store']);
 $router->get('/painel/usuarios/{id}/editar', [App\Controllers\UserController::class, 'edit']);
 $router->post('/painel/usuarios/{id}', [App\Controllers\UserController::class, 'update']);
+$router->get('/painel/licenciados', [App\Controllers\UserController::class, 'licenciados']);
+$router->post('/painel/licenciados/{id}/supervisor', [App\Controllers\UserController::class, 'assignSupervisor']);
 
 $router->get('/painel/leads', [App\Controllers\LeadController::class, 'index']);
 $router->post('/painel/leads/{id}/status', [App\Controllers\LeadController::class, 'updateStatus']);

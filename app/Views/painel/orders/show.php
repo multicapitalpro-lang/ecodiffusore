@@ -1,5 +1,6 @@
 <?php
 use App\Core\Csrf;
+use App\Core\Roles;
 use App\Core\View;
 $statusLabels = [
     'em_andamento' => 'Em andamento',
@@ -9,10 +10,11 @@ $statusLabels = [
 ];
 $sucesso = isset($_GET['sucesso']);
 $erro = $_GET['erro'] ?? null;
+$isViewOnly = in_array($user['role_slug'] ?? '', Roles::NATIONAL_SUPPORT, true);
 ?>
 <div class="page-header">
     <h1>Pedido #<?= (int) $order['id'] ?></h1>
-    <?php if ($order['status'] === 'em_andamento'): ?>
+    <?php if ($order['status'] === 'em_andamento' && !$isViewOnly): ?>
         <a href="/painel/pedidos/<?= (int) $order['id'] ?>/editar" class="btn btn-outline">Editar</a>
     <?php endif; ?>
 </div>
@@ -53,14 +55,14 @@ $erro = $_GET['erro'] ?? null;
 </div>
 
 <?php
-$allowGenerateCharge = $order['status'] !== 'cancelado' && $order['status'] !== 'verificado';
+$allowGenerateCharge = $order['status'] !== 'cancelado' && $order['status'] !== 'verificado' && !$isViewOnly;
 if ($payments || $allowGenerateCharge):
     $chargeAction = "/painel/pedidos/{$order['id']}/cobranca";
     include __DIR__ . '/../_payments_section.php';
 endif;
 ?>
 
-<?php if ($order['status'] !== 'cancelado' && $order['status'] !== 'verificado'): ?>
+<?php if ($order['status'] !== 'cancelado' && $order['status'] !== 'verificado' && !$isViewOnly): ?>
 <div class="order-actions">
     <?php if ($order['status'] === 'em_andamento'): ?>
         <form action="/painel/pedidos/<?= (int) $order['id'] ?>/status" method="post" class="inline-form">
