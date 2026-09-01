@@ -120,7 +120,6 @@ class PublicController
         $kmMensal = self::parseBrNumber($_POST['km_mensal'] ?? '');
         $kmLitro = self::parseBrNumber($_POST['km_litro'] ?? '');
         $precoDiesel = self::parseBrNumber($_POST['preco_diesel'] ?? '');
-        $gastoMensalDireto = trim($_POST['gasto_mensal'] ?? '') !== '' ? self::parseBrNumber($_POST['gasto_mensal']) : null;
 
         $ecuValid = $ecuStatus === 'original' || ($ecuStatus === 'reprogramado' && $reprogrammedPower !== '');
 
@@ -146,7 +145,7 @@ class PublicController
         $product = Product::findByBrandKeyword($brand) ?? Product::cheapest();
         $seller = GeoMatch::nearestSeller($_SESSION['checkout_city'] ?? '');
         $productPrice = (float) ($product['price_cash'] ?? 0);
-        $payback = EconomyCalculator::estimate($kmMensal, $kmLitro, $precoDiesel, $gastoMensalDireto, $productPrice);
+        $payback = EconomyCalculator::estimate($kmMensal, $kmLitro, $precoDiesel, $productPrice);
 
         // Mesmo que o cliente nao chame o vendedor pelo WhatsApp, o orcamento ja foi gerado --
         // atribui o Lead ao Licenciado mais proximo pra ele aparecer no CRM/hierarquia dele (ate o

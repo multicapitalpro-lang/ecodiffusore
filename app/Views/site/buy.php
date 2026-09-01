@@ -156,9 +156,6 @@ use App\Core\View;
                 <label for="wizard-preco-diesel">Preço médio do diesel na sua região (R$/litro)</label>
                 <input type="text" id="wizard-preco-diesel" name="preco_diesel" value="6,10">
 
-                <label for="wizard-gasto-mensal">Gasto médio mensal com diesel (R$) — se souber, deixa mais preciso</label>
-                <input type="text" id="wizard-gasto-mensal" name="gasto_mensal" placeholder="Ex: 12000 (opcional)">
-
                 <button type="submit" class="btn btn-primary" id="wizard-submit-btn" style="width:100%;margin-top:10px;" disabled>Ver meu orçamento e minha economia</button>
             </div>
         </form>

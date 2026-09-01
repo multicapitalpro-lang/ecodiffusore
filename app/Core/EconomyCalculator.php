@@ -11,11 +11,9 @@ class EconomyCalculator
 {
     private const TIERS = ['min' => 0.05, 'avg' => 0.10, 'max' => 0.20];
 
-    public static function estimate(float $kmMensal, float $kmPorLitro, float $precoDiesel, ?float $gastoMensalDireto, float $productPrice): array
+    public static function estimate(float $kmMensal, float $kmPorLitro, float $precoDiesel, float $productPrice): array
     {
-        $gastoMensal = ($gastoMensalDireto !== null && $gastoMensalDireto > 0)
-            ? $gastoMensalDireto
-            : ($kmPorLitro > 0 ? ($kmMensal / $kmPorLitro) * $precoDiesel : 0.0);
+        $gastoMensal = $kmPorLitro > 0 ? ($kmMensal / $kmPorLitro) * $precoDiesel : 0.0;
 
         $tiers = [];
         foreach (self::TIERS as $key => $pct) {
