@@ -270,17 +270,20 @@ class FinanceController
         exit;
     }
 
-    /** Vendedor ve so as proprias comissoes; gerente/licenciado veem a regiao (equipe); admin ve tudo */
+    /**
+     * Vendedor ve so as proprias comissoes; Licenciado ve a propria regiao. Admin/Gerente mantem
+     * o comportamento que ja tinham (sem filtro) -- mesmo escopo combinado usado em scopeFilters().
+     */
     private function commissionFilters(array $user): array
     {
-        if ($user['role_slug'] === 'admin') {
-            return [];
-        }
         if ($user['role_slug'] === Roles::SELLER) {
             return ['beneficiary_id' => $user['id']];
         }
+        if ($user['role_slug'] === Roles::REGIONAL_OWNER) {
+            return ['beneficiary_ids' => User::downlineIds((int) $user['id'])];
+        }
 
-        return ['beneficiary_ids' => User::downlineIds((int) $user['id'])];
+        return [];
     }
 
     public function commissions(): void

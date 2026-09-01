@@ -53,7 +53,7 @@ $values = $editing ?? ($old ?? []);
     <label for="discount_limit_pct">Limite de desconto sem aprovação (%)</label>
     <input type="number" id="discount_limit_pct" name="discount_limit_pct" step="0.01" min="0" max="100"
            value="<?= View::e((string) ($values['discount_limit_pct'] ?? '')) ?>" placeholder="Vazio = sem limite (nunca precisa aprovar)">
-    <p class="hint-text">Se o desconto do pedido/orçamento passar desse %, fica travado até um supervisor/gerente/admin aprovar.</p>
+    <p class="hint-text">Se o desconto do pedido/orçamento passar desse %, fica travado até um gerente/licenciado/admin aprovar.</p>
 
     <label for="status">Status</label>
     <select id="status" name="status">

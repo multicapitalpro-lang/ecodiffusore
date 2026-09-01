@@ -7,7 +7,7 @@ $renderPerson = function (array $person, string $roleLabel, string $icon) use (&
     <div class="team-node">
         <div class="team-node-name"><?= $icon ?> <?= View::e($person['name']) ?> <span class="hint-text">(<?= $roleLabel ?>)</span></div>
         <div class="team-node-meta">
-            <span><?= View::e($person['commission_pct'] !== null ? number_format((float) $person['commission_pct'], 2, ',', '.') . '%' : 'sem % definido') ?></span>
+            <span><?= View::e($person['commission_pct'] !== null ? number_format((float) $person['commission_pct'], 2, ',', '.') . '% do pool' : 'sem % definido') ?></span>
             <?php if ($t): ?>
                 <span>R$ <?= number_format((float) $t['total'], 2, ',', '.') ?> gerado</span>
             <?php endif; ?>
