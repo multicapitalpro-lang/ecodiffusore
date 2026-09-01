@@ -54,7 +54,7 @@ $desempenhoOpen = $anyActive(['/painel/desempenho', '/painel/metas']);
 
             <?php if (in_array($role, $staffRoles, true)): ?>
                 <details class="nav-group" <?= $vendasOpen ? 'open' : '' ?>>
-                    <summary><?= $icon('cart') ?> Vendas</summary>
+                    <summary><?= $icon('cart') ?> Vendas (CRM)</summary>
                     <div class="nav-subitems">
                         <a href="/painel/leads" class="<?= $isActive('/painel/leads') ? 'is-active' : '' ?>">Leads</a>
                         <a href="/painel/pedidos" class="<?= $isActive('/painel/pedidos') ? 'is-active' : '' ?>">Pedidos</a>
