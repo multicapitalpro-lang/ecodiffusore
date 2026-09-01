@@ -55,10 +55,10 @@ $hasPayback = $payback && $payback['tiers']['avg']['monthly'] > 0;
             </div>
 
             <?php if ($payback['payback_months']): ?>
-                <p class="buy-price-summary" style="max-width:560px;margin:24px auto 0;text-align:center;">
-                    💰 Com a economia média, seu investimento se paga em aproximadamente
-                    <strong><?= $payback['payback_months'] < 1 ? 'menos de 1 mês' : ceil($payback['payback_months']) . ' meses' ?></strong>.
-                </p>
+                <div class="payback-highlight">
+                    <span class="payback-label">💰 Com a economia média, seu investimento se paga em aproximadamente</span>
+                    <span class="payback-value"><?= $payback['payback_months'] < 1 ? 'menos de 1 mês' : ceil($payback['payback_months']) . ' meses' ?></span>
+                </div>
             <?php endif; ?>
         <?php endif; ?>
 
