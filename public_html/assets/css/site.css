@@ -38,8 +38,8 @@ a { color: inherit; text-decoration: none; }
     position: sticky;
     top: 0;
     z-index: 50;
-    background: var(--white);
-    box-shadow: 0 2px 12px rgba(13,27,61,.06);
+    background: var(--navy);
+    box-shadow: 0 2px 12px rgba(0,0,0,.2);
 }
 .site-header-inner {
     display: flex;
@@ -47,11 +47,12 @@ a { color: inherit; text-decoration: none; }
     justify-content: space-between;
     gap: 16px;
     padding: 10px 20px;
+    color: var(--white);
 }
 .site-logo { height: 44px; width: auto; flex-shrink: 0; }
 .site-nav { display: none; gap: 22px; align-items: center; font-weight: 600; font-size: .92rem; }
-.site-nav a:hover { color: var(--green-dark); }
-.site-nav-login { color: var(--navy); border: 1.5px solid var(--navy); padding: 6px 14px; border-radius: 30px; }
+.site-nav a:hover { color: var(--green); }
+.site-nav-login { color: var(--white); border: 1.5px solid var(--white); padding: 6px 14px; border-radius: 30px; }
 @media (min-width: 900px) { .site-nav { display: flex; } }
 .site-header-cta { display: none; }
 @media (min-width: 900px) { .site-header-cta { display: inline-flex; } }

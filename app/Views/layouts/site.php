@@ -17,7 +17,7 @@ use App\Core\View;
 <body>
 <header class="site-header">
     <div class="site-container site-header-inner">
-        <img src="<?= View::asset('/assets/img/logo.svg') ?>" alt="Ecodiffusore Brasil" class="site-logo">
+        <img src="<?= View::asset('/assets/img/logo-on-dark.svg') ?>" alt="Ecodiffusore Brasil" class="site-logo">
         <nav class="site-nav">
             <a href="#beneficios">Benefícios</a>
             <a href="#depoimentos">Depoimentos</a>
