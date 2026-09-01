@@ -6,7 +6,9 @@ use App\Core\AsaasClient;
 use App\Core\CardPricing;
 use App\Core\Csrf;
 use App\Core\DataflowClient;
+use App\Core\EconomyCalculator;
 use App\Core\GeoMatch;
+use App\Core\Pdf;
 use App\Core\Router;
 use App\Core\VehicleCatalog;
 use App\Core\View;
@@ -115,9 +117,15 @@ class PublicController
         $reprogrammedPower = trim($_POST['reprogrammed_power'] ?? '');
         $hasArla = $_POST['has_arla'] ?? '';
 
+        $kmMensal = self::parseBrNumber($_POST['km_mensal'] ?? '');
+        $kmLitro = self::parseBrNumber($_POST['km_litro'] ?? '');
+        $precoDiesel = self::parseBrNumber($_POST['preco_diesel'] ?? '');
+        $gastoMensalDireto = trim($_POST['gasto_mensal'] ?? '') !== '' ? self::parseBrNumber($_POST['gasto_mensal']) : null;
+
         $ecuValid = $ecuStatus === 'original' || ($ecuStatus === 'reprogramado' && $reprogrammedPower !== '');
 
-        if ($name === '' || $plate === '' || $year === '' || $brand === '' || !$ecuValid || !in_array($hasArla, ['sim', 'nao'], true)) {
+        if ($name === '' || $plate === '' || $year === '' || $brand === '' || !$ecuValid || !in_array($hasArla, ['sim', 'nao'], true)
+            || $kmMensal <= 0 || $kmLitro <= 0 || $precoDiesel <= 0) {
             Router::redirect('/comprar?erro=1');
         }
 
@@ -137,6 +145,8 @@ class PublicController
 
         $product = Product::findByBrandKeyword($brand) ?? Product::cheapest();
         $seller = GeoMatch::nearestSeller($_SESSION['checkout_city'] ?? '');
+        $productPrice = (float) ($product['price_cash'] ?? 0);
+        $payback = EconomyCalculator::estimate($kmMensal, $kmLitro, $precoDiesel, $gastoMensalDireto, $productPrice);
 
         // Mesmo que o cliente nao chame o vendedor pelo WhatsApp, o orcamento ja foi gerado --
         // atribui o Lead ao Licenciado mais proximo pra ele aparecer no CRM/hierarquia dele (ate o
@@ -171,7 +181,8 @@ class PublicController
                 'status' => 'aberto',
                 'quote_date' => date('Y-m-d'),
                 'valid_until' => date('Y-m-d', strtotime('+7 days')),
-                'notes' => 'Gerado automaticamente pelo orçamento por placa no site (autoatendimento).',
+                'notes' => 'Gerado automaticamente pelo orçamento por placa no site (autoatendimento). '
+                    . 'Economia média estimada: R$ ' . number_format($payback['tiers']['avg']['monthly'], 2, ',', '.') . '/mês.',
             ], [
                 ['product_id' => $product['id'], 'quantity' => 1, 'unit_price' => (float) $product['price_cash']],
             ]);
@@ -193,6 +204,7 @@ class PublicController
             'product_is_exact_match' => $product && stripos($product['name'], $brand) !== false,
             'seller_name' => $seller['name'] ?? null,
             'seller_whatsapp' => $seller['whatsapp'] ?? null,
+            'payback' => $payback,
         ];
 
         Router::redirect('/comprar/orcamento');
@@ -207,6 +219,35 @@ class PublicController
         View::render('site/orcamento', [
             'result' => $_SESSION['orcamento_result'],
         ], 'site');
+    }
+
+    public function downloadOrcamentoPdf(): void
+    {
+        if (empty($_SESSION['orcamento_result'])) {
+            Router::redirect('/comprar');
+        }
+
+        $result = $_SESSION['orcamento_result'];
+
+        ob_start();
+        View::render('site/orcamento_pdf', ['result' => $result], null);
+        $html = ob_get_clean();
+
+        Pdf::download($html, 'orcamento-ecodiffusore-' . strtolower($result['plate']) . '.pdf', 'portrait');
+    }
+
+    /** Aceita tanto "12.000"/"12000" quanto "2,8"/"6,10" (formato BR com virgula decimal). */
+    private static function parseBrNumber(string $value): float
+    {
+        $value = trim($value);
+        if ($value === '') {
+            return 0.0;
+        }
+        if (strpos($value, ',') !== false) {
+            $value = str_replace('.', '', $value);
+            $value = str_replace(',', '.', $value);
+        }
+        return (float) $value;
     }
 
     public function startCheckout(): void

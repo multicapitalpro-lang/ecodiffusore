@@ -51,6 +51,7 @@ $router->post('/comprar/pagamento', [App\Controllers\PublicController::class, 'c
 $router->post('/comprar/buscar-placa', [App\Controllers\PublicController::class, 'lookupPlate']);
 $router->post('/comprar/orcamento', [App\Controllers\PublicController::class, 'submitOrcamento']);
 $router->get('/comprar/orcamento', [App\Controllers\PublicController::class, 'showOrcamento']);
+$router->get('/comprar/orcamento/pdf', [App\Controllers\PublicController::class, 'downloadOrcamentoPdf']);
 
 // Autenticação
 $router->get('/painel/login', [App\Controllers\AuthController::class, 'showLogin']);

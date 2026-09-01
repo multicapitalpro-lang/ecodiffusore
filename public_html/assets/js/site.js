@@ -250,26 +250,44 @@
     ecuRadios.forEach(function (radio) { radio.addEventListener('change', updateEcuNext); });
     reprogInput.addEventListener('input', updateEcuNext);
 
-    // ARLA -- "Nao" libera o orcamento direto; "Sim" so libera apos confirmar o aviso.
+    // ARLA -- "Nao" libera o "Proximo" direto; "Sim" so libera apos confirmar o aviso.
     var arlaRadios = wizard.querySelectorAll('input[name=has_arla]');
     var arlaNotice = document.getElementById('wizard-arla-notice');
     var arlaConfirm = document.getElementById('wizard-arla-confirm');
-    var submitBtn = document.getElementById('wizard-submit-btn');
+    var arlaNextBtn = document.getElementById('wizard-arla-next-btn');
 
-    function updateArlaSubmit() {
+    function updateArlaNext() {
         var checked = wizard.querySelector('input[name=has_arla]:checked');
-        if (!checked) { submitBtn.style.display = 'none'; return; }
+        if (!checked) { arlaNextBtn.style.display = 'none'; return; }
         if (checked.value === 'sim') {
             arlaNotice.style.display = '';
-            submitBtn.style.display = arlaConfirm.checked ? '' : 'none';
+            arlaNextBtn.style.display = arlaConfirm.checked ? '' : 'none';
         } else {
             arlaNotice.style.display = 'none';
-            submitBtn.style.display = '';
+            arlaNextBtn.style.display = '';
         }
     }
 
-    arlaRadios.forEach(function (radio) { radio.addEventListener('change', updateArlaSubmit); });
-    arlaConfirm.addEventListener('change', updateArlaSubmit);
+    arlaRadios.forEach(function (radio) { radio.addEventListener('change', updateArlaNext); });
+    arlaConfirm.addEventListener('change', updateArlaNext);
+
+    // Ultimo passo -- calculo de economia/payback. Km mensal, km/litro e preco do diesel sao
+    // obrigatorios (precisa disso pra estimar o gasto mensal); gasto mensal direto e opcional (se
+    // informado, o backend usa ele no lugar do calculado, igual a calculadora da landing page).
+    var kmMensalInput = document.getElementById('wizard-km-mensal');
+    var kmLitroInput = document.getElementById('wizard-km-litro');
+    var precoDieselInput = document.getElementById('wizard-preco-diesel');
+    var finalSubmitBtn = document.getElementById('wizard-submit-btn');
+
+    function updateFinalSubmit() {
+        var ok = kmMensalInput.value.trim() !== '' && kmLitroInput.value.trim() !== '' && precoDieselInput.value.trim() !== '';
+        finalSubmitBtn.disabled = !ok;
+    }
+
+    [kmMensalInput, kmLitroInput, precoDieselInput].forEach(function (el) {
+        el.addEventListener('input', updateFinalSubmit);
+    });
+    updateFinalSubmit();
 })();
 
 function initCarousel(carouselId, trackSelector, slideSelector) {

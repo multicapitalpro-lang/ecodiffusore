@@ -142,7 +142,24 @@ use App\Core\View;
                         <input type="checkbox" id="wizard-arla-confirm"> Confirmo que o ARLA está funcionando corretamente
                     </label>
                 </div>
-                <button type="submit" class="btn btn-primary" id="wizard-submit-btn" style="width:100%;margin-top:10px;display:none;">Ver meu orçamento</button>
+                <button type="button" class="btn btn-primary wizard-next" id="wizard-arla-next-btn" style="width:100%;margin-top:10px;display:none;">Próximo</button>
+            </div>
+
+            <div class="wizard-step" data-step="8">
+                <p class="hint-text">Só mais um passo pra calcular sua economia estimada com o Ecodiffusore:</p>
+                <label for="wizard-km-mensal">Média de KM rodados por mês</label>
+                <input type="text" id="wizard-km-mensal" name="km_mensal" placeholder="Ex: 12000">
+
+                <label for="wizard-km-litro">Média de KM por litro do seu veículo</label>
+                <input type="text" id="wizard-km-litro" name="km_litro" placeholder="Ex: 2,8">
+
+                <label for="wizard-preco-diesel">Preço médio do diesel na sua região (R$/litro)</label>
+                <input type="text" id="wizard-preco-diesel" name="preco_diesel" value="6,10">
+
+                <label for="wizard-gasto-mensal">Gasto médio mensal com diesel (R$) — se souber, deixa mais preciso</label>
+                <input type="text" id="wizard-gasto-mensal" name="gasto_mensal" placeholder="Ex: 12000 (opcional)">
+
+                <button type="submit" class="btn btn-primary" id="wizard-submit-btn" style="width:100%;margin-top:10px;" disabled>Ver meu orçamento e minha economia</button>
             </div>
         </form>
     </div>
