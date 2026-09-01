@@ -313,6 +313,14 @@ dialog.modal::backdrop { background: rgba(0,0,0,.6); }
 .wizard-step { display: none; }
 .wizard-step.is-active { display: block; }
 .wizard-step .btn:disabled { opacity: .5; cursor: not-allowed; }
+.autocomplete-wrap { position: relative; }
+.autocomplete-list {
+    display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 20; max-height: 220px;
+    overflow-y: auto; background: var(--white); border: 1.5px solid #dde2ec; border-top: none;
+    border-radius: 0 0 10px 10px; box-shadow: var(--shadow);
+}
+.autocomplete-item { padding: 10px 14px; font-size: .9rem; cursor: pointer; }
+.autocomplete-item:hover { background: var(--gray-bg); }
 #wizard-arla-notice { border: 1.5px solid #f0c14b; background: #fff9ec; }
 #wizard-arla-notice label { display: flex; align-items: flex-start; gap: 8px; margin: 10px 0 0; font-size: .88rem; }
 #wizard-arla-notice input[type=checkbox] { width: auto; margin-top: 3px; }

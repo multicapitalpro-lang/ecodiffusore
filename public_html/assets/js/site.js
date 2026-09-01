@@ -114,36 +114,119 @@
         goToStep(1);
     });
 
-    // Marca -> Modelo em cascata.
-    var brandSelect = document.getElementById('wizard-brand');
-    var modelSelect = document.getElementById('wizard-model');
+    // Marca -- campo de busca com sugestoes conforme digita. "Outra marca" abre um campo pra
+    // informar qual marca de verdade (o valor digitado ali vira o "brand" enviado, nao o rotulo
+    // generico "Outra marca").
+    var brandSearchInput = document.getElementById('wizard-brand-search');
+    var brandHidden = document.getElementById('wizard-brand');
+    var brandSuggestions = document.getElementById('wizard-brand-suggestions');
+    var brandCustomWrap = document.getElementById('wizard-brand-custom-wrap');
+    var brandCustomInput = document.getElementById('wizard-brand-custom');
+    var brandNextBtn = document.getElementById('wizard-brand-next');
+    var brandNames = Object.keys(catalog);
 
-    brandSelect.addEventListener('change', function () {
-        var models = catalog[brandSelect.value] || [];
-        modelSelect.innerHTML = '';
+    var modelSelectWrap = document.getElementById('wizard-model-select-wrap');
+    var modelSelect = document.getElementById('wizard-model-select');
+    var modelTextWrap = document.getElementById('wizard-model-text-wrap');
+    var modelTextInput = document.getElementById('wizard-model-text');
+    var modelHidden = document.getElementById('wizard-model');
 
-        if (!models.length) {
-            modelSelect.disabled = true;
-            var placeholder = document.createElement('option');
-            placeholder.value = '';
-            placeholder.textContent = 'Selecione a marca primeiro';
-            modelSelect.appendChild(placeholder);
+    function renderBrandSuggestions(filter) {
+        var f = filter.toLowerCase();
+        var matches = brandNames.filter(function (name) { return name.toLowerCase().indexOf(f) !== -1; });
+        brandSuggestions.innerHTML = '';
+
+        if (!matches.length) {
+            brandSuggestions.style.display = 'none';
             return;
         }
 
-        modelSelect.disabled = false;
-        var empty = document.createElement('option');
-        empty.value = '';
-        empty.textContent = 'Selecione...';
-        modelSelect.appendChild(empty);
-
-        models.forEach(function (model) {
-            var opt = document.createElement('option');
-            opt.value = model;
-            opt.textContent = model;
-            modelSelect.appendChild(opt);
+        matches.forEach(function (name) {
+            var item = document.createElement('div');
+            item.className = 'autocomplete-item';
+            item.textContent = name;
+            item.addEventListener('click', function () { selectBrand(name); });
+            brandSuggestions.appendChild(item);
         });
+        brandSuggestions.style.display = 'block';
+    }
+
+    function updateBrandNext() {
+        var isOther = brandSearchInput.value.trim() === 'Outra marca';
+        brandNextBtn.disabled = isOther ? brandCustomInput.value.trim() === '' : brandHidden.value.trim() === '';
+    }
+
+    function populateModelStep(brandName) {
+        var isKnown = Object.prototype.hasOwnProperty.call(catalog, brandName) && brandName !== 'Outra marca';
+        modelHidden.value = '';
+
+        if (isKnown) {
+            modelSelectWrap.style.display = '';
+            modelTextWrap.style.display = 'none';
+            modelSelect.disabled = false;
+            modelSelect.innerHTML = '';
+
+            var empty = document.createElement('option');
+            empty.value = '';
+            empty.textContent = 'Selecione...';
+            modelSelect.appendChild(empty);
+
+            catalog[brandName].forEach(function (model) {
+                var opt = document.createElement('option');
+                opt.value = model;
+                opt.textContent = model;
+                modelSelect.appendChild(opt);
+            });
+        } else {
+            modelSelectWrap.style.display = 'none';
+            modelTextWrap.style.display = '';
+            modelTextInput.value = '';
+        }
+    }
+
+    function selectBrand(name) {
+        brandSearchInput.value = name;
+        brandSuggestions.style.display = 'none';
+        brandSuggestions.innerHTML = '';
+
+        if (name === 'Outra marca') {
+            brandHidden.value = brandCustomInput.value.trim();
+            brandCustomWrap.style.display = '';
+            brandCustomInput.focus();
+        } else {
+            brandHidden.value = name;
+            brandCustomWrap.style.display = 'none';
+            brandCustomInput.value = '';
+        }
+
+        updateBrandNext();
+        populateModelStep(name);
+    }
+
+    brandSearchInput.addEventListener('input', function () {
+        brandHidden.value = '';
+        brandCustomWrap.style.display = 'none';
+        updateBrandNext();
+        renderBrandSuggestions(brandSearchInput.value.trim());
     });
+
+    brandSearchInput.addEventListener('focus', function () {
+        if (!brandSearchInput.value.trim()) renderBrandSuggestions('');
+    });
+
+    brandCustomInput.addEventListener('input', function () {
+        brandHidden.value = brandCustomInput.value.trim();
+        updateBrandNext();
+    });
+
+    document.addEventListener('click', function (e) {
+        if (e.target !== brandSearchInput && !brandSuggestions.contains(e.target)) {
+            brandSuggestions.style.display = 'none';
+        }
+    });
+
+    modelSelect.addEventListener('change', function () { modelHidden.value = modelSelect.value; });
+    modelTextInput.addEventListener('input', function () { modelHidden.value = modelTextInput.value.trim(); });
 
     // Original ou reprogramado -- so libera o "Proximo" com a escolha feita, e so exige a potencia
     // reprogramada quando "Reprogramado" for selecionado.

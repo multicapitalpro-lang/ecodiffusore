@@ -83,21 +83,31 @@ use App\Core\View;
             </div>
 
             <div class="wizard-step" data-step="3">
-                <label for="wizard-brand">Marca</label>
-                <select id="wizard-brand" name="brand">
-                    <option value="">Selecione...</option>
-                    <?php foreach (array_keys($vehicleCatalog) as $brand): ?>
-                        <option value="<?= View::e($brand) ?>"><?= View::e($brand) ?></option>
-                    <?php endforeach; ?>
-                </select>
-                <button type="button" class="btn btn-primary wizard-next" style="width:100%;margin-top:10px;">Próximo</button>
+                <label for="wizard-brand-search">Marca</label>
+                <div class="autocomplete-wrap">
+                    <input type="text" id="wizard-brand-search" autocomplete="off" placeholder="Digite pra buscar...">
+                    <div class="autocomplete-list" id="wizard-brand-suggestions"></div>
+                </div>
+                <input type="hidden" id="wizard-brand" name="brand">
+                <div id="wizard-brand-custom-wrap" style="display:none;">
+                    <label for="wizard-brand-custom">Qual a marca do seu veículo?</label>
+                    <input type="text" id="wizard-brand-custom" placeholder="Digite a marca">
+                </div>
+                <button type="button" class="btn btn-primary wizard-next" id="wizard-brand-next" style="width:100%;margin-top:10px;" disabled>Próximo</button>
             </div>
 
             <div class="wizard-step" data-step="4">
-                <label for="wizard-model">Modelo</label>
-                <select id="wizard-model" name="model" disabled>
-                    <option value="">Selecione a marca primeiro</option>
-                </select>
+                <div id="wizard-model-select-wrap">
+                    <label for="wizard-model-select">Modelo</label>
+                    <select id="wizard-model-select" disabled>
+                        <option value="">Selecione a marca primeiro</option>
+                    </select>
+                </div>
+                <div id="wizard-model-text-wrap" style="display:none;">
+                    <label for="wizard-model-text">Modelo (se souber)</label>
+                    <input type="text" id="wizard-model-text" placeholder="Ex: informe o modelo, se souber">
+                </div>
+                <input type="hidden" id="wizard-model" name="model">
                 <button type="button" class="btn btn-primary wizard-next" style="width:100%;margin-top:10px;">Próximo</button>
             </div>
 

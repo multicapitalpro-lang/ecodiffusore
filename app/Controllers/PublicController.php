@@ -116,7 +116,7 @@ class PublicController
 
         $ecuValid = $ecuStatus === 'original' || ($ecuStatus === 'reprogramado' && $reprogrammedPower !== '');
 
-        if ($name === '' || $plate === '' || $year === '' || $brand === '' || $model === '' || !$ecuValid || !in_array($hasArla, ['sim', 'nao'], true)) {
+        if ($name === '' || $plate === '' || $year === '' || $brand === '' || !$ecuValid || !in_array($hasArla, ['sim', 'nao'], true)) {
             Router::redirect('/comprar?erro=1');
         }
 
@@ -147,6 +147,7 @@ class PublicController
         }
 
         $_SESSION['orcamento_result'] = [
+            'name' => $name,
             'plate' => $plate,
             'year' => $year,
             'brand' => $brand,

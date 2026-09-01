@@ -5,7 +5,7 @@ $hasSeller = !empty($result['seller_whatsapp']);
 $whatsappNumber = $hasSeller ? '55' . preg_replace('/\D/', '', $result['seller_whatsapp']) : '5545991021551';
 $whatsappLabel = $hasSeller ? 'Falar com ' . $result['seller_name'] : 'Falar com o Atendimento Ecodiffusore';
 
-$message = "Olá! Pedi um orçamento do Ecodiffusore pelo site.\n"
+$message = "Olá! Meu nome é " . ($result['name'] ?? '') . ", pedi um orçamento do Ecodiffusore pelo site.\n"
     . "Veículo: {$result['brand']} {$result['year']}, placa {$result['plate']}, potência {$result['power']}.\n"
     . 'Motor: ' . ($result['ecu_status'] === 'original' ? 'Original de fábrica' : 'Reprogramado (chip)') . '.';
 ?>
