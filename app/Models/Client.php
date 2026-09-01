@@ -49,6 +49,12 @@ class Client
         $stmt->execute(array_merge(self::params($data), ['id' => $id]));
     }
 
+    public static function linkUser(int $clientId, int $userId): void
+    {
+        $stmt = Database::connection()->prepare('UPDATE clients SET user_id = :user_id WHERE id = :id');
+        $stmt->execute(['user_id' => $userId, 'id' => $clientId]);
+    }
+
     public static function bulkAssignSeller(array $clientIds, ?int $sellerId): void
     {
         $clientIds = array_filter(array_map('intval', $clientIds));

@@ -12,6 +12,7 @@ use App\Models\Client;
 use App\Models\ClientNote;
 use App\Models\FinancialTransaction;
 use App\Models\Order;
+use App\Models\Role;
 use App\Models\User;
 
 class ClientController
@@ -114,6 +115,50 @@ class ClientController
             'transactions' => FinancialTransaction::all(['client_id' => $id]),
             'notes' => ClientNote::forClient($id),
         ]);
+    }
+
+    public function createAccess(string $id): void
+    {
+        Auth::requireRole(['admin', 'gerente', 'supervisor', 'licenciado']);
+        $id = (int) $id;
+
+        $client = Client::find($id);
+        if (!$client) {
+            Router::redirect('/painel/clientes');
+        }
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            Router::redirect("/painel/clientes/{$id}?erro=1");
+        }
+
+        if (!empty($client['user_id'])) {
+            Router::redirect("/painel/clientes/{$id}");
+        }
+
+        if (empty($client['email']) || !filter_var($client['email'], FILTER_VALIDATE_EMAIL)) {
+            Router::redirect("/painel/clientes/{$id}?erro_acesso=1");
+        }
+
+        if (User::emailExists($client['email'])) {
+            Router::redirect("/painel/clientes/{$id}?erro_acesso=2");
+        }
+
+        $tempPassword = substr(bin2hex(random_bytes(6)), 0, 10);
+
+        $userId = User::create([
+            'role_id' => Role::idBySlug('cliente'),
+            'name' => $client['name'],
+            'email' => $client['email'],
+            'whatsapp' => $client['whatsapp'] ?? '',
+            'password' => $tempPassword,
+            'status' => 'active',
+            'must_change_password' => true,
+            'email_verified' => true,
+        ]);
+
+        Client::linkUser($id, $userId);
+
+        Router::redirect("/painel/clientes/{$id}?acesso_criado=1&temp=" . urlencode($tempPassword));
     }
 
     public function storeNote(string $id): void

@@ -110,10 +110,55 @@ $hasMetrics = isset($metrics);
     <?php endif; ?>
 
 <?php else: ?>
-    <div class="cards-grid">
-        <div class="dash-card dash-card-soon">
-            <span>Meu pedido</span>
-            <p>Em breve</p>
+    <?php $orderStatusLabels = ['em_andamento' => 'Em andamento', 'atendido' => 'Atendido', 'verificado' => 'Confirmado', 'cancelado' => 'Cancelado']; ?>
+    <?php if (empty($myClient)): ?>
+        <div class="cards-grid">
+            <div class="dash-card dash-card-soon">
+                <span>Sem cadastro vinculado</span>
+                <p>Seu login ainda não está vinculado a um cadastro de cliente. Fale com quem te vendeu o produto.</p>
+            </div>
         </div>
-    </div>
+    <?php else: ?>
+        <div class="cards-grid">
+            <div class="dash-card">
+                <span>Total comprado</span>
+                <strong>R$ <?= number_format($myTotalPurchased, 2, ',', '.') ?></strong>
+            </div>
+            <div class="dash-card">
+                <span>Pedidos</span>
+                <strong><?= count($myOrders) ?></strong>
+            </div>
+        </div>
+
+        <h3 class="section-title">Meus pedidos</h3>
+        <div class="table-scroll">
+            <table class="data-table">
+                <thead><tr><th>#</th><th>Data</th><th>Total</th><th>Situação</th><th>Pagamento</th><th></th></tr></thead>
+                <tbody>
+                    <?php foreach ($myOrders as $o): ?>
+                        <?php $pendingPayment = current(array_filter($o['payments'], fn ($p) => $p['status'] === 'pendente')) ?: null; ?>
+                        <tr>
+                            <td>#<?= (int) $o['id'] ?></td>
+                            <td><?= View::e(date('d/m/Y', strtotime($o['order_date']))) ?></td>
+                            <td>R$ <?= number_format((float) $o['total_value'], 2, ',', '.') ?></td>
+                            <td><span class="status-badge status-<?= $o['status'] === 'verificado' ? 'active' : ($o['status'] === 'cancelado' ? 'inactive' : 'novo') ?>"><?= $orderStatusLabels[$o['status']] ?? $o['status'] ?></span></td>
+                            <td>
+                                <?php if ($pendingPayment): ?>
+                                    <span class="status-badge status-contatado">Pendente</span>
+                                <?php elseif ($o['payments']): ?>
+                                    <span class="status-badge status-active">Pago</span>
+                                <?php else: ?>
+                                    —
+                                <?php endif; ?>
+                            </td>
+                            <td><a href="/painel/meus-pedidos/<?= (int) $o['id'] ?>">Ver detalhes</a></td>
+                        </tr>
+                    <?php endforeach; ?>
+                    <?php if (!$myOrders): ?>
+                        <tr><td colspan="6">Nenhum pedido ainda.</td></tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+    <?php endif; ?>
 <?php endif; ?>

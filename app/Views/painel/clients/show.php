@@ -11,6 +11,23 @@ $totalComprado = array_sum(array_map(fn ($o) => $o['status'] !== 'cancelado' ? (
     <a href="/painel/clientes/<?= (int) $client['id'] ?>/editar" class="btn btn-outline">Editar cadastro</a>
 </div>
 
+<?php if (isset($_GET['acesso_criado'])): ?>
+    <p class="form-msg form-msg-ok">Acesso criado! Senha temporária (repasse ao cliente, ele vai trocar no primeiro login): <strong><?= View::e($_GET['temp'] ?? '') ?></strong></p>
+<?php elseif (($_GET['erro_acesso'] ?? null) === '1'): ?>
+    <p class="form-msg form-msg-erro">O cliente precisa ter um e-mail válido cadastrado antes de criar o acesso.</p>
+<?php elseif (($_GET['erro_acesso'] ?? null) === '2'): ?>
+    <p class="form-msg form-msg-erro">Já existe uma conta com esse e-mail no sistema.</p>
+<?php endif; ?>
+
+<?php if (empty($client['user_id'])): ?>
+    <form action="/painel/clientes/<?= (int) $client['id'] ?>/criar-acesso" method="post" class="inline-form" style="margin-bottom:20px;">
+        <?= Csrf::field() ?>
+        <button type="submit" class="btn btn-outline">Criar acesso do cliente ao painel</button>
+    </form>
+<?php else: ?>
+    <p class="form-msg form-msg-ok" style="display:inline-block;">✔ Este cliente já tem acesso ao painel (área "Meus Pedidos").</p>
+<?php endif; ?>
+
 <div class="cards-grid">
     <div class="dash-card">
         <span>Total comprado</span>

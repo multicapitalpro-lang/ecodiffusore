@@ -64,6 +64,7 @@ $router->post('/painel/verificar-email/reenviar', [App\Controllers\AuthControlle
 
 // Painel
 $router->get('/painel', [App\Controllers\DashboardController::class, 'index']);
+$router->get('/painel/meus-pedidos/{id}', [App\Controllers\ClientPortalController::class, 'showOrder']);
 
 $router->get('/painel/usuarios', [App\Controllers\UserController::class, 'index']);
 $router->get('/painel/usuarios/novo', [App\Controllers\UserController::class, 'create']);
@@ -85,6 +86,7 @@ $router->get('/painel/clientes/{id}/editar', [App\Controllers\ClientController::
 $router->post('/painel/clientes/{id}', [App\Controllers\ClientController::class, 'update']);
 $router->get('/painel/clientes/{id}', [App\Controllers\ClientController::class, 'show']);
 $router->post('/painel/clientes/{id}/notas', [App\Controllers\ClientController::class, 'storeNote']);
+$router->post('/painel/clientes/{id}/criar-acesso', [App\Controllers\ClientController::class, 'createAccess']);
 
 // Produtos
 $router->get('/painel/produtos', [App\Controllers\ProductController::class, 'index']);
