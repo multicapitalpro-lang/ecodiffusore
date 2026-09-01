@@ -67,64 +67,63 @@
 })();
 
 (function () {
-    var form = document.getElementById('buy-form');
-    if (!form) return;
+    var wizard = document.getElementById('placa-wizard');
+    if (!wizard) return;
 
-    var CARD_FEE_PCT = 0.0299;
-    var ANTECIPACAO_MES_PCT = 0.017;
-    var TAXA_FIXA = 0.49;
+    var csrfToken = wizard.dataset.csrf;
+    var steps = wizard.querySelectorAll('.wizard-step');
+    var current = 0;
 
-    var fmt = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
-
-    var productSelect = document.getElementById('buy-product');
-    var methodInputs = form.querySelectorAll('input[name=billing_type]');
-    var installmentsRow = document.getElementById('buy-installments-row');
-    var installmentsSelect = document.getElementById('buy-installments');
-    var summary = document.getElementById('buy-price-summary');
-
-    function basePrice() {
-        var opt = productSelect.options[productSelect.selectedIndex];
-        return opt ? parseFloat(opt.dataset.price || '0') : 0;
+    function goToStep(i) {
+        current = i;
+        steps.forEach(function (step, si) { step.classList.toggle('is-active', si === i); });
     }
 
-    function chargeAmount(price, installments) {
-        if (installments <= 1) {
-            return (price + TAXA_FIXA) / (1 - CARD_FEE_PCT);
+    wizard.querySelectorAll('.wizard-next').forEach(function (btn) {
+        btn.addEventListener('click', function () { goToStep(current + 1); });
+    });
+
+    var plateInput = document.getElementById('wizard-plate');
+    var searchBtn = document.getElementById('wizard-search-btn');
+    var searchStatus = document.getElementById('wizard-search-status');
+
+    searchBtn.addEventListener('click', async function () {
+        var plate = plateInput.value.trim();
+        if (!plate) return;
+
+        searchStatus.textContent = 'Buscando...';
+        searchBtn.disabled = true;
+
+        try {
+            var formData = new FormData();
+            formData.set('csrf_token', csrfToken);
+            formData.set('plate', plate);
+            var res = await fetch('/comprar/buscar-placa', { method: 'POST', body: formData });
+            var data = await res.json();
+
+            if (data.found) {
+                // Quando a Dataflow estiver integrada, isso pode pre-preencher os campos e pular direto pro resultado.
+                searchStatus.textContent = '';
+            } else {
+                searchStatus.textContent = '';
+            }
+        } catch (e) {
+            searchStatus.textContent = '';
         }
-        var mesesMedios = (installments + 1) / 2;
-        var pct = CARD_FEE_PCT + ANTECIPACAO_MES_PCT * mesesMedios;
-        return (price + TAXA_FIXA) / (1 - pct);
-    }
 
-    function selectedMethod() {
-        var checked = form.querySelector('input[name=billing_type]:checked');
-        return checked ? checked.value : 'PIX';
-    }
+        searchBtn.disabled = false;
+        goToStep(1);
+    });
 
-    function update() {
-        var price = basePrice();
-        var method = selectedMethod();
-        var isCard = method === 'CREDIT_CARD';
-        installmentsRow.classList.toggle('is-visible', isCard);
-
-        if (!isCard) {
-            summary.innerHTML = 'Valor à vista: <strong>' + fmt.format(price) + '</strong>';
-            return;
-        }
-
-        var n = parseInt(installmentsSelect.value, 10) || 1;
-        var total = chargeAmount(price, n);
-        var parcela = total / n;
-
-        summary.innerHTML = n === 1
-            ? 'Valor no cartão à vista: <strong>' + fmt.format(total) + '</strong>'
-            : n + 'x de <strong>' + fmt.format(parcela) + '</strong> (total ' + fmt.format(total) + ')';
-    }
-
-    productSelect.addEventListener('change', update);
-    installmentsSelect.addEventListener('change', update);
-    methodInputs.forEach(function (input) { input.addEventListener('change', update); });
-    update();
+    var form = document.getElementById('wizard-form');
+    form.addEventListener('submit', function () {
+        document.getElementById('wizard-plate-hidden').value = plateInput.value.trim().toUpperCase();
+        document.getElementById('wizard-year-hidden').value = document.getElementById('wizard-year').value.trim();
+        document.getElementById('wizard-brand-hidden').value = document.getElementById('wizard-brand').value.trim();
+        document.getElementById('wizard-power-hidden').value = document.getElementById('wizard-power').value.trim();
+        var ecu = wizard.querySelector('input[name=wizard-ecu]:checked');
+        document.getElementById('wizard-ecu-hidden').value = ecu ? ecu.value : '';
+    });
 })();
 
 function initCarousel(carouselId, trackSelector, slideSelector) {

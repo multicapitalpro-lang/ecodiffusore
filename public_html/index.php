@@ -48,6 +48,9 @@ $router->post('/contato', [App\Controllers\PublicController::class, 'submitLead'
 $router->get('/comprar', [App\Controllers\PublicController::class, 'buy']);
 $router->post('/comprar/iniciar', [App\Controllers\PublicController::class, 'startCheckout']);
 $router->post('/comprar/pagamento', [App\Controllers\PublicController::class, 'checkout']);
+$router->post('/comprar/buscar-placa', [App\Controllers\PublicController::class, 'lookupPlate']);
+$router->post('/comprar/orcamento', [App\Controllers\PublicController::class, 'submitOrcamento']);
+$router->get('/comprar/orcamento', [App\Controllers\PublicController::class, 'showOrcamento']);
 
 // Autenticação
 $router->get('/painel/login', [App\Controllers\AuthController::class, 'showLogin']);

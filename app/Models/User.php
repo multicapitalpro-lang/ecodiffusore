@@ -171,8 +171,8 @@ class User
         $emailVerified = array_key_exists('email_verified', $data) ? !empty($data['email_verified']) : true;
 
         $stmt = Database::connection()->prepare(
-            'INSERT INTO users (role_id, manager_id, name, email, whatsapp, password_hash, status, commission_pct, must_change_password, email_verified_at)
-             VALUES (:role_id, :manager_id, :name, :email, :whatsapp, :password_hash, :status, :commission_pct, :must_change_password, :email_verified_at)'
+            'INSERT INTO users (role_id, manager_id, name, email, whatsapp, city, state, password_hash, status, commission_pct, must_change_password, email_verified_at)
+             VALUES (:role_id, :manager_id, :name, :email, :whatsapp, :city, :state, :password_hash, :status, :commission_pct, :must_change_password, :email_verified_at)'
         );
         $stmt->execute([
             'role_id' => $data['role_id'],
@@ -180,6 +180,8 @@ class User
             'name' => $data['name'],
             'email' => $data['email'],
             'whatsapp' => $data['whatsapp'] ?: null,
+            'city' => ($data['city'] ?? '') ?: null,
+            'state' => ($data['state'] ?? '') ?: null,
             'password_hash' => password_hash($data['password'], PASSWORD_DEFAULT),
             'status' => $data['status'] ?? 'active',
             'commission_pct' => $data['commission_pct'] ?? null,
@@ -231,7 +233,7 @@ class User
     {
         $stmt = Database::connection()->prepare(
             'UPDATE users SET role_id = :role_id, manager_id = :manager_id, name = :name, email = :email,
-                whatsapp = :whatsapp, status = :status, commission_pct = :commission_pct,
+                whatsapp = :whatsapp, city = :city, state = :state, status = :status, commission_pct = :commission_pct,
                 discount_limit_pct = :discount_limit_pct WHERE id = :id'
         );
         $stmt->execute([
@@ -241,6 +243,8 @@ class User
             'name' => $data['name'],
             'email' => $data['email'],
             'whatsapp' => $data['whatsapp'] ?: null,
+            'city' => ($data['city'] ?? '') ?: null,
+            'state' => ($data['state'] ?? '') ?: null,
             'commission_pct' => $data['commission_pct'] ?? null,
             'discount_limit_pct' => $data['discount_limit_pct'] ?? null,
             'status' => $data['status'],

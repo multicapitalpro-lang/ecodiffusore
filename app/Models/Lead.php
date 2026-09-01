@@ -77,6 +77,31 @@ class Lead
         $stmt->execute(['status' => $status, 'id' => $id]);
     }
 
+    /** Grava os dados do veiculo capturados no fluxo de orcamento por placa em /comprar */
+    public static function updateVehicleInfo(int $id, array $data): void
+    {
+        $stmt = Database::connection()->prepare(
+            'UPDATE leads SET vehicle_plate = :plate, vehicle_year = :year, vehicle_brand = :brand,
+                vehicle_power = :power, vehicle_ecu_status = :ecu_status WHERE id = :id'
+        );
+        $stmt->execute([
+            'id' => $id,
+            'plate' => ($data['plate'] ?? '') ?: null,
+            'year' => ($data['year'] ?? '') ?: null,
+            'brand' => ($data['brand'] ?? '') ?: null,
+            'power' => ($data['power'] ?? '') ?: null,
+            'ecu_status' => in_array($data['ecu_status'] ?? '', ['original', 'reprogramado'], true) ? $data['ecu_status'] : null,
+        ]);
+    }
+
+    public static function find(int $id): ?array
+    {
+        $stmt = Database::connection()->prepare('SELECT * FROM leads WHERE id = :id');
+        $stmt->execute(['id' => $id]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
     public static function assignTo(int $id, ?int $userId): void
     {
         $stmt = Database::connection()->prepare('UPDATE leads SET assigned_to_user_id = :uid WHERE id = :id');

@@ -5,6 +5,8 @@ namespace App\Controllers;
 use App\Core\AsaasClient;
 use App\Core\CardPricing;
 use App\Core\Csrf;
+use App\Core\DataflowClient;
+use App\Core\GeoMatch;
 use App\Core\Router;
 use App\Core\View;
 use App\Models\Client;
@@ -66,9 +68,85 @@ class PublicController
             'checkoutName' => $_SESSION['checkout_name'] ?? '',
             'checkoutWhatsapp' => $_SESSION['checkout_whatsapp'] ?? '',
             'checkoutCity' => $_SESSION['checkout_city'] ?? '',
-            'products' => Product::all(true),
             'ref' => $ref,
             'erro' => $_GET['erro'] ?? null,
+        ], 'site');
+    }
+
+    /** AJAX: tenta identificar o veiculo pela placa. Stub por enquanto (ver App\Core\DataflowClient) --
+     *  sempre responde "nao encontrado", o que faz o front cair no formulario manual passo a passo. */
+    public function lookupPlate(): void
+    {
+        header('Content-Type: application/json');
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            echo json_encode(['found' => false]);
+            return;
+        }
+
+        $plate = strtoupper(trim($_POST['plate'] ?? ''));
+        $vehicle = (new DataflowClient())->lookup($plate);
+
+        echo json_encode(['found' => $vehicle !== null, 'vehicle' => $vehicle]);
+    }
+
+    /** Recebe o formulario passo a passo do veiculo, atualiza o Lead da sessao e calcula o
+     *  orcamento (produto aproximado pela marca + vendedor mais proximo, se houver). */
+    public function submitOrcamento(): void
+    {
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            Router::redirect('/comprar?erro=csrf');
+        }
+
+        if (empty($_SESSION['checkout_lead_id'])) {
+            Router::redirect('/comprar');
+        }
+
+        $plate = strtoupper(trim($_POST['plate'] ?? ''));
+        $year = trim($_POST['year'] ?? '');
+        $brand = trim($_POST['brand'] ?? '');
+        $power = trim($_POST['power'] ?? '');
+        $ecuStatus = $_POST['ecu_status'] ?? '';
+
+        if ($plate === '' || $year === '' || $brand === '' || !in_array($ecuStatus, ['original', 'reprogramado'], true)) {
+            Router::redirect('/comprar?erro=1');
+        }
+
+        Lead::updateVehicleInfo((int) $_SESSION['checkout_lead_id'], [
+            'plate' => $plate,
+            'year' => $year,
+            'brand' => $brand,
+            'power' => $power,
+            'ecu_status' => $ecuStatus,
+        ]);
+
+        $product = Product::findByBrandKeyword($brand) ?? Product::cheapest();
+        $seller = GeoMatch::nearestSeller($_SESSION['checkout_city'] ?? '');
+
+        $_SESSION['orcamento_result'] = [
+            'plate' => $plate,
+            'year' => $year,
+            'brand' => $brand,
+            'power' => $power,
+            'ecu_status' => $ecuStatus,
+            'product_name' => $product['name'] ?? null,
+            'product_price' => $product['price_cash'] ?? null,
+            'product_is_exact_match' => $product && stripos($product['name'], $brand) !== false,
+            'seller_name' => $seller['name'] ?? null,
+            'seller_whatsapp' => $seller['whatsapp'] ?? null,
+        ];
+
+        Router::redirect('/comprar/orcamento');
+    }
+
+    public function showOrcamento(): void
+    {
+        if (empty($_SESSION['orcamento_result'])) {
+            Router::redirect('/comprar');
+        }
+
+        View::render('site/orcamento', [
+            'result' => $_SESSION['orcamento_result'],
         ], 'site');
     }
 

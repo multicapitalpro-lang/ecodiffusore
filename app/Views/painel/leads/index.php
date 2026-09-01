@@ -26,6 +26,15 @@ $isViewOnly = $isViewOnly ?? false;
                         <strong><?= View::e($lead['name']) ?></strong>
                         <a href="https://wa.me/55<?= preg_replace('/\D/', '', $lead['whatsapp']) ?>" target="_blank" rel="noopener" class="link-small"><?= View::e($lead['whatsapp']) ?></a>
                         <span class="kanban-card-meta"><?= View::e($lead['city'] ?: '—') ?> · <?= View::e($lead['truck_brand'] ?: '—') ?></span>
+                        <?php if (!empty($lead['vehicle_plate'])): ?>
+                            <span class="kanban-card-meta">
+                                🚚 <?= View::e($lead['vehicle_plate']) ?>
+                                <?= $lead['vehicle_year'] ? '· ' . View::e($lead['vehicle_year']) : '' ?>
+                                <?= $lead['vehicle_brand'] ? '· ' . View::e($lead['vehicle_brand']) : '' ?>
+                                <?= $lead['vehicle_power'] ? '· ' . View::e($lead['vehicle_power']) : '' ?>
+                                <?= $lead['vehicle_ecu_status'] ? '· ' . View::e($lead['vehicle_ecu_status'] === 'original' ? 'Original' : 'Reprogramado') : '' ?>
+                            </span>
+                        <?php endif; ?>
                         <?php if ($canAssign): ?>
                             <select class="lead-assign-select" data-lead-id="<?= (int) $lead['id'] ?>">
                                 <option value="">Sem responsável</option>

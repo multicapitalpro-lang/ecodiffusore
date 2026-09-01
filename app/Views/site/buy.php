@@ -1,12 +1,6 @@
 <?php
 use App\Core\Csrf;
 use App\Core\View;
-/** @var array $products */
-/** @var string $checkoutName */
-/** @var string $checkoutWhatsapp */
-/** @var string $checkoutCity */
-/** @var int|null $ref */
-$erroCobranca = $_GET['erro_cobranca'] ?? null;
 ?>
 <section class="buy-hero">
     <div class="site-container">
@@ -17,73 +11,97 @@ $erroCobranca = $_GET['erro_cobranca'] ?? null;
 
 <section class="buy-section">
     <div class="site-container">
-        <h2>Laudo técnico e detalhes de instalação</h2>
-        <div class="buy-laudo-pending">
-            <p><strong>Laudo técnico completo em breve nesta seção.</strong></p>
-            <p>Enquanto isso, saiba que o Ecodiffusore é instalado entre o TBI e o filtro de ar, usando lâminas magnetizadas que aumentam a sucção de ar e melhoram a combustão — resultando em economia real de diesel e mais performance, sem alterar a garantia de fábrica do motor.</p>
+        <h2>Documentação técnica e validação</h2>
+        <p class="section-sub">Tecnologia registrada e testada — não é promessa vazia.</p>
+
+        <div class="buy-docs-grid">
+            <div class="buy-doc-card">
+                <h4>📜 Patente registrada no INPI</h4>
+                <p>Carta Patente nº <strong>BR 202020013548-7</strong>, modelo de utilidade, título
+                "Disposição construtiva aplicada em difusor de ar para motores de combustão".
+                Depósito em 01/07/2020, validade de 15 anos.</p>
+                <a href="<?= View::asset('/assets/docs/carta-patente.pdf') ?>" target="_blank" rel="noopener" class="link-small">Ver certificado completo (PDF) →</a>
+            </div>
+            <div class="buy-doc-card">
+                <h4>®️ Marca registrada</h4>
+                <p>Registro de marca Ecodiffusore no INPI, processo nº <strong>920298915</strong>,
+                concedido em 27/04/2021, com vigência até 27/04/2031.</p>
+                <a href="<?= View::asset('/assets/docs/certificado-registro-marca.pdf') ?>" target="_blank" rel="noopener" class="link-small">Ver certificado completo (PDF) →</a>
+            </div>
+            <div class="buy-doc-card">
+                <h4>🔬 Estudo técnico ECOTEC</h4>
+                <p>Acompanhamento de consumo em máquinas agrícolas (John Deere 6605, Valtra BP905,
+                John Deere STS 9670) conduzido pelo Instituto de Pesquisas Ecotecnológicas, sob
+                responsabilidade do MsC. Eng. Químico Jair Duarte (CRQ 09302137-PR).</p>
+                <a href="<?= View::asset('/assets/docs/laudo-maquinas-agricolas.pdf') ?>" target="_blank" rel="noopener" class="link-small">Ver laudo completo (PDF) →</a>
+            </div>
+            <div class="buy-doc-card">
+                <h4>📘 Manual técnico e testes de emissão</h4>
+                <p>Testado com analisador de gases OPTMA 7 num Mercedes Actros 2548S (JR
+                Transportes, Cascavel/PR): NOx caiu de <strong>5.130 para 163 ppm</strong>. Opacidade
+                também testada — Toyota Hilux 4x4 de 0,31 para 0,12 m⁻¹ (CATA) e Mercedes Axor 2041
+                de 0,28K para 0,02K (ATIVE). Responsável técnico Roberson R. Parizotto, Crea-PR
+                115226/D, ART nº 1720264228859.</p>
+                <a href="<?= View::asset('/assets/docs/manual-tecnico.pdf') ?>" target="_blank" rel="noopener" class="link-small">Ver manual completo (PDF) →</a>
+            </div>
         </div>
     </div>
 </section>
 
-<section class="buy-section alt" id="finalizar">
+<section class="buy-section alt" id="orcamento">
     <div class="site-container">
-        <h2 style="text-align:center;">Finalizar compra</h2>
+        <h2 style="text-align:center;">Peça seu orçamento</h2>
+        <p class="section-sub" style="text-align:center;">Informe a placa do seu veículo pra gente te dar um orçamento certeiro.</p>
 
         <?php if (isset($_GET['erro']) && $_GET['erro'] === 'csrf'): ?>
             <p class="form-msg" style="background:#fdeaea;color:#b3261e;max-width:560px;margin:0 auto 16px;">Sessão expirada, tente novamente.</p>
         <?php elseif (isset($_GET['erro'])): ?>
             <p class="form-msg" style="background:#fdeaea;color:#b3261e;max-width:560px;margin:0 auto 16px;">Preencha todos os campos obrigatórios.</p>
         <?php endif; ?>
-        <?php if ($erroCobranca): ?>
-            <p class="form-msg" style="background:#fdeaea;color:#b3261e;max-width:560px;margin:0 auto 16px;">Não foi possível gerar o pagamento: <?= View::e($erroCobranca) ?></p>
-        <?php endif; ?>
 
-        <form action="/comprar/pagamento" method="post" class="buy-checkout-box" id="buy-form">
-            <?= Csrf::field() ?>
-
-            <label for="buy-name">Nome completo</label>
-            <input type="text" id="buy-name" name="name" value="<?= View::e($checkoutName) ?>" required>
-
-            <label for="buy-whatsapp">WhatsApp</label>
-            <input type="text" id="buy-whatsapp" name="whatsapp" value="<?= View::e($checkoutWhatsapp) ?>" required>
-
-            <label for="buy-city">Cidade</label>
-            <input type="text" id="buy-city" name="city" value="<?= View::e($checkoutCity) ?>">
-
-            <label for="buy-email">E-mail</label>
-            <input type="email" id="buy-email" name="email">
-
-            <label for="buy-document">CPF ou CNPJ</label>
-            <input type="text" id="buy-document" name="document" required>
-
-            <label for="buy-product">Produto</label>
-            <select id="buy-product" name="product_id" required>
-                <?php foreach ($products as $p): ?>
-                    <option value="<?= (int) $p['id'] ?>" data-price="<?= (float) $p['price_cash'] ?>">
-                        <?= View::e($p['name']) ?> — R$ <?= number_format((float) $p['price_cash'], 2, ',', '.') ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-
-            <label>Forma de pagamento</label>
-            <div class="buy-payment-methods">
-                <label><input type="radio" name="billing_type" value="PIX" checked> Pix à vista</label>
-                <label><input type="radio" name="billing_type" value="BOLETO"> Boleto</label>
-                <label><input type="radio" name="billing_type" value="CREDIT_CARD"> Cartão</label>
+        <div class="buy-checkout-box" id="placa-wizard" data-csrf="<?= Csrf::token() ?>">
+            <div class="wizard-step is-active" data-step="0">
+                <label for="wizard-plate">Placa do veículo</label>
+                <input type="text" id="wizard-plate" placeholder="ABC1D23" maxlength="8" style="text-transform:uppercase;">
+                <button type="button" class="btn btn-primary" id="wizard-search-btn" style="width:100%;margin-top:10px;">Buscar</button>
+                <p class="hint-text" id="wizard-search-status"></p>
             </div>
 
-            <div class="buy-installments-row" id="buy-installments-row">
-                <label for="buy-installments">Parcelas</label>
-                <select id="buy-installments" name="installments">
-                    <?php for ($i = 1; $i <= 12; $i++): ?>
-                        <option value="<?= $i ?>"><?= $i ?>x</option>
-                    <?php endfor; ?>
-                </select>
+            <div class="wizard-step" data-step="1">
+                <p class="hint-text">Não encontramos sua placa automaticamente ainda — só mais alguns dados rápidos:</p>
+                <label for="wizard-year">Ano modelo</label>
+                <input type="text" id="wizard-year" placeholder="Ex: 2020">
+                <button type="button" class="btn btn-primary wizard-next" style="width:100%;margin-top:10px;">Próximo</button>
             </div>
 
-            <div class="buy-price-summary" id="buy-price-summary"></div>
+            <div class="wizard-step" data-step="2">
+                <label for="wizard-brand">Marca</label>
+                <input type="text" id="wizard-brand" placeholder="Ex: Scania, Volvo, DAF, Iveco...">
+                <button type="button" class="btn btn-primary wizard-next" style="width:100%;margin-top:10px;">Próximo</button>
+            </div>
 
-            <button type="submit" class="btn btn-primary">Confirmar e pagar</button>
-        </form>
+            <div class="wizard-step" data-step="3">
+                <label for="wizard-power">Potência do motor</label>
+                <input type="text" id="wizard-power" placeholder="Ex: 460cv">
+                <button type="button" class="btn btn-primary wizard-next" style="width:100%;margin-top:10px;">Próximo</button>
+            </div>
+
+            <div class="wizard-step" data-step="4">
+                <label>O motor é original de fábrica ou reprogramado (chip)?</label>
+                <div class="buy-payment-methods">
+                    <label><input type="radio" name="wizard-ecu" value="original"> Original</label>
+                    <label><input type="radio" name="wizard-ecu" value="reprogramado"> Reprogramado</label>
+                </div>
+                <form action="/comprar/orcamento" method="post" id="wizard-form">
+                    <?= Csrf::field() ?>
+                    <input type="hidden" name="plate" id="wizard-plate-hidden">
+                    <input type="hidden" name="year" id="wizard-year-hidden">
+                    <input type="hidden" name="brand" id="wizard-brand-hidden">
+                    <input type="hidden" name="power" id="wizard-power-hidden">
+                    <input type="hidden" name="ecu_status" id="wizard-ecu-hidden">
+                    <button type="submit" class="btn btn-primary" style="width:100%;margin-top:10px;">Ver meu orçamento</button>
+                </form>
+            </div>
+        </div>
     </div>
 </section>

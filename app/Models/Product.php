@@ -25,6 +25,25 @@ class Product
         return $product ?: null;
     }
 
+    /** Casa a marca informada pelo cliente (ex: "Scania") contra o nome do produto (ex: "Linha Scania (até 2018)") */
+    public static function findByBrandKeyword(string $brand): ?array
+    {
+        $stmt = Database::connection()->prepare(
+            "SELECT * FROM products WHERE active = 1 AND name LIKE :pattern ORDER BY price_cash LIMIT 1"
+        );
+        $stmt->execute(['pattern' => '%' . $brand . '%']);
+        $product = $stmt->fetch();
+        return $product ?: null;
+    }
+
+    /** Fallback quando nao acha produto pela marca informada -- mostra o mais barato como "a partir de" */
+    public static function cheapest(): ?array
+    {
+        $stmt = Database::connection()->query('SELECT * FROM products WHERE active = 1 ORDER BY price_cash LIMIT 1');
+        $product = $stmt->fetch();
+        return $product ?: null;
+    }
+
     public static function create(array $data): int
     {
         $stmt = Database::connection()->prepare(

@@ -21,6 +21,18 @@ $values = $editing ?? ($old ?? []);
     <label for="whatsapp">WhatsApp</label>
     <input type="text" id="whatsapp" name="whatsapp" value="<?= View::e($values['whatsapp'] ?? '') ?>">
 
+    <div class="form-grid-2">
+        <div>
+            <label for="city">Cidade</label>
+            <input type="text" id="city" name="city" value="<?= View::e($values['city'] ?? '') ?>">
+        </div>
+        <div>
+            <label for="state">UF</label>
+            <input type="text" id="state" name="state" maxlength="2" style="text-transform:uppercase" value="<?= View::e($values['state'] ?? '') ?>">
+        </div>
+    </div>
+    <p class="hint-text">Pra Licenciado: usado pra achar automaticamente o vendedor mais próximo de um cliente que pede orçamento pela landing page.</p>
+
     <label for="role_id">Papel</label>
     <select id="role_id" name="role_id" required>
         <option value="">Selecione...</option>
