@@ -73,6 +73,7 @@
     var csrfToken = wizard.dataset.csrf;
     var steps = wizard.querySelectorAll('.wizard-step');
     var current = 0;
+    var catalog = window.ECO_VEHICLE_CATALOG || {};
 
     function goToStep(i) {
         current = i;
@@ -80,7 +81,9 @@
     }
 
     wizard.querySelectorAll('.wizard-next').forEach(function (btn) {
-        btn.addEventListener('click', function () { goToStep(current + 1); });
+        btn.addEventListener('click', function () {
+            if (!btn.disabled) goToStep(current + 1);
+        });
     });
 
     var plateInput = document.getElementById('wizard-plate');
@@ -99,14 +102,10 @@
             formData.set('csrf_token', csrfToken);
             formData.set('plate', plate);
             var res = await fetch('/comprar/buscar-placa', { method: 'POST', body: formData });
-            var data = await res.json();
-
-            if (data.found) {
-                // Quando a Dataflow estiver integrada, isso pode pre-preencher os campos e pular direto pro resultado.
-                searchStatus.textContent = '';
-            } else {
-                searchStatus.textContent = '';
-            }
+            await res.json();
+            // Dataflow ainda e' stub (sempre "nao encontrado") -- quando integrada de verdade, o
+            // retorno "found" pode pre-preencher os campos abaixo e pular direto pro orcamento.
+            searchStatus.textContent = '';
         } catch (e) {
             searchStatus.textContent = '';
         }
@@ -115,15 +114,79 @@
         goToStep(1);
     });
 
-    var form = document.getElementById('wizard-form');
-    form.addEventListener('submit', function () {
-        document.getElementById('wizard-plate-hidden').value = plateInput.value.trim().toUpperCase();
-        document.getElementById('wizard-year-hidden').value = document.getElementById('wizard-year').value.trim();
-        document.getElementById('wizard-brand-hidden').value = document.getElementById('wizard-brand').value.trim();
-        document.getElementById('wizard-power-hidden').value = document.getElementById('wizard-power').value.trim();
-        var ecu = wizard.querySelector('input[name=wizard-ecu]:checked');
-        document.getElementById('wizard-ecu-hidden').value = ecu ? ecu.value : '';
+    // Marca -> Modelo em cascata.
+    var brandSelect = document.getElementById('wizard-brand');
+    var modelSelect = document.getElementById('wizard-model');
+
+    brandSelect.addEventListener('change', function () {
+        var models = catalog[brandSelect.value] || [];
+        modelSelect.innerHTML = '';
+
+        if (!models.length) {
+            modelSelect.disabled = true;
+            var placeholder = document.createElement('option');
+            placeholder.value = '';
+            placeholder.textContent = 'Selecione a marca primeiro';
+            modelSelect.appendChild(placeholder);
+            return;
+        }
+
+        modelSelect.disabled = false;
+        var empty = document.createElement('option');
+        empty.value = '';
+        empty.textContent = 'Selecione...';
+        modelSelect.appendChild(empty);
+
+        models.forEach(function (model) {
+            var opt = document.createElement('option');
+            opt.value = model;
+            opt.textContent = model;
+            modelSelect.appendChild(opt);
+        });
     });
+
+    // Original ou reprogramado -- so libera o "Proximo" com a escolha feita, e so exige a potencia
+    // reprogramada quando "Reprogramado" for selecionado.
+    var ecuRadios = wizard.querySelectorAll('input[name=ecu_status]');
+    var reprogWrap = document.getElementById('wizard-reprogrammed-power-wrap');
+    var reprogInput = document.getElementById('wizard-reprogrammed-power');
+    var ecuNextBtn = document.getElementById('wizard-ecu-next');
+
+    function updateEcuNext() {
+        var checked = wizard.querySelector('input[name=ecu_status]:checked');
+        if (!checked) { ecuNextBtn.disabled = true; return; }
+        if (checked.value === 'reprogramado') {
+            reprogWrap.style.display = '';
+            ecuNextBtn.disabled = reprogInput.value.trim() === '';
+        } else {
+            reprogWrap.style.display = 'none';
+            ecuNextBtn.disabled = false;
+        }
+    }
+
+    ecuRadios.forEach(function (radio) { radio.addEventListener('change', updateEcuNext); });
+    reprogInput.addEventListener('input', updateEcuNext);
+
+    // ARLA -- "Nao" libera o orcamento direto; "Sim" so libera apos confirmar o aviso.
+    var arlaRadios = wizard.querySelectorAll('input[name=has_arla]');
+    var arlaNotice = document.getElementById('wizard-arla-notice');
+    var arlaConfirm = document.getElementById('wizard-arla-confirm');
+    var submitBtn = document.getElementById('wizard-submit-btn');
+
+    function updateArlaSubmit() {
+        var checked = wizard.querySelector('input[name=has_arla]:checked');
+        if (!checked) { submitBtn.style.display = 'none'; return; }
+        if (checked.value === 'sim') {
+            arlaNotice.style.display = '';
+            submitBtn.style.display = arlaConfirm.checked ? '' : 'none';
+        } else {
+            arlaNotice.style.display = 'none';
+            submitBtn.style.display = '';
+        }
+    }
+
+    arlaRadios.forEach(function (radio) { radio.addEventListener('change', updateArlaSubmit); });
+    arlaConfirm.addEventListener('change', updateArlaSubmit);
 })();
 
 function initCarousel(carouselId, trackSelector, slideSelector) {

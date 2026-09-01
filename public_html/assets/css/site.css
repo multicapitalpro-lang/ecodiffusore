@@ -261,7 +261,7 @@ a { color: inherit; text-decoration: none; }
 .site-footer-logo { height: 54px; width: auto; margin-bottom: 14px; }
 .site-footer p { margin: 4px 0; font-size: .88rem; }
 .site-footer a { color: var(--green); }
-.site-footer-login { display: inline-block; color: var(--white) !important; border-color: var(--white); margin-bottom: 16px; }
+.site-footer-login { display: inline-block; color: var(--white) !important; border-color: var(--white); margin-bottom: 16px; padding: 8px 18px; font-size: .82rem; }
 .site-footer-login:hover { background: var(--white); color: var(--navy) !important; }
 
 /* WhatsApp float */
@@ -312,6 +312,10 @@ dialog.modal::backdrop { background: rgba(0,0,0,.6); }
 .buy-price-summary strong { font-size: 1.2rem; color: var(--green-dark); }
 .wizard-step { display: none; }
 .wizard-step.is-active { display: block; }
+.wizard-step .btn:disabled { opacity: .5; cursor: not-allowed; }
+#wizard-arla-notice { border: 1.5px solid #f0c14b; background: #fff9ec; }
+#wizard-arla-notice label { display: flex; align-items: flex-start; gap: 8px; margin: 10px 0 0; font-size: .88rem; }
+#wizard-arla-notice input[type=checkbox] { width: auto; margin-top: 3px; }
 .orcamento-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
 .orcamento-table td { padding: 8px 0; border-bottom: 1px solid #edf0f5; font-size: .92rem; }
 .orcamento-table td:first-child { color: var(--gray-text); width: 40%; }

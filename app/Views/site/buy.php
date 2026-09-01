@@ -59,49 +59,83 @@ use App\Core\View;
             <p class="form-msg" style="background:#fdeaea;color:#b3261e;max-width:560px;margin:0 auto 16px;">Preencha todos os campos obrigatórios.</p>
         <?php endif; ?>
 
-        <div class="buy-checkout-box" id="placa-wizard" data-csrf="<?= Csrf::token() ?>">
+        <form action="/comprar/orcamento" method="post" class="buy-checkout-box" id="placa-wizard" data-csrf="<?= Csrf::token() ?>">
+            <?= Csrf::field() ?>
+
             <div class="wizard-step is-active" data-step="0">
                 <label for="wizard-plate">Placa do veículo</label>
-                <input type="text" id="wizard-plate" placeholder="ABC1D23" maxlength="8" style="text-transform:uppercase;">
+                <input type="text" id="wizard-plate" name="plate" placeholder="ABC1D23" maxlength="8" style="text-transform:uppercase;">
                 <button type="button" class="btn btn-primary" id="wizard-search-btn" style="width:100%;margin-top:10px;">Buscar</button>
                 <p class="hint-text" id="wizard-search-status"></p>
             </div>
 
             <div class="wizard-step" data-step="1">
                 <p class="hint-text">Não encontramos sua placa automaticamente ainda — só mais alguns dados rápidos:</p>
-                <label for="wizard-year">Ano modelo</label>
-                <input type="text" id="wizard-year" placeholder="Ex: 2020">
+                <label for="wizard-name">Seu nome</label>
+                <input type="text" id="wizard-name" name="name" value="<?= View::e($checkoutName) ?>">
                 <button type="button" class="btn btn-primary wizard-next" style="width:100%;margin-top:10px;">Próximo</button>
             </div>
 
             <div class="wizard-step" data-step="2">
-                <label for="wizard-brand">Marca</label>
-                <input type="text" id="wizard-brand" placeholder="Ex: Scania, Volvo, DAF, Iveco...">
+                <label for="wizard-year">Ano modelo</label>
+                <input type="text" id="wizard-year" name="year" placeholder="Ex: 2020">
                 <button type="button" class="btn btn-primary wizard-next" style="width:100%;margin-top:10px;">Próximo</button>
             </div>
 
             <div class="wizard-step" data-step="3">
-                <label for="wizard-power">Potência do motor</label>
-                <input type="text" id="wizard-power" placeholder="Ex: 460cv">
+                <label for="wizard-brand">Marca</label>
+                <select id="wizard-brand" name="brand">
+                    <option value="">Selecione...</option>
+                    <?php foreach (array_keys($vehicleCatalog) as $brand): ?>
+                        <option value="<?= View::e($brand) ?>"><?= View::e($brand) ?></option>
+                    <?php endforeach; ?>
+                </select>
                 <button type="button" class="btn btn-primary wizard-next" style="width:100%;margin-top:10px;">Próximo</button>
             </div>
 
             <div class="wizard-step" data-step="4">
+                <label for="wizard-model">Modelo</label>
+                <select id="wizard-model" name="model" disabled>
+                    <option value="">Selecione a marca primeiro</option>
+                </select>
+                <button type="button" class="btn btn-primary wizard-next" style="width:100%;margin-top:10px;">Próximo</button>
+            </div>
+
+            <div class="wizard-step" data-step="5">
+                <label for="wizard-power">Potência do motor</label>
+                <input type="text" id="wizard-power" name="power" placeholder="Ex: 460cv">
+                <button type="button" class="btn btn-primary wizard-next" style="width:100%;margin-top:10px;">Próximo</button>
+            </div>
+
+            <div class="wizard-step" data-step="6">
                 <label>O motor é original de fábrica ou reprogramado (chip)?</label>
                 <div class="buy-payment-methods">
-                    <label><input type="radio" name="wizard-ecu" value="original"> Original</label>
-                    <label><input type="radio" name="wizard-ecu" value="reprogramado"> Reprogramado</label>
+                    <label><input type="radio" name="ecu_status" value="original" id="wizard-ecu-original"> Original</label>
+                    <label><input type="radio" name="ecu_status" value="reprogramado" id="wizard-ecu-reprog"> Reprogramado</label>
                 </div>
-                <form action="/comprar/orcamento" method="post" id="wizard-form">
-                    <?= Csrf::field() ?>
-                    <input type="hidden" name="plate" id="wizard-plate-hidden">
-                    <input type="hidden" name="year" id="wizard-year-hidden">
-                    <input type="hidden" name="brand" id="wizard-brand-hidden">
-                    <input type="hidden" name="power" id="wizard-power-hidden">
-                    <input type="hidden" name="ecu_status" id="wizard-ecu-hidden">
-                    <button type="submit" class="btn btn-primary" style="width:100%;margin-top:10px;">Ver meu orçamento</button>
-                </form>
+                <div id="wizard-reprogrammed-power-wrap" style="display:none;">
+                    <label for="wizard-reprogrammed-power">Qual potência foi reprogramado?</label>
+                    <input type="text" id="wizard-reprogrammed-power" name="reprogrammed_power" placeholder="Ex: 500cv">
+                </div>
+                <button type="button" class="btn btn-primary wizard-next" id="wizard-ecu-next" style="width:100%;margin-top:10px;" disabled>Próximo</button>
             </div>
-        </div>
+
+            <div class="wizard-step" data-step="7">
+                <label>O veículo possui sistema de ARLA?</label>
+                <div class="buy-payment-methods">
+                    <label><input type="radio" name="has_arla" value="sim" id="wizard-arla-sim"> Sim</label>
+                    <label><input type="radio" name="has_arla" value="nao" id="wizard-arla-nao"> Não</label>
+                </div>
+                <div id="wizard-arla-notice" style="display:none;" class="buy-price-summary">
+                    <p style="margin-top:0;">⚠️ Pra a economia funcionar, é obrigatório o sistema de ARLA estar em funcionamento.</p>
+                    <label>
+                        <input type="checkbox" id="wizard-arla-confirm"> Confirmo que o ARLA está funcionando corretamente
+                    </label>
+                </div>
+                <button type="submit" class="btn btn-primary" id="wizard-submit-btn" style="width:100%;margin-top:10px;display:none;">Ver meu orçamento</button>
+            </div>
+        </form>
     </div>
 </section>
+
+<script>window.ECO_VEHICLE_CATALOG = <?= json_encode($vehicleCatalog) ?>;</script>

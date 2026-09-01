@@ -8,6 +8,7 @@ use App\Core\Csrf;
 use App\Core\DataflowClient;
 use App\Core\GeoMatch;
 use App\Core\Router;
+use App\Core\VehicleCatalog;
 use App\Core\View;
 use App\Models\Client;
 use App\Models\Lead;
@@ -68,6 +69,7 @@ class PublicController
             'checkoutName' => $_SESSION['checkout_name'] ?? '',
             'checkoutWhatsapp' => $_SESSION['checkout_whatsapp'] ?? '',
             'checkoutCity' => $_SESSION['checkout_city'] ?? '',
+            'vehicleCatalog' => VehicleCatalog::all(),
             'ref' => $ref,
             'erro' => $_GET['erro'] ?? null,
         ], 'site');
@@ -102,23 +104,35 @@ class PublicController
             Router::redirect('/comprar');
         }
 
+        $name = trim($_POST['name'] ?? '');
         $plate = strtoupper(trim($_POST['plate'] ?? ''));
         $year = trim($_POST['year'] ?? '');
         $brand = trim($_POST['brand'] ?? '');
+        $model = trim($_POST['model'] ?? '');
         $power = trim($_POST['power'] ?? '');
         $ecuStatus = $_POST['ecu_status'] ?? '';
+        $reprogrammedPower = trim($_POST['reprogrammed_power'] ?? '');
+        $hasArla = $_POST['has_arla'] ?? '';
 
-        if ($plate === '' || $year === '' || $brand === '' || !in_array($ecuStatus, ['original', 'reprogramado'], true)) {
+        $ecuValid = $ecuStatus === 'original' || ($ecuStatus === 'reprogramado' && $reprogrammedPower !== '');
+
+        if ($name === '' || $plate === '' || $year === '' || $brand === '' || $model === '' || !$ecuValid || !in_array($hasArla, ['sim', 'nao'], true)) {
             Router::redirect('/comprar?erro=1');
         }
 
         Lead::updateVehicleInfo((int) $_SESSION['checkout_lead_id'], [
+            'name' => $name,
             'plate' => $plate,
             'year' => $year,
             'brand' => $brand,
+            'model' => $model,
             'power' => $power,
             'ecu_status' => $ecuStatus,
+            'reprogrammed_power' => $ecuStatus === 'reprogramado' ? $reprogrammedPower : null,
+            'has_arla' => $hasArla,
         ]);
+
+        $_SESSION['checkout_name'] = $name;
 
         $product = Product::findByBrandKeyword($brand) ?? Product::cheapest();
         $seller = GeoMatch::nearestSeller($_SESSION['checkout_city'] ?? '');
@@ -127,8 +141,11 @@ class PublicController
             'plate' => $plate,
             'year' => $year,
             'brand' => $brand,
+            'model' => $model,
             'power' => $power,
             'ecu_status' => $ecuStatus,
+            'reprogrammed_power' => $reprogrammedPower,
+            'has_arla' => $hasArla,
             'product_name' => $product['name'] ?? null,
             'product_price' => $product['price_cash'] ?? null,
             'product_is_exact_match' => $product && stripos($product['name'], $brand) !== false,

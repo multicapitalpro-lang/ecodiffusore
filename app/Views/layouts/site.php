@@ -66,7 +66,7 @@ $showPopup = $showPopup ?? false;
             <p>Instagram: @ecodiffusorebrasil</p>
         </div>
         <div>
-            <a href="/painel/login" class="btn btn-outline site-footer-login">Acessar o Painel (Licenciado, Vendedor, Cliente...)</a>
+            <a href="/painel/login" class="btn btn-outline site-footer-login">Acessar o Painel</a>
             <p>&copy; <?= date('Y') ?> Ecodiffusore Brasil. Todos os direitos reservados.</p>
         </div>
     </div>

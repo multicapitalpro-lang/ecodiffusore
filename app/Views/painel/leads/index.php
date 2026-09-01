@@ -31,8 +31,11 @@ $isViewOnly = $isViewOnly ?? false;
                                 🚚 <?= View::e($lead['vehicle_plate']) ?>
                                 <?= $lead['vehicle_year'] ? '· ' . View::e($lead['vehicle_year']) : '' ?>
                                 <?= $lead['vehicle_brand'] ? '· ' . View::e($lead['vehicle_brand']) : '' ?>
+                                <?= !empty($lead['vehicle_model']) ? '· ' . View::e($lead['vehicle_model']) : '' ?>
                                 <?= $lead['vehicle_power'] ? '· ' . View::e($lead['vehicle_power']) : '' ?>
                                 <?= $lead['vehicle_ecu_status'] ? '· ' . View::e($lead['vehicle_ecu_status'] === 'original' ? 'Original' : 'Reprogramado') : '' ?>
+                                <?= !empty($lead['vehicle_reprogrammed_power']) ? ' (' . View::e($lead['vehicle_reprogrammed_power']) . ')' : '' ?>
+                                <?= !empty($lead['vehicle_has_arla']) ? '· ARLA: ' . View::e($lead['vehicle_has_arla'] === 'sim' ? 'Sim' : 'Não') : '' ?>
                             </span>
                         <?php endif; ?>
                         <?php if ($canAssign): ?>
