@@ -71,7 +71,7 @@ $payback = $result['payback'] ?? null;
 
 <?php if ($payback['payback_months']): ?>
 <div class="highlight-box">
-    💰 Com a economia média, seu investimento se paga em aproximadamente
+    Com a economia média, seu investimento se paga em aproximadamente
     <strong><?= $payback['payback_months'] < 1 ? 'menos de 1 mês' : ceil($payback['payback_months']) . ' meses' ?></strong>.
 </div>
 <?php endif; ?>
