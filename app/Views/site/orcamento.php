@@ -2,7 +2,7 @@
 use App\Core\View;
 /** @var array $result */
 $hasSeller = !empty($result['seller_whatsapp']);
-$whatsappNumber = $hasSeller ? preg_replace('/\D/', '', $result['seller_whatsapp']) : '5545991021551';
+$whatsappNumber = $hasSeller ? '55' . preg_replace('/\D/', '', $result['seller_whatsapp']) : '5545991021551';
 $whatsappLabel = $hasSeller ? 'Falar com ' . $result['seller_name'] : 'Falar com o Atendimento Ecodiffusore';
 
 $message = "Olá! Pedi um orçamento do Ecodiffusore pelo site.\n"
