@@ -76,15 +76,15 @@ $payback = $result['payback'] ?? null;
 </div>
 <?php endif; ?>
 
-<h2>Retorno do investimento (payback), ano a ano</h2>
+<h2>Retorno do investimento, ano a ano</h2>
 <table class="tiers-table">
-    <thead><tr><th>Ano</th><th>Economia acumulada</th><th>Situação</th></tr></thead>
+    <thead><tr><th>Ano</th><th>Economia acumulada</th><th>Lucro líquido acumulado</th></tr></thead>
     <tbody>
         <?php foreach ($payback['yearly_breakdown'] as $row): ?>
             <tr>
                 <td>Ano <?= (int) $row['year'] ?></td>
                 <td>R$ <?= number_format($row['cumulative_savings'], 2, ',', '.') ?></td>
-                <td><?= $row['payback_reached'] ? 'Investimento recuperado' : 'Ainda recuperando o investimento' ?></td>
+                <td><?= $row['net_gain'] >= 0 ? '+ R$ ' . number_format($row['net_gain'], 2, ',', '.') : 'Faltam R$ ' . number_format(abs($row['net_gain']), 2, ',', '.') . ' pra recuperar o investimento' ?></td>
             </tr>
         <?php endforeach; ?>
     </tbody>

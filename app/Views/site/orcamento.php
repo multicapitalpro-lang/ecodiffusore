@@ -8,6 +8,9 @@ $whatsappLabel = $hasSeller ? 'Falar com ' . $result['seller_name'] : 'Falar com
 $message = "Olá! Meu nome é " . ($result['name'] ?? '') . ", pedi um orçamento do Ecodiffusore pelo site.\n"
     . "Veículo: {$result['brand']} {$result['year']}, placa {$result['plate']}, potência {$result['power']}.\n"
     . 'Motor: ' . ($result['ecu_status'] === 'original' ? 'Original de fábrica' : 'Reprogramado (chip)') . '.';
+
+$payback = $result['payback'] ?? null;
+$hasPayback = $payback && $payback['tiers']['avg']['monthly'] > 0;
 ?>
 <section class="buy-hero">
     <div class="site-container">
@@ -18,7 +21,48 @@ $message = "Olá! Meu nome é " . ($result['name'] ?? '') . ", pedi um orçament
 
 <section class="buy-section">
     <div class="site-container">
-        <div class="buy-checkout-box">
+
+        <?php if ($hasPayback): ?>
+            <h2 style="text-align:center;">Sua economia estimada com o Ecodiffusore</h2>
+            <p class="section-sub" style="text-align:center;">Calculado com base nos dados que você informou.</p>
+
+            <div class="calc-results" style="max-width:920px;margin:0 auto;">
+                <div class="calc-result calc-min">
+                    <span class="calc-result-icon">🛡️</span>
+                    <span class="calc-result-title">5% – Mínimo Garantido</span>
+                    <span class="calc-result-label">Economia Mensal</span>
+                    <strong>R$ <?= number_format($payback['tiers']['min']['monthly'], 2, ',', '.') ?></strong>
+                    <small>R$ <?= number_format($payback['tiers']['min']['yearly'], 2, ',', '.') ?>/ano</small>
+                    <small>R$ <?= number_format($payback['tiers']['min']['five_year'], 2, ',', '.') ?> em 5 anos</small>
+                </div>
+                <div class="calc-result calc-avg">
+                    <span class="calc-badge">MAIS COMUM</span>
+                    <span class="calc-result-icon">📈</span>
+                    <span class="calc-result-title">10% – Média Real</span>
+                    <span class="calc-result-label">Economia Mensal</span>
+                    <strong>R$ <?= number_format($payback['tiers']['avg']['monthly'], 2, ',', '.') ?></strong>
+                    <small>R$ <?= number_format($payback['tiers']['avg']['yearly'], 2, ',', '.') ?>/ano</small>
+                    <small>R$ <?= number_format($payback['tiers']['avg']['five_year'], 2, ',', '.') ?> em 5 anos</small>
+                </div>
+                <div class="calc-result calc-max">
+                    <span class="calc-result-icon">🚀</span>
+                    <span class="calc-result-title">20% – Potencial Máximo</span>
+                    <span class="calc-result-label">Economia Mensal</span>
+                    <strong>R$ <?= number_format($payback['tiers']['max']['monthly'], 2, ',', '.') ?></strong>
+                    <small>R$ <?= number_format($payback['tiers']['max']['yearly'], 2, ',', '.') ?>/ano</small>
+                    <small>R$ <?= number_format($payback['tiers']['max']['five_year'], 2, ',', '.') ?> em 5 anos</small>
+                </div>
+            </div>
+
+            <?php if ($payback['payback_months']): ?>
+                <p class="buy-price-summary" style="max-width:560px;margin:24px auto 0;text-align:center;">
+                    💰 Com a economia média, seu investimento se paga em aproximadamente
+                    <strong><?= $payback['payback_months'] < 1 ? 'menos de 1 mês' : ceil($payback['payback_months']) . ' meses' ?></strong>.
+                </p>
+            <?php endif; ?>
+        <?php endif; ?>
+
+        <div class="buy-checkout-box" style="margin-top:30px;">
             <h3 style="margin-top:0;">Seu veículo</h3>
             <table class="orcamento-table">
                 <tr><td>Placa</td><td><strong><?= View::e($result['plate']) ?></strong></td></tr>
@@ -42,71 +86,35 @@ $message = "Olá! Meu nome é " . ($result['name'] ?? '') . ", pedi um orçament
             <p><?= $hasSeller ? 'Ele já vai te atender considerando os dados que você informou.' : 'Não encontramos um Licenciado na sua região ainda, mas nosso atendimento geral cuida de você.' ?></p>
             <a href="https://wa.me/<?= $whatsappNumber ?>?text=<?= rawurlencode($message) ?>" target="_blank" rel="noopener" class="btn btn-whatsapp" style="width:100%;text-align:center;display:block;">💬 <?= View::e($whatsappLabel) ?></a>
         </div>
-    </div>
-</section>
 
-<?php $payback = $result['payback'] ?? null; ?>
-<?php if ($payback && $payback['tiers']['avg']['monthly'] > 0): ?>
-<section class="buy-section alt">
-    <div class="site-container">
-        <h2 style="text-align:center;">Sua economia estimada com o Ecodiffusore</h2>
-        <p class="section-sub" style="text-align:center;">Calculado com base nos dados que você informou.</p>
+        <?php if ($hasPayback): ?>
+            <h3 style="text-align:center;margin-top:30px;">Retorno do investimento, ano a ano</h3>
+            <div class="table-scroll" style="max-width:700px;margin:14px auto 0;">
+                <table class="payback-table">
+                    <thead><tr><th>Ano</th><th>Economia acumulada</th><th>Lucro líquido acumulado</th></tr></thead>
+                    <tbody>
+                        <?php foreach ($payback['yearly_breakdown'] as $row): ?>
+                            <tr>
+                                <td>Ano <?= (int) $row['year'] ?></td>
+                                <td>R$ <?= number_format($row['cumulative_savings'], 2, ',', '.') ?></td>
+                                <td>
+                                    <?php if ($row['net_gain'] >= 0): ?>
+                                        <strong style="color:var(--green-dark);">+ R$ <?= number_format($row['net_gain'], 2, ',', '.') ?></strong>
+                                    <?php else: ?>
+                                        Faltam R$ <?= number_format(abs($row['net_gain']), 2, ',', '.') ?> pra recuperar o investimento
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
 
-        <div class="calc-results" style="max-width:920px;margin:0 auto;">
-            <div class="calc-result calc-min">
-                <span class="calc-result-icon">🛡️</span>
-                <span class="calc-result-title">5% – Mínimo Garantido</span>
-                <span class="calc-result-label">Economia Mensal</span>
-                <strong>R$ <?= number_format($payback['tiers']['min']['monthly'], 2, ',', '.') ?></strong>
-                <small>R$ <?= number_format($payback['tiers']['min']['yearly'], 2, ',', '.') ?>/ano</small>
-                <small>R$ <?= number_format($payback['tiers']['min']['five_year'], 2, ',', '.') ?> em 5 anos</small>
-            </div>
-            <div class="calc-result calc-avg">
-                <span class="calc-badge">MAIS COMUM</span>
-                <span class="calc-result-icon">📈</span>
-                <span class="calc-result-title">10% – Média Real</span>
-                <span class="calc-result-label">Economia Mensal</span>
-                <strong>R$ <?= number_format($payback['tiers']['avg']['monthly'], 2, ',', '.') ?></strong>
-                <small>R$ <?= number_format($payback['tiers']['avg']['yearly'], 2, ',', '.') ?>/ano</small>
-                <small>R$ <?= number_format($payback['tiers']['avg']['five_year'], 2, ',', '.') ?> em 5 anos</small>
-            </div>
-            <div class="calc-result calc-max">
-                <span class="calc-result-icon">🚀</span>
-                <span class="calc-result-title">20% – Potencial Máximo</span>
-                <span class="calc-result-label">Economia Mensal</span>
-                <strong>R$ <?= number_format($payback['tiers']['max']['monthly'], 2, ',', '.') ?></strong>
-                <small>R$ <?= number_format($payback['tiers']['max']['yearly'], 2, ',', '.') ?>/ano</small>
-                <small>R$ <?= number_format($payback['tiers']['max']['five_year'], 2, ',', '.') ?> em 5 anos</small>
-            </div>
-        </div>
+            <p class="calc-disclaimer" style="text-align:center;">A economia varia de acordo com estilo de direção, tipo de carga e condições da estrada.</p>
 
-        <?php if ($payback['payback_months']): ?>
-            <p class="buy-price-summary" style="max-width:560px;margin:24px auto 0;text-align:center;">
-                💰 Com a economia média, seu investimento se paga em aproximadamente
-                <strong><?= $payback['payback_months'] < 1 ? 'menos de 1 mês' : ceil($payback['payback_months']) . ' meses' ?></strong>.
-            </p>
+            <div style="max-width:560px;margin:20px auto 0;">
+                <a href="/comprar/orcamento/pdf" class="btn btn-outline" style="width:100%;text-align:center;display:block;">📄 Baixar PDF do orçamento</a>
+            </div>
         <?php endif; ?>
-
-        <div class="table-scroll" style="max-width:700px;margin:24px auto 0;">
-            <table class="payback-table">
-                <thead><tr><th>Ano</th><th>Economia acumulada</th><th>Situação</th></tr></thead>
-                <tbody>
-                    <?php foreach ($payback['yearly_breakdown'] as $row): ?>
-                        <tr>
-                            <td>Ano <?= (int) $row['year'] ?></td>
-                            <td>R$ <?= number_format($row['cumulative_savings'], 2, ',', '.') ?></td>
-                            <td><?= $row['payback_reached'] ? '✅ Investimento recuperado' : 'Ainda recuperando o investimento' ?></td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
-
-        <p class="calc-disclaimer" style="text-align:center;">A economia varia de acordo com estilo de direção, tipo de carga e condições da estrada.</p>
-
-        <div style="max-width:560px;margin:20px auto 0;">
-            <a href="/comprar/orcamento/pdf" class="btn btn-outline" style="width:100%;text-align:center;display:block;">📄 Baixar PDF do orçamento</a>
-        </div>
     </div>
 </section>
-<?php endif; ?>

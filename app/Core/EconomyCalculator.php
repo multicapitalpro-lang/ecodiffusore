@@ -36,7 +36,6 @@ class EconomyCalculator
                 'year' => $year,
                 'cumulative_savings' => $cumulative,
                 'net_gain' => $cumulative - $productPrice,
-                'payback_reached' => $cumulative >= $productPrice,
             ];
         }
 
