@@ -15,6 +15,7 @@ use App\Models\Lead;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\Product;
+use App\Models\Quote;
 use App\Models\User;
 
 class PublicController
@@ -146,7 +147,38 @@ class PublicController
             Lead::assignTo((int) $_SESSION['checkout_lead_id'], (int) $seller['id']);
         }
 
+        // O orcamento por placa ja e um orcamento de verdade, mesmo que o cliente nunca chame o
+        // vendedor no WhatsApp -- precisa aparecer em /painel/orcamentos (Kanban/lista/CRM), nao so
+        // como um Lead solto. Cria Cliente (sem email/CPF, que essa etapa publica nao coleta) +
+        // Orcamento vinculado ao Lead (via lead_id), pra tela/CRM poderem mostrar cidade/veiculo
+        // completos a partir do Lead sem duplicar esses dados na tabela de orcamentos.
+        $quoteId = null;
+        if ($product) {
+            $clientId = Client::create([
+                'name' => $name,
+                'whatsapp' => $_SESSION['checkout_whatsapp'] ?? '',
+                'city' => $_SESSION['checkout_city'] ?? '',
+                'email' => '',
+                'document' => '',
+                'person_type' => 'fisica',
+                'seller_id' => $seller['id'] ?? null,
+            ]);
+
+            $quoteId = Quote::create([
+                'client_id' => $clientId,
+                'lead_id' => (int) $_SESSION['checkout_lead_id'],
+                'seller_id' => $seller['id'] ?? null,
+                'status' => 'aberto',
+                'quote_date' => date('Y-m-d'),
+                'valid_until' => date('Y-m-d', strtotime('+7 days')),
+                'notes' => 'Gerado automaticamente pelo orçamento por placa no site (autoatendimento).',
+            ], [
+                ['product_id' => $product['id'], 'quantity' => 1, 'unit_price' => (float) $product['price_cash']],
+            ]);
+        }
+
         $_SESSION['orcamento_result'] = [
+            'quote_id' => $quoteId,
             'name' => $name,
             'plate' => $plate,
             'year' => $year,

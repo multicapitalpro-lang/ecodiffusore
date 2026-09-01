@@ -20,6 +20,7 @@ $isViewOnly = in_array($user['role_slug'] ?? '', Roles::NATIONAL_SUPPORT, true);
 <div class="order-summary">
     <p><strong>Cliente:</strong> <?= View::e($quote['client_name']) ?></p>
     <p><strong>Vendedor:</strong> <?= View::e($quote['seller_name'] ?: 'Sem vendedor') ?></p>
+    <p><strong>Gerado em:</strong> <?= View::e(date('d/m/Y', strtotime($quote['created_at']))) ?> às <?= View::e(date('H:i', strtotime($quote['created_at']))) ?></p>
     <p><strong>Data:</strong> <?= View::e(date('d/m/Y', strtotime($quote['quote_date']))) ?></p>
     <p><strong>Válido até:</strong> <?= $quote['valid_until'] ? View::e(date('d/m/Y', strtotime($quote['valid_until']))) : '—' ?></p>
     <p><strong>Situação:</strong> <span class="status-badge status-<?= $quote['status'] === 'convertido' || $quote['status'] === 'aprovado' ? 'active' : ($quote['status'] === 'recusado' ? 'inactive' : 'novo') ?>"><?= $statusLabels[$quote['status']] ?? $quote['status'] ?></span></p>
@@ -28,6 +29,28 @@ $isViewOnly = in_array($user['role_slug'] ?? '', Roles::NATIONAL_SUPPORT, true);
     <?php endif; ?>
     <?php if ($quote['notes']): ?><p><strong>Obs.:</strong> <?= nl2br(View::e($quote['notes'])) ?></p><?php endif; ?>
 </div>
+
+<?php if (!empty($quote['lead_id'])): ?>
+<div class="order-summary">
+    <h3 style="margin-top:0;">🌐 Origem: orçamento gerado pelo site</h3>
+    <p><strong>Cidade informada:</strong> <?= View::e($quote['lead_city'] ?: '—') ?></p>
+    <p><strong>WhatsApp informado:</strong> <?= View::e($quote['lead_whatsapp'] ?: '—') ?></p>
+    <?php if ($quote['vehicle_plate']): ?>
+        <p><strong>Veículo:</strong>
+            <?= View::e($quote['vehicle_brand'] ?: '—') ?>
+            <?= $quote['vehicle_model'] ? '· ' . View::e($quote['vehicle_model']) : '' ?>
+            · <?= View::e($quote['vehicle_year'] ?: '—') ?>
+            · placa <?= View::e($quote['vehicle_plate']) ?>
+            <?= $quote['vehicle_power'] ? '· ' . View::e($quote['vehicle_power']) : '' ?>
+        </p>
+        <p><strong>Motor:</strong> <?= $quote['vehicle_ecu_status'] === 'original' ? 'Original de fábrica' : 'Reprogramado (chip)' ?>
+            <?= $quote['vehicle_reprogrammed_power'] ? ' — reprogramado pra ' . View::e($quote['vehicle_reprogrammed_power']) : '' ?>
+        </p>
+        <p><strong>Sistema de ARLA:</strong> <?= $quote['vehicle_has_arla'] === 'sim' ? 'Sim' : ($quote['vehicle_has_arla'] === 'nao' ? 'Não' : '—') ?></p>
+    <?php endif; ?>
+    <a href="/painel/leads" class="link-small">Ver no Kanban de Leads →</a>
+</div>
+<?php endif; ?>
 
 <?php include __DIR__ . '/../_approval_banner.php'; ?>
 

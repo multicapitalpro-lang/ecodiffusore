@@ -21,7 +21,7 @@ $isViewOnly = $isViewOnly ?? false;
             <div class="kanban-col-body" data-drop-status="<?= $status ?>">
                 <?php foreach ($columns[$status] as $q): ?>
                     <div class="kanban-card" draggable="<?= $isViewOnly ? 'false' : 'true' ?>" data-quote-id="<?= (int) $q['id'] ?>" data-from-status="<?= $status ?>">
-                        <strong>#<?= (int) $q['id'] ?> — <?= View::e($q['client_name']) ?></strong>
+                        <strong>#<?= (int) $q['id'] ?> — <?= View::e($q['client_name']) ?><?= !empty($q['lead_id']) ? ' 🌐' : '' ?></strong>
                         <span class="kanban-card-meta"><?= View::e($q['seller_name'] ?: 'Sem vendedor') ?></span>
                         <span class="kanban-card-meta">R$ <?= number_format((float) $q['total_value'], 2, ',', '.') ?></span>
                         <a href="/painel/orcamentos/<?= (int) $q['id'] ?>" class="link-small">Ver detalhes</a>

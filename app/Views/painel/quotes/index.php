@@ -23,14 +23,15 @@ $openModal = (isset($_GET['novo']) || $errors) && !$isViewOnly;
 
 <div class="table-scroll">
     <table class="data-table">
-        <thead><tr><th>#</th><th>Cliente</th><th>Vendedor</th><th>Data</th><th>Válido até</th><th>Total</th><th>Situação</th><th></th></tr></thead>
+        <thead><tr><th>#</th><th>Cliente</th><th>Origem</th><th>Vendedor</th><th>Gerado em</th><th>Válido até</th><th>Total</th><th>Situação</th><th></th></tr></thead>
         <tbody>
             <?php foreach ($quotes as $q): ?>
                 <tr>
                     <td>#<?= (int) $q['id'] ?></td>
                     <td><?= View::e($q['client_name']) ?></td>
+                    <td><?= !empty($q['lead_id']) ? '🌐 Site' : 'Interno' ?></td>
                     <td><?= View::e($q['seller_name'] ?: '—') ?></td>
-                    <td><?= View::e(date('d/m/Y', strtotime($q['quote_date']))) ?></td>
+                    <td><?= View::e(date('d/m/Y H:i', strtotime($q['created_at']))) ?></td>
                     <td><?= $q['valid_until'] ? View::e(date('d/m/Y', strtotime($q['valid_until']))) : '—' ?></td>
                     <td>R$ <?= number_format((float) $q['total_value'], 2, ',', '.') ?></td>
                     <td><span class="status-badge status-<?= $q['status'] === 'convertido' || $q['status'] === 'aprovado' ? 'active' : ($q['status'] === 'recusado' ? 'inactive' : 'novo') ?>"><?= $statusLabels[$q['status']] ?? $q['status'] ?></span></td>
@@ -38,7 +39,7 @@ $openModal = (isset($_GET['novo']) || $errors) && !$isViewOnly;
                 </tr>
             <?php endforeach; ?>
             <?php if (!$quotes): ?>
-                <tr><td colspan="8">Nenhum orçamento gerado ainda.</td></tr>
+                <tr><td colspan="9">Nenhum orçamento gerado ainda.</td></tr>
             <?php endif; ?>
         </tbody>
     </table>

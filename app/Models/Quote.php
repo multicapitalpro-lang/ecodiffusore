@@ -8,10 +8,14 @@ class Quote
 {
     public static function all(array $filters = []): array
     {
-        $sql = 'SELECT q.*, c.name AS client_name, u.name AS seller_name
+        $sql = 'SELECT q.*, c.name AS client_name, u.name AS seller_name,
+                       l.city AS lead_city, l.whatsapp AS lead_whatsapp,
+                       l.vehicle_plate, l.vehicle_year, l.vehicle_brand, l.vehicle_model,
+                       l.vehicle_power, l.vehicle_ecu_status, l.vehicle_reprogrammed_power, l.vehicle_has_arla
                 FROM quotes q
                 JOIN clients c ON c.id = q.client_id
                 LEFT JOIN users u ON u.id = q.seller_id
+                LEFT JOIN leads l ON l.id = q.lead_id
                 WHERE 1=1';
         $params = [];
 
@@ -43,10 +47,14 @@ class Quote
     public static function find(int $id): ?array
     {
         $stmt = Database::connection()->prepare(
-            'SELECT q.*, c.name AS client_name, u.name AS seller_name
+            'SELECT q.*, c.name AS client_name, u.name AS seller_name,
+                    l.city AS lead_city, l.whatsapp AS lead_whatsapp,
+                    l.vehicle_plate, l.vehicle_year, l.vehicle_brand, l.vehicle_model,
+                    l.vehicle_power, l.vehicle_ecu_status, l.vehicle_reprogrammed_power, l.vehicle_has_arla
              FROM quotes q
              JOIN clients c ON c.id = q.client_id
              LEFT JOIN users u ON u.id = q.seller_id
+             LEFT JOIN leads l ON l.id = q.lead_id
              WHERE q.id = :id'
         );
         $stmt->execute(['id' => $id]);
@@ -61,11 +69,12 @@ class Quote
 
         try {
             $stmt = $db->prepare(
-                'INSERT INTO quotes (client_id, seller_id, status, quote_date, valid_until, total_value, notes)
-                 VALUES (:client_id, :seller_id, :status, :quote_date, :valid_until, 0, :notes)'
+                'INSERT INTO quotes (client_id, lead_id, seller_id, status, quote_date, valid_until, total_value, notes)
+                 VALUES (:client_id, :lead_id, :seller_id, :status, :quote_date, :valid_until, 0, :notes)'
             );
             $stmt->execute([
                 'client_id' => $data['client_id'],
+                'lead_id' => $data['lead_id'] ?? null,
                 'seller_id' => $data['seller_id'] ?: null,
                 'status' => $data['status'] ?? 'aberto',
                 'quote_date' => $data['quote_date'],
