@@ -34,7 +34,10 @@ class GeoMatch
                 continue;
             }
 
-            $sellerCoords = self::findCityCoords($licenciado['city']);
+            // O Licenciado tem estado cadastrado (users.state) -- usa pra desambiguar cidades
+            // homonimas (ex: existe mais de um "Toledo" no Brasil). O cliente so informa a cidade
+            // no popup, sem estado, entao esse lado da busca continua aproximado (ver docblock).
+            $sellerCoords = self::findCityCoords($licenciado['city'], $licenciado['state'] ?? null);
             if (!$sellerCoords) {
                 continue;
             }
@@ -61,14 +64,22 @@ class GeoMatch
     }
 
     /** @return array{lat: float, lng: float}|null */
-    private static function findCityCoords(string $cityName): ?array
+    private static function findCityCoords(string $cityName, ?string $state = null): ?array
     {
         $normalized = self::normalize($cityName);
 
-        $stmt = Database::connection()->prepare(
-            'SELECT lat, lng FROM br_cities WHERE name_normalized = :name LIMIT 1'
-        );
-        $stmt->execute(['name' => $normalized]);
+        $sql = 'SELECT lat, lng FROM br_cities WHERE name_normalized = :name';
+        $params = ['name' => $normalized];
+
+        if ($state) {
+            $sql .= ' AND uf = :uf';
+            $params['uf'] = strtoupper($state);
+        }
+
+        $sql .= ' LIMIT 1';
+
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
         $row = $stmt->fetch();
 
         return $row ?: null;
