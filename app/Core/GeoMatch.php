@@ -30,7 +30,7 @@ class GeoMatch
         $nearestDistance = null;
 
         foreach (User::allByRole('licenciado') as $licenciado) {
-            if (empty($licenciado['city'])) {
+            if (empty($licenciado['city']) || empty($licenciado['whatsapp'])) {
                 continue;
             }
 
