@@ -137,6 +137,15 @@ class PublicController
         $product = Product::findByBrandKeyword($brand) ?? Product::cheapest();
         $seller = GeoMatch::nearestSeller($_SESSION['checkout_city'] ?? '');
 
+        // Mesmo que o cliente nao chame o vendedor pelo WhatsApp, o orcamento ja foi gerado --
+        // atribui o Lead ao Licenciado mais proximo pra ele aparecer no CRM/hierarquia dele (ate o
+        // admin) e ser cobrado por um atendimento. So atribui se ainda nao tinha dono (ex: indicacao
+        // por ?ref= de outro licenciado, que tem prioridade sobre o palpite geografico).
+        $currentLead = Lead::find((int) $_SESSION['checkout_lead_id']);
+        if ($seller && empty($currentLead['assigned_to_user_id'])) {
+            Lead::assignTo((int) $_SESSION['checkout_lead_id'], (int) $seller['id']);
+        }
+
         $_SESSION['orcamento_result'] = [
             'plate' => $plate,
             'year' => $year,
