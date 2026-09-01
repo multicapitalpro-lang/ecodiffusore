@@ -13,20 +13,19 @@ $erro = isset($_GET['erro']);
             <p class="hero-sub">O sistema Ecodiffusore potencializa a combustão, melhora o rendimento e reduz desperdícios. Mais força, mais economia, mais resultado — para caminhões, máquinas agrícolas e geradores a diesel.</p>
             <div class="hero-ctas">
                 <a href="#contato" class="btn btn-primary">Quero Economizar Agora</a>
-                <a href="https://wa.me/5541988962839" target="_blank" rel="noopener" class="btn btn-outline">Falar no WhatsApp</a>
+                <a href="https://wa.me/5545991021551" target="_blank" rel="noopener" class="btn btn-outline">Falar no WhatsApp</a>
             </div>
             <ul class="hero-stats">
-                <li><strong>8% a 15%</strong><span>de economia de diesel</span></li>
+                <li><strong>5% a 20%</strong><span>de economia de diesel (mínimo garantido a potencial máximo)</span></li>
                 <li><strong>Até R$ 5 mil</strong><span>de economia mensal por caminhão</span></li>
                 <li><strong>30 dias</strong><span>de garantia real</span></li>
             </ul>
         </div>
         <div class="hero-media">
-            <video controls poster="<?= View::asset('/assets/img/video-poster.svg') ?>" class="hero-video">
-                <source src="" type="video/mp4">
+            <video autoplay muted loop playsinline controls poster="<?= View::asset('/assets/img/video-poster.svg') ?>" class="hero-video">
+                <source src="<?= View::asset('/assets/video/hero-institucional.mp4') ?>" type="video/mp4">
                 Seu navegador não suporta vídeo HTML5.
             </video>
-            <p class="hero-media-note">Vídeo de apresentação em breve — envie o arquivo final para publicarmos aqui.</p>
         </div>
     </div>
 </section>
@@ -52,9 +51,9 @@ $erro = isset($_GET['erro']);
                 <p>Tratores, colheitadeiras e máquinas agrícolas a diesel.</p>
             </div>
             <div class="publico-item">
-                <span class="beneficio-icon">⚡</span>
-                <h3>Geração de energia</h3>
-                <p>Geradores a diesel de obras, sítios e indústrias.</p>
+                <span class="beneficio-icon">🏗️</span>
+                <h3>Máquinas de linha amarela</h3>
+                <p>Escavadeiras, retroescavadeiras, motoniveladoras e tratores de esteira.</p>
             </div>
         </div>
     </div>
@@ -68,6 +67,26 @@ $erro = isset($_GET['erro']);
             <div class="card-problema">Baixa margem operacional</div>
             <div class="card-problema">Pouco acesso a tecnologias de economia</div>
             <div class="card-problema">Pressão crescente por adequação ESG</div>
+            <div class="diesel-chart-card">
+                <h4>O diesel só fica mais caro</h4>
+                <svg class="diesel-chart-svg" viewBox="0 0 700 210" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="dieselGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#6ea62c" stop-opacity=".5"/>
+                            <stop offset="100%" stop-color="#6ea62c" stop-opacity="0"/>
+                        </linearGradient>
+                    </defs>
+                    <path class="chart-area" d="M50,156 L150,166 L250,116 L350,32 L450,58 L550,54 L650,46 L650,180 L50,180 Z"/>
+                    <polyline class="chart-line" points="50,156 150,166 250,116 350,32 450,58 550,54 650,46"/>
+                    <?php $dieselPoints = [['x' => 50, 'y' => 156, 'year' => '2019', 'value' => 'R$ 3,60'], ['x' => 150, 'y' => 166, 'year' => '2020', 'value' => 'R$ 3,35'], ['x' => 250, 'y' => 116, 'year' => '2021', 'value' => 'R$ 4,60'], ['x' => 350, 'y' => 32, 'year' => '2022', 'value' => 'R$ 6,70'], ['x' => 450, 'y' => 58, 'year' => '2023', 'value' => 'R$ 6,05'], ['x' => 550, 'y' => 54, 'year' => '2024', 'value' => 'R$ 6,15'], ['x' => 650, 'y' => 46, 'year' => '2025', 'value' => 'R$ 6,35']]; ?>
+                    <?php foreach ($dieselPoints as $p): ?>
+                        <circle class="chart-dot" cx="<?= $p['x'] ?>" cy="<?= $p['y'] ?>" r="4"/>
+                        <text class="chart-value" x="<?= $p['x'] ?>" y="<?= $p['y'] - 12 ?>" text-anchor="middle"><?= $p['value'] ?></text>
+                        <text x="<?= $p['x'] ?>" y="198" text-anchor="middle"><?= $p['year'] ?></text>
+                    <?php endforeach; ?>
+                </svg>
+                <p class="chart-note">*Média nacional aproximada do diesel S10, valores estimados por ano — referência ANP. Ilustrativo, não substitui cotação oficial do dia.</p>
+            </div>
         </div>
         <p class="problema-cta">A Ecodiffusore Brasil surge para resolver esses problemas.</p>
     </div>
@@ -81,7 +100,7 @@ $erro = isset($_GET['erro']);
             <div class="beneficio-item">
                 <span class="beneficio-icon">⛽</span>
                 <h3>Economia de Combustível</h3>
-                <p>Entre 8% e 15% de redução no consumo de diesel.</p>
+                <p>De 5% (mínimo garantido) a 20% (potencial máximo) de redução no consumo de diesel — 10% é a média real.</p>
             </div>
             <div class="beneficio-item">
                 <span class="beneficio-icon">⚙️</span>
@@ -99,6 +118,33 @@ $erro = isset($_GET['erro']);
                 <p>Rápida e prática, compatível com a grande maioria dos caminhões a diesel.</p>
             </div>
         </div>
+
+        <div class="beneficios-extra">
+            <div class="extra-chart-card">
+                <h4>Sucção de ar potencializada</h4>
+                <p>As lâminas magnetizadas aumentam a entrada de ar no motor — melhorando a mistura ar/combustível, no mesmo princípio de ganho que o uso de Arla 32 busca em motores modernos.</p>
+                <div class="gauge-wrap">
+                    <div class="progress-bar" style="flex:1;height:16px;border-radius:8px;background:#e3e7ee;overflow:hidden;">
+                        <div style="width:70%;height:100%;background:var(--green-dark);border-radius:8px;"></div>
+                    </div>
+                    <span class="gauge-value">até 70%</span>
+                </div>
+            </div>
+            <div class="extra-chart-card">
+                <h4>Menos poluentes no escapamento</h4>
+                <p>Combustão mais completa reduz a liberação de fumaça e gases poluentes — comparativo ilustrativo:</p>
+                <div class="emissions-bars">
+                    <div class="emissions-bar-row">
+                        <span>Sem Ecodiffusore <strong>100%</strong></span>
+                        <div class="emissions-bar-track"><div class="emissions-bar-fill before"></div></div>
+                    </div>
+                    <div class="emissions-bar-row">
+                        <span>Com Ecodiffusore <strong>~40% menos</strong></span>
+                        <div class="emissions-bar-track"><div class="emissions-bar-fill after" style="width:60%;"></div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </section>
 
@@ -112,6 +158,26 @@ $erro = isset($_GET['erro']);
                 <h3>Onde e como é instalado</h3>
                 <p>O Ecodiffusore é acoplado entre o corpo de admissão (TBI) e o filtro de ar do motor. Suas lâminas helicoidais magnetizadas potencializam a sucção de ar para dentro do motor, melhorando a mistura ar/combustível antes da queima na câmara de combustão.</p>
                 <p>O resultado é uma combustão mais completa: menos diesel desperdiçado sem queimar, mais torque disponível e menor liberação de fumaça e poluentes no escapamento.</p>
+                <div class="install-carousel" id="install-carousel">
+                    <div class="install-carousel-track">
+                        <div class="install-slide">
+                            <span class="install-slide-label">Antes</span>
+                            <span style="font-size:2.4rem;">🔧</span>
+                            <span>Foto do local de instalação em breve</span>
+                        </div>
+                        <div class="install-slide">
+                            <span class="install-slide-label">Depois</span>
+                            <span style="font-size:2.4rem;">✅</span>
+                            <span>Foto do produto instalado em breve</span>
+                        </div>
+                    </div>
+                    <button type="button" class="install-carousel-nav prev" aria-label="Anterior">‹</button>
+                    <button type="button" class="install-carousel-nav next" aria-label="Próximo">›</button>
+                    <div class="install-carousel-dots">
+                        <button type="button" class="is-active" data-slide="0" aria-label="Slide 1"></button>
+                        <button type="button" data-slide="1" aria-label="Slide 2"></button>
+                    </div>
+                </div>
             </div>
             <div class="tecnologia-card">
                 <h3>Validação e fabricação</h3>
@@ -136,9 +202,9 @@ $erro = isset($_GET['erro']);
                 <thead>
                     <tr>
                         <th>Indicador</th>
+                        <th>Economia 5%</th>
                         <th>Economia 8%</th>
-                        <th>Economia 11%</th>
-                        <th>Economia 15%</th>
+                        <th>Economia 12%</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -150,27 +216,27 @@ $erro = isset($_GET['erro']);
                     </tr>
                     <tr>
                         <td>Economia líquida mensal</td>
+                        <td>R$ 1.750,00</td>
                         <td>R$ 2.800,00</td>
-                        <td>R$ 3.850,00</td>
-                        <td>R$ 5.250,00</td>
+                        <td>R$ 4.200,00</td>
                     </tr>
                     <tr>
                         <td>Payback do equipamento</td>
+                        <td>1,8 meses</td>
                         <td>1,1 meses</td>
-                        <td>0,8 meses</td>
-                        <td>0,6 meses</td>
+                        <td>0,7 meses</td>
                     </tr>
                     <tr>
                         <td>Economia líquida no 1º ano</td>
+                        <td>R$ 17.869,00</td>
                         <td>R$ 30.469,00</td>
-                        <td>R$ 43.069,00</td>
-                        <td>R$ 59.869,00</td>
+                        <td>R$ 47.269,00</td>
                     </tr>
                     <tr>
                         <td>Economia líquida em 5 anos</td>
+                        <td>R$ 101.869,00</td>
                         <td>R$ 164.869,00</td>
-                        <td>R$ 227.869,00</td>
-                        <td>R$ 311.869,00</td>
+                        <td>R$ 248.869,00</td>
                     </tr>
                 </tbody>
             </table>
@@ -181,64 +247,71 @@ $erro = isset($_GET['erro']);
 
 <section class="calculadora">
     <div class="site-container">
-        <h2>Calcule a sua economia</h2>
-        <p class="section-sub">Arraste o slider com a quilometragem média rodada por mês.</p>
+        <h2>Calculadora de Economia</h2>
+        <p class="section-sub">Quantos km você roda por mês?</p>
         <div class="calc-box">
-            <label for="calc-km">Km rodados por mês: <strong id="calc-km-label">12.000 km</strong></label>
+            <label for="calc-km"><strong id="calc-km-label">12.000 km/mês</strong></label>
             <input type="range" id="calc-km" min="5000" max="30000" step="1000" value="12000">
             <div class="calc-results">
                 <div class="calc-result calc-min">
-                    <span>Economia mínima (8%)</span>
+                    <span class="calc-result-icon">🛡️</span>
+                    <span class="calc-result-title">5% – Mínimo Garantido</span>
+                    <span class="calc-result-desc">Se não atingir, devolvemos o investimento</span>
+                    <span class="calc-result-label">Economia Mensal</span>
                     <strong id="calc-min-month">R$ 0</strong>
-                    <small><span id="calc-min-year">R$ 0</span>/ano · <span id="calc-min-5y">R$ 0</span> em 5 anos</small>
+                    <small><span id="calc-min-year">R$ 0</span>/ano</small>
+                    <small><span id="calc-min-5y">R$ 0</span> em 5 anos</small>
                 </div>
                 <div class="calc-result calc-avg">
-                    <span>Economia média (12%)</span>
+                    <span class="calc-badge">MAIS COMUM</span>
+                    <span class="calc-result-icon">📈</span>
+                    <span class="calc-result-title">10% – Média Real</span>
+                    <span class="calc-result-desc">O que a maioria dos caminhoneiros consegue</span>
+                    <span class="calc-result-label">Economia Mensal</span>
                     <strong id="calc-avg-month">R$ 0</strong>
-                    <small><span id="calc-avg-year">R$ 0</span>/ano · <span id="calc-avg-5y">R$ 0</span> em 5 anos</small>
+                    <small><span id="calc-avg-year">R$ 0</span>/ano</small>
+                    <small><span id="calc-avg-5y">R$ 0</span> em 5 anos</small>
                 </div>
                 <div class="calc-result calc-max">
-                    <span>Economia máxima (15%)</span>
+                    <span class="calc-result-icon">🚀</span>
+                    <span class="calc-result-title">20% – Potencial Máximo</span>
+                    <span class="calc-result-desc">Direção econômica + rotas otimizadas</span>
+                    <span class="calc-result-label">Economia Mensal</span>
                     <strong id="calc-max-month">R$ 0</strong>
-                    <small><span id="calc-max-year">R$ 0</span>/ano · <span id="calc-max-5y">R$ 0</span> em 5 anos</small>
+                    <small><span id="calc-max-year">R$ 0</span>/ano</small>
+                    <small><span id="calc-max-5y">R$ 0</span> em 5 anos</small>
                 </div>
             </div>
-            <p class="calc-disclaimer">*A economia varia de acordo com estilo de direção, tipo de carga e condições da estrada. Simulação baseada em consumo médio de 2,8 km/l e diesel a R$ 6,10/l — valores aproximados.</p>
+            <p class="calc-disclaimer">A economia varia de acordo com estilo de direção, tipo de carga e condições da estrada. Investimento único, sem manutenção, lucro pra sempre.</p>
+            <a href="#contato" class="btn btn-primary calc-cta" id="calc-cta">Quero Economizar <span id="calc-cta-value">R$ 0</span>/mês</a>
         </div>
     </div>
 </section>
 
-<section id="precos" class="precos">
-    <div class="site-container">
-        <h2>Modelos e investimento</h2>
-        <p class="section-sub">Parcelamos em até 6x sem juros. À vista com 11% de desconto.</p>
-        <div class="table-scroll">
-            <table class="precos-table">
-                <thead>
-                    <tr><th>Modelo</th><th>À vista (11% OFF)</th><th>6x sem juros</th></tr>
-                </thead>
-                <tbody>
-                    <tr><td>Linha Scania (até 2018)</td><td>R$ 2.836,00</td><td>6x R$ 529,83</td></tr>
-                    <tr><td>Linha Volvo (FH, FM, VM...)</td><td>R$ 2.876,00</td><td>6x R$ 537,17</td></tr>
-                    <tr><td>Linha Iveco</td><td>R$ 2.916,00</td><td>6x R$ 544,50</td></tr>
-                    <tr><td>Linha Mercedes</td><td>R$ 2.935,00</td><td>6x R$ 548,17</td></tr>
-                    <tr><td>Volvo Robocop</td><td>R$ 3.043,00</td><td>6x R$ 568,33</td></tr>
-                    <tr><td>Linha Meteor</td><td>R$ 3.106,10</td><td>6x R$ 581,67</td></tr>
-                    <tr><td>Scania NTG</td><td>R$ 3.131,00</td><td>6x R$ 584,83</td></tr>
-                    <tr><td>Linha DAF</td><td>R$ 3.131,00</td><td>6x R$ 584,83</td></tr>
-                </tbody>
-            </table>
-        </div>
-        <p class="precos-garantia">✔ Garantia de 30 dias reais · ✔ Produto patenteado (INPI) · ✔ Sem custo de manutenção</p>
-    </div>
-</section>
-
-<section class="depoimentos">
+<section id="depoimentos" class="depoimentos">
     <div class="site-container">
         <h2>Quem já usa, aprova</h2>
-        <div class="grid-2">
-            <blockquote>“Caminhão melhorou a média e trouxe mais torque.” <cite>— Caminhoneiro autônomo</cite></blockquote>
-            <blockquote>“Senti a diferença já nos primeiros abastecimentos, o motor responde melhor.” <cite>— Cliente Ecodiffusore</cite></blockquote>
+        <p class="section-sub">Depoimentos reais de quem já roda com o Ecodiffusore.</p>
+        <div class="depoimentos-grid">
+            <?php
+            $depoimentosDemo = [
+                ['nome' => 'Caminhoneiro autônomo', 'texto' => 'Caminhão melhorou a média e trouxe mais torque.'],
+                ['nome' => 'Cliente Ecodiffusore', 'texto' => 'Senti a diferença já nos primeiros abastecimentos, o motor responde melhor.'],
+                ['nome' => 'Transportadora parceira', 'texto' => 'Reduzimos o custo de combustível em toda a frota de forma perceptível.'],
+            ];
+            ?>
+            <?php foreach ($depoimentosDemo as $d): ?>
+                <div class="depoimento-card">
+                    <div class="depoimento-video-slot">
+                        <span style="font-size:2rem;">🎥</span>
+                        <span>Vídeo em breve</span>
+                    </div>
+                    <div class="depoimento-body">
+                        <p>“<?= htmlspecialchars($d['texto'], ENT_QUOTES, 'UTF-8') ?>”</p>
+                        <cite>— <?= htmlspecialchars($d['nome'], ENT_QUOTES, 'UTF-8') ?></cite>
+                    </div>
+                </div>
+            <?php endforeach; ?>
         </div>
     </div>
 </section>
@@ -285,7 +358,7 @@ $erro = isset($_GET['erro']);
     <div class="site-container licenciado-inner">
         <h2>Seja um Licenciado Ecodiffusore Brasil</h2>
         <p>Um dos maiores mercados do Brasil: milhões de caminhoneiros, milhares de transportadoras e forte dependência logística rodoviária. Faça parte da transformação do transporte brasileiro — economia, tecnologia, sustentabilidade, benefícios reais e fortalecimento do caminhoneiro.</p>
-        <a href="https://wa.me/5541988962839?text=Quero%20ser%20um%20licenciado%20Ecodiffusore%20Brasil" target="_blank" rel="noopener" class="btn btn-primary">Quero ser Licenciado</a>
+        <a href="https://wa.me/5545991021551?text=Quero%20ser%20um%20licenciado%20Ecodiffusore%20Brasil" target="_blank" rel="noopener" class="btn btn-primary">Quero ser Licenciado</a>
     </div>
 </section>
 
