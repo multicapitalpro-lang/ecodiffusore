@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Core\Auth;
 use App\Core\Csrf;
 use App\Core\Response;
+use App\Core\Roles;
 use App\Core\Router;
 use App\Core\View;
 use App\Models\Lead;
@@ -16,13 +17,13 @@ class LeadController
 
     public function index(): void
     {
-        Auth::requireRole(['admin', 'gerente', 'supervisor', 'licenciado']);
+        Auth::requireRole(Roles::STAFF);
         $user = Auth::user();
         $role = $user['role_slug'];
 
         if ($role === 'admin') {
             $leads = Lead::all();
-        } elseif ($role === 'licenciado') {
+        } elseif ($role === Roles::SELLER) {
             $leads = Lead::forScope(User::downlineIds((int) $user['id']), false);
         } else {
             $leads = Lead::forScope(User::downlineIds((int) $user['id']), true);
@@ -36,14 +37,14 @@ class LeadController
         View::render('painel/leads/index', [
             'user' => $user,
             'columns' => $columns,
-            'canAssign' => $role !== 'licenciado',
-            'sellers' => $role !== 'licenciado' ? User::allByRole('licenciado') : [],
+            'canAssign' => $role !== Roles::SELLER,
+            'sellers' => $role !== Roles::SELLER ? User::allByRole('vendedor') : [],
         ]);
     }
 
     public function updateStatus(string $id): void
     {
-        Auth::requireRole(['admin', 'gerente', 'supervisor', 'licenciado']);
+        Auth::requireRole(Roles::STAFF);
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
             if (Response::isAjax()) {
@@ -65,7 +66,7 @@ class LeadController
 
     public function assign(string $id): void
     {
-        Auth::requireRole(['admin', 'gerente', 'supervisor']);
+        Auth::requireRole(Roles::MANAGEMENT);
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
             if (Response::isAjax()) {

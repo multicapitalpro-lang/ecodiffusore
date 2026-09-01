@@ -51,11 +51,11 @@ class User
         return $stmt->fetchAll();
     }
 
-    /** Candidatos a "reporta para": todo mundo com papel gerente ou supervisor, exceto a propria pessoa */
+    /** Candidatos a "reporta para": todo mundo com papel gerente ou licenciado, exceto a propria pessoa */
     public static function managerCandidates(?int $exceptId = null): array
     {
         $sql = "SELECT u.id, u.name, r.slug AS role_slug FROM users u JOIN roles r ON r.id = u.role_id
-                WHERE r.slug IN ('gerente', 'supervisor') AND u.status = 'active'";
+                WHERE r.slug IN ('gerente', 'licenciado') AND u.status = 'active'";
         $params = [];
         if ($exceptId !== null) {
             $sql .= ' AND u.id != :id';
@@ -71,7 +71,7 @@ class User
     /**
      * Desce a hierarquia: retorna os ids de $userId + todo mundo que reporta (direta ou
      * indiretamente) pra ele, ate 5 niveis pra evitar loop. Usado pra escopar Leads/Orcamentos
-     * por papel (licenciado ve so ele mesmo, supervisor ve sua equipe, gerente ve tudo abaixo dele).
+     * por papel (vendedor ve so ele mesmo, gerente ve sua equipe, licenciado ve toda a regiao).
      */
     public static function downlineIds(int $userId): array
     {

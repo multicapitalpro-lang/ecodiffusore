@@ -5,7 +5,7 @@ $statusLabels = ['aberto' => 'Aberto', 'aprovado' => 'Aprovado', 'recusado' => '
 $errors = $errors ?? [];
 $values = $values ?? [];
 $items = $items ?? [];
-$isLicenciado = ($user['role_slug'] ?? '') === 'licenciado';
+$isVendedor = ($user['role_slug'] ?? '') === 'vendedor';
 $preselectClientId = (int) ($_GET['cliente_id'] ?? 0);
 $openModal = isset($_GET['novo']) || $errors;
 ?>

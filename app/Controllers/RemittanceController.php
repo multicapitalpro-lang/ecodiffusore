@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Core\Auth;
 use App\Core\Csrf;
+use App\Core\Roles;
 use App\Core\Router;
 use App\Core\View;
 use App\Models\FinancialAccount;
@@ -11,7 +12,7 @@ use App\Models\Remittance;
 
 class RemittanceController
 {
-    private const ALLOWED_ROLES = ['admin', 'gerente', 'supervisor'];
+    private const ALLOWED_ROLES = Roles::MANAGEMENT;
 
     public function index(): void
     {

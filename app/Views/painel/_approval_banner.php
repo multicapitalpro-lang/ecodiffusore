@@ -1,12 +1,13 @@
 <?php
 use App\Core\Csrf;
+use App\Core\Roles;
 use App\Core\View;
 /** @var array|null $approval */
 /** @var array $user */
 if (!$approval) {
     return;
 }
-$canDecide = in_array($user['role_slug'] ?? '', ['admin', 'gerente', 'supervisor'], true);
+$canDecide = in_array($user['role_slug'] ?? '', Roles::MANAGEMENT, true);
 ?>
 <div class="approval-banner">
     <div>

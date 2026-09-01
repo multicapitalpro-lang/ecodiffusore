@@ -1,12 +1,13 @@
 <?php
 use App\Core\Csrf;
+use App\Core\Roles;
 use App\Core\View;
 $sucesso = isset($_GET['sucesso']);
 $errors = $errors ?? [];
 $values = $values ?? [];
 $sellers = $sellers ?? [];
 $openModal = isset($_GET['novo']) || $errors;
-$canAssignSeller = in_array($user['role_slug'] ?? '', ['admin', 'gerente', 'supervisor'], true);
+$canAssignSeller = in_array($user['role_slug'] ?? '', Roles::MANAGEMENT, true);
 ?>
 <div class="page-header">
     <h1>Clientes</h1>

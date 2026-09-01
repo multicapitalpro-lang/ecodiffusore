@@ -6,6 +6,7 @@ use App\Core\Auth;
 use App\Core\Csrf;
 use App\Core\Csv;
 use App\Core\Response;
+use App\Core\Roles;
 use App\Core\Router;
 use App\Core\View;
 use App\Models\Approval;
@@ -19,22 +20,16 @@ use App\Models\User;
 
 class OrderController
 {
-    private const MANAGER_ROLES = ['admin', 'gerente', 'supervisor'];
-
     public function index(): void
     {
-        Auth::requireRole(['admin', 'gerente', 'supervisor', 'licenciado']);
+        Auth::requireRole(Roles::STAFF);
         $user = Auth::user();
 
-        $filters = [
+        $filters = array_merge([
             'status' => $_GET['status'] ?? null,
             'from' => $_GET['from'] ?? null,
             'to' => $_GET['to'] ?? null,
-        ];
-
-        if ($user['role_slug'] === 'licenciado') {
-            $filters['seller_id'] = $user['id'];
-        }
+        ], $this->scopeFilters($user));
 
         View::render('painel/orders/index', [
             'user' => $user,
@@ -42,23 +37,20 @@ class OrderController
             'filters' => $filters,
             'clients' => Client::all(),
             'products' => Product::all(true),
-            'sellers' => User::allByRole('licenciado'),
+            'sellers' => $this->sellerOptions($user),
         ]);
     }
 
     public function export(): void
     {
-        Auth::requireRole(['admin', 'gerente', 'supervisor', 'licenciado']);
+        Auth::requireRole(Roles::STAFF);
         $user = Auth::user();
 
-        $filters = [
+        $filters = array_merge([
             'status' => $_GET['status'] ?? null,
             'from' => $_GET['from'] ?? null,
             'to' => $_GET['to'] ?? null,
-        ];
-        if ($user['role_slug'] === 'licenciado') {
-            $filters['seller_id'] = $user['id'];
-        }
+        ], $this->scopeFilters($user));
 
         $statusLabels = ['em_andamento' => 'Em andamento', 'atendido' => 'Atendido', 'verificado' => 'Verificado', 'cancelado' => 'Cancelado'];
 
@@ -76,14 +68,14 @@ class OrderController
 
     public function create(): void
     {
-        Auth::requireRole(['admin', 'gerente', 'supervisor', 'licenciado']);
+        Auth::requireRole(Roles::STAFF);
         $qs = isset($_GET['cliente_id']) ? '&cliente_id=' . (int) $_GET['cliente_id'] : '';
         Router::redirect('/painel/pedidos?novo=1' . $qs);
     }
 
     public function store(): void
     {
-        Auth::requireRole(['admin', 'gerente', 'supervisor', 'licenciado']);
+        Auth::requireRole(Roles::STAFF);
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
             if (Response::isAjax()) {
@@ -102,11 +94,11 @@ class OrderController
             }
             View::render('painel/orders/index', [
                 'user' => $user,
-                'orders' => Order::all($user['role_slug'] === 'licenciado' ? ['seller_id' => $user['id']] : []),
+                'orders' => Order::all($this->scopeFilters($user)),
                 'filters' => [],
                 'clients' => Client::all(),
                 'products' => Product::all(true),
-                'sellers' => User::allByRole('licenciado'),
+                'sellers' => $this->sellerOptions($user),
                 'errors' => $errors,
                 'values' => $_POST,
                 'items' => $items,
@@ -114,7 +106,7 @@ class OrderController
             return;
         }
 
-        $sellerId = $user['role_slug'] === 'licenciado' ? $user['id'] : ($_POST['seller_id'] ?: null);
+        $sellerId = $user['role_slug'] === Roles::SELLER ? $user['id'] : ($_POST['seller_id'] ?: null);
 
         $orderId = Order::create([
             'client_id' => (int) $_POST['client_id'],
@@ -163,7 +155,7 @@ class OrderController
             'items' => OrderItem::forOrder((int) $id),
             'clients' => Client::all(),
             'products' => Product::all(true),
-            'sellers' => User::allByRole('licenciado'),
+            'sellers' => $this->sellerOptions(Auth::user()),
             'preselectClientId' => 0,
             'errors' => [],
         ]);
@@ -189,14 +181,14 @@ class OrderController
                 'items' => $items,
                 'clients' => Client::all(),
                 'products' => Product::all(true),
-                'sellers' => User::allByRole('licenciado'),
+                'sellers' => $this->sellerOptions($user),
                 'preselectClientId' => 0,
                 'errors' => $errors,
             ]);
             return;
         }
 
-        $sellerId = $user['role_slug'] === 'licenciado' ? $order['seller_id'] : ($_POST['seller_id'] ?: null);
+        $sellerId = $user['role_slug'] === Roles::SELLER ? $order['seller_id'] : ($_POST['seller_id'] ?: null);
 
         Order::updateHeaderAndItems($id, [
             'client_id' => (int) $_POST['client_id'],
@@ -241,7 +233,7 @@ class OrderController
 
     private function authorizeOrder(int $id): array
     {
-        Auth::requireRole(['admin', 'gerente', 'supervisor', 'licenciado']);
+        Auth::requireRole(Roles::STAFF);
         $user = Auth::user();
 
         $order = Order::find($id);
@@ -249,13 +241,50 @@ class OrderController
             Router::redirect('/painel/pedidos');
         }
 
-        if ($user['role_slug'] === 'licenciado' && (int) $order['seller_id'] !== (int) $user['id']) {
+        if (!$this->canAccessSeller($user, (int) ($order['seller_id'] ?? 0))) {
             http_response_code(403);
             require BASE_PATH . '/app/Views/errors/403.php';
             exit;
         }
 
         return $order;
+    }
+
+    /** Filtro de escopo pra listar pedidos: vendedor so os proprios, gerente/licenciado a regiao, admin tudo */
+    private function scopeFilters(array $user): array
+    {
+        if ($user['role_slug'] === 'admin') {
+            return [];
+        }
+        if ($user['role_slug'] === Roles::SELLER) {
+            return ['seller_id' => $user['id']];
+        }
+
+        return ['seller_ids' => User::downlineIds((int) $user['id'])];
+    }
+
+    /** Vendedores disponiveis pro dropdown de "vendedor" no form de pedido, escopado por regiao */
+    private function sellerOptions(array $user): array
+    {
+        $sellers = User::allByRole(Roles::SELLER);
+        if ($user['role_slug'] === 'admin') {
+            return $sellers;
+        }
+
+        $downline = User::downlineIds((int) $user['id']);
+        return array_values(array_filter($sellers, fn ($s) => in_array((int) $s['id'], $downline, true)));
+    }
+
+    private function canAccessSeller(array $user, int $sellerId): bool
+    {
+        if ($user['role_slug'] === 'admin') {
+            return true;
+        }
+        if ($user['role_slug'] === Roles::SELLER) {
+            return $sellerId === (int) $user['id'];
+        }
+
+        return in_array($sellerId, User::downlineIds((int) $user['id']), true);
     }
 
     private function parseItems(array $input): array

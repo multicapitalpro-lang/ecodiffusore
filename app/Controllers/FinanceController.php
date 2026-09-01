@@ -7,6 +7,7 @@ use App\Core\Csrf;
 use App\Core\Csv;
 use App\Core\FileUpload;
 use App\Core\Response;
+use App\Core\Roles;
 use App\Core\Router;
 use App\Core\View;
 use App\Models\Client;
@@ -15,12 +16,24 @@ use App\Models\FinancialAccount;
 use App\Models\FinancialAttachment;
 use App\Models\FinancialCategory;
 use App\Models\FinancialTransaction;
+use App\Models\User;
 
 class FinanceController
 {
+    /** Licenciado ve so a propria regiao; Admin/Gerente mantem o comportamento que ja tinham */
+    private function scopeFilters(array $user): array
+    {
+        if ($user['role_slug'] === Roles::REGIONAL_OWNER) {
+            return ['seller_ids' => User::downlineIds((int) $user['id'])];
+        }
+
+        return [];
+    }
+
     public function accounts(): void
     {
-        Auth::requireRole(['admin', 'gerente', 'supervisor']);
+        Auth::requireRole(Roles::MANAGEMENT);
+        $user = Auth::user();
 
         $accounts = FinancialAccount::all();
         foreach ($accounts as &$account) {
@@ -28,10 +41,10 @@ class FinanceController
         }
         unset($account);
 
-        $transactions = FinancialTransaction::all();
+        $transactions = FinancialTransaction::all($this->scopeFilters($user));
 
         View::render('painel/finance/accounts', [
-            'user' => Auth::user(),
+            'user' => $user,
             'accounts' => $accounts,
             'transactions' => $transactions,
             'attachmentsByTransaction' => FinancialAttachment::forTransactions(array_column($transactions, 'id')),
@@ -44,7 +57,7 @@ class FinanceController
 
     public function storeAccount(): void
     {
-        Auth::requireRole(['admin', 'gerente', 'supervisor']);
+        Auth::requireRole(Roles::MANAGEMENT);
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
             Router::redirect('/painel/financeiro/caixas-bancos?erro=1');
@@ -61,7 +74,7 @@ class FinanceController
 
     public function storeTransaction(): void
     {
-        Auth::requireRole(['admin', 'gerente', 'supervisor']);
+        Auth::requireRole(Roles::MANAGEMENT);
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
             if (Response::isAjax()) {
@@ -114,19 +127,20 @@ class FinanceController
 
     public function payable(): void
     {
-        Auth::requireRole(['admin', 'gerente', 'supervisor']);
+        Auth::requireRole(Roles::MANAGEMENT);
         $this->renderLedger('saida', 'Contas a Pagar');
     }
 
     public function receivable(): void
     {
-        Auth::requireRole(['admin', 'gerente', 'supervisor']);
+        Auth::requireRole(Roles::MANAGEMENT);
         $this->renderLedger('entrada', 'Contas a Receber');
     }
 
     private function renderLedger(string $type, string $title, array $errors = [], array $values = []): void
     {
-        $transactions = FinancialTransaction::all(['type' => $type]);
+        $user = Auth::user();
+        $transactions = FinancialTransaction::all(array_merge(['type' => $type], $this->scopeFilters($user)));
         $today = date('Y-m-d');
 
         $summary = ['open_count' => 0, 'open_total' => 0.0, 'paid_total' => 0.0, 'overdue_count' => 0, 'overdue_total' => 0.0];
@@ -145,7 +159,7 @@ class FinanceController
         }
 
         View::render('painel/finance/ledger', [
-            'user' => Auth::user(),
+            'user' => $user,
             'title' => $title,
             'type' => $type,
             'transactions' => $transactions,
@@ -161,7 +175,7 @@ class FinanceController
 
     public function storePayable(): void
     {
-        Auth::requireRole(['admin', 'gerente', 'supervisor']);
+        Auth::requireRole(Roles::MANAGEMENT);
 
         $type = ($_POST['type'] ?? 'saida') === 'entrada' ? 'entrada' : 'saida';
         $backTo = $type === 'entrada' ? '/painel/financeiro/contas-a-receber' : '/painel/financeiro/contas-a-pagar';
@@ -218,7 +232,7 @@ class FinanceController
 
     public function markPaid(string $id): void
     {
-        Auth::requireRole(['admin', 'gerente', 'supervisor']);
+        Auth::requireRole(Roles::MANAGEMENT);
         $id = (int) $id;
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
@@ -235,7 +249,7 @@ class FinanceController
 
     public function downloadAttachment(string $id): void
     {
-        Auth::requireRole(['admin', 'gerente', 'supervisor']);
+        Auth::requireRole(Roles::MANAGEMENT);
 
         $attachment = FinancialAttachment::find((int) $id);
         if (!$attachment) {
@@ -256,15 +270,25 @@ class FinanceController
         exit;
     }
 
+    /** Vendedor ve so as proprias comissoes; gerente/licenciado veem a regiao (equipe); admin ve tudo */
+    private function commissionFilters(array $user): array
+    {
+        if ($user['role_slug'] === 'admin') {
+            return [];
+        }
+        if ($user['role_slug'] === Roles::SELLER) {
+            return ['beneficiary_id' => $user['id']];
+        }
+
+        return ['beneficiary_ids' => User::downlineIds((int) $user['id'])];
+    }
+
     public function commissions(): void
     {
-        Auth::requireRole(['admin', 'gerente', 'supervisor', 'licenciado']);
+        Auth::requireRole(Roles::STAFF);
         $user = Auth::user();
 
-        $filters = [];
-        if ($user['role_slug'] === 'licenciado') {
-            $filters['beneficiary_id'] = $user['id'];
-        }
+        $filters = $this->commissionFilters($user);
 
         $commissions = Commission::all($filters);
         $summary = ['total' => 0.0, 'pago' => 0.0, 'pendente' => 0.0, 'count' => count($commissions)];
@@ -278,21 +302,18 @@ class FinanceController
             'commissions' => $commissions,
             'summary' => $summary,
             'bySeller' => Commission::byBeneficiary($filters),
-            'canManage' => in_array($user['role_slug'], ['admin', 'gerente', 'supervisor'], true),
+            'canManage' => in_array($user['role_slug'], Roles::MANAGEMENT, true),
         ]);
     }
 
     public function exportCommissions(): void
     {
-        Auth::requireRole(['admin', 'gerente', 'supervisor', 'licenciado']);
+        Auth::requireRole(Roles::STAFF);
         $user = Auth::user();
 
-        $filters = [];
-        if ($user['role_slug'] === 'licenciado') {
-            $filters['beneficiary_id'] = $user['id'];
-        }
+        $filters = $this->commissionFilters($user);
 
-        $roleLabels = ['licenciado' => 'Licenciado', 'supervisor' => 'Supervisor', 'gerente' => 'Gerente'];
+        $roleLabels = ['licenciado' => 'Licenciado', 'gerente' => 'Gerente', 'vendedor' => 'Vendedor'];
 
         $rows = array_map(fn ($c) => [
             $c['order_id'],
@@ -310,7 +331,7 @@ class FinanceController
 
     public function markCommissionPaid(string $id): void
     {
-        Auth::requireRole(['admin', 'gerente', 'supervisor']);
+        Auth::requireRole(Roles::MANAGEMENT);
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
             Router::redirect('/painel/financeiro/comissoes');
@@ -348,16 +369,17 @@ class FinanceController
 
     private function renderAccountsWithErrors(array $errors, array $values): void
     {
+        $user = Auth::user();
         $accounts = FinancialAccount::all();
         foreach ($accounts as &$account) {
             $account['balance'] = FinancialAccount::currentBalance((int) $account['id']);
         }
         unset($account);
 
-        $transactions = FinancialTransaction::all();
+        $transactions = FinancialTransaction::all($this->scopeFilters($user));
 
         View::render('painel/finance/accounts', [
-            'user' => Auth::user(),
+            'user' => $user,
             'accounts' => $accounts,
             'transactions' => $transactions,
             'attachmentsByTransaction' => FinancialAttachment::forTransactions(array_column($transactions, 'id')),

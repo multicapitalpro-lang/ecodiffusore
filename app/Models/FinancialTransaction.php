@@ -32,6 +32,27 @@ class FinancialTransaction
             $sql .= ' AND ft.client_id = :client_id';
             $params['client_id'] = $filters['client_id'];
         }
+        if (!empty($filters['seller_ids'])) {
+            // Escopo por regiao: so entra se o pedido ou o cliente vinculado pertence a alguem
+            // da equipe do licenciado. Lancamento manual sem pedido/cliente nao aparece aqui
+            // (limitacao aceita -- so o admin ve movimentacao de caixa solta, sem vinculo).
+            $orderNames = [];
+            $clientNames = [];
+            foreach (array_values($filters['seller_ids']) as $i => $sid) {
+                $orderKey = "osid{$i}";
+                $clientKey = "csid{$i}";
+                $orderNames[] = ":{$orderKey}";
+                $clientNames[] = ":{$clientKey}";
+                $params[$orderKey] = $sid;
+                $params[$clientKey] = $sid;
+            }
+            $orderIn = implode(',', $orderNames);
+            $clientIn = implode(',', $clientNames);
+            $sql .= " AND (
+                EXISTS (SELECT 1 FROM orders o2 WHERE o2.id = ft.order_id AND o2.seller_id IN ({$orderIn}))
+                OR EXISTS (SELECT 1 FROM clients c2 WHERE c2.id = ft.client_id AND c2.seller_id IN ({$clientIn}))
+            )";
+        }
 
         $sql .= ' ORDER BY ft.due_date DESC, ft.id DESC';
 

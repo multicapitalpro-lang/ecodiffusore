@@ -7,6 +7,7 @@ use App\Core\Csrf;
 use App\Core\DateRange;
 use App\Core\FinancialReports;
 use App\Core\Pdf;
+use App\Core\Roles;
 use App\Core\Router;
 use App\Core\View;
 use App\Models\ReportSchedule;
@@ -14,7 +15,7 @@ use App\Models\User;
 
 class ReportController
 {
-    private const ALLOWED_ROLES = ['admin', 'gerente', 'supervisor'];
+    private const ALLOWED_ROLES = Roles::MANAGEMENT;
 
     public function index(): void
     {

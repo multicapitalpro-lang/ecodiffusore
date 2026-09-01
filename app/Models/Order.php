@@ -32,6 +32,15 @@ class Order
             $sql .= ' AND o.seller_id = :seller_id';
             $params['seller_id'] = $filters['seller_id'];
         }
+        if (!empty($filters['seller_ids'])) {
+            $names = [];
+            foreach (array_values($filters['seller_ids']) as $i => $sid) {
+                $key = "sid{$i}";
+                $names[] = ":{$key}";
+                $params[$key] = $sid;
+            }
+            $sql .= ' AND o.seller_id IN (' . implode(',', $names) . ')';
+        }
         if (!empty($filters['client_id'])) {
             $sql .= ' AND o.client_id = :client_id';
             $params['client_id'] = $filters['client_id'];
@@ -170,7 +179,7 @@ class Order
         return true;
     }
 
-    public static function metrics(string $from, string $to, ?int $sellerId = null): array
+    public static function metrics(string $from, string $to, ?int $sellerId = null, ?array $sellerIds = null): array
     {
         $sql = 'SELECT COUNT(*) AS order_count, COALESCE(SUM(total_value), 0) AS total_value,
                     COALESCE(SUM((SELECT COALESCE(SUM(quantity),0) FROM order_items WHERE order_id = o.id)), 0) AS products_sold
@@ -181,6 +190,14 @@ class Order
         if ($sellerId !== null) {
             $sql .= ' AND o.seller_id = :seller_id';
             $params['seller_id'] = $sellerId;
+        } elseif (!empty($sellerIds)) {
+            $names = [];
+            foreach (array_values($sellerIds) as $i => $sid) {
+                $key = "sid{$i}";
+                $names[] = ":{$key}";
+                $params[$key] = $sid;
+            }
+            $sql .= ' AND o.seller_id IN (' . implode(',', $names) . ')';
         }
 
         $stmt = Database::connection()->prepare($sql);
@@ -198,7 +215,7 @@ class Order
         ];
     }
 
-    public static function costTotal(string $from, string $to, ?int $sellerId = null): float
+    public static function costTotal(string $from, string $to, ?int $sellerId = null, ?array $sellerIds = null): float
     {
         $sql = 'SELECT COALESCE(SUM(oi.quantity * p.cost_price), 0)
                 FROM order_items oi
@@ -210,6 +227,14 @@ class Order
         if ($sellerId !== null) {
             $sql .= ' AND o.seller_id = :seller_id';
             $params['seller_id'] = $sellerId;
+        } elseif (!empty($sellerIds)) {
+            $names = [];
+            foreach (array_values($sellerIds) as $i => $sid) {
+                $key = "sid{$i}";
+                $names[] = ":{$key}";
+                $params[$key] = $sid;
+            }
+            $sql .= ' AND o.seller_id IN (' . implode(',', $names) . ')';
         }
 
         $stmt = Database::connection()->prepare($sql);
@@ -217,7 +242,7 @@ class Order
         return (float) $stmt->fetchColumn();
     }
 
-    public static function dailySeries(string $from, string $to, ?int $sellerId = null): array
+    public static function dailySeries(string $from, string $to, ?int $sellerId = null, ?array $sellerIds = null): array
     {
         $sql = 'SELECT order_date, SUM(total_value) AS total
                 FROM orders
@@ -227,6 +252,14 @@ class Order
         if ($sellerId !== null) {
             $sql .= ' AND seller_id = :seller_id';
             $params['seller_id'] = $sellerId;
+        } elseif (!empty($sellerIds)) {
+            $names = [];
+            foreach (array_values($sellerIds) as $i => $sid) {
+                $key = "sid{$i}";
+                $names[] = ":{$key}";
+                $params[$key] = $sid;
+            }
+            $sql .= ' AND seller_id IN (' . implode(',', $names) . ')';
         }
 
         $sql .= ' GROUP BY order_date';
@@ -250,7 +283,7 @@ class Order
                     COALESCE((SELECT SUM(c.amount) FROM commissions c WHERE c.seller_id = u.id
                         AND c.order_id IN (SELECT id FROM orders WHERE order_date BETWEEN :from2 AND :to2)), 0) AS commission_total
                 FROM users u
-                JOIN roles r ON r.id = u.role_id AND r.slug = \'licenciado\'
+                JOIN roles r ON r.id = u.role_id AND r.slug = \'vendedor\'
                 LEFT JOIN orders o ON o.seller_id = u.id AND o.order_date BETWEEN :from AND :to AND o.status != \'cancelado\'
                 GROUP BY u.id
                 ORDER BY total_value DESC';

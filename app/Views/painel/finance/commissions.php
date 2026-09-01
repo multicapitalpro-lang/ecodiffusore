@@ -57,7 +57,7 @@ $sucesso = isset($_GET['sucesso']);
     <table class="data-table">
         <thead><tr><th>Pedido</th><th>Beneficiário</th><th>Papel</th><th>Cliente</th><th>Data</th><th>%</th><th>Comissão</th><th>Situação</th><?php if ($canManage): ?><th></th><?php endif; ?></tr></thead>
         <tbody>
-            <?php $roleLabels = ['licenciado' => 'Licenciado', 'supervisor' => 'Supervisor', 'gerente' => 'Gerente']; ?>
+            <?php $roleLabels = ['licenciado' => 'Licenciado', 'gerente' => 'Gerente', 'vendedor' => 'Vendedor']; ?>
             <?php foreach ($commissions as $c): ?>
                 <tr>
                     <td>#<?= (int) $c['order_id'] ?></td>

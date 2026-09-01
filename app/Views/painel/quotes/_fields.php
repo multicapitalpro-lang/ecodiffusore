@@ -6,7 +6,7 @@ use App\Core\View;
 /** @var array $clients */
 /** @var array $products */
 /** @var array $sellers */
-/** @var bool $isLicenciado */
+/** @var bool $isVendedor */
 /** @var int $preselectClientId */
 ?>
 <?php if (!empty($errors['items'])): ?>
@@ -37,8 +37,8 @@ use App\Core\View;
 <label for="q-valid">Válido até</label>
 <input type="date" id="q-valid" name="valid_until" value="<?= View::e($values['valid_until'] ?? date('Y-m-d', strtotime('+7 days'))) ?>">
 
-<?php if (!$isLicenciado): ?>
-    <label for="q-seller">Vendedor / Licenciado</label>
+<?php if (!$isVendedor): ?>
+    <label for="q-seller">Vendedor</label>
     <select id="q-seller" name="seller_id">
         <option value="">Sem vendedor definido</option>
         <?php foreach ($sellers as $s): ?>

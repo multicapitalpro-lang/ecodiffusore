@@ -1,7 +1,7 @@
 <?php
 use App\Core\Csrf;
 $values = $editing;
-$isLicenciado = ($user['role_slug'] ?? '') === 'licenciado';
+$isVendedor = ($user['role_slug'] ?? '') === 'vendedor';
 $preselectClientId = 0;
 ?>
 <h1>Editar Orçamento #<?= (int) $editing['id'] ?></h1>

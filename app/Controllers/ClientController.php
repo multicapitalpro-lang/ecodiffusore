@@ -6,6 +6,7 @@ use App\Core\Auth;
 use App\Core\Csrf;
 use App\Core\Csv;
 use App\Core\Response;
+use App\Core\Roles;
 use App\Core\Router;
 use App\Core\View;
 use App\Models\Client;
@@ -19,24 +20,24 @@ class ClientController
 {
     public function index(): void
     {
-        Auth::requireRole(['admin', 'gerente', 'supervisor', 'licenciado']);
+        Auth::requireRole(Roles::STAFF);
 
         View::render('painel/clients/index', [
             'user' => Auth::user(),
             'clients' => Client::all(),
-            'sellers' => User::allByRole('licenciado'),
+            'sellers' => User::allByRole('vendedor'),
         ]);
     }
 
     public function create(): void
     {
-        Auth::requireRole(['admin', 'gerente', 'supervisor', 'licenciado']);
+        Auth::requireRole(Roles::STAFF);
         Router::redirect('/painel/clientes?novo=1');
     }
 
     public function export(): void
     {
-        Auth::requireRole(['admin', 'gerente', 'supervisor', 'licenciado']);
+        Auth::requireRole(Roles::STAFF);
 
         $rows = array_map(fn ($c) => [
             $c['id'],
@@ -56,7 +57,7 @@ class ClientController
 
     public function store(): void
     {
-        Auth::requireRole(['admin', 'gerente', 'supervisor', 'licenciado']);
+        Auth::requireRole(Roles::STAFF);
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
             if (Response::isAjax()) {
@@ -74,7 +75,7 @@ class ClientController
             View::render('painel/clients/index', [
                 'user' => Auth::user(),
                 'clients' => Client::all(),
-                'sellers' => User::allByRole('licenciado'),
+                'sellers' => User::allByRole('vendedor'),
                 'errors' => $errors,
                 'values' => $_POST,
             ]);
@@ -100,7 +101,7 @@ class ClientController
 
     public function show(string $id): void
     {
-        Auth::requireRole(['admin', 'gerente', 'supervisor', 'licenciado']);
+        Auth::requireRole(Roles::STAFF);
         $id = (int) $id;
 
         $client = Client::find($id);
@@ -119,7 +120,7 @@ class ClientController
 
     public function createAccess(string $id): void
     {
-        Auth::requireRole(['admin', 'gerente', 'supervisor', 'licenciado']);
+        Auth::requireRole(Roles::STAFF);
         $id = (int) $id;
 
         $client = Client::find($id);
@@ -163,7 +164,7 @@ class ClientController
 
     public function storeNote(string $id): void
     {
-        Auth::requireRole(['admin', 'gerente', 'supervisor', 'licenciado']);
+        Auth::requireRole(Roles::STAFF);
         $id = (int) $id;
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null) || trim($_POST['note'] ?? '') === '') {
@@ -177,7 +178,7 @@ class ClientController
 
     public function edit(string $id): void
     {
-        Auth::requireRole(['admin', 'gerente', 'supervisor', 'licenciado']);
+        Auth::requireRole(Roles::STAFF);
 
         $client = Client::find((int) $id);
         if (!$client) {
@@ -187,14 +188,14 @@ class ClientController
         View::render('painel/clients/form', [
             'user' => Auth::user(),
             'editing' => $client,
-            'sellers' => User::allByRole('licenciado'),
+            'sellers' => User::allByRole('vendedor'),
             'errors' => [],
         ]);
     }
 
     public function update(string $id): void
     {
-        Auth::requireRole(['admin', 'gerente', 'supervisor', 'licenciado']);
+        Auth::requireRole(Roles::STAFF);
         $id = (int) $id;
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
@@ -207,7 +208,7 @@ class ClientController
             View::render('painel/clients/form', [
                 'user' => Auth::user(),
                 'editing' => array_merge(['id' => $id], $_POST),
-                'sellers' => User::allByRole('licenciado'),
+                'sellers' => User::allByRole('vendedor'),
                 'errors' => $errors,
             ]);
             return;
@@ -220,7 +221,7 @@ class ClientController
 
     public function bulkAssignSeller(): void
     {
-        Auth::requireRole(['admin', 'gerente', 'supervisor']);
+        Auth::requireRole(Roles::MANAGEMENT);
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
             Router::redirect('/painel/clientes?erro=1');

@@ -6,7 +6,7 @@ use App\Core\View;
 /** @var array $clients */
 /** @var array $products */
 /** @var array $sellers */
-/** @var bool $isLicenciado */
+/** @var bool $isVendedor */
 /** @var int $preselectClientId */
 ?>
 <?php if (!empty($errors['items'])): ?>
@@ -35,8 +35,8 @@ use App\Core\View;
     </div>
 </div>
 
-<?php if (!$isLicenciado): ?>
-    <label for="seller_id">Vendedor / Licenciado</label>
+<?php if (!$isVendedor): ?>
+    <label for="seller_id">Vendedor</label>
     <select id="seller_id" name="seller_id">
         <option value="">Sem vendedor definido</option>
         <?php foreach ($sellers as $s): ?>

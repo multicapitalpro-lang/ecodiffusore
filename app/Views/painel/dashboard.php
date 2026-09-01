@@ -1,4 +1,5 @@
 <?php
+use App\Core\Roles;
 use App\Core\View;
 $role = $user['role_slug'] ?? '';
 $hasMetrics = isset($metrics);
@@ -38,7 +39,7 @@ $hasMetrics = isset($metrics);
     <?php if (!empty($goals)): ?>
         <div class="page-header">
             <h3 class="section-title" style="margin:28px 0 0;">Metas em andamento</h3>
-            <?php if (in_array($role, ['admin', 'gerente', 'supervisor'], true)): ?>
+            <?php if (in_array($role, Roles::MANAGEMENT, true)): ?>
                 <a href="/painel/metas" class="link-small">Ver todas</a>
             <?php endif; ?>
         </div>

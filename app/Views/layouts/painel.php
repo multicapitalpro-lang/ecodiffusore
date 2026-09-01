@@ -1,4 +1,5 @@
 <?php
+use App\Core\Roles;
 use App\Core\View;
 /** @var callable $content */
 /** @var array $user */
@@ -6,8 +7,8 @@ $role = $user['role_slug'] ?? '';
 $roleLabels = [
     'admin' => 'Administrador',
     'gerente' => 'Gerente',
-    'supervisor' => 'Supervisor',
-    'licenciado' => 'Licenciado / Vendedor',
+    'licenciado' => 'Licenciado',
+    'vendedor' => 'Vendedor',
     'cliente' => 'Cliente',
 ];
 $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
@@ -29,8 +30,8 @@ $icon = function (string $name) use ($icons) {
     return '<svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' . ($icons[$name] ?? '') . '</svg>';
 };
 
-$managerRoles = ['admin', 'gerente', 'supervisor'];
-$staffRoles = ['admin', 'gerente', 'supervisor', 'licenciado'];
+$managerRoles = Roles::MANAGEMENT;
+$staffRoles = Roles::STAFF;
 $vendasOpen = $anyActive(['/painel/leads', '/painel/pedidos', '/painel/orcamentos', '/painel/clientes', '/painel/produtos']);
 $financeiroOpen = $anyActive(['/painel/financeiro']);
 $desempenhoOpen = $anyActive(['/painel/desempenho', '/painel/metas']);
@@ -72,9 +73,7 @@ $desempenhoOpen = $anyActive(['/painel/desempenho', '/painel/metas']);
                     <summary><?= $icon('chart') ?> Desempenho</summary>
                     <div class="nav-subitems">
                         <a href="/painel/desempenho/vendedores" class="<?= $isActive('/painel/desempenho/vendedores') ? 'is-active' : '' ?>">Vendedores</a>
-                        <?php if ($role === 'admin'): ?>
-                            <a href="/painel/desempenho/equipe" class="<?= $isActive('/painel/desempenho/equipe') ? 'is-active' : '' ?>">Equipe</a>
-                        <?php endif; ?>
+                        <a href="/painel/desempenho/equipe" class="<?= $isActive('/painel/desempenho/equipe') ? 'is-active' : '' ?>">Equipe</a>
                         <a href="/painel/metas" class="<?= $isActive('/painel/metas') ? 'is-active' : '' ?>">Metas</a>
                     </div>
                 </details>
@@ -98,8 +97,10 @@ $desempenhoOpen = $anyActive(['/painel/desempenho', '/painel/metas']);
                 </details>
             <?php endif; ?>
 
-            <?php if ($role === 'admin'): ?>
+            <?php if (in_array($role, $managerRoles, true)): ?>
                 <a href="/painel/usuarios" class="<?= $isActive('/painel/usuarios') ? 'is-active' : '' ?>"><?= $icon('gear') ?> Usuários</a>
+            <?php endif; ?>
+            <?php if ($role === 'admin'): ?>
                 <a href="/painel/auditoria" class="<?= $isActive('/painel/auditoria') ? 'is-active' : '' ?>"><?= $icon('chart') ?> Auditoria</a>
             <?php endif; ?>
 

@@ -25,7 +25,7 @@ use App\Core\View;
                         </tr>
                     <?php endforeach; ?>
                     <?php if (!$ranking): ?>
-                        <tr><td colspan="4">Nenhum licenciado cadastrado ainda.</td></tr>
+                        <tr><td colspan="4">Nenhum vendedor cadastrado ainda.</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>

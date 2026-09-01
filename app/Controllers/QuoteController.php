@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Core\Auth;
 use App\Core\Csrf;
 use App\Core\Response;
+use App\Core\Roles;
 use App\Core\Router;
 use App\Core\View;
 use App\Models\Approval;
@@ -20,7 +21,7 @@ class QuoteController
 {
     public function index(): void
     {
-        Auth::requireRole(['admin', 'gerente', 'supervisor', 'licenciado']);
+        Auth::requireRole(Roles::STAFF);
         $user = Auth::user();
 
         View::render('painel/quotes/index', [
@@ -28,13 +29,13 @@ class QuoteController
             'quotes' => Quote::all($this->scopeFilters($user)),
             'clients' => Client::all(),
             'products' => Product::all(true),
-            'sellers' => User::allByRole('licenciado'),
+            'sellers' => $this->sellerOptions($user),
         ]);
     }
 
     public function kanban(): void
     {
-        Auth::requireRole(['admin', 'gerente', 'supervisor', 'licenciado']);
+        Auth::requireRole(Roles::STAFF);
         $user = Auth::user();
 
         $quotes = Quote::all($this->scopeFilters($user));
@@ -54,22 +55,45 @@ class QuoteController
         if ($user['role_slug'] === 'admin') {
             return [];
         }
-        if ($user['role_slug'] === 'licenciado') {
+        if ($user['role_slug'] === Roles::SELLER) {
             return ['seller_id' => $user['id']];
         }
 
         return ['seller_ids' => User::downlineIds((int) $user['id'])];
     }
 
+    private function sellerOptions(array $user): array
+    {
+        $sellers = User::allByRole(Roles::SELLER);
+        if ($user['role_slug'] === 'admin') {
+            return $sellers;
+        }
+
+        $downline = User::downlineIds((int) $user['id']);
+        return array_values(array_filter($sellers, fn ($s) => in_array((int) $s['id'], $downline, true)));
+    }
+
+    private function canAccessSeller(array $user, int $sellerId): bool
+    {
+        if ($user['role_slug'] === 'admin') {
+            return true;
+        }
+        if ($user['role_slug'] === Roles::SELLER) {
+            return $sellerId === (int) $user['id'];
+        }
+
+        return in_array($sellerId, User::downlineIds((int) $user['id']), true);
+    }
+
     public function create(): void
     {
-        Auth::requireRole(['admin', 'gerente', 'supervisor', 'licenciado']);
+        Auth::requireRole(Roles::STAFF);
         Router::redirect('/painel/orcamentos?novo=1');
     }
 
     public function store(): void
     {
-        Auth::requireRole(['admin', 'gerente', 'supervisor', 'licenciado']);
+        Auth::requireRole(Roles::STAFF);
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
             if (Response::isAjax()) {
@@ -89,7 +113,7 @@ class QuoteController
             Router::redirect('/painel/orcamentos?erro=1');
         }
 
-        $sellerId = $user['role_slug'] === 'licenciado' ? $user['id'] : ($_POST['seller_id'] ?: null);
+        $sellerId = $user['role_slug'] === Roles::SELLER ? $user['id'] : ($_POST['seller_id'] ?: null);
 
         $quoteId = Quote::create([
             'client_id' => (int) $_POST['client_id'],
@@ -128,18 +152,19 @@ class QuoteController
     public function edit(string $id): void
     {
         $quote = $this->authorize((int) $id);
+        $user = Auth::user();
 
         if ($quote['status'] !== 'aberto') {
             Router::redirect("/painel/orcamentos/{$id}?erro=2");
         }
 
         View::render('painel/quotes/form', [
-            'user' => Auth::user(),
+            'user' => $user,
             'editing' => $quote,
             'items' => QuoteItem::forQuote((int) $id),
             'clients' => Client::all(),
             'products' => Product::all(true),
-            'sellers' => User::allByRole('licenciado'),
+            'sellers' => $this->sellerOptions($user),
             'preselectClientId' => 0,
             'errors' => [],
         ]);
@@ -165,14 +190,14 @@ class QuoteController
                 'items' => $items,
                 'clients' => Client::all(),
                 'products' => Product::all(true),
-                'sellers' => User::allByRole('licenciado'),
+                'sellers' => $this->sellerOptions($user),
                 'preselectClientId' => 0,
                 'errors' => $errors,
             ]);
             return;
         }
 
-        $sellerId = $user['role_slug'] === 'licenciado' ? $quote['seller_id'] : ($_POST['seller_id'] ?: null);
+        $sellerId = $user['role_slug'] === Roles::SELLER ? $quote['seller_id'] : ($_POST['seller_id'] ?: null);
 
         Quote::updateHeaderAndItems($id, [
             'client_id' => (int) $_POST['client_id'],
@@ -228,7 +253,7 @@ class QuoteController
 
     private function authorize(int $id): array
     {
-        Auth::requireRole(['admin', 'gerente', 'supervisor', 'licenciado']);
+        Auth::requireRole(Roles::STAFF);
         $user = Auth::user();
 
         $quote = Quote::find($id);
@@ -236,7 +261,7 @@ class QuoteController
             Router::redirect('/painel/orcamentos');
         }
 
-        if ($user['role_slug'] === 'licenciado' && (int) $quote['seller_id'] !== (int) $user['id']) {
+        if (!$this->canAccessSeller($user, (int) ($quote['seller_id'] ?? 0))) {
             http_response_code(403);
             require BASE_PATH . '/app/Views/errors/403.php';
             exit;

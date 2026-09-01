@@ -32,21 +32,23 @@ $values = $editing ?? ($old ?? []);
     </select>
     <?php if (!empty($errors['role_id'])): ?><p class="field-error"><?= View::e($errors['role_id']) ?></p><?php endif; ?>
 
-    <label for="manager_id">Reporta para (supervisor/gerente)</label>
-    <select id="manager_id" name="manager_id">
-        <option value="">Ninguém (topo da hierarquia)</option>
+    <label for="manager_id">Reporta para</label>
+    <select id="manager_id" name="manager_id" <?= count($managers) <= 1 ? 'disabled' : '' ?>>
+        <?php if ($user['role_slug'] === 'admin'): ?><option value="">Ninguém (topo da hierarquia)</option><?php endif; ?>
         <?php foreach ($managers as $m): ?>
-            <option value="<?= (int) $m['id'] ?>" <?= (int) ($values['manager_id'] ?? 0) === (int) $m['id'] ? 'selected' : '' ?>>
-                <?= View::e($m['name']) ?> (<?= $m['role_slug'] === 'gerente' ? 'Gerente' : 'Supervisor' ?>)
+            <option value="<?= (int) $m['id'] ?>" <?= (int) ($values['manager_id'] ?? ($user['role_slug'] !== 'admin' ? $managers[0]['id'] : 0)) === (int) $m['id'] ? 'selected' : '' ?>>
+                <?= View::e($m['name']) ?> (<?= $m['role_slug'] === 'gerente' ? 'Gerente' : ($m['role_slug'] === 'licenciado' ? 'Licenciado' : 'Supervisor') ?>)
             </option>
         <?php endforeach; ?>
     </select>
     <?php if (!empty($errors['manager_id'])): ?><p class="field-error"><?= View::e($errors['manager_id']) ?></p><?php endif; ?>
 
-    <label for="commission_pct">Comissão desta pessoa (%) sobre as vendas que contam pra ela</label>
-    <input type="number" id="commission_pct" name="commission_pct" step="0.01" min="0" max="100"
-           value="<?= View::e((string) ($values['commission_pct'] ?? '')) ?>" placeholder="Ex: 5.00">
-    <p class="hint-text">Para licenciado: % sobre os próprios pedidos verificados. Para supervisor/gerente: % sobre os pedidos verificados de toda a equipe abaixo dele.</p>
+    <?php if ($canSetCommission): ?>
+        <label for="commission_pct">Comissão desta pessoa (%)</label>
+        <input type="number" id="commission_pct" name="commission_pct" step="0.01" min="0" max="100"
+               value="<?= View::e((string) ($values['commission_pct'] ?? '')) ?>" placeholder="Ex: 15.00">
+        <p class="hint-text">Para licenciado: % fixo contratual sobre o total do pedido (define o "pool" da região). Para gerente/vendedor: % do pool do licenciado que será repassado a esta pessoa.</p>
+    <?php endif; ?>
 
     <label for="discount_limit_pct">Limite de desconto sem aprovação (%)</label>
     <input type="number" id="discount_limit_pct" name="discount_limit_pct" step="0.01" min="0" max="100"

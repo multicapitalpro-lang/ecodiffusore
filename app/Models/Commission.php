@@ -7,37 +7,63 @@ use App\Core\Database;
 class Commission
 {
     /**
-     * Cria uma linha de comissao para o vendedor e, subindo a hierarquia (manager_id),
-     * uma linha adicional para cada supervisor/gerente com commission_pct > 0.
-     * Cada nivel usa o proprio commission_pct da pessoa, nao um valor fixo por papel.
+     * Comissao em pool: o Licenciado (dono da regiao) recebe um % fixo contratual sobre o
+     * total do pedido -- isso forma o "pool". A partir do pool, Gerente e Vendedor recebem
+     * o % que o proprio Licenciado configurou pra cada um (commission_pct deles = % do pool,
+     * nao % do pedido). O que sobra do pool depois de pagar Gerente/Vendedor fica com o
+     * Licenciado. Sem Licenciado no topo (ou sem % contratual definido), nao ha pool e
+     * ninguem recebe -- a comissao so existe porque o Licenciado tem contrato com a Ecodiffusore.
      */
     public static function createCascadeForOrder(int $orderId, int $sellerId, float $orderTotal): void
     {
-        $seller = User::find($sellerId);
-        if (!$seller) {
+        $vendedor = User::find($sellerId);
+        if (!$vendedor) {
             return;
         }
 
-        $beneficiaries = [$seller, ...User::managerChain($sellerId)];
+        $chain = [$vendedor, ...User::managerChain($sellerId)];
 
-        foreach ($beneficiaries as $i => $beneficiary) {
-            if ($beneficiary['commission_pct'] !== null) {
-                $pct = (float) $beneficiary['commission_pct'];
-            } else {
-                // Compatibilidade com o comportamento anterior: vendedor sem % configurado ganha 5% padrao.
-                // Supervisor/gerente sem % configurado nao ganham nada (precisa ser definido explicitamente pelo admin).
-                $pct = $i === 0 ? 5.0 : 0.0;
+        $licenciado = null;
+        foreach ($chain as $p) {
+            if ($p['role_slug'] === 'licenciado') {
+                $licenciado = $p;
+                break;
             }
+        }
 
-            if ($pct <= 0) {
+        if (!$licenciado || (float) ($licenciado['commission_pct'] ?? 0) <= 0) {
+            return;
+        }
+
+        $pool = round($orderTotal * (float) $licenciado['commission_pct'] / 100, 2);
+        $distribuido = 0.0;
+
+        foreach ($chain as $p) {
+            if ((int) $p['id'] === (int) $licenciado['id']) {
                 continue;
             }
 
-            self::createForOrder($orderId, $sellerId, (int) $beneficiary['id'], $beneficiary['role_slug'], $orderTotal, $pct);
+            $sharePct = (float) ($p['commission_pct'] ?? 0);
+            if ($sharePct <= 0) {
+                continue;
+            }
+
+            $amount = round($pool * $sharePct / 100, 2);
+            $distribuido += $amount;
+            self::insertRow($orderId, $sellerId, (int) $p['id'], $p['role_slug'], $sharePct, $amount);
+        }
+
+        $restante = max(0, round($pool - $distribuido, 2));
+        if ($restante > 0) {
+            self::insertRow($orderId, $sellerId, (int) $licenciado['id'], 'licenciado', (float) $licenciado['commission_pct'], $restante);
         }
     }
 
-    public static function createForOrder(int $orderId, int $sellerId, int $beneficiaryId, string $roleSlug, float $orderTotal, float $percentage): void
+    /**
+     * `percentage` guardado aqui significa coisas diferentes por papel: pro Licenciado e o %
+     * contratual sobre o total do pedido; pro Gerente/Vendedor e o % do pool do Licenciado.
+     */
+    private static function insertRow(int $orderId, int $sellerId, int $beneficiaryId, string $roleSlug, float $percentage, float $amount): void
     {
         $stmt = Database::connection()->prepare(
             "INSERT INTO commissions (order_id, seller_id, beneficiary_id, role_slug, percentage, amount, status)
@@ -50,7 +76,7 @@ class Commission
             'beneficiary_id' => $beneficiaryId,
             'role_slug' => $roleSlug,
             'percentage' => $percentage,
-            'amount' => round($orderTotal * $percentage / 100, 2),
+            'amount' => $amount,
         ]);
     }
 
@@ -69,6 +95,14 @@ class Commission
         if (!empty($filters['beneficiary_id'])) {
             $sql .= ' AND c.beneficiary_id = :beneficiary_id';
             $params['beneficiary_id'] = $filters['beneficiary_id'];
+        } elseif (!empty($filters['beneficiary_ids'])) {
+            $names = [];
+            foreach (array_values($filters['beneficiary_ids']) as $i => $bid) {
+                $key = "bid{$i}";
+                $names[] = ":{$key}";
+                $params[$key] = $bid;
+            }
+            $sql .= ' AND c.beneficiary_id IN (' . implode(',', $names) . ')';
         }
         if (!empty($filters['status'])) {
             $sql .= ' AND c.status = :status';
@@ -105,6 +139,14 @@ class Commission
         if (!empty($filters['beneficiary_id'])) {
             $sql .= ' AND c.beneficiary_id = :beneficiary_id';
             $params['beneficiary_id'] = $filters['beneficiary_id'];
+        } elseif (!empty($filters['beneficiary_ids'])) {
+            $names = [];
+            foreach (array_values($filters['beneficiary_ids']) as $i => $bid) {
+                $key = "bid{$i}";
+                $names[] = ":{$key}";
+                $params[$key] = $bid;
+            }
+            $sql .= ' AND c.beneficiary_id IN (' . implode(',', $names) . ')';
         }
 
         $sql .= ' GROUP BY u.id ORDER BY total DESC';

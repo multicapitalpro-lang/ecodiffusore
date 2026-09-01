@@ -6,16 +6,18 @@ use App\Core\AsaasClient;
 use App\Core\Auth;
 use App\Core\Config;
 use App\Core\Csrf;
+use App\Core\Roles;
 use App\Core\Router;
 use App\Models\Approval;
 use App\Models\Client;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\Quote;
+use App\Models\User;
 
 class PaymentController
 {
-    private const ALLOWED_ROLES = ['admin', 'gerente', 'supervisor', 'licenciado'];
+    private const ALLOWED_ROLES = Roles::STAFF;
 
     public function generateForOrder(string $id): void
     {
@@ -152,7 +154,15 @@ class PaymentController
     private function authorizeOwnership(?int $sellerId): void
     {
         $user = Auth::user();
-        if ($user['role_slug'] === 'licenciado' && $sellerId !== (int) $user['id']) {
+        if ($user['role_slug'] === 'admin') {
+            return;
+        }
+
+        $allowed = $user['role_slug'] === Roles::SELLER
+            ? $sellerId === (int) $user['id']
+            : in_array($sellerId, User::downlineIds((int) $user['id']), true);
+
+        if (!$allowed) {
             http_response_code(403);
             require BASE_PATH . '/app/Views/errors/403.php';
             exit;

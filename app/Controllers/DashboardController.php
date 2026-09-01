@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Core\Auth;
 use App\Core\Chart;
 use App\Core\DateRange;
+use App\Core\Roles;
 use App\Core\Router;
 use App\Core\View;
 use App\Models\Client;
@@ -13,6 +14,7 @@ use App\Models\Lead;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Payment;
+use App\Models\User;
 
 class DashboardController
 {
@@ -32,15 +34,22 @@ class DashboardController
         $role = $user['role_slug'];
         $data = ['user' => $user];
 
-        if (in_array($role, ['admin', 'gerente', 'supervisor', 'licenciado'], true)) {
+        if (in_array($role, Roles::STAFF, true)) {
             [$from, $to] = DateRange::fromRequest();
             [$prevFrom, $prevTo] = DateRange::previousPeriod($from, $to);
 
-            $sellerId = $role === 'licenciado' ? (int) $user['id'] : null;
+            // Vendedor ve so as proprias vendas; gerente/licenciado veem a equipe/regiao agregada; admin ve tudo
+            $sellerId = null;
+            $sellerIds = null;
+            if ($role === Roles::SELLER) {
+                $sellerId = (int) $user['id'];
+            } elseif ($role !== 'admin') {
+                $sellerIds = User::downlineIds((int) $user['id']);
+            }
 
-            $current = Order::metrics($from, $to, $sellerId);
-            $previous = Order::metrics($prevFrom, $prevTo, $sellerId);
-            $cost = Order::costTotal($from, $to, $sellerId);
+            $current = Order::metrics($from, $to, $sellerId, $sellerIds);
+            $previous = Order::metrics($prevFrom, $prevTo, $sellerId, $sellerIds);
+            $cost = Order::costTotal($from, $to, $sellerId, $sellerIds);
 
             $data['from'] = $from;
             $data['to'] = $to;
@@ -54,16 +63,16 @@ class DashboardController
             $data['grossMargin'] = $current['total_value'] - $cost;
             $data['costTotal'] = $cost;
             $data['chartSvg'] = Chart::dailyLine(
-                Order::dailySeries($from, $to, $sellerId),
-                Order::dailySeries($prevFrom, $prevTo, $sellerId),
+                Order::dailySeries($from, $to, $sellerId, $sellerIds),
+                Order::dailySeries($prevFrom, $prevTo, $sellerId, $sellerIds),
                 $from,
                 $to,
                 $prevFrom
             );
-            $data['topProducts'] = OrderItem::topProducts($from, $to, $sellerId);
+            $data['topProducts'] = OrderItem::topProducts($from, $to, $sellerId, $sellerIds);
             $data['goals'] = array_map(
                 fn ($g) => $g + ['progress' => Goal::progress($g)],
-                Goal::activeFor($role === 'licenciado' ? (int) $user['id'] : null)
+                Goal::activeFor($role === Roles::SELLER ? (int) $user['id'] : null)
             );
         }
 

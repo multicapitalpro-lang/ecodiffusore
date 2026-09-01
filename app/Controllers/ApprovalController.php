@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Core\Auth;
 use App\Core\Csrf;
+use App\Core\Roles;
 use App\Core\Router;
 use App\Models\AuditLog;
 use App\Models\Approval;
@@ -12,7 +13,7 @@ class ApprovalController
 {
     public function decide(string $id): void
     {
-        Auth::requireRole(['admin', 'gerente', 'supervisor']);
+        Auth::requireRole(Roles::MANAGEMENT);
         $id = (int) $id;
 
         $approval = Approval::find($id);

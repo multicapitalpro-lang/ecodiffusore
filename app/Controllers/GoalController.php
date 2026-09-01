@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Core\Auth;
 use App\Core\Csrf;
+use App\Core\Roles;
 use App\Core\Router;
 use App\Core\View;
 use App\Models\Goal;
@@ -13,7 +14,7 @@ class GoalController
 {
     public function index(): void
     {
-        Auth::requireRole(['admin', 'gerente', 'supervisor']);
+        Auth::requireRole(Roles::MANAGEMENT);
 
         $goals = Goal::all();
         $today = date('Y-m-d');
@@ -22,14 +23,14 @@ class GoalController
             'user' => Auth::user(),
             'active' => array_values(array_filter($goals, fn ($g) => $g['end_date'] >= $today)),
             'inactive' => array_values(array_filter($goals, fn ($g) => $g['end_date'] < $today)),
-            'sellers' => User::allByRole('licenciado'),
+            'sellers' => User::allByRole('vendedor'),
             'errors' => [],
         ]);
     }
 
     public function store(): void
     {
-        Auth::requireRole(['admin', 'gerente', 'supervisor']);
+        Auth::requireRole(Roles::MANAGEMENT);
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
             Router::redirect('/painel/metas?erro=1');
@@ -64,7 +65,7 @@ class GoalController
 
     public function delete(string $id): void
     {
-        Auth::requireRole(['admin', 'gerente', 'supervisor']);
+        Auth::requireRole(Roles::MANAGEMENT);
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
             Router::redirect('/painel/metas');

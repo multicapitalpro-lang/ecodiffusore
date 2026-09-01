@@ -38,7 +38,7 @@ class OrderItem
         $stmt->execute(['order_id' => $orderId]);
     }
 
-    public static function topProducts(string $from, string $to, ?int $sellerId = null): array
+    public static function topProducts(string $from, string $to, ?int $sellerId = null, ?array $sellerIds = null): array
     {
         $sql = 'SELECT p.name, SUM(oi.quantity) AS total_qty, SUM(oi.subtotal) AS total_value
                 FROM order_items oi
@@ -50,6 +50,14 @@ class OrderItem
         if ($sellerId !== null) {
             $sql .= ' AND o.seller_id = :seller_id';
             $params['seller_id'] = $sellerId;
+        } elseif (!empty($sellerIds)) {
+            $names = [];
+            foreach (array_values($sellerIds) as $i => $sid) {
+                $key = "sid{$i}";
+                $names[] = ":{$key}";
+                $params[$key] = $sid;
+            }
+            $sql .= ' AND o.seller_id IN (' . implode(',', $names) . ')';
         }
 
         $sql .= ' GROUP BY p.id ORDER BY total_value DESC LIMIT 10';
