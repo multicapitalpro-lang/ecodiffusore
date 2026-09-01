@@ -27,7 +27,7 @@ $showPopup = $showPopup ?? false;
             <a href="#licenciado">Seja Licenciado</a>
             <a href="/painel/login" class="site-nav-login">Área do Cliente</a>
         </nav>
-        <a href="/comprar" class="btn btn-primary site-header-cta">Comprar Ecodiffusore</a>
+        <a href="/comprar" class="btn btn-primary site-header-cta">Ver Mais Detalhes</a>
     </div>
 </header>
 
