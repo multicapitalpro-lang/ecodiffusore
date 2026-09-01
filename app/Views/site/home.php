@@ -18,14 +18,14 @@ $erro = isset($_GET['erro']);
             <ul class="hero-stats">
                 <li><strong>5% a 20%</strong><span>de economia de diesel (mínimo garantido a potencial máximo)</span></li>
                 <li><strong>Até R$ 5 mil</strong><span>de economia mensal por caminhão</span></li>
-                <li><strong>30 dias</strong><span>de garantia real</span></li>
             </ul>
         </div>
-        <div class="hero-media">
-            <video autoplay muted loop playsinline controls poster="<?= View::asset('/assets/img/video-poster.svg') ?>" class="hero-video">
+        <div class="hero-media" id="hero-media">
+            <video autoplay muted loop playsinline controls poster="<?= View::asset('/assets/img/video-poster.svg') ?>" class="hero-video" id="hero-video">
                 <source src="<?= View::asset('/assets/video/hero-institucional.mp4') ?>" type="video/mp4">
                 Seu navegador não suporta vídeo HTML5.
             </video>
+            <button type="button" class="hero-video-sound" id="hero-video-sound" aria-label="Ativar som">🔊 Ativar som</button>
         </div>
     </div>
 </section>
@@ -132,14 +132,14 @@ $erro = isset($_GET['erro']);
             </div>
             <div class="extra-chart-card">
                 <h4>Menos poluentes no escapamento</h4>
-                <p>Combustão mais completa reduz a liberação de fumaça e gases poluentes — comparativo ilustrativo:</p>
+                <p>Combustão mais completa ajuda a reduzir a emissão de poluentes em até 40% — comparativo ilustrativo:</p>
                 <div class="emissions-bars">
                     <div class="emissions-bar-row">
                         <span>Sem Ecodiffusore <strong>100%</strong></span>
                         <div class="emissions-bar-track"><div class="emissions-bar-fill before"></div></div>
                     </div>
                     <div class="emissions-bar-row">
-                        <span>Com Ecodiffusore <strong>~40% menos</strong></span>
+                        <span>Com Ecodiffusore <strong>até 40% menos</strong></span>
                         <div class="emissions-bar-track"><div class="emissions-bar-fill after" style="width:60%;"></div></div>
                     </div>
                 </div>
@@ -193,65 +193,25 @@ $erro = isset($_GET['erro']);
     </div>
 </section>
 
-<section class="payback">
-    <div class="site-container">
-        <h2>Economia real e lucro certo</h2>
-        <p class="section-sub">Payback rápido. Eficiência que gera resultado no bolso do caminhoneiro.</p>
-        <div class="table-scroll">
-            <table class="payback-table">
-                <thead>
-                    <tr>
-                        <th>Indicador</th>
-                        <th>Economia 5%</th>
-                        <th>Economia 8%</th>
-                        <th>Economia 12%</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>Gasto mensal com combustível</td>
-                        <td>R$ 35.000,00</td>
-                        <td>R$ 35.000,00</td>
-                        <td>R$ 35.000,00</td>
-                    </tr>
-                    <tr>
-                        <td>Economia líquida mensal</td>
-                        <td>R$ 1.750,00</td>
-                        <td>R$ 2.800,00</td>
-                        <td>R$ 4.200,00</td>
-                    </tr>
-                    <tr>
-                        <td>Payback do equipamento</td>
-                        <td>1,8 meses</td>
-                        <td>1,1 meses</td>
-                        <td>0,7 meses</td>
-                    </tr>
-                    <tr>
-                        <td>Economia líquida no 1º ano</td>
-                        <td>R$ 17.869,00</td>
-                        <td>R$ 30.469,00</td>
-                        <td>R$ 47.269,00</td>
-                    </tr>
-                    <tr>
-                        <td>Economia líquida em 5 anos</td>
-                        <td>R$ 101.869,00</td>
-                        <td>R$ 164.869,00</td>
-                        <td>R$ 248.869,00</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        <p class="calc-disclaimer">*Payback calculado sobre o preço de referência do Ecodiffusore (R$ 3.131,00, linha Scania NTG/DAF). Valores aproximados, podem variar por modelo e uso.</p>
-    </div>
-</section>
-
 <section class="calculadora">
     <div class="site-container">
         <h2>Calculadora de Economia</h2>
-        <p class="section-sub">Quantos km você roda por mês?</p>
+        <p class="section-sub">Preencha os dados abaixo pra ver uma estimativa aproximada da sua economia.</p>
         <div class="calc-box">
-            <label for="calc-km"><strong id="calc-km-label">12.000 km/mês</strong></label>
-            <input type="range" id="calc-km" min="5000" max="30000" step="1000" value="12000">
+            <div class="calc-inputs">
+                <div class="calc-input-group">
+                    <label for="calc-km"><strong id="calc-km-label">12.000 km/mês</strong></label>
+                    <input type="range" id="calc-km" min="5000" max="30000" step="1000" value="12000">
+                </div>
+                <div class="calc-input-group">
+                    <label for="calc-preco-litro">Preço do diesel na sua região (R$/litro)</label>
+                    <input type="number" id="calc-preco-litro" min="1" step="0.01" value="6.10">
+                </div>
+                <div class="calc-input-group calc-input-group-full">
+                    <label for="calc-gasto-mensal">Ou, se preferir, informe direto quanto você gasta com diesel por mês (R$) — opcional, mais preciso</label>
+                    <input type="number" id="calc-gasto-mensal" min="0" step="50" placeholder="Ex: 35000">
+                </div>
+            </div>
             <div class="calc-results">
                 <div class="calc-result calc-min">
                     <span class="calc-result-icon">🛡️</span>
@@ -292,26 +252,37 @@ $erro = isset($_GET['erro']);
     <div class="site-container">
         <h2>Quem já usa, aprova</h2>
         <p class="section-sub">Depoimentos reais de quem já roda com o Ecodiffusore.</p>
-        <div class="depoimentos-grid">
-            <?php
-            $depoimentosDemo = [
-                ['nome' => 'Caminhoneiro autônomo', 'texto' => 'Caminhão melhorou a média e trouxe mais torque.'],
-                ['nome' => 'Cliente Ecodiffusore', 'texto' => 'Senti a diferença já nos primeiros abastecimentos, o motor responde melhor.'],
-                ['nome' => 'Transportadora parceira', 'texto' => 'Reduzimos o custo de combustível em toda a frota de forma perceptível.'],
-            ];
-            ?>
-            <?php foreach ($depoimentosDemo as $d): ?>
-                <div class="depoimento-card">
-                    <div class="depoimento-video-slot">
-                        <span style="font-size:2rem;">🎥</span>
-                        <span>Vídeo em breve</span>
+        <?php
+        $depoimentosDemo = [
+            ['nome' => 'Caminhoneiro autônomo', 'texto' => 'Caminhão melhorou a média e trouxe mais torque.'],
+            ['nome' => 'Cliente Ecodiffusore', 'texto' => 'Senti a diferença já nos primeiros abastecimentos, o motor responde melhor.'],
+            ['nome' => 'Transportadora parceira', 'texto' => 'Reduzimos o custo de combustível em toda a frota de forma perceptível.'],
+        ];
+        ?>
+        <div class="depoimentos-carousel" id="depoimentos-carousel">
+            <div class="depoimentos-carousel-track">
+                <?php foreach ($depoimentosDemo as $d): ?>
+                    <div class="depoimento-slide">
+                        <div class="depoimento-card">
+                            <div class="depoimento-video-slot">
+                                <span style="font-size:2rem;">🎥</span>
+                                <span>Vídeo em breve</span>
+                            </div>
+                            <div class="depoimento-body">
+                                <p>“<?= htmlspecialchars($d['texto'], ENT_QUOTES, 'UTF-8') ?>”</p>
+                                <cite>— <?= htmlspecialchars($d['nome'], ENT_QUOTES, 'UTF-8') ?></cite>
+                            </div>
+                        </div>
                     </div>
-                    <div class="depoimento-body">
-                        <p>“<?= htmlspecialchars($d['texto'], ENT_QUOTES, 'UTF-8') ?>”</p>
-                        <cite>— <?= htmlspecialchars($d['nome'], ENT_QUOTES, 'UTF-8') ?></cite>
-                    </div>
-                </div>
-            <?php endforeach; ?>
+                <?php endforeach; ?>
+            </div>
+            <button type="button" class="install-carousel-nav prev" aria-label="Anterior">‹</button>
+            <button type="button" class="install-carousel-nav next" aria-label="Próximo">›</button>
+            <div class="install-carousel-dots">
+                <?php foreach ($depoimentosDemo as $i => $d): ?>
+                    <button type="button" class="<?= $i === 0 ? 'is-active' : '' ?>" data-slide="<?= $i ?>" aria-label="Slide <?= $i + 1 ?>"></button>
+                <?php endforeach; ?>
+            </div>
         </div>
     </div>
 </section>
@@ -348,7 +319,7 @@ $erro = isset($_GET['erro']);
             </details>
             <details>
                 <summary>Existe garantia?</summary>
-                <p>Sim, garantia de 30 dias reais.</p>
+                <p>Sim. Se você não atingir o mínimo de 5% de economia garantido, devolvemos o seu investimento.</p>
             </details>
         </div>
     </div>

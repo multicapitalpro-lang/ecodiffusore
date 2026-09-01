@@ -9,7 +9,7 @@ $showPopup = $showPopup ?? false;
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Ecodiffusore Brasil — Economize Diesel e Eleve a Performance</title>
-    <meta name="description" content="Sistema patenteado (INPI) que reduz o consumo de diesel e aumenta a performance de caminhões, máquinas agrícolas e geradores. Economia real, payback rápido, garantia de 30 dias.">
+    <meta name="description" content="Sistema patenteado (INPI) que reduz o consumo de diesel e aumenta a performance de caminhões, máquinas agrícolas e geradores. Economia real, payback rápido.">
     <link rel="icon" href="<?= View::asset('/assets/img/favicon.svg') ?>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -25,7 +25,6 @@ $showPopup = $showPopup ?? false;
             <a href="#depoimentos">Depoimentos</a>
             <a href="#faq">Dúvidas</a>
             <a href="#licenciado">Seja Licenciado</a>
-            <a href="/painel/login" class="site-nav-login">Área do Cliente</a>
         </nav>
         <a href="/comprar" class="btn btn-primary site-header-cta">Ver Mais Detalhes</a>
     </div>
@@ -67,7 +66,7 @@ $showPopup = $showPopup ?? false;
             <p>Instagram: @ecodiffusorebrasil</p>
         </div>
         <div>
-            <p><a href="/painel/login">Área do Cliente / Licenciado</a></p>
+            <a href="/painel/login" class="btn btn-outline site-footer-login">Acessar o Painel (Licenciado, Vendedor, Cliente...)</a>
             <p>&copy; <?= date('Y') ?> Ecodiffusore Brasil. Todos os direitos reservados.</p>
         </div>
     </div>

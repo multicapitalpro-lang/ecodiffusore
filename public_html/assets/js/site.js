@@ -3,7 +3,9 @@
     if (!kmInput) return;
 
     var CONSUMO_KM_L = 2.8;
-    var PRECO_LITRO = 6.10;
+
+    var precoLitroInput = document.getElementById('calc-preco-litro');
+    var gastoMensalInput = document.getElementById('calc-gasto-mensal');
 
     var fmt = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -19,7 +21,11 @@
         var km = parseInt(kmInput.value, 10);
         kmLabel.textContent = km.toLocaleString('pt-BR') + ' km/mês';
 
-        var gastoMensal = (km / CONSUMO_KM_L) * PRECO_LITRO;
+        // Se o caminhoneiro informou o gasto mensal direto, usa esse valor (mais preciso).
+        // Senao, estima pelo km rodado x preco do diesel na regiao dele.
+        var gastoDireto = parseFloat(gastoMensalInput.value);
+        var precoLitro = parseFloat(precoLitroInput.value) || 6.10;
+        var gastoMensal = gastoDireto > 0 ? gastoDireto : (km / CONSUMO_KM_L) * precoLitro;
 
         Object.keys(fields).forEach(function (key) {
             var f = fields[key];
@@ -35,12 +41,28 @@
     }
 
     kmInput.addEventListener('input', update);
+    precoLitroInput.addEventListener('input', update);
+    gastoMensalInput.addEventListener('input', update);
     update();
 })();
 
 (function () {
     document.querySelectorAll('dialog[data-autoopen]').forEach(function (dialog) {
         dialog.showModal();
+    });
+})();
+
+(function () {
+    // Navegadores bloqueiam autoplay com som -- o video comeca mudo e mostra um botao
+    // pra ativar o som com 1 clique, ja que autoplay-com-audio nao e tecnicamente possivel.
+    var video = document.getElementById('hero-video');
+    var soundBtn = document.getElementById('hero-video-sound');
+    if (!video || !soundBtn) return;
+
+    soundBtn.addEventListener('click', function () {
+        video.muted = false;
+        video.play();
+        soundBtn.style.display = 'none';
     });
 })();
 
@@ -105,12 +127,12 @@
     update();
 })();
 
-(function () {
-    var carousel = document.getElementById('install-carousel');
+function initCarousel(carouselId, trackSelector, slideSelector) {
+    var carousel = document.getElementById(carouselId);
     if (!carousel) return;
 
-    var track = carousel.querySelector('.install-carousel-track');
-    var slides = carousel.querySelectorAll('.install-slide');
+    var track = carousel.querySelector(trackSelector);
+    var slides = carousel.querySelectorAll(slideSelector);
     var dots = carousel.querySelectorAll('.install-carousel-dots button');
     var index = 0;
 
@@ -123,4 +145,7 @@
     carousel.querySelector('.prev').addEventListener('click', function () { goTo(index - 1); });
     carousel.querySelector('.next').addEventListener('click', function () { goTo(index + 1); });
     dots.forEach(function (d, di) { d.addEventListener('click', function () { goTo(di); }); });
-})();
+}
+
+initCarousel('install-carousel', '.install-carousel-track', '.install-slide');
+initCarousel('depoimentos-carousel', '.depoimentos-carousel-track', '.depoimento-slide');
