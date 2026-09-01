@@ -38,7 +38,7 @@ $hasPayback = $payback && $payback['tiers']['avg']['monthly'] > 0;
                 <div class="calc-result calc-avg">
                     <span class="calc-badge">MAIS COMUM</span>
                     <span class="calc-result-icon">📈</span>
-                    <span class="calc-result-title">10% – Média Real</span>
+                    <span class="calc-result-title">8% – Média Real</span>
                     <span class="calc-result-label">Economia Mensal</span>
                     <strong>R$ <?= number_format($payback['tiers']['avg']['monthly'], 2, ',', '.') ?></strong>
                     <small>R$ <?= number_format($payback['tiers']['avg']['yearly'], 2, ',', '.') ?>/ano</small>
@@ -46,7 +46,7 @@ $hasPayback = $payback && $payback['tiers']['avg']['monthly'] > 0;
                 </div>
                 <div class="calc-result calc-max">
                     <span class="calc-result-icon">🚀</span>
-                    <span class="calc-result-title">20% – Potencial Máximo</span>
+                    <span class="calc-result-title">12% – Potencial Máximo</span>
                     <span class="calc-result-label">Economia Mensal</span>
                     <strong>R$ <?= number_format($payback['tiers']['max']['monthly'], 2, ',', '.') ?></strong>
                     <small>R$ <?= number_format($payback['tiers']['max']['yearly'], 2, ',', '.') ?>/ano</small>

@@ -3,13 +3,14 @@
 namespace App\Core;
 
 /**
- * Mesma logica de faixas de economia da calculadora da landing page (5%/10%/20% do gasto mensal
- * com diesel), reaproveitada no servidor pra calcular o payback do orcamento por placa. Aqui o
- * km/litro vem do proprio usuario (mais preciso que o 2.8 fixo usado na calculadora da LP).
+ * Calcula o payback do orcamento por placa a partir do gasto mensal com diesel (km/litro vem do
+ * proprio usuario, mais preciso que o 2.8 fixo usado na calculadora da landing page). Faixas
+ * (5%/8%/12%) sao especificas desta tela -- a calculadora da LP usa faixas proprias (5%/10%/20%),
+ * decisao deliberada do usuario de manter os dois calculadores independentes.
  */
 class EconomyCalculator
 {
-    private const TIERS = ['min' => 0.05, 'avg' => 0.10, 'max' => 0.20];
+    private const TIERS = ['min' => 0.05, 'avg' => 0.08, 'max' => 0.12];
 
     public static function estimate(float $kmMensal, float $kmPorLitro, float $precoDiesel, float $productPrice): array
     {

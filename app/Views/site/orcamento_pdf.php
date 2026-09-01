@@ -64,8 +64,8 @@ $payback = $result['payback'] ?? null;
     <thead><tr><th>Cenário</th><th>Economia mensal</th><th>Economia anual</th><th>Economia em 5 anos</th></tr></thead>
     <tbody>
         <tr><td>5% — Mínimo garantido</td><td>R$ <?= number_format($payback['tiers']['min']['monthly'], 2, ',', '.') ?></td><td>R$ <?= number_format($payback['tiers']['min']['yearly'], 2, ',', '.') ?></td><td>R$ <?= number_format($payback['tiers']['min']['five_year'], 2, ',', '.') ?></td></tr>
-        <tr><td>10% — Média real</td><td>R$ <?= number_format($payback['tiers']['avg']['monthly'], 2, ',', '.') ?></td><td>R$ <?= number_format($payback['tiers']['avg']['yearly'], 2, ',', '.') ?></td><td>R$ <?= number_format($payback['tiers']['avg']['five_year'], 2, ',', '.') ?></td></tr>
-        <tr><td>20% — Potencial máximo</td><td>R$ <?= number_format($payback['tiers']['max']['monthly'], 2, ',', '.') ?></td><td>R$ <?= number_format($payback['tiers']['max']['yearly'], 2, ',', '.') ?></td><td>R$ <?= number_format($payback['tiers']['max']['five_year'], 2, ',', '.') ?></td></tr>
+        <tr><td>8% — Média real</td><td>R$ <?= number_format($payback['tiers']['avg']['monthly'], 2, ',', '.') ?></td><td>R$ <?= number_format($payback['tiers']['avg']['yearly'], 2, ',', '.') ?></td><td>R$ <?= number_format($payback['tiers']['avg']['five_year'], 2, ',', '.') ?></td></tr>
+        <tr><td>12% — Potencial máximo</td><td>R$ <?= number_format($payback['tiers']['max']['monthly'], 2, ',', '.') ?></td><td>R$ <?= number_format($payback['tiers']['max']['yearly'], 2, ',', '.') ?></td><td>R$ <?= number_format($payback['tiers']['max']['five_year'], 2, ',', '.') ?></td></tr>
     </tbody>
 </table>
 
