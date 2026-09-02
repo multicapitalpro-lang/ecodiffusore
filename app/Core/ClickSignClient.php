@@ -7,12 +7,15 @@ namespace App\Core;
  * de Licenciado. Sem SDK oficial mantido pra PHP -- chama a API REST direto via cURL, mesmo
  * padrao do App\Core\AsaasClient.
  *
- * NOTA: os payloads exatos de "requirements" (acao de assinar vs. verificacao de identidade) e o
- * campo que carrega a signing_url na resposta do envelope foram montados a partir da documentacao
- * publica do ClickSign, mas nao puderam ser confirmados contra uma chamada real ainda (a conta
- * usada pro token precisa configurar o "e-mail do usuario da API" nas configuracoes do ClickSign
- * antes de qualquer chamada funcionar -- ver erro 403 "Verificacao de usuario"). Revisar contra
- * uma resposta real assim que isso for resolvido.
+ * Payloads de "requirements" confirmados contra chamadas reais em 2026-09-02 (depois que a conta
+ * resolveu a pendencia do "e-mail do usuario da API"): "action" so aceita agree/provide_evidence/
+ * rubricate (nao existe "sign"). O requirement de assinatura em si e' action=agree + role=sign
+ * (sem "auth"); os requirements de KYC sao action=provide_evidence + auth=selfie/official_document.
+ *
+ * NOTA ainda em aberto: o campo exato que carrega a signing_url na resposta do envelope ativado
+ * nao foi confirmado (a API tambem tem um endpoint `/signers/{id}` que pode ser onde esse link
+ * aparece) -- revisar assim que possivel testar uma ativacao completa sem esbarrar no rate limit
+ * (429) da API.
  */
 class ClickSignClient
 {
@@ -90,27 +93,27 @@ class ClickSignClient
 
     public function addSignRequirement(string $envelopeId, string $documentId, string $signerId): array
     {
-        return $this->createRequirement($envelopeId, $documentId, $signerId, 'sign', 'email');
+        // Confirmado direto contra a API real (2026-09-02): "action" precisa ser um de
+        // agree/provide_evidence/rubricate -- "sign" nao existe. O requirement de assinatura em si
+        // e' action=agree com role=sign (nao usa "auth").
+        return $this->createRequirement($envelopeId, $documentId, $signerId, ['action' => 'agree', 'role' => 'sign']);
     }
 
     /** KYC "automatico": selfie + foto do documento oficial, anexados como requirements do mesmo documento. */
     public function addKycRequirements(string $envelopeId, string $documentId, string $signerId): array
     {
         return [
-            $this->createRequirement($envelopeId, $documentId, $signerId, 'provide_evidence', 'selfie'),
-            $this->createRequirement($envelopeId, $documentId, $signerId, 'provide_evidence', 'official_document'),
+            $this->createRequirement($envelopeId, $documentId, $signerId, ['action' => 'provide_evidence', 'auth' => 'selfie']),
+            $this->createRequirement($envelopeId, $documentId, $signerId, ['action' => 'provide_evidence', 'auth' => 'official_document']),
         ];
     }
 
-    private function createRequirement(string $envelopeId, string $documentId, string $signerId, string $action, string $auth): array
+    private function createRequirement(string $envelopeId, string $documentId, string $signerId, array $attributes): array
     {
         $result = $this->request('POST', "/api/v3/envelopes/{$envelopeId}/requirements", [
             'data' => [
                 'type' => 'requirements',
-                'attributes' => [
-                    'action' => $action,
-                    'auth' => $auth,
-                ],
+                'attributes' => $attributes,
                 'relationships' => [
                     'document' => ['data' => ['type' => 'documents', 'id' => $documentId]],
                     'signer' => ['data' => ['type' => 'signers', 'id' => $signerId]],
@@ -119,7 +122,7 @@ class ClickSignClient
         ]);
 
         if (empty($result['data']['id'])) {
-            throw new \RuntimeException("Falha ao criar requirement ({$action}/{$auth}) no ClickSign: " . json_encode($result));
+            throw new \RuntimeException('Falha ao criar requirement (' . json_encode($attributes) . ') no ClickSign: ' . json_encode($result));
         }
 
         return $result['data'];
