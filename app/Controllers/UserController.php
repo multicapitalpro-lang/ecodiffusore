@@ -40,6 +40,7 @@ class UserController
             'user' => $user,
             'roles' => $this->creatableRoles($user),
             'managers' => $this->managerOptions($user, null),
+            'supervisors' => $this->supervisorOptions($user),
             'canSetCommission' => $this->canSetCommission($user),
             'editing' => null,
             'errors' => [],
@@ -62,6 +63,7 @@ class UserController
                 'user' => $user,
                 'roles' => $this->creatableRoles($user),
                 'managers' => $this->managerOptions($user, null),
+                'supervisors' => $this->supervisorOptions($user),
                 'canSetCommission' => $this->canSetCommission($user),
                 'editing' => null,
                 'errors' => $errors,
@@ -96,11 +98,18 @@ class UserController
             'licenciado_onboarding_status' => $createdRoleSlug === 'licenciado' ? 'aguardando_perfil' : 'nao_aplicavel',
         ]);
 
-        // Supervisor cadastrando o proprio Licenciado ja assume a supervisao na hora -- evita um
-        // passo manual redundante na tela /painel/licenciados pro caso mais comum. Gerente/Admin
-        // continuam usando aquela tela pra atribuir depois.
-        if ($user['role_slug'] === 'supervisor' && $createdRoleSlug === 'licenciado') {
-            User::setSupervisor($newUserId, (int) $user['id']);
+        if ($createdRoleSlug === 'licenciado') {
+            // Supervisor cadastrando o proprio Licenciado ja assume a supervisao na hora -- evita
+            // um passo manual redundante. Admin/Gerente podem escolher o supervisor direto no
+            // formulario agora, em vez de precisar ir na tela /painel/licenciados depois.
+            if ($user['role_slug'] === 'supervisor') {
+                User::setSupervisor($newUserId, (int) $user['id']);
+            } else {
+                $supervisorId = $this->resolveSupervisorId($user, $_POST);
+                if ($supervisorId !== null) {
+                    User::setSupervisor($newUserId, $supervisorId);
+                }
+            }
         }
 
         Router::redirect('/painel/usuarios?sucesso=1');
@@ -123,6 +132,7 @@ class UserController
             'user' => $user,
             'roles' => $this->creatableRoles($user),
             'managers' => $this->managerOptions($user, $id),
+            'supervisors' => $this->supervisorOptions($user),
             'canSetCommission' => $this->canSetCommission($user),
             'editing' => $editing,
             'errors' => [],
@@ -153,6 +163,7 @@ class UserController
                 'user' => $user,
                 'roles' => $this->creatableRoles($user),
                 'managers' => $this->managerOptions($user, $id),
+                'supervisors' => $this->supervisorOptions($user),
                 'canSetCommission' => $this->canSetCommission($user),
                 'editing' => array_merge(['id' => $id], $_POST),
                 'errors' => $errors,
@@ -181,6 +192,14 @@ class UserController
         $this->logIfChanged($before, 'commission_pct', $commissionPct, $id);
         $this->logIfChanged($before, 'discount_limit_pct', $discountLimitPct, $id);
         $this->logIfChanged($before, 'manager_id', $managerId, $id);
+
+        if ($before['role_slug'] === 'licenciado' && in_array($user['role_slug'], Roles::SUPERVISOR_ASSIGNMENT, true)) {
+            $supervisorId = $this->resolveSupervisorId($user, $_POST);
+            if ((string) ($before['supervisor_id'] ?? '') !== (string) $supervisorId) {
+                User::setSupervisor($id, $supervisorId);
+                AuditLog::record((int) $user['id'], 'licenciado_supervisor_alterado', 'user', $id, ['supervisor_id' => $before['supervisor_id'] ?? null], ['supervisor_id' => $supervisorId]);
+            }
+        }
 
         if (!empty($_POST['reset_password'])) {
             $temp = substr(bin2hex(random_bytes(6)), 0, 10);
@@ -234,6 +253,37 @@ class UserController
 
         // gestor: unica opcao e ele mesmo
         return [['id' => $user['id'], 'name' => $user['name'], 'role_slug' => 'gestor']];
+    }
+
+    /**
+     * Supervisores que quem esta logado pode atribuir a um Licenciado (campo separado de
+     * "reporta para" -- supervisor_id nao e manager_id, ver Fase 12). So Admin/Gerente atribuem;
+     * Gerente so pode indicar supervisor da propria equipe (mesma regra de assignSupervisor()).
+     */
+    private function supervisorOptions(array $user): array
+    {
+        if (!in_array($user['role_slug'], Roles::SUPERVISOR_ASSIGNMENT, true)) {
+            return [];
+        }
+
+        $supervisors = User::allByRole('supervisor');
+        if ($user['role_slug'] === 'gerente') {
+            $supervisors = array_values(array_filter($supervisors, fn ($s) => (int) $s['manager_id'] === (int) $user['id']));
+        }
+
+        return $supervisors;
+    }
+
+    private function resolveSupervisorId(array $user, array $input): ?int
+    {
+        if (empty($input['supervisor_id'])) {
+            return null;
+        }
+
+        $allowed = array_map(fn ($s) => (int) $s['id'], $this->supervisorOptions($user));
+        $chosen = (int) $input['supervisor_id'];
+
+        return in_array($chosen, $allowed, true) ? $chosen : null;
     }
 
     /**

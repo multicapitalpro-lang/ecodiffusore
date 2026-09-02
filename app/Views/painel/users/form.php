@@ -37,12 +37,27 @@ $values = $editing ?? ($old ?? []);
     <select id="role_id" name="role_id" required>
         <option value="">Selecione...</option>
         <?php foreach ($roles as $role): ?>
-            <option value="<?= (int) $role['id'] ?>" <?= (int) ($values['role_id'] ?? 0) === (int) $role['id'] ? 'selected' : '' ?>>
+            <option value="<?= (int) $role['id'] ?>" data-slug="<?= View::e($role['slug']) ?>" <?= (int) ($values['role_id'] ?? 0) === (int) $role['id'] ? 'selected' : '' ?>>
                 <?= View::e($role['name']) ?>
             </option>
         <?php endforeach; ?>
     </select>
     <?php if (!empty($errors['role_id'])): ?><p class="field-error"><?= View::e($errors['role_id']) ?></p><?php endif; ?>
+
+    <?php if (!empty($supervisors)): ?>
+        <div id="supervisor-field-wrap" style="display:none;">
+            <label for="supervisor_id">Supervisor responsável</label>
+            <select id="supervisor_id" name="supervisor_id">
+                <option value="">— Nenhum (atribuir depois) —</option>
+                <?php foreach ($supervisors as $s): ?>
+                    <option value="<?= (int) $s['id'] ?>" <?= (int) ($values['supervisor_id'] ?? 0) === (int) $s['id'] ? 'selected' : '' ?>>
+                        <?= View::e($s['name']) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+            <p class="hint-text">Só se aplica a Licenciado — quem cuida dele e ajuda a aumentar as vendas.</p>
+        </div>
+    <?php endif; ?>
 
     <label for="manager_id">Reporta para</label>
     <select id="manager_id" name="manager_id" <?= count($managers) <= 1 ? 'disabled' : '' ?>>
@@ -92,3 +107,18 @@ $values = $editing ?? ($old ?? []);
     <button type="submit" class="btn btn-primary">Salvar</button>
     <a href="/painel/usuarios" class="btn btn-outline">Cancelar</a>
 </form>
+
+<?php if (!empty($supervisors)): ?>
+<script>
+(function () {
+    var roleSelect = document.getElementById('role_id');
+    var wrap = document.getElementById('supervisor-field-wrap');
+    function update() {
+        var opt = roleSelect.options[roleSelect.selectedIndex];
+        wrap.style.display = (opt && opt.dataset.slug === 'licenciado') ? '' : 'none';
+    }
+    roleSelect.addEventListener('change', update);
+    update();
+})();
+</script>
+<?php endif; ?>
