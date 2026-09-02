@@ -36,22 +36,22 @@ $erro = isset($_GET['erro']);
         <p class="section-sub">Um único sistema, compatível com praticamente qualquer motor a diesel — não importa o setor.</p>
         <div class="grid-4">
             <div class="publico-item">
-                <span class="beneficio-icon">🚛</span>
+                <img src="<?= View::asset('/assets/img/publico-caminhoneiros.jpg') ?>" alt="Caminhoneiros autônomos" class="beneficio-icon" loading="lazy">
                 <h3>Caminhoneiros autônomos</h3>
                 <p>Mais economia no bolso de quem vive na estrada.</p>
             </div>
             <div class="publico-item">
-                <span class="beneficio-icon">📦</span>
+                <img src="<?= View::asset('/assets/img/publico-frotas.jpg') ?>" alt="Transportadoras e frotas" class="beneficio-icon" loading="lazy">
                 <h3>Transportadoras e frotas</h3>
                 <p>Redução de custo multiplicada por cada veículo da frota.</p>
             </div>
             <div class="publico-item">
-                <span class="beneficio-icon">🚜</span>
+                <img src="<?= View::asset('/assets/img/publico-agronegocio.jpg') ?>" alt="Agronegócio" class="beneficio-icon" loading="lazy">
                 <h3>Agronegócio</h3>
                 <p>Tratores, colheitadeiras e máquinas agrícolas a diesel.</p>
             </div>
             <div class="publico-item">
-                <span class="beneficio-icon">🏗️</span>
+                <img src="<?= View::asset('/assets/img/publico-linha-amarela.jpg') ?>" alt="Máquinas de linha amarela" class="beneficio-icon" loading="lazy">
                 <h3>Máquinas de linha amarela</h3>
                 <p>Escavadeiras, retroescavadeiras, motoniveladoras e tratores de esteira.</p>
             </div>
