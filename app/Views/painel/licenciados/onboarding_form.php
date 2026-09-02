@@ -31,33 +31,43 @@ $values = $old ?? [];
         <input type="text" id="razao_social" name="razao_social" value="<?= View::e($values['razao_social'] ?? '') ?>" required>
         <?php if (!empty($errors['razao_social'])): ?><p class="field-error"><?= View::e($errors['razao_social']) ?></p><?php endif; ?>
 
-        <label for="cnpj">CNPJ</label>
-        <input type="text" id="cnpj" name="cnpj" value="<?= View::e($values['cnpj'] ?? '') ?>" placeholder="00.000.000/0000-00" required>
-        <?php if (!empty($errors['cnpj'])): ?><p class="field-error"><?= View::e($errors['cnpj']) ?></p><?php endif; ?>
-
-        <label for="endereco_cep">CEP</label>
-        <input type="text" id="endereco_cep" name="endereco_cep" value="<?= View::e($values['endereco_cep'] ?? '') ?>" placeholder="00000-000" required>
-        <?php if (!empty($errors['endereco_cep'])): ?><p class="field-error"><?= View::e($errors['endereco_cep']) ?></p><?php endif; ?>
-
-        <label for="endereco_logradouro">Logradouro (rua/avenida)</label>
-        <input type="text" id="endereco_logradouro" name="endereco_logradouro" value="<?= View::e($values['endereco_logradouro'] ?? '') ?>" required>
-        <?php if (!empty($errors['endereco_logradouro'])): ?><p class="field-error"><?= View::e($errors['endereco_logradouro']) ?></p><?php endif; ?>
+        <div class="form-grid-2">
+            <div>
+                <label for="cnpj">CNPJ</label>
+                <input type="text" id="cnpj" name="cnpj" value="<?= View::e($values['cnpj'] ?? '') ?>" placeholder="00.000.000/0000-00" required>
+                <?php if (!empty($errors['cnpj'])): ?><p class="field-error"><?= View::e($errors['cnpj']) ?></p><?php endif; ?>
+            </div>
+            <div>
+                <label for="endereco_cep">CEP</label>
+                <input type="text" id="endereco_cep" name="endereco_cep" value="<?= View::e($values['endereco_cep'] ?? '') ?>" placeholder="00000-000" required>
+                <?php if (!empty($errors['endereco_cep'])): ?><p class="field-error"><?= View::e($errors['endereco_cep']) ?></p><?php endif; ?>
+            </div>
+        </div>
 
         <div class="form-grid-2">
+            <div>
+                <label for="endereco_logradouro">Logradouro (rua/avenida)</label>
+                <input type="text" id="endereco_logradouro" name="endereco_logradouro" value="<?= View::e($values['endereco_logradouro'] ?? '') ?>" required>
+                <?php if (!empty($errors['endereco_logradouro'])): ?><p class="field-error"><?= View::e($errors['endereco_logradouro']) ?></p><?php endif; ?>
+            </div>
             <div>
                 <label for="endereco_numero">Número</label>
                 <input type="text" id="endereco_numero" name="endereco_numero" value="<?= View::e($values['endereco_numero'] ?? '') ?>" required>
                 <?php if (!empty($errors['endereco_numero'])): ?><p class="field-error"><?= View::e($errors['endereco_numero']) ?></p><?php endif; ?>
             </div>
+        </div>
+
+        <div class="form-grid-2">
             <div>
                 <label for="endereco_complemento">Complemento (opcional)</label>
                 <input type="text" id="endereco_complemento" name="endereco_complemento" value="<?= View::e($values['endereco_complemento'] ?? '') ?>">
             </div>
+            <div>
+                <label for="endereco_bairro">Bairro</label>
+                <input type="text" id="endereco_bairro" name="endereco_bairro" value="<?= View::e($values['endereco_bairro'] ?? '') ?>" required>
+                <?php if (!empty($errors['endereco_bairro'])): ?><p class="field-error"><?= View::e($errors['endereco_bairro']) ?></p><?php endif; ?>
+            </div>
         </div>
-
-        <label for="endereco_bairro">Bairro</label>
-        <input type="text" id="endereco_bairro" name="endereco_bairro" value="<?= View::e($values['endereco_bairro'] ?? '') ?>" required>
-        <?php if (!empty($errors['endereco_bairro'])): ?><p class="field-error"><?= View::e($errors['endereco_bairro']) ?></p><?php endif; ?>
 
         <div class="form-grid-2">
             <div>
@@ -72,26 +82,36 @@ $values = $old ?? [];
             </div>
         </div>
 
-        <label for="cpf_representante">Seu CPF (representante)</label>
-        <input type="text" id="cpf_representante" name="cpf_representante" value="<?= View::e($values['cpf_representante'] ?? '') ?>" placeholder="000.000.000-00" required>
-        <?php if (!empty($errors['cpf_representante'])): ?><p class="field-error"><?= View::e($errors['cpf_representante']) ?></p><?php endif; ?>
+        <div class="form-grid-2">
+            <div>
+                <label for="cpf_representante">Seu CPF (representante)</label>
+                <input type="text" id="cpf_representante" name="cpf_representante" value="<?= View::e($values['cpf_representante'] ?? '') ?>" placeholder="000.000.000-00" required>
+                <?php if (!empty($errors['cpf_representante'])): ?><p class="field-error"><?= View::e($errors['cpf_representante']) ?></p><?php endif; ?>
+            </div>
+            <div>
+                <label for="rg_representante">Seu RG (representante)</label>
+                <input type="text" id="rg_representante" name="rg_representante" value="<?= View::e($values['rg_representante'] ?? '') ?>" required>
+                <?php if (!empty($errors['rg_representante'])): ?><p class="field-error"><?= View::e($errors['rg_representante']) ?></p><?php endif; ?>
+            </div>
+        </div>
 
-        <label for="rg_representante">Seu RG (representante)</label>
-        <input type="text" id="rg_representante" name="rg_representante" value="<?= View::e($values['rg_representante'] ?? '') ?>" required>
-        <?php if (!empty($errors['rg_representante'])): ?><p class="field-error"><?= View::e($errors['rg_representante']) ?></p><?php endif; ?>
-
-        <label for="estado_civil">Estado civil</label>
-        <select id="estado_civil" name="estado_civil" required>
-            <option value="">Selecione...</option>
-            <?php foreach (['Solteiro(a)', 'Casado(a)', 'Divorciado(a)', 'Viúvo(a)', 'União estável'] as $opt): ?>
-                <option value="<?= View::e($opt) ?>" <?= ($values['estado_civil'] ?? '') === $opt ? 'selected' : '' ?>><?= View::e($opt) ?></option>
-            <?php endforeach; ?>
-        </select>
-        <?php if (!empty($errors['estado_civil'])): ?><p class="field-error"><?= View::e($errors['estado_civil']) ?></p><?php endif; ?>
-
-        <label for="profissao">Profissão atual</label>
-        <input type="text" id="profissao" name="profissao" value="<?= View::e($values['profissao'] ?? '') ?>" required>
-        <?php if (!empty($errors['profissao'])): ?><p class="field-error"><?= View::e($errors['profissao']) ?></p><?php endif; ?>
+        <div class="form-grid-2">
+            <div>
+                <label for="estado_civil">Estado civil</label>
+                <select id="estado_civil" name="estado_civil" required>
+                    <option value="">Selecione...</option>
+                    <?php foreach (['Solteiro(a)', 'Casado(a)', 'Divorciado(a)', 'Viúvo(a)', 'União estável'] as $opt): ?>
+                        <option value="<?= View::e($opt) ?>" <?= ($values['estado_civil'] ?? '') === $opt ? 'selected' : '' ?>><?= View::e($opt) ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <?php if (!empty($errors['estado_civil'])): ?><p class="field-error"><?= View::e($errors['estado_civil']) ?></p><?php endif; ?>
+            </div>
+            <div>
+                <label for="profissao">Profissão atual</label>
+                <input type="text" id="profissao" name="profissao" value="<?= View::e($values['profissao'] ?? '') ?>" required>
+                <?php if (!empty($errors['profissao'])): ?><p class="field-error"><?= View::e($errors['profissao']) ?></p><?php endif; ?>
+            </div>
+        </div>
 
         <div class="form-grid-2">
             <div>
