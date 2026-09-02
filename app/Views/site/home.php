@@ -98,7 +98,7 @@ $erro = isset($_GET['erro']);
         <p class="section-sub">Redução real de custos operacionais, aumento da lucratividade, tecnologia para economia de combustível e redução de emissão de poluentes.</p>
         <div class="grid-4">
             <div class="beneficio-item">
-                <span class="beneficio-icon">⛽</span>
+                <img src="<?= View::asset('/assets/img/beneficio-economia.jpg') ?>" alt="Economia de Combustível" class="beneficio-icon" loading="lazy">
                 <h3>Economia de Combustível</h3>
                 <p>De 5% (mínimo garantido) a 20% (potencial máximo) de redução no consumo de diesel — 10% é a média real.</p>
             </div>
@@ -108,12 +108,12 @@ $erro = isset($_GET['erro']);
                 <p>Otimiza a queima na câmara de combustão e reduz o "delay" do acelerador.</p>
             </div>
             <div class="beneficio-item">
-                <span class="beneficio-icon">🌱</span>
+                <img src="<?= View::asset('/assets/img/beneficio-emissoes.jpg') ?>" alt="Menos Emissões" class="beneficio-icon" loading="lazy">
                 <h3>Menos Emissões</h3>
                 <p>Otimiza a mistura ar/combustível, reduzindo poluentes — abre caminho para selo ESG.</p>
             </div>
             <div class="beneficio-item">
-                <span class="beneficio-icon">🔧</span>
+                <img src="<?= View::asset('/assets/img/beneficio-instalacao.jpg') ?>" alt="Instalação Simples" class="beneficio-icon" loading="lazy">
                 <h3>Instalação Simples</h3>
                 <p>Rápida e prática, compatível com a grande maioria dos caminhões a diesel.</p>
             </div>

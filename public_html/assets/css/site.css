@@ -131,7 +131,8 @@ a { color: inherit; text-decoration: none; }
 .beneficios { padding: 70px 0; text-align: center; }
 .section-sub { color: var(--gray-text); max-width: 640px; margin: 0 auto 34px; }
 .beneficio-item { padding: 10px; }
-.beneficio-icon { width: 92px; height: 92px; border-radius: 50%; object-fit: cover; display: block; margin: 0 auto; box-shadow: 0 6px 18px rgba(13,27,61,.18); }
+img.beneficio-icon { width: 92px; height: 92px; border-radius: 50%; object-fit: cover; display: block; margin: 0 auto; box-shadow: 0 6px 18px rgba(13,27,61,.18); }
+span.beneficio-icon { font-size: 2.1rem; }
 .beneficio-item h3 { font-size: 1.05rem; margin: 10px 0 6px; }
 .beneficio-item p { color: var(--gray-text); font-size: .92rem; }
 
