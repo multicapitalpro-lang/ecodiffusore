@@ -302,10 +302,15 @@ class User
     public static function completeOnboardingProfile(int $id, array $data): void
     {
         $stmt = Database::connection()->prepare(
-            'UPDATE users SET razao_social = :razao_social, cnpj = :cnpj, endereco_empresa = :endereco_empresa,
+            'UPDATE users SET razao_social = :razao_social, cnpj = :cnpj,
+                endereco_cep = :endereco_cep, endereco_logradouro = :endereco_logradouro,
+                endereco_numero = :endereco_numero, endereco_complemento = :endereco_complemento,
+                endereco_bairro = :endereco_bairro, endereco_cidade = :endereco_cidade, endereco_uf = :endereco_uf,
                 cpf_representante = :cpf_representante, rg_representante = :rg_representante,
                 estado_civil = :estado_civil, profissao = :profissao,
+                celular = :celular, telefone_fixo = :telefone_fixo,
                 comprovante_residencia_path = :comprovante_residencia_path,
+                licenciado_rejection_reason = NULL,
                 licenciado_onboarding_status = \'aguardando_assinatura\'
              WHERE id = :id'
         );
@@ -313,11 +318,19 @@ class User
             'id' => $id,
             'razao_social' => $data['razao_social'],
             'cnpj' => $data['cnpj'],
-            'endereco_empresa' => $data['endereco_empresa'],
+            'endereco_cep' => $data['endereco_cep'],
+            'endereco_logradouro' => $data['endereco_logradouro'],
+            'endereco_numero' => $data['endereco_numero'],
+            'endereco_complemento' => $data['endereco_complemento'] ?: null,
+            'endereco_bairro' => $data['endereco_bairro'],
+            'endereco_cidade' => $data['endereco_cidade'],
+            'endereco_uf' => $data['endereco_uf'],
             'cpf_representante' => $data['cpf_representante'],
             'rg_representante' => $data['rg_representante'],
             'estado_civil' => $data['estado_civil'],
             'profissao' => $data['profissao'],
+            'celular' => $data['celular'],
+            'telefone_fixo' => $data['telefone_fixo'] ?: null,
             'comprovante_residencia_path' => $data['comprovante_residencia_path'],
         ]);
     }
@@ -326,5 +339,49 @@ class User
     {
         $stmt = Database::connection()->prepare('UPDATE users SET licenciado_onboarding_status = :status WHERE id = :id');
         $stmt->execute(['status' => $status, 'id' => $id]);
+    }
+
+    /** Manda o Licenciado de volta pro formulario de perfil com o motivo da reprovacao visivel. */
+    public static function rejectOnboarding(int $id, string $reason): void
+    {
+        $stmt = Database::connection()->prepare(
+            "UPDATE users SET licenciado_onboarding_status = 'aguardando_perfil', licenciado_rejection_reason = :reason WHERE id = :id"
+        );
+        $stmt->execute(['reason' => $reason, 'id' => $id]);
+    }
+
+    /** Licenciados com cadastro assinado esperando aprovacao manual de Admin/Gerente. */
+    public static function pendingApproval(array $viewer): array
+    {
+        if ($viewer['role_slug'] === 'admin') {
+            $stmt = Database::connection()->query(
+                "SELECT u.* FROM users u WHERE u.licenciado_onboarding_status = 'aguardando_aprovacao' ORDER BY u.updated_at ASC"
+            );
+            return $stmt->fetchAll();
+        }
+
+        if ($viewer['role_slug'] === 'gerente') {
+            $national = self::nationalIds((int) $viewer['id']);
+            if (!$national) {
+                return [];
+            }
+            $placeholders = implode(',', array_fill(0, count($national), '?'));
+            $stmt = Database::connection()->prepare(
+                "SELECT u.* FROM users u WHERE u.licenciado_onboarding_status = 'aguardando_aprovacao'
+                 AND u.supervisor_id IN ({$placeholders}) ORDER BY u.updated_at ASC"
+            );
+            $stmt->execute($national);
+            return $stmt->fetchAll();
+        }
+
+        return [];
+    }
+
+    public static function pendingApprovalCount(array $viewer): int
+    {
+        if (!in_array($viewer['role_slug'], ['admin', 'gerente'], true)) {
+            return 0;
+        }
+        return count(self::pendingApproval($viewer));
     }
 }

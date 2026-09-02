@@ -5,6 +5,7 @@ $temp = $_GET['temp'] ?? null;
 $onboardingLabels = [
     'aguardando_perfil' => ['Aguardando perfil', 'novo'],
     'aguardando_assinatura' => ['Aguardando assinatura', 'novo'],
+    'aguardando_aprovacao' => ['Aguardando aprovação', 'novo'],
     'ativo' => ['Contrato assinado', 'active'],
     'assinatura_recusada' => ['Assinatura recusada', 'inactive'],
     'kyc_recusado' => ['KYC recusado', 'inactive'],

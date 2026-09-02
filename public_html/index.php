@@ -89,6 +89,11 @@ $router->post('/painel/licenciados/aguardando-assinatura/verificar', [App\Contro
 $router->get('/painel/licenciados/comprovante/{id}', [App\Controllers\LicenciadoOnboardingController::class, 'downloadComprovante']);
 $router->get('/painel/licenciados/contrato/{id}', [App\Controllers\LicenciadoOnboardingController::class, 'downloadContract']);
 
+// Aprovacao manual de cadastro (Admin/Gerente), depois do ClickSign confirmar a assinatura
+$router->get('/painel/licenciados/aprovacoes', [App\Controllers\LicenciadoApprovalController::class, 'index']);
+$router->post('/painel/licenciados/{id}/aprovar', [App\Controllers\LicenciadoApprovalController::class, 'approve']);
+$router->post('/painel/licenciados/{id}/reprovar', [App\Controllers\LicenciadoApprovalController::class, 'reject']);
+
 $router->get('/painel/leads', [App\Controllers\LeadController::class, 'index']);
 $router->post('/painel/leads/{id}/status', [App\Controllers\LeadController::class, 'updateStatus']);
 $router->post('/painel/leads/{id}/atribuir', [App\Controllers\LeadController::class, 'assign']);

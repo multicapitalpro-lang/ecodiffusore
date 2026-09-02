@@ -27,7 +27,8 @@ class LicenciadoOnboardingController
         View::render('painel/licenciados/onboarding_form', [
             'user' => $user,
             'errors' => [],
-            'old' => [],
+            'old' => $user,
+            'rejectionReason' => $user['licenciado_rejection_reason'] ?? null,
         ], null);
     }
 
@@ -47,11 +48,19 @@ class LicenciadoOnboardingController
         $data = [
             'razao_social' => trim($_POST['razao_social'] ?? ''),
             'cnpj' => preg_replace('/\D/', '', $_POST['cnpj'] ?? ''),
-            'endereco_empresa' => trim($_POST['endereco_empresa'] ?? ''),
+            'endereco_cep' => preg_replace('/\D/', '', $_POST['endereco_cep'] ?? ''),
+            'endereco_logradouro' => trim($_POST['endereco_logradouro'] ?? ''),
+            'endereco_numero' => trim($_POST['endereco_numero'] ?? ''),
+            'endereco_complemento' => trim($_POST['endereco_complemento'] ?? ''),
+            'endereco_bairro' => trim($_POST['endereco_bairro'] ?? ''),
+            'endereco_cidade' => trim($_POST['endereco_cidade'] ?? ''),
+            'endereco_uf' => strtoupper(trim($_POST['endereco_uf'] ?? '')),
             'cpf_representante' => preg_replace('/\D/', '', $_POST['cpf_representante'] ?? ''),
             'rg_representante' => trim($_POST['rg_representante'] ?? ''),
             'estado_civil' => trim($_POST['estado_civil'] ?? ''),
             'profissao' => trim($_POST['profissao'] ?? ''),
+            'celular' => preg_replace('/\D/', '', $_POST['celular'] ?? ''),
+            'telefone_fixo' => preg_replace('/\D/', '', $_POST['telefone_fixo'] ?? ''),
         ];
 
         $errors = [];
@@ -61,8 +70,23 @@ class LicenciadoOnboardingController
         if (strlen($data['cnpj']) !== 14) {
             $errors['cnpj'] = 'CNPJ inválido (14 dígitos).';
         }
-        if ($data['endereco_empresa'] === '') {
-            $errors['endereco_empresa'] = 'Informe o endereço completo com CEP.';
+        if (strlen($data['endereco_cep']) !== 8) {
+            $errors['endereco_cep'] = 'CEP inválido (8 dígitos).';
+        }
+        if ($data['endereco_logradouro'] === '') {
+            $errors['endereco_logradouro'] = 'Informe o logradouro.';
+        }
+        if ($data['endereco_numero'] === '') {
+            $errors['endereco_numero'] = 'Informe o número.';
+        }
+        if ($data['endereco_bairro'] === '') {
+            $errors['endereco_bairro'] = 'Informe o bairro.';
+        }
+        if ($data['endereco_cidade'] === '') {
+            $errors['endereco_cidade'] = 'Informe a cidade.';
+        }
+        if (strlen($data['endereco_uf']) !== 2) {
+            $errors['endereco_uf'] = 'Informe a UF (2 letras).';
         }
         if (strlen($data['cpf_representante']) !== 11) {
             $errors['cpf_representante'] = 'CPF inválido (11 dígitos).';
@@ -75,6 +99,12 @@ class LicenciadoOnboardingController
         }
         if ($data['profissao'] === '') {
             $errors['profissao'] = 'Informe a profissão.';
+        }
+        if (strlen($data['celular']) < 10 || strlen($data['celular']) > 11) {
+            $errors['celular'] = 'Celular inválido (com DDD).';
+        }
+        if ($data['telefone_fixo'] !== '' && (strlen($data['telefone_fixo']) < 10 || strlen($data['telefone_fixo']) > 11)) {
+            $errors['telefone_fixo'] = 'Telefone fixo inválido (com DDD).';
         }
 
         $uploadedFile = null;
@@ -190,11 +220,16 @@ class LicenciadoOnboardingController
 
                 if (in_array($remoteStatus, ['closed', 'auto_closed'], true) && $envelope['status'] !== 'closed') {
                     LicenciadoEnvelope::updateStatus((int) $envelope['id'], 'closed');
-                    User::setOnboardingStatus((int) $user['id'], 'ativo');
+                    User::setOnboardingStatus((int) $user['id'], 'aguardando_aprovacao');
                 }
             } catch (\Throwable $e) {
                 // Sem sorte agora -- o usuario ve o mesmo status de antes e pode tentar de novo.
             }
+        }
+
+        $fresh = User::find((int) $user['id']);
+        if ($fresh['licenciado_onboarding_status'] === 'ativo') {
+            Router::redirect('/painel');
         }
 
         Router::redirect('/painel/licenciados/aguardando-assinatura');

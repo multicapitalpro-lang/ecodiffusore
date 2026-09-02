@@ -22,7 +22,7 @@ class ContractTemplateFiller
 
         $processor->setValue('RAZAO_SOCIAL_LICENCIADO', $user['razao_social']);
         $processor->setValue('CNPJ_LICENCIADO', self::formatCnpj($user['cnpj']));
-        $processor->setValue('ENDERECO_LICENCIADO', $user['endereco_empresa']);
+        $processor->setValue('ENDERECO_LICENCIADO', self::formatEndereco($user));
         $processor->setValue('NOME_REPRESENTANTE_LICENCIADO', $user['name']);
         $processor->setValue('CPF_REPRESENTANTE_LICENCIADO', self::formatCpf($user['cpf_representante']));
         $processor->setValue('RG_REPRESENTANTE_LICENCIADO', $user['rg_representante']);
@@ -67,5 +67,28 @@ class ContractTemplateFiller
     private static function formatCommission(?string $pct): string
     {
         return $pct !== null && $pct !== '' ? number_format((float) $pct, 2, ',', '.') . '%' : 'A definir';
+    }
+
+    public static function formatEndereco(array $user): string
+    {
+        $partes = [];
+        $partes[] = trim($user['endereco_logradouro'] . ', ' . $user['endereco_numero']);
+        if (!empty($user['endereco_complemento'])) {
+            $partes[] = $user['endereco_complemento'];
+        }
+        $partes[] = $user['endereco_bairro'];
+        $partes[] = $user['endereco_cidade'] . '/' . $user['endereco_uf'];
+        $partes[] = 'CEP ' . self::formatCep($user['endereco_cep']);
+
+        return implode(', ', array_filter($partes, fn ($p) => trim((string) $p) !== ''));
+    }
+
+    public static function formatCep(string $digits): string
+    {
+        $digits = preg_replace('/\D/', '', $digits);
+        if (strlen($digits) !== 8) {
+            return $digits;
+        }
+        return substr($digits, 0, 5) . '-' . substr($digits, 5, 3);
     }
 }

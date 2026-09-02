@@ -80,6 +80,10 @@ a { text-decoration: none; color: inherit; }
 .nav-icon { width: 17px; height: 17px; flex-shrink: 0; color: #9aa4c4; }
 .painel-sidebar nav > a.is-active .nav-icon, .painel-sidebar nav > a:hover .nav-icon { color: currentColor; }
 
+.nav-badge {
+    margin-left: auto; background: #e64545; color: #fff; font-size: .72rem; font-weight: 800;
+    border-radius: 20px; padding: 1px 8px; min-width: 18px; text-align: center; line-height: 1.5;
+}
 .nav-group summary { justify-content: space-between; }
 .nav-group summary::marker, .nav-group summary::-webkit-details-marker { display: none; content: ''; }
 .nav-group summary .nav-icon { margin-right: -6px; }

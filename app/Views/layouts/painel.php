@@ -36,6 +36,7 @@ $managerRoles = Roles::MANAGEMENT;
 $staffRoles = Roles::STAFF;
 $userManagementRoles = Roles::USER_MANAGEMENT;
 $supervisorAssignmentRoles = Roles::SUPERVISOR_ASSIGNMENT;
+$pendingApprovals = in_array($role, Roles::SUPERVISOR_ASSIGNMENT, true) ? \App\Models\User::pendingApprovalCount($user) : 0;
 $vendasOpen = $anyActive(['/painel/leads', '/painel/pedidos', '/painel/orcamentos', '/painel/clientes', '/painel/produtos']);
 $financeiroOpen = $anyActive(['/painel/financeiro']);
 $desempenhoOpen = $anyActive(['/painel/desempenho', '/painel/metas']);
@@ -105,7 +106,11 @@ $desempenhoOpen = $anyActive(['/painel/desempenho', '/painel/metas']);
                 <a href="/painel/usuarios" class="<?= $isActive('/painel/usuarios') ? 'is-active' : '' ?>"><?= $icon('gear') ?> Usuários</a>
             <?php endif; ?>
             <?php if (in_array($role, $supervisorAssignmentRoles, true)): ?>
-                <a href="/painel/licenciados" class="<?= $isActive('/painel/licenciados') ? 'is-active' : '' ?>"><?= $icon('users') ?> Licenciados</a>
+                <a href="/painel/licenciados" class="<?= $isActive('/painel/licenciados') && !$isActive('/painel/licenciados/aprovacoes') ? 'is-active' : '' ?>"><?= $icon('users') ?> Licenciados</a>
+                <a href="/painel/licenciados/aprovacoes" class="<?= $isActive('/painel/licenciados/aprovacoes') ? 'is-active' : '' ?>">
+                    <?= $icon('users') ?> Aprovação de Cadastros
+                    <?php if ($pendingApprovals > 0): ?><span class="nav-badge"><?= (int) $pendingApprovals ?></span><?php endif; ?>
+                </a>
             <?php endif; ?>
             <?php if ($role === 'admin'): ?>
                 <a href="/painel/auditoria" class="<?= $isActive('/painel/auditoria') ? 'is-active' : '' ?>"><?= $icon('chart') ?> Auditoria</a>

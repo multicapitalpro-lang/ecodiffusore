@@ -59,7 +59,9 @@ class ClickSignWebhookController
                 // Nao bloqueia a aprovacao por falha no download do PDF -- pode ser baixado depois.
             }
 
-            User::setOnboardingStatus((int) $envelope['user_id'], 'ativo');
+            // Nao aprova sozinho -- fica esperando Admin/Gerente revisar os dados + documentos na
+            // tela de aprovacao de cadastros antes de liberar o painel completo.
+            User::setOnboardingStatus((int) $envelope['user_id'], 'aguardando_aprovacao');
         } elseif (in_array($event, self::REFUSAL_EVENTS, true)) {
             LicenciadoEnvelope::updateStatus((int) $envelope['id'], 'refused');
             User::setOnboardingStatus((int) $envelope['user_id'], 'assinatura_recusada');

@@ -20,6 +20,10 @@ $values = $old ?? [];
         <p class="form-msg form-msg-erro"><?= View::e($errors['geral']) ?></p>
     <?php endif; ?>
 
+    <?php if (!empty($rejectionReason)): ?>
+        <p class="form-msg form-msg-erro"><strong>Seu cadastro anterior foi reprovado:</strong> <?= View::e($rejectionReason) ?><br>Revise os dados abaixo e reenvie.</p>
+    <?php endif; ?>
+
     <form action="/painel/licenciados/completar-perfil" method="post" class="auth-form" enctype="multipart/form-data">
         <?= Csrf::field() ?>
 
@@ -31,9 +35,42 @@ $values = $old ?? [];
         <input type="text" id="cnpj" name="cnpj" value="<?= View::e($values['cnpj'] ?? '') ?>" placeholder="00.000.000/0000-00" required>
         <?php if (!empty($errors['cnpj'])): ?><p class="field-error"><?= View::e($errors['cnpj']) ?></p><?php endif; ?>
 
-        <label for="endereco_empresa">Endereço completo da empresa (com CEP)</label>
-        <input type="text" id="endereco_empresa" name="endereco_empresa" value="<?= View::e($values['endereco_empresa'] ?? '') ?>" required>
-        <?php if (!empty($errors['endereco_empresa'])): ?><p class="field-error"><?= View::e($errors['endereco_empresa']) ?></p><?php endif; ?>
+        <label for="endereco_cep">CEP</label>
+        <input type="text" id="endereco_cep" name="endereco_cep" value="<?= View::e($values['endereco_cep'] ?? '') ?>" placeholder="00000-000" required>
+        <?php if (!empty($errors['endereco_cep'])): ?><p class="field-error"><?= View::e($errors['endereco_cep']) ?></p><?php endif; ?>
+
+        <label for="endereco_logradouro">Logradouro (rua/avenida)</label>
+        <input type="text" id="endereco_logradouro" name="endereco_logradouro" value="<?= View::e($values['endereco_logradouro'] ?? '') ?>" required>
+        <?php if (!empty($errors['endereco_logradouro'])): ?><p class="field-error"><?= View::e($errors['endereco_logradouro']) ?></p><?php endif; ?>
+
+        <div class="form-grid-2">
+            <div>
+                <label for="endereco_numero">Número</label>
+                <input type="text" id="endereco_numero" name="endereco_numero" value="<?= View::e($values['endereco_numero'] ?? '') ?>" required>
+                <?php if (!empty($errors['endereco_numero'])): ?><p class="field-error"><?= View::e($errors['endereco_numero']) ?></p><?php endif; ?>
+            </div>
+            <div>
+                <label for="endereco_complemento">Complemento (opcional)</label>
+                <input type="text" id="endereco_complemento" name="endereco_complemento" value="<?= View::e($values['endereco_complemento'] ?? '') ?>">
+            </div>
+        </div>
+
+        <label for="endereco_bairro">Bairro</label>
+        <input type="text" id="endereco_bairro" name="endereco_bairro" value="<?= View::e($values['endereco_bairro'] ?? '') ?>" required>
+        <?php if (!empty($errors['endereco_bairro'])): ?><p class="field-error"><?= View::e($errors['endereco_bairro']) ?></p><?php endif; ?>
+
+        <div class="form-grid-2">
+            <div>
+                <label for="endereco_cidade">Cidade</label>
+                <input type="text" id="endereco_cidade" name="endereco_cidade" value="<?= View::e($values['endereco_cidade'] ?? '') ?>" required>
+                <?php if (!empty($errors['endereco_cidade'])): ?><p class="field-error"><?= View::e($errors['endereco_cidade']) ?></p><?php endif; ?>
+            </div>
+            <div>
+                <label for="endereco_uf">UF</label>
+                <input type="text" id="endereco_uf" name="endereco_uf" maxlength="2" style="text-transform:uppercase" value="<?= View::e($values['endereco_uf'] ?? '') ?>" required>
+                <?php if (!empty($errors['endereco_uf'])): ?><p class="field-error"><?= View::e($errors['endereco_uf']) ?></p><?php endif; ?>
+            </div>
+        </div>
 
         <label for="cpf_representante">Seu CPF (representante)</label>
         <input type="text" id="cpf_representante" name="cpf_representante" value="<?= View::e($values['cpf_representante'] ?? '') ?>" placeholder="000.000.000-00" required>
@@ -55,6 +92,19 @@ $values = $old ?? [];
         <label for="profissao">Profissão atual</label>
         <input type="text" id="profissao" name="profissao" value="<?= View::e($values['profissao'] ?? '') ?>" required>
         <?php if (!empty($errors['profissao'])): ?><p class="field-error"><?= View::e($errors['profissao']) ?></p><?php endif; ?>
+
+        <div class="form-grid-2">
+            <div>
+                <label for="celular">Celular (com DDD)</label>
+                <input type="text" id="celular" name="celular" value="<?= View::e($values['celular'] ?? '') ?>" placeholder="(45) 99999-9999" required>
+                <?php if (!empty($errors['celular'])): ?><p class="field-error"><?= View::e($errors['celular']) ?></p><?php endif; ?>
+            </div>
+            <div>
+                <label for="telefone_fixo">Telefone fixo (opcional)</label>
+                <input type="text" id="telefone_fixo" name="telefone_fixo" value="<?= View::e($values['telefone_fixo'] ?? '') ?>" placeholder="(45) 3333-3333">
+                <?php if (!empty($errors['telefone_fixo'])): ?><p class="field-error"><?= View::e($errors['telefone_fixo']) ?></p><?php endif; ?>
+            </div>
+        </div>
 
         <label for="comprovante_residencia">Comprovante de residência (PDF, JPG, PNG ou WEBP)</label>
         <input type="file" id="comprovante_residencia" name="comprovante_residencia" accept=".pdf,.jpg,.jpeg,.png,.webp" required>
