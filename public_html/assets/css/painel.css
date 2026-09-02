@@ -205,12 +205,13 @@ a { text-decoration: none; color: inherit; }
 /* Auth */
 .auth-body { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
 .auth-box { background: #fff; border-radius: 16px; padding: 40px 34px; max-width: 380px; width: 100%; box-shadow: 0 12px 34px rgba(13,27,61,.12); text-align: center; }
+.auth-box-wide { max-width: 640px; }
 .auth-logo { width: 76px; height: 76px; margin: 0 auto 18px; }
 .auth-box h1 { font-size: 1.2rem; font-family: 'Poppins', sans-serif; margin-bottom: 6px; }
 .auth-hint { color: var(--gray-text); font-size: .85rem; margin-bottom: 10px; }
 .auth-form { display: flex; flex-direction: column; gap: 4px; text-align: left; margin-top: 14px; }
 .auth-form label { font-weight: 700; font-size: .82rem; margin-top: 10px; }
-.auth-form input { padding: 12px 14px; border-radius: 8px; border: 1.5px solid var(--border); font-size: .95rem; }
+.auth-form input, .auth-form select { padding: 12px 14px; border-radius: 8px; border: 1.5px solid var(--border); font-size: .95rem; width: 100%; }
 .auth-form button { margin-top: 18px; width: 100%; justify-content: center; }
 .auth-back { display: inline-block; margin-top: 20px; font-size: .85rem; color: var(--gray-text); }
 .auth-links { margin-top: 16px; font-size: .82rem; }

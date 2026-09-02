@@ -31,6 +31,13 @@ class DashboardController
             Router::redirect('/painel/verificar-email');
         }
 
+        if ($user['role_slug'] === 'licenciado' && $user['licenciado_onboarding_status'] === 'aguardando_perfil') {
+            Router::redirect('/painel/licenciados/completar-perfil');
+        }
+        if ($user['role_slug'] === 'licenciado' && in_array($user['licenciado_onboarding_status'], ['aguardando_assinatura', 'assinatura_recusada', 'kyc_recusado'], true)) {
+            Router::redirect('/painel/licenciados/aguardando-assinatura');
+        }
+
         $role = $user['role_slug'];
         $data = ['user' => $user];
 

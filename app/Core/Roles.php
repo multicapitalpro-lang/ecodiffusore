@@ -22,8 +22,9 @@ class Roles
 
     /** Tela de Usuarios (cadastrar subordinado). Separado de MANAGEMENT de proposito: Gerente
      * cadastra Supervisor mas NAO deve ganhar acesso a Caixas/Contas a Pagar, que sao MANAGEMENT
-     * em FinanceController. */
-    public const USER_MANAGEMENT = ['admin', 'gestor', 'licenciado', 'gerente'];
+     * em FinanceController. Fase 18: Supervisor entrou aqui tambem -- pode cadastrar Licenciado
+     * interessado, mesmo sem ganhar acesso a nada de MANAGEMENT. */
+    public const USER_MANAGEMENT = ['admin', 'gestor', 'licenciado', 'gerente', 'supervisor'];
 
     /** Papel nacional de suporte -- fora do split de pool, comissao paga direto pela empresa.
      * Usado pra bloquear escrita em Pedidos/Orcamentos/Leads (eles so visualizam). */

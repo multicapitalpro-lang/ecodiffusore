@@ -50,7 +50,7 @@ $values = $editing ?? ($old ?? []);
         <?php foreach ($managers as $m): ?>
             <option value="<?= (int) $m['id'] ?>" <?= (int) ($values['manager_id'] ?? ($user['role_slug'] !== 'admin' ? $managers[0]['id'] : 0)) === (int) $m['id'] ? 'selected' : '' ?>>
                 <?php
-                $managerRoleLabels = ['gestor' => 'Gestor', 'licenciado' => 'Licenciado', 'gerente' => 'Gerente'];
+                $managerRoleLabels = ['gestor' => 'Gestor', 'licenciado' => 'Licenciado', 'gerente' => 'Gerente', 'supervisor' => 'Supervisor'];
                 ?>
                 <?= View::e($m['name']) ?> (<?= $managerRoleLabels[$m['role_slug']] ?? $m['role_slug'] ?>)
             </option>

@@ -171,8 +171,8 @@ class User
         $emailVerified = array_key_exists('email_verified', $data) ? !empty($data['email_verified']) : true;
 
         $stmt = Database::connection()->prepare(
-            'INSERT INTO users (role_id, manager_id, name, email, whatsapp, city, state, password_hash, status, commission_pct, must_change_password, email_verified_at)
-             VALUES (:role_id, :manager_id, :name, :email, :whatsapp, :city, :state, :password_hash, :status, :commission_pct, :must_change_password, :email_verified_at)'
+            'INSERT INTO users (role_id, manager_id, name, email, whatsapp, city, state, password_hash, status, commission_pct, must_change_password, email_verified_at, licenciado_onboarding_status)
+             VALUES (:role_id, :manager_id, :name, :email, :whatsapp, :city, :state, :password_hash, :status, :commission_pct, :must_change_password, :email_verified_at, :licenciado_onboarding_status)'
         );
         $stmt->execute([
             'role_id' => $data['role_id'],
@@ -187,6 +187,7 @@ class User
             'commission_pct' => $data['commission_pct'] ?? null,
             'must_change_password' => !empty($data['must_change_password']) ? 1 : 0,
             'email_verified_at' => $emailVerified ? date('Y-m-d H:i:s') : null,
+            'licenciado_onboarding_status' => $data['licenciado_onboarding_status'] ?? 'nao_aplicavel',
         ]);
 
         return (int) Database::connection()->lastInsertId();
@@ -290,5 +291,40 @@ class User
     {
         $stmt = Database::connection()->prepare('UPDATE users SET last_login_at = NOW() WHERE id = :id');
         $stmt->execute(['id' => $id]);
+    }
+
+    /**
+     * Salva o perfil completo que o Licenciado preenche no primeiro acesso (pessoa juridica +
+     * representante + comprovante) e avanca o onboarding pra "aguardando_assinatura". Metodo
+     * dedicado (nao reaproveita update()) porque o conjunto de campos e o contexto de quem chama
+     * (o proprio Licenciado, uma vez so) sao bem diferentes do formulario administrativo.
+     */
+    public static function completeOnboardingProfile(int $id, array $data): void
+    {
+        $stmt = Database::connection()->prepare(
+            'UPDATE users SET razao_social = :razao_social, cnpj = :cnpj, endereco_empresa = :endereco_empresa,
+                cpf_representante = :cpf_representante, rg_representante = :rg_representante,
+                estado_civil = :estado_civil, profissao = :profissao,
+                comprovante_residencia_path = :comprovante_residencia_path,
+                licenciado_onboarding_status = \'aguardando_assinatura\'
+             WHERE id = :id'
+        );
+        $stmt->execute([
+            'id' => $id,
+            'razao_social' => $data['razao_social'],
+            'cnpj' => $data['cnpj'],
+            'endereco_empresa' => $data['endereco_empresa'],
+            'cpf_representante' => $data['cpf_representante'],
+            'rg_representante' => $data['rg_representante'],
+            'estado_civil' => $data['estado_civil'],
+            'profissao' => $data['profissao'],
+            'comprovante_residencia_path' => $data['comprovante_residencia_path'],
+        ]);
+    }
+
+    public static function setOnboardingStatus(int $id, string $status): void
+    {
+        $stmt = Database::connection()->prepare('UPDATE users SET licenciado_onboarding_status = :status WHERE id = :id');
+        $stmt->execute(['status' => $status, 'id' => $id]);
     }
 }

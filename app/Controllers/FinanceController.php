@@ -257,7 +257,7 @@ class FinanceController
             exit('Anexo não encontrado.');
         }
 
-        $path = FileUpload::path($attachment['stored_name']);
+        $path = FileUpload::path('financial', $attachment['stored_name']);
         if (!file_exists($path)) {
             http_response_code(404);
             exit('Arquivo não encontrado.');

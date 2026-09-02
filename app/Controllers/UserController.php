@@ -73,7 +73,15 @@ class UserController
         $managerId = $this->resolveManagerId($user, $_POST, null);
         $commissionPct = $this->canSetCommission($user) && !empty($_POST['commission_pct']) ? $_POST['commission_pct'] : null;
 
-        User::create([
+        $createdRoleSlug = null;
+        foreach (Role::all() as $r) {
+            if ((int) $r['id'] === (int) $_POST['role_id']) {
+                $createdRoleSlug = $r['slug'];
+                break;
+            }
+        }
+
+        $newUserId = User::create([
             'role_id' => (int) $_POST['role_id'],
             'manager_id' => $managerId,
             'name' => trim($_POST['name']),
@@ -85,7 +93,15 @@ class UserController
             'status' => $_POST['status'] ?? 'active',
             'commission_pct' => $commissionPct,
             'must_change_password' => true,
+            'licenciado_onboarding_status' => $createdRoleSlug === 'licenciado' ? 'aguardando_perfil' : 'nao_aplicavel',
         ]);
+
+        // Supervisor cadastrando o proprio Licenciado ja assume a supervisao na hora -- evita um
+        // passo manual redundante na tela /painel/licenciados pro caso mais comum. Gerente/Admin
+        // continuam usando aquela tela pra atribuir depois.
+        if ($user['role_slug'] === 'supervisor' && $createdRoleSlug === 'licenciado') {
+            User::setSupervisor($newUserId, (int) $user['id']);
+        }
 
         Router::redirect('/painel/usuarios?sucesso=1');
     }
@@ -187,7 +203,10 @@ class UserController
             return array_values(array_filter($all, fn ($r) => in_array($r['slug'], ['gestor', 'vendedor'], true)));
         }
         if ($user['role_slug'] === 'gerente') {
-            return array_values(array_filter($all, fn ($r) => $r['slug'] === 'supervisor'));
+            return array_values(array_filter($all, fn ($r) => in_array($r['slug'], ['supervisor', 'licenciado'], true)));
+        }
+        if ($user['role_slug'] === 'supervisor') {
+            return array_values(array_filter($all, fn ($r) => $r['slug'] === 'licenciado'));
         }
 
         // gestor: so pode cadastrar vendedor
@@ -208,6 +227,9 @@ class UserController
         }
         if ($user['role_slug'] === 'gerente') {
             return [['id' => $user['id'], 'name' => $user['name'], 'role_slug' => 'gerente']];
+        }
+        if ($user['role_slug'] === 'supervisor') {
+            return [['id' => $user['id'], 'name' => $user['name'], 'role_slug' => 'supervisor']];
         }
 
         // gestor: unica opcao e ele mesmo
@@ -237,7 +259,7 @@ class UserController
             return $current && $current['manager_id'] !== null ? (int) $current['manager_id'] : null;
         }
 
-        if (in_array($user['role_slug'], ['gestor', 'gerente'], true)) {
+        if (in_array($user['role_slug'], ['gestor', 'gerente', 'supervisor'], true)) {
             return (int) $user['id'];
         }
 

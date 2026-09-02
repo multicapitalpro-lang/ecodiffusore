@@ -25,4 +25,11 @@ return [
         'api_key' => 'TROQUE_AQUI',
         'webhook_token' => 'TROQUE_AQUI', // gerado com bin2hex(random_bytes(32)), configurado tambem no Asaas
     ],
+
+    'clicksign' => [
+        'env' => 'production', // 'sandbox' | 'production'
+        'base_url' => 'https://app.clicksign.com', // sandbox: https://sandbox.clicksign.com
+        'api_key' => 'TROQUE_AQUI',
+        'webhook_secret' => 'TROQUE_AQUI', // segredo por-webhook gerado no cadastro do webhook no ClickSign (HMAC-SHA256)
+    ],
 ];

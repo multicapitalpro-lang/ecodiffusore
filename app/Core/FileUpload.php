@@ -14,10 +14,10 @@ class FileUpload
     private const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 
     /**
-     * Move um arquivo enviado (de $_FILES) para storage/uploads/financial, validando tipo e tamanho.
-     * Retorna dados prontos para FinancialAttachment::create() ou null se inválido/vazio.
+     * Move um arquivo enviado (de $_FILES) para storage/uploads/{$subdir}, validando tipo e
+     * tamanho. Retorna dados prontos pra gravar no banco ou null se inválido/vazio.
      */
-    public static function storeFinancialAttachment(array $file): ?array
+    public static function store(array $file, string $subdir): ?array
     {
         if (($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
             return null;
@@ -37,7 +37,7 @@ class FileUpload
             throw new \RuntimeException('Tipo de arquivo não permitido (use PDF, JPG, PNG ou WEBP): ' . $file['name']);
         }
 
-        $dir = BASE_PATH . '/storage/uploads/financial';
+        $dir = BASE_PATH . '/storage/uploads/' . $subdir;
         if (!is_dir($dir)) {
             mkdir($dir, 0750, true);
         }
@@ -56,8 +56,18 @@ class FileUpload
         ];
     }
 
-    public static function path(string $storedName): string
+    public static function storeFinancialAttachment(array $file): ?array
     {
-        return BASE_PATH . '/storage/uploads/financial/' . basename($storedName);
+        return self::store($file, 'financial');
+    }
+
+    public static function storeLicenciadoDocument(array $file): ?array
+    {
+        return self::store($file, 'licenciados');
+    }
+
+    public static function path(string $subdir, string $storedName): string
+    {
+        return BASE_PATH . '/storage/uploads/' . $subdir . '/' . basename($storedName);
     }
 }

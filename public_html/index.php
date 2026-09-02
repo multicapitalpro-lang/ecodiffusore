@@ -81,6 +81,14 @@ $router->post('/painel/usuarios/{id}', [App\Controllers\UserController::class, '
 $router->get('/painel/licenciados', [App\Controllers\UserController::class, 'licenciados']);
 $router->post('/painel/licenciados/{id}/supervisor', [App\Controllers\UserController::class, 'assignSupervisor']);
 
+// Onboarding de Licenciado: perfil completo + assinatura/KYC via ClickSign
+$router->get('/painel/licenciados/completar-perfil', [App\Controllers\LicenciadoOnboardingController::class, 'showProfileForm']);
+$router->post('/painel/licenciados/completar-perfil', [App\Controllers\LicenciadoOnboardingController::class, 'submitProfileForm']);
+$router->get('/painel/licenciados/aguardando-assinatura', [App\Controllers\LicenciadoOnboardingController::class, 'showWaitingPage']);
+$router->post('/painel/licenciados/aguardando-assinatura/verificar', [App\Controllers\LicenciadoOnboardingController::class, 'refreshStatus']);
+$router->get('/painel/licenciados/comprovante/{id}', [App\Controllers\LicenciadoOnboardingController::class, 'downloadComprovante']);
+$router->get('/painel/licenciados/contrato/{id}', [App\Controllers\LicenciadoOnboardingController::class, 'downloadContract']);
+
 $router->get('/painel/leads', [App\Controllers\LeadController::class, 'index']);
 $router->post('/painel/leads/{id}/status', [App\Controllers\LeadController::class, 'updateStatus']);
 $router->post('/painel/leads/{id}/atribuir', [App\Controllers\LeadController::class, 'assign']);
@@ -134,6 +142,9 @@ $router->post('/painel/aprovacoes/{id}/decidir', [App\Controllers\ApprovalContro
 
 // Webhook Asaas (publico)
 $router->post('/webhooks/asaas', [App\Controllers\PaymentController::class, 'webhook']);
+
+// Webhook ClickSign (publico)
+$router->post('/webhooks/clicksign', [App\Controllers\ClickSignWebhookController::class, 'clicksign']);
 
 // Desempenho
 $router->get('/painel/desempenho/vendedores', [App\Controllers\PerformanceController::class, 'sellers']);
