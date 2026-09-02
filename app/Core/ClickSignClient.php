@@ -7,6 +7,12 @@ namespace App\Core;
  * de Licenciado. Sem SDK oficial mantido pra PHP -- chama a API REST direto via cURL, mesmo
  * padrao do App\Core\AsaasClient.
  *
+ * O contrato do Licenciado usa um Modelo cadastrado direto no ClickSign (Automação > Modelos,
+ * "Contrato Assinatura Diferencial") em vez de gerar o .docx no servidor -- createDocumentFromTemplate()
+ * manda so os dados (App\Core\ContractTemplateFiller::buildTemplateData()), o ClickSign faz a
+ * substituicao. uploadDocument() (subir um .docx ja pronto em base64) continua disponivel caso
+ * algum outro documento precise ir sem passar por um Modelo.
+ *
  * Payloads de "requirements" confirmados contra chamadas reais em 2026-09-02 (depois que a conta
  * resolveu a pendencia do "e-mail do usuario da API"): "action" so aceita agree/provide_evidence/
  * rubricate (nao existe "sign"). O requirement de assinatura em si e' action=agree + role=sign
@@ -64,6 +70,34 @@ class ClickSignClient
 
         if (empty($result['data']['id'])) {
             throw new \RuntimeException('Falha ao subir documento no ClickSign: ' . json_encode($result));
+        }
+
+        return $result['data'];
+    }
+
+    /**
+     * Cria o documento a partir de um Modelo ja cadastrado no ClickSign (Automacao > Modelos),
+     * em vez de subir um .docx pronto. $templateData e um mapa "Nome do Campo" => valor, usando
+     * exatamente os nomes dos campos detectados no modelo (confirmado via
+     * GET /templates/{key}/template_fields -- sao os mesmos textos dentro de {{...}} no docx).
+     */
+    public function createDocumentFromTemplate(string $envelopeId, string $templateKey, string $filename, array $templateData): array
+    {
+        $result = $this->request('POST', "/api/v3/envelopes/{$envelopeId}/documents", [
+            'data' => [
+                'type' => 'documents',
+                'attributes' => [
+                    'filename' => $filename,
+                    'template' => [
+                        'key' => $templateKey,
+                        'data' => $templateData,
+                    ],
+                ],
+            ],
+        ]);
+
+        if (empty($result['data']['id'])) {
+            throw new \RuntimeException('Falha ao criar documento por modelo no ClickSign: ' . json_encode($result));
         }
 
         return $result['data'];

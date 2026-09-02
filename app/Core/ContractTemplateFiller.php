@@ -2,46 +2,29 @@
 
 namespace App\Core;
 
-use PhpOffice\PhpWord\TemplateProcessor;
-
 /**
- * Preenche o modelo de contrato do Licenciado (storage/templates/contrato_licenciado.docx --
- * ja normalizado com placeholders ${VAR}) com os dados coletados no onboarding, pronto pra subir
- * pro ClickSign como base64. O ClickSign nao garante substituicao confiavel de variaveis em
- * documento bruto, entao o preenchimento e feito aqui, no servidor.
+ * Monta os dados do contrato do Licenciado no formato que o Modelo cadastrado no ClickSign
+ * (Automação > Modelos, "Contrato Assinatura Diferencial") espera: um mapa "Nome do Campo" =>
+ * valor, usando exatamente os nomes de campo que o ClickSign detectou a partir dos ${{...}}
+ * dentro do .docx que foi cadastrado como modelo lá. Confirmado contra
+ * GET /templates/{key}/template_fields em 2026-09-02.
  */
 class ContractTemplateFiller
 {
-    private const TEMPLATE_PATH = BASE_PATH . '/storage/templates/contrato_licenciado.docx';
-
-    public static function fillLicenciadoContract(array $user): string
+    public static function buildTemplateData(array $user): array
     {
-        require_once BASE_PATH . '/vendor/autoload.php';
-
-        $processor = new TemplateProcessor(self::TEMPLATE_PATH);
-
-        $processor->setValue('RAZAO_SOCIAL_LICENCIADO', $user['razao_social']);
-        $processor->setValue('CNPJ_LICENCIADO', self::formatCnpj($user['cnpj']));
-        $processor->setValue('ENDERECO_LICENCIADO', self::formatEndereco($user));
-        $processor->setValue('NOME_REPRESENTANTE_LICENCIADO', $user['name']);
-        $processor->setValue('CPF_REPRESENTANTE_LICENCIADO', self::formatCpf($user['cpf_representante']));
-        $processor->setValue('RG_REPRESENTANTE_LICENCIADO', $user['rg_representante']);
-        $processor->setValue('DATA_CONTRATO', date('d/m/Y'));
-        $processor->setValue('COMISSAO', self::formatCommission($user['commission_pct'] ?? null));
-        $processor->setValue('BASE_CALCULO', 'Total do pedido pago pelo Cliente Final');
-        $processor->setValue('OBSERVACOES', 'Conforme Contrato, Cláusula Terceira.');
-
-        $tmpPath = tempnam(sys_get_temp_dir(), 'contrato_') . '.docx';
-
-        try {
-            $processor->saveAs($tmpPath);
-            $content = file_get_contents($tmpPath);
-            return base64_encode($content);
-        } finally {
-            if (file_exists($tmpPath)) {
-                unlink($tmpPath);
-            }
-        }
+        return [
+            'Razão Social' => $user['razao_social'],
+            'CNPJ' => self::formatCnpj($user['cnpj']),
+            'Endereço' => self::formatEndereco($user),
+            'Nome do Representante' => $user['name'],
+            'CPF do Representante' => self::formatCpf($user['cpf_representante']),
+            'RG do Representante' => $user['rg_representante'],
+            'Data' => date('d/m/Y'),
+            'Comissão' => self::formatCommission($user['commission_pct'] ?? null),
+            'Base de Cálculo' => 'Total do pedido pago pelo Cliente Final',
+            'Observações' => 'Conforme Contrato, Cláusula Terceira.',
+        ];
     }
 
     public static function formatCnpj(string $digits): string

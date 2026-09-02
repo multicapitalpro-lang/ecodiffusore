@@ -31,5 +31,6 @@ return [
         'base_url' => 'https://app.clicksign.com', // sandbox: https://sandbox.clicksign.com
         'api_key' => 'TROQUE_AQUI',
         'webhook_secret' => 'TROQUE_AQUI', // segredo por-webhook gerado no cadastro do webhook no ClickSign (HMAC-SHA256)
+        'template_key' => 'TROQUE_AQUI', // chave do Modelo "Contrato Assinatura Diferencial" (Automação > Modelos no ClickSign)
     ],
 ];

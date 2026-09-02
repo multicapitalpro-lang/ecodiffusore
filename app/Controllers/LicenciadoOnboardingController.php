@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Core\Auth;
 use App\Core\ClickSignClient;
+use App\Core\Config;
 use App\Core\ContractTemplateFiller;
 use App\Core\Csrf;
 use App\Core\FileUpload;
@@ -151,10 +152,18 @@ class LicenciadoOnboardingController
         $user = User::find($userId);
         $client = new ClickSignClient();
 
-        $contractBase64 = ContractTemplateFiller::fillLicenciadoContract($user);
+        $templateKey = Config::get('clicksign', [])['template_key'] ?? '';
+        if ($templateKey === '') {
+            throw new \RuntimeException('Modelo de contrato do ClickSign não configurado (clicksign.template_key).');
+        }
 
         $envelope = $client->createEnvelope('Contrato Licenciado — ' . $user['razao_social']);
-        $document = $client->uploadDocument($envelope['id'], 'contrato_licenciado.docx', $contractBase64);
+        $document = $client->createDocumentFromTemplate(
+            $envelope['id'],
+            $templateKey,
+            'contrato_licenciado.docx',
+            ContractTemplateFiller::buildTemplateData($user)
+        );
         $signer = $client->addSigner($envelope['id'], [
             'name' => $user['name'],
             'email' => $user['email'],
