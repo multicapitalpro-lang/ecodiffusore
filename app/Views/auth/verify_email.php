@@ -11,7 +11,7 @@ use App\Core\View;
 </head>
 <body class="auth-body">
 <div class="auth-box">
-    <img src="<?= View::asset('/assets/img/logo-mark.svg') ?>" alt="Ecodiffusore Brasil" class="auth-logo">
+    <img src="<?= View::asset('/assets/img/logo-full-navy.png') ?>" alt="Ecodiffusore Brasil" class="auth-logo">
     <h1>Confirme seu cadastro</h1>
     <p class="auth-hint">Enviamos um código de 6 dígitos para o seu e-mail. Digite abaixo para confirmar sua conta.</p>
 

@@ -19,7 +19,7 @@ $showPopup = $showPopup ?? false;
 <body>
 <header class="site-header">
     <div class="site-container site-header-inner">
-        <img src="<?= View::asset('/assets/img/logo-on-dark.svg') ?>" alt="Ecodiffusore Brasil" class="site-logo">
+        <img src="<?= View::asset('/assets/img/logo-full-white.png') ?>" alt="Ecodiffusore Brasil" class="site-logo">
         <nav class="site-nav">
             <a href="#beneficios">Benefícios</a>
             <a href="#depoimentos">Depoimentos</a>
@@ -58,7 +58,7 @@ $showPopup = $showPopup ?? false;
 <footer class="site-footer">
     <div class="site-container site-footer-inner">
         <div>
-            <img src="<?= View::asset('/assets/img/logo-on-dark.svg') ?>" alt="Ecodiffusore Brasil" class="site-footer-logo">
+            <img src="<?= View::asset('/assets/img/logo-full-white.png') ?>" alt="Ecodiffusore Brasil" class="site-footer-logo">
             <p>Rua Goiás, 1530 — Bairro Country, Cascavel/PR</p>
             <p>CNPJ: 57.512.044/0001-18</p>
             <p>(45) 99102-1551</p>

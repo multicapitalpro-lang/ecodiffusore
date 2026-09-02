@@ -12,7 +12,7 @@ $values = $old ?? [];
 </head>
 <body class="auth-body">
 <div class="auth-box auth-box-wide">
-    <img src="<?= View::asset('/assets/img/logo-mark.svg') ?>" alt="Ecodiffusore Brasil" class="auth-logo">
+    <img src="<?= View::asset('/assets/img/logo-full-navy.png') ?>" alt="Ecodiffusore Brasil" class="auth-logo">
     <h1>Complete seu cadastro de Licenciado</h1>
     <p class="auth-hint">Precisamos desses dados pra gerar seu contrato e confirmar sua identidade antes de liberar o painel completo.</p>
 

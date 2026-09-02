@@ -53,7 +53,7 @@ $desempenhoOpen = $anyActive(['/painel/desempenho', '/painel/metas']);
     <div class="painel-overlay" id="painel-overlay"></div>
     <aside class="painel-sidebar" id="painel-sidebar">
         <div class="painel-logo">
-            <img src="<?= View::asset('/assets/img/logo-mark.svg') ?>" alt="Ecodiffusore Brasil">
+            <img src="<?= View::asset('/assets/img/logo-full-white.png') ?>" alt="Ecodiffusore Brasil">
         </div>
         <nav>
             <a href="/painel" class="<?= $isActive('/painel') && $path === '/painel' ? 'is-active' : '' ?>"><?= $icon('home') ?> Início</a>

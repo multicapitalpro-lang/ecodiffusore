@@ -20,7 +20,7 @@ $showWidget = $status === 'aguardando_assinatura' && !empty($envelope['clicksign
 </head>
 <body class="auth-body">
 <div class="auth-box <?= $showWidget ? 'auth-box-wide' : '' ?>">
-    <img src="<?= View::asset('/assets/img/logo-mark.svg') ?>" alt="Ecodiffusore Brasil" class="auth-logo">
+    <img src="<?= View::asset('/assets/img/logo-full-navy.png') ?>" alt="Ecodiffusore Brasil" class="auth-logo">
     <h1><?= View::e($title) ?></h1>
     <p class="auth-hint"><?= View::e($text) ?></p>
 

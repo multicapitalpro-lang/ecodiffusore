@@ -11,7 +11,7 @@ use App\Core\View;
 </head>
 <body class="auth-body">
 <div class="auth-box">
-    <img src="<?= View::asset('/assets/img/logo-mark.svg') ?>" alt="Ecodiffusore Brasil" class="auth-logo">
+    <img src="<?= View::asset('/assets/img/logo-full-navy.png') ?>" alt="Ecodiffusore Brasil" class="auth-logo">
 
     <?php if ($step === 'sent'): ?>
         <h1>Verifique seu e-mail</h1>
