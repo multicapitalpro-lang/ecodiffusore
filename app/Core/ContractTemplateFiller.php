@@ -74,4 +74,18 @@ class ContractTemplateFiller
         }
         return substr($digits, 0, 5) . '-' . substr($digits, 5, 3);
     }
+
+    /** ClickSign exige phone_number em E.164 (ex: +5545991358427) -- nossos campos guardam
+     * "(45) 991358427" (so DDD+numero, sem +55). */
+    public static function formatPhoneE164(string $phone): string
+    {
+        $digits = preg_replace('/\D/', '', $phone);
+        if ($digits === '') {
+            return '';
+        }
+        if (strlen($digits) <= 11) {
+            $digits = '55' . $digits;
+        }
+        return '+' . $digits;
+    }
 }

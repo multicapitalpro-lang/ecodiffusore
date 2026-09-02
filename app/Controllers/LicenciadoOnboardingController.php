@@ -168,7 +168,7 @@ class LicenciadoOnboardingController
             'name' => $user['name'],
             'email' => $user['email'],
             'documentation' => ContractTemplateFiller::formatCpf($user['cpf_representante']),
-            'phone_number' => $user['whatsapp'],
+            'phone_number' => ContractTemplateFiller::formatPhoneE164($user['whatsapp']),
         ]);
         $client->addSignRequirement($envelope['id'], $document['id'], $signer['id']);
         $client->addKycRequirements($envelope['id'], $document['id'], $signer['id']);
