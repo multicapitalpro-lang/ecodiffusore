@@ -158,26 +158,6 @@ $erro = isset($_GET['erro']);
                 <h3>Onde e como é instalado</h3>
                 <p>O Ecodiffusore é acoplado entre o corpo de admissão (TBI) e o filtro de ar do motor. Suas lâminas helicoidais magnetizadas potencializam a sucção de ar para dentro do motor, melhorando a mistura ar/combustível antes da queima na câmara de combustão.</p>
                 <p>O resultado é uma combustão mais completa: menos diesel desperdiçado sem queimar, mais torque disponível e menor liberação de fumaça e poluentes no escapamento.</p>
-                <div class="install-carousel" id="install-carousel">
-                    <div class="install-carousel-track">
-                        <div class="install-slide">
-                            <span class="install-slide-label">Antes</span>
-                            <span style="font-size:2.4rem;">🔧</span>
-                            <span>Foto do local de instalação em breve</span>
-                        </div>
-                        <div class="install-slide">
-                            <span class="install-slide-label">Depois</span>
-                            <span style="font-size:2.4rem;">✅</span>
-                            <span>Foto do produto instalado em breve</span>
-                        </div>
-                    </div>
-                    <button type="button" class="install-carousel-nav prev" aria-label="Anterior">‹</button>
-                    <button type="button" class="install-carousel-nav next" aria-label="Próximo">›</button>
-                    <div class="install-carousel-dots">
-                        <button type="button" class="is-active" data-slide="0" aria-label="Slide 1"></button>
-                        <button type="button" data-slide="1" aria-label="Slide 2"></button>
-                    </div>
-                </div>
             </div>
             <div class="tecnologia-card">
                 <h3>Validação e fabricação</h3>
@@ -190,6 +170,12 @@ $erro = isset($_GET['erro']);
                 <p class="tecnologia-nota">Laudos técnicos e documentação de validação completa estão disponíveis mediante solicitação. Fale com um licenciado para receber o material técnico.</p>
             </div>
         </div>
+        <figure class="install-steps">
+            <a href="<?= View::asset('/assets/img/instalacao-passo-a-passo.jpg') ?>" target="_blank" rel="noopener">
+                <img src="<?= View::asset('/assets/img/instalacao-passo-a-passo.jpg') ?>" alt="Passo a passo da instalação do Ecodiffusore" loading="lazy">
+            </a>
+            <figcaption>Instalação simples, em 8 passos, sem eletrônica — clique na imagem para ampliar.</figcaption>
+        </figure>
     </div>
 </section>
 

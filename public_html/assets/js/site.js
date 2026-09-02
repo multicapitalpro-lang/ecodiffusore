@@ -310,5 +310,4 @@ function initCarousel(carouselId, trackSelector, slideSelector) {
     dots.forEach(function (d, di) { d.addEventListener('click', function () { goTo(di); }); });
 }
 
-initCarousel('install-carousel', '.install-carousel-track', '.install-slide');
 initCarousel('depoimentos-carousel', '.depoimentos-carousel-track', '.depoimento-slide');
