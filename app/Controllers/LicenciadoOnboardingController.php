@@ -174,17 +174,14 @@ class LicenciadoOnboardingController
         $client->addKycRequirements($envelope['id'], $document['id'], $signer['id']);
         $client->activateEnvelope($envelope['id']);
 
-        $activated = $client->getEnvelope($envelope['id']);
-        $signingUrl = $activated['data']['attributes']['widget_signature_url']
-            ?? $activated['data']['attributes']['signing_url']
-            ?? null;
-
+        // A API do ClickSign nao expoe uma "signing_url" pronta (confirmado contra a API real e a
+        // documentacao oficial) -- a assinatura acontece via Widget Embedded, que precisa so do
+        // clicksign_signer_id pra montar o iframe direto na nossa pagina (ver aguardando_assinatura.php).
         LicenciadoEnvelope::create([
             'user_id' => $userId,
             'clicksign_envelope_id' => $envelope['id'],
             'clicksign_document_id' => $document['id'],
             'clicksign_signer_id' => $signer['id'],
-            'signing_url' => $signingUrl,
             'status' => 'running',
         ]);
     }
@@ -209,6 +206,7 @@ class LicenciadoOnboardingController
         View::render('painel/licenciados/aguardando_assinatura', [
             'user' => $user,
             'envelope' => $envelope,
+            'clicksignBaseUrl' => Config::get('clicksign', [])['base_url'] ?? 'https://app.clicksign.com',
         ], null);
     }
 
