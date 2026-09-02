@@ -62,7 +62,7 @@ $showPopup = $showPopup ?? false;
             <p>Rua Goiás, 1530 — Bairro Country, Cascavel/PR</p>
             <p>CNPJ: 57.512.044/0001-18</p>
             <p>(45) 99102-1551</p>
-            <p>contato@ecodiffusorebrasil.com.br</p>
+            <p>comercialecodiffusorebrasil@gmail.com</p>
             <p>Instagram: @ecodiffusorebrasil</p>
         </div>
         <div>

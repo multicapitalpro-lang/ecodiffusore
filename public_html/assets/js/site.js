@@ -5,7 +5,6 @@
     var CONSUMO_KM_L = 2.8;
 
     var precoLitroInput = document.getElementById('calc-preco-litro');
-    var gastoMensalInput = document.getElementById('calc-gasto-mensal');
 
     var fmt = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -21,11 +20,8 @@
         var km = parseInt(kmInput.value, 10);
         kmLabel.textContent = km.toLocaleString('pt-BR') + ' km/mês';
 
-        // Se o caminhoneiro informou o gasto mensal direto, usa esse valor (mais preciso).
-        // Senao, estima pelo km rodado x preco do diesel na regiao dele.
-        var gastoDireto = parseFloat(gastoMensalInput.value);
         var precoLitro = parseFloat(precoLitroInput.value) || 6.10;
-        var gastoMensal = gastoDireto > 0 ? gastoDireto : (km / CONSUMO_KM_L) * precoLitro;
+        var gastoMensal = (km / CONSUMO_KM_L) * precoLitro;
 
         Object.keys(fields).forEach(function (key) {
             var f = fields[key];
@@ -42,7 +38,6 @@
 
     kmInput.addEventListener('input', update);
     precoLitroInput.addEventListener('input', update);
-    gastoMensalInput.addEventListener('input', update);
     update();
 })();
 

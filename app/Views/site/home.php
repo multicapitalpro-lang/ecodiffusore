@@ -190,12 +190,11 @@ $erro = isset($_GET['erro']);
                     <input type="range" id="calc-km" min="5000" max="30000" step="1000" value="12000">
                 </div>
                 <div class="calc-input-group">
-                    <label for="calc-preco-litro">Preço do diesel na sua região (R$/litro)</label>
-                    <input type="number" id="calc-preco-litro" min="1" step="0.01" value="6.10">
-                </div>
-                <div class="calc-input-group calc-input-group-full">
-                    <label for="calc-gasto-mensal">Ou, se preferir, informe direto quanto você gasta com diesel por mês (R$) — opcional, mais preciso</label>
-                    <input type="number" id="calc-gasto-mensal" min="0" step="50" placeholder="Ex: 35000">
+                    <label for="calc-preco-litro">Preço do diesel na sua região (por litro)</label>
+                    <div class="calc-input-currency">
+                        <span>R$</span>
+                        <input type="number" id="calc-preco-litro" min="1" step="0.01" value="6.10">
+                    </div>
                 </div>
             </div>
             <div class="calc-results">
