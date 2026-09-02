@@ -25,7 +25,7 @@ $showWidget = $status === 'aguardando_assinatura' && !empty($envelope['clicksign
     <p class="auth-hint"><?= View::e($text) ?></p>
 
     <?php if ($showWidget): ?>
-        <div id="clicksign-widget-container" style="width:100%;height:600px;border-radius:12px;overflow:hidden;margin-top:10px;"></div>
+        <div id="clicksign-widget-container" style="width:100%;height:85vh;min-height:700px;border-radius:12px;overflow:hidden;margin-top:10px;"></div>
         <script src="https://cdn-public-library.clicksign.com/embedded/embedded.min-2.1.0.js"></script>
         <script>
         (function () {
