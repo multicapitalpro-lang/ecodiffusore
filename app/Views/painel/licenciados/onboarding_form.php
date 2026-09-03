@@ -130,6 +130,18 @@ $values = $old ?? [];
         <input type="file" id="comprovante_residencia" name="comprovante_residencia" accept=".pdf,.jpg,.jpeg,.png,.webp" required>
         <?php if (!empty($errors['comprovante_residencia'])): ?><p class="field-error"><?= View::e($errors['comprovante_residencia']) ?></p><?php endif; ?>
 
+        <label for="documento_identidade">Documento de identidade — RG e CPF, ou CNH (PDF, JPG, PNG ou WEBP)</label>
+        <input type="file" id="documento_identidade" name="documento_identidade" accept=".pdf,.jpg,.jpeg,.png,.webp" required>
+        <?php if (!empty($errors['documento_identidade'])): ?><p class="field-error"><?= View::e($errors['documento_identidade']) ?></p><?php endif; ?>
+
+        <label for="contrato_social">Contrato social da empresa (PDF, JPG, PNG ou WEBP)</label>
+        <input type="file" id="contrato_social" name="contrato_social" accept=".pdf,.jpg,.jpeg,.png,.webp" required>
+        <?php if (!empty($errors['contrato_social'])): ?><p class="field-error"><?= View::e($errors['contrato_social']) ?></p><?php endif; ?>
+
+        <label for="cartao_cnpj">Cartão CNPJ (PDF, JPG, PNG ou WEBP)</label>
+        <input type="file" id="cartao_cnpj" name="cartao_cnpj" accept=".pdf,.jpg,.jpeg,.png,.webp" required>
+        <?php if (!empty($errors['cartao_cnpj'])): ?><p class="field-error"><?= View::e($errors['cartao_cnpj']) ?></p><?php endif; ?>
+
         <button type="submit" class="btn btn-primary">Continuar pra assinatura do contrato</button>
     </form>
 

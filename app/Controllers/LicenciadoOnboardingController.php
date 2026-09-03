@@ -108,14 +108,23 @@ class LicenciadoOnboardingController
             $errors['telefone_fixo'] = 'Telefone fixo inválido (com DDD).';
         }
 
-        $uploadedFile = null;
-        try {
-            $uploadedFile = FileUpload::storeLicenciadoDocument($_FILES['comprovante_residencia'] ?? []);
-        } catch (\RuntimeException $e) {
-            $errors['comprovante_residencia'] = $e->getMessage();
-        }
-        if (!$uploadedFile && !isset($errors['comprovante_residencia'])) {
-            $errors['comprovante_residencia'] = 'Envie o comprovante de residência (PDF, JPG, PNG ou WEBP).';
+        $documentFields = [
+            'comprovante_residencia' => 'Envie o comprovante de residência (PDF, JPG, PNG ou WEBP).',
+            'documento_identidade' => 'Envie seu documento de identidade — RG e CPF, ou CNH (PDF, JPG, PNG ou WEBP).',
+            'contrato_social' => 'Envie o contrato social da empresa (PDF, JPG, PNG ou WEBP).',
+            'cartao_cnpj' => 'Envie o cartão CNPJ (PDF, JPG, PNG ou WEBP).',
+        ];
+        $uploadedFiles = [];
+        foreach ($documentFields as $field => $requiredMessage) {
+            try {
+                $uploadedFiles[$field] = FileUpload::storeLicenciadoDocument($_FILES[$field] ?? []);
+            } catch (\RuntimeException $e) {
+                $errors[$field] = $e->getMessage();
+                continue;
+            }
+            if (!$uploadedFiles[$field]) {
+                $errors[$field] = $requiredMessage;
+            }
         }
 
         if ($errors) {
@@ -127,7 +136,9 @@ class LicenciadoOnboardingController
             return;
         }
 
-        $data['comprovante_residencia_path'] = $uploadedFile['stored_name'];
+        foreach ($documentFields as $field => $requiredMessage) {
+            $data[$field . '_path'] = $uploadedFiles[$field]['stored_name'];
+        }
         User::completeOnboardingProfile((int) $user['id'], $data);
 
         try {
@@ -242,13 +253,22 @@ class LicenciadoOnboardingController
         Router::redirect('/painel/licenciados/aguardando-assinatura');
     }
 
-    public function downloadComprovante(string $id): void
+    private const DOCUMENT_TYPES = ['comprovante_residencia', 'documento_identidade', 'contrato_social', 'cartao_cnpj'];
+
+    public function downloadDocument(string $id, string $tipo): void
     {
         Auth::requireLogin();
         $viewer = Auth::user();
-        $target = User::find((int) $id);
 
-        if (!$target || !$target['comprovante_residencia_path']) {
+        if (!in_array($tipo, self::DOCUMENT_TYPES, true)) {
+            http_response_code(404);
+            exit('Documento não encontrado.');
+        }
+
+        $target = User::find((int) $id);
+        $field = $tipo . '_path';
+
+        if (!$target || !$target[$field]) {
             http_response_code(404);
             exit('Arquivo não encontrado.');
         }
@@ -258,14 +278,14 @@ class LicenciadoOnboardingController
             exit;
         }
 
-        $path = FileUpload::path('licenciados', $target['comprovante_residencia_path']);
+        $path = FileUpload::path('licenciados', $target[$field]);
         if (!file_exists($path)) {
             http_response_code(404);
             exit('Arquivo não encontrado.');
         }
 
         header('Content-Type: application/octet-stream');
-        header('Content-Disposition: inline; filename="comprovante-residencia-' . (int) $id . '"');
+        header('Content-Disposition: inline; filename="' . $tipo . '-' . (int) $id . '"');
         header('Content-Length: ' . filesize($path));
         readfile($path);
         exit;

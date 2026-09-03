@@ -310,6 +310,9 @@ class User
                 estado_civil = :estado_civil, profissao = :profissao,
                 celular = :celular, telefone_fixo = :telefone_fixo,
                 comprovante_residencia_path = :comprovante_residencia_path,
+                documento_identidade_path = :documento_identidade_path,
+                contrato_social_path = :contrato_social_path,
+                cartao_cnpj_path = :cartao_cnpj_path,
                 licenciado_rejection_reason = NULL,
                 licenciado_onboarding_status = \'aguardando_assinatura\'
              WHERE id = :id'
@@ -332,6 +335,9 @@ class User
             'celular' => $data['celular'],
             'telefone_fixo' => $data['telefone_fixo'] ?: null,
             'comprovante_residencia_path' => $data['comprovante_residencia_path'],
+            'documento_identidade_path' => $data['documento_identidade_path'],
+            'contrato_social_path' => $data['contrato_social_path'],
+            'cartao_cnpj_path' => $data['cartao_cnpj_path'],
         ]);
     }
 

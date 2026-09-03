@@ -46,7 +46,10 @@ $erro = $_GET['erro'] ?? null;
         </div>
 
         <div style="margin:16px 0;display:flex;gap:10px;flex-wrap:wrap;">
-            <a href="/painel/licenciados/comprovante/<?= (int) $l['id'] ?>" target="_blank" rel="noopener" class="btn btn-outline">📄 Comprovante de residência</a>
+            <a href="/painel/licenciados/documento/<?= (int) $l['id'] ?>/comprovante_residencia" target="_blank" rel="noopener" class="btn btn-outline">📄 Comprovante de residência</a>
+            <a href="/painel/licenciados/documento/<?= (int) $l['id'] ?>/documento_identidade" target="_blank" rel="noopener" class="btn btn-outline">📄 Documento de identidade</a>
+            <a href="/painel/licenciados/documento/<?= (int) $l['id'] ?>/contrato_social" target="_blank" rel="noopener" class="btn btn-outline">📄 Contrato social</a>
+            <a href="/painel/licenciados/documento/<?= (int) $l['id'] ?>/cartao_cnpj" target="_blank" rel="noopener" class="btn btn-outline">📄 Cartão CNPJ</a>
             <?php if (!empty($l['envelope']['signed_document_path'])): ?>
                 <a href="/painel/licenciados/contrato/<?= (int) $l['envelope']['id'] ?>" target="_blank" rel="noopener" class="btn btn-outline">📄 Contrato assinado</a>
             <?php else: ?>
