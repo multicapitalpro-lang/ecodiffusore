@@ -239,9 +239,11 @@ $erro = isset($_GET['erro']);
         <p class="section-sub">Depoimentos reais de quem já roda com o Ecodiffusore.</p>
         <?php
         $depoimentosDemo = [
-            ['nome' => 'Caminhoneiro autônomo', 'texto' => 'Caminhão melhorou a média e trouxe mais torque.'],
-            ['nome' => 'Cliente Ecodiffusore', 'texto' => 'Senti a diferença já nos primeiros abastecimentos, o motor responde melhor.'],
-            ['nome' => 'Transportadora parceira', 'texto' => 'Reduzimos o custo de combustível em toda a frota de forma perceptível.'],
+            ['nome' => 'Caminhoneiro autônomo', 'texto' => 'Caminhão melhorou a média e trouxe mais torque.', 'video' => 'depoimento-1'],
+            ['nome' => 'Cliente Ecodiffusore', 'texto' => 'Senti a diferença já nos primeiros abastecimentos, o motor responde melhor.', 'video' => 'depoimento-2'],
+            ['nome' => 'Transportadora parceira', 'texto' => 'Reduzimos o custo de combustível em toda a frota de forma perceptível.', 'video' => 'depoimento-3'],
+            ['nome' => 'Licenciado Ecodiffusore', 'texto' => 'O consumo no painel confirma a economia real, dia após dia.', 'video' => 'depoimento-4'],
+            ['nome' => 'Motorista parceiro', 'texto' => 'Rodando com mais economia e sem perder desempenho.', 'video' => 'depoimento-5'],
         ];
         ?>
         <div class="depoimentos-carousel" id="depoimentos-carousel">
@@ -250,8 +252,9 @@ $erro = isset($_GET['erro']);
                     <div class="depoimento-slide">
                         <div class="depoimento-card">
                             <div class="depoimento-video-slot">
-                                <span style="font-size:2rem;">🎥</span>
-                                <span>Vídeo em breve</span>
+                                <video controls preload="metadata" poster="<?= View::asset('/assets/img/' . $d['video'] . '-poster.jpg') ?>">
+                                    <source src="<?= View::asset('/assets/video/' . $d['video'] . '.mp4') ?>" type="video/mp4">
+                                </video>
                             </div>
                             <div class="depoimento-body">
                                 <p>“<?= htmlspecialchars($d['texto'], ENT_QUOTES, 'UTF-8') ?>”</p>
@@ -261,9 +264,9 @@ $erro = isset($_GET['erro']);
                     </div>
                 <?php endforeach; ?>
             </div>
-            <button type="button" class="install-carousel-nav prev" aria-label="Anterior">‹</button>
-            <button type="button" class="install-carousel-nav next" aria-label="Próximo">›</button>
-            <div class="install-carousel-dots">
+            <button type="button" class="carousel-nav prev" aria-label="Anterior">‹</button>
+            <button type="button" class="carousel-nav next" aria-label="Próximo">›</button>
+            <div class="carousel-dots">
                 <?php foreach ($depoimentosDemo as $i => $d): ?>
                     <button type="button" class="<?= $i === 0 ? 'is-active' : '' ?>" data-slide="<?= $i ?>" aria-label="Slide <?= $i + 1 ?>"></button>
                 <?php endforeach; ?>

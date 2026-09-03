@@ -291,7 +291,7 @@ function initCarousel(carouselId, trackSelector, slideSelector) {
 
     var track = carousel.querySelector(trackSelector);
     var slides = carousel.querySelectorAll(slideSelector);
-    var dots = carousel.querySelectorAll('.install-carousel-dots button');
+    var dots = carousel.querySelectorAll('.carousel-dots button');
     var index = 0;
 
     function goTo(i) {
