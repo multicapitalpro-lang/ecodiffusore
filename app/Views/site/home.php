@@ -175,6 +175,7 @@ $erro = isset($_GET['erro']);
                 <img src="<?= View::asset('/assets/img/instalacao-passo-a-passo.jpg') ?>" alt="Passo a passo da instalação do Ecodiffusore" loading="lazy">
             </a>
             <figcaption>Instalação simples, em 8 passos, sem eletrônica — clique na imagem para ampliar.</figcaption>
+            <p class="install-steps-note">⚠️ Após a instalação, é obrigatório fazer o <strong>RESET da chave</strong> do veículo para o sistema reconhecer a nova configuração — sem esse passo a instalação não funciona corretamente. Vide <a href="<?= View::asset('/assets/docs/manual-tecnico.pdf') ?>" target="_blank" rel="noopener">Manual Técnico de Instalação</a>.</p>
         </figure>
     </div>
 </section>
@@ -228,7 +229,7 @@ $erro = isset($_GET['erro']);
                 </div>
                 <div class="calc-result calc-max">
                     <span class="calc-result-icon">🚀</span>
-                    <span class="calc-result-title">20% – Potencial Máximo</span>
+                    <span class="calc-result-title">20% – *Especial Máquinas Agrícolas e Linha Amarela</span>
                     <span class="calc-result-desc">Direção econômica + rotas otimizadas*</span>
                     <span class="calc-result-label">Economia Mensal</span>
                     <strong id="calc-max-month">R$ 0</strong>
