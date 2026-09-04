@@ -98,9 +98,9 @@ class Payment
      * decorativo, nao mexe em orders.status nem na logica de comissao/verificacao. "Expirado" e
      * calculado na hora (due_date vencida), ja que nao existe cron que atualize isso sozinho.
      */
-    public static function situationFor(array $order, ?array $payment): array
+    public static function situationFor(array $order, ?array $payment, string $cancelledStatus = 'cancelado'): array
     {
-        if ($order['status'] === 'cancelado') {
+        if ($order['status'] === $cancelledStatus) {
             return ['slug' => 'cancelado', 'label' => 'Cancelado', 'badge' => 'inactive'];
         }
         if (!$payment) {

@@ -24,13 +24,88 @@ class QuoteController
         Auth::requireRole(Roles::STAFF);
         $user = Auth::user();
 
+        $filters = array_merge([
+            'status' => $_GET['status'] ?? null,
+            'city' => $_GET['city'] ?? null,
+        ], $this->scopeFilters($user));
+
+        if (!empty($_GET['licenciado_id'])) {
+            // Filtra pelos vendedores/gestores de baixo desse licenciado especifico -- reaproveita
+            // a mesma cadeia de manager_id ja usada pro escopo normal do licenciado.
+            $filters['seller_ids'] = User::downlineIds((int) $_GET['licenciado_id']);
+            unset($filters['seller_id']);
+        } elseif (!empty($_GET['seller_id'])) {
+            $filters['seller_id'] = (int) $_GET['seller_id'];
+            unset($filters['seller_ids']);
+        }
+
+        $quotes = Quote::all($filters);
+        [$quotes, $stats] = $this->attachPaymentSituation($quotes);
+
         View::render('painel/quotes/index', [
             'user' => $user,
-            'quotes' => Quote::all($this->scopeFilters($user)),
+            'quotes' => $quotes,
+            'stats' => $stats,
+            'filters' => array_merge($filters, [
+                'licenciado_id' => $_GET['licenciado_id'] ?? '',
+                'seller_id' => $_GET['seller_id'] ?? '',
+            ]),
             'clients' => Client::all(),
             'products' => Product::all(true),
             'sellers' => $this->sellerOptions($user),
+            'licenciados' => $this->licenciadoOptions($user),
         ]);
+    }
+
+    /** Anexa a situacao de pagamento (Payment::situationFor) em cada orcamento, sem N+1, e ja
+     * soma as contagens pros cards do topo. "recusado" faz o papel de "cancelado" aqui. */
+    private function attachPaymentSituation(array $quotes): array
+    {
+        $ids = array_map(fn ($q) => (int) $q['id'], $quotes);
+        $latestPayments = Payment::latestByPayableIds('quote', $ids);
+
+        $stats = ['total' => count($quotes), 'pendentes' => 0, 'pagos' => 0, 'cancelados' => 0];
+
+        foreach ($quotes as &$quote) {
+            $payment = $latestPayments[(int) $quote['id']] ?? null;
+            $situation = Payment::situationFor($quote, $payment, 'recusado');
+            $quote['payment_situation'] = $situation;
+            $quote['payment_method'] = $payment['method'] ?? null;
+
+            if ($situation['slug'] === 'pendente' || $situation['slug'] === 'expirado') {
+                $stats['pendentes']++;
+            }
+            if ($situation['slug'] === 'pago') {
+                $stats['pagos']++;
+            }
+            if ($situation['slug'] === 'cancelado') {
+                $stats['cancelados']++;
+            }
+        }
+        unset($quote);
+
+        return [$quotes, $stats];
+    }
+
+    /** Licenciados disponiveis pro filtro -- so faz sentido pra quem enxerga mais de uma regiao
+     * (admin/gerente/supervisor); pra um Licenciado ou Gestor olhando so a propria rede, o filtro
+     * de Vendedor ja resolve. */
+    private function licenciadoOptions(array $user): array
+    {
+        if (!in_array($user['role_slug'], ['admin', 'gerente', 'supervisor'], true)) {
+            return [];
+        }
+
+        $licenciados = User::allByRole('licenciado');
+        if ($user['role_slug'] === 'admin') {
+            return $licenciados;
+        }
+
+        $scopeIds = $user['role_slug'] === 'gerente'
+            ? User::nationalIds((int) $user['id'])
+            : User::supervisedIds((int) $user['id']);
+
+        return array_values(array_filter($licenciados, fn ($l) => in_array((int) $l['id'], $scopeIds, true)));
     }
 
     public function kanban(): void
@@ -163,14 +238,19 @@ class QuoteController
     public function show(string $id): void
     {
         $quote = $this->authorize((int) $id);
+        $isFragment = isset($_GET['fragment']);
+
+        $payments = Payment::forPayable('quote', (int) $id);
+        $quote['payment_situation'] = Payment::situationFor($quote, $payments[0] ?? null, 'recusado');
 
         View::render('painel/quotes/show', [
             'user' => Auth::user(),
             'quote' => $quote,
             'items' => QuoteItem::forQuote((int) $id),
-            'payments' => Payment::forPayable('quote', (int) $id),
+            'payments' => $payments,
             'approval' => Approval::pendingFor('quote', (int) $id),
-        ]);
+            'isModal' => $isFragment,
+        ], $isFragment ? null : 'painel');
     }
 
     public function edit(string $id): void
@@ -182,6 +262,8 @@ class QuoteController
             Router::redirect("/painel/orcamentos/{$id}?erro=2");
         }
 
+        $isFragment = isset($_GET['fragment']);
+
         View::render('painel/quotes/form', [
             'user' => $user,
             'editing' => $quote,
@@ -191,7 +273,8 @@ class QuoteController
             'sellers' => $this->sellerOptions($user),
             'preselectClientId' => 0,
             'errors' => [],
-        ]);
+            'isModal' => $isFragment,
+        ], $isFragment ? null : 'painel');
     }
 
     public function update(string $id): void
@@ -201,6 +284,9 @@ class QuoteController
         $this->assertNotViewOnly(Auth::user());
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            if (Response::isAjax()) {
+                Response::json(['ok' => false, 'errors' => ['client_id' => 'Sessão expirada, recarregue a página.']]);
+            }
             Router::redirect("/painel/orcamentos/{$id}/editar?erro=1");
         }
 
@@ -209,6 +295,9 @@ class QuoteController
         $errors = $this->validate($_POST, $items);
 
         if ($errors) {
+            if (Response::isAjax()) {
+                Response::json(['ok' => false, 'errors' => $errors]);
+            }
             View::render('painel/quotes/form', [
                 'user' => $user,
                 'editing' => array_merge(['id' => $id], $_POST),
@@ -236,8 +325,19 @@ class QuoteController
             Approval::checkAndRequest('quote', $id, $items, (int) $sellerId, (int) $user['id']);
         }
 
-        Router::redirect("/painel/orcamentos/{$id}?sucesso=1");
+        $target = "/painel/orcamentos/{$id}?sucesso=1";
+
+        if (Response::isAjax()) {
+            Response::json(['ok' => true, 'redirect' => $target]);
+        }
+
+        Router::redirect($target);
     }
+
+    /** "convertido" fica de fora de proposito -- so acontece de verdade via convert(), que cria
+     * o Pedido junto. Deixar escolher "convertido" so' no dropdown criaria um orcamento
+     * "convertido" sem nenhum pedido vinculado. */
+    private const SETTABLE_STATUSES = ['aberto', 'aprovado', 'recusado'];
 
     public function markStatus(string $id): void
     {
@@ -246,15 +346,21 @@ class QuoteController
         $this->assertNotViewOnly(Auth::user());
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            if (Response::isAjax()) {
+                Response::json(['ok' => false]);
+            }
             Router::redirect("/painel/orcamentos/{$id}");
         }
 
         $status = $_POST['status'] ?? '';
-        if (in_array($status, ['aprovado', 'recusado'], true)) {
+        if (in_array($status, self::SETTABLE_STATUSES, true) && $quote['status'] !== 'convertido') {
             Quote::updateStatus($id, $status);
             AuditLog::record((int) Auth::user()['id'], "orcamento_{$status}", 'quote', $id, ['status' => $quote['status']], ['status' => $status]);
         }
 
+        if (Response::isAjax()) {
+            Response::json(['ok' => true]);
+        }
         Router::redirect("/painel/orcamentos/{$id}?sucesso=1");
     }
 

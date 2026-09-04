@@ -279,5 +279,19 @@ document.addEventListener('DOMContentLoaded', function () {
                 openFragmentModal('modal-order-detail', 'modal-order-detail-content', '/painel/pedidos/' + id + '/editar?fragment=1', 'Editar Pedido #' + id);
             });
         });
+
+        document.querySelectorAll('[data-view-quote]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var id = btn.getAttribute('data-view-quote');
+                openFragmentModal('modal-quote-detail', 'modal-quote-detail-content', '/painel/orcamentos/' + id + '?fragment=1', 'Orçamento #' + id);
+            });
+        });
+
+        document.querySelectorAll('[data-edit-quote]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var id = btn.getAttribute('data-edit-quote');
+                openFragmentModal('modal-quote-detail', 'modal-quote-detail-content', '/painel/orcamentos/' + id + '/editar?fragment=1', 'Editar Orçamento #' + id);
+            });
+        });
     });
 })();

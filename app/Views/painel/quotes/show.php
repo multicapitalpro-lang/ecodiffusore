@@ -5,13 +5,23 @@ use App\Core\View;
 $statusLabels = ['aberto' => 'Aberto', 'aprovado' => 'Aprovado', 'recusado' => 'Recusado', 'convertido' => 'Convertido'];
 $sucesso = isset($_GET['sucesso']);
 $isViewOnly = in_array($user['role_slug'] ?? '', Roles::NATIONAL_SUPPORT, true);
+$isModal = $isModal ?? false;
+$situation = $quote['payment_situation'] ?? ['label' => '—', 'badge' => 'novo'];
 ?>
-<div class="page-header">
-    <h1>Orçamento #<?= (int) $quote['id'] ?></h1>
-    <?php if ($quote['status'] === 'aberto' && !$isViewOnly): ?>
-        <a href="/painel/orcamentos/<?= (int) $quote['id'] ?>/editar" class="btn btn-outline">Editar</a>
-    <?php endif; ?>
-</div>
+<?php if ($isModal): ?>
+    <div class="modal-header">
+        <h2>Orçamento #<?= (int) $quote['id'] ?></h2>
+        <button type="button" class="modal-close" data-modal-close aria-label="Fechar">&times;</button>
+    </div>
+    <div class="modal-body">
+<?php else: ?>
+    <div class="page-header">
+        <h1>Orçamento #<?= (int) $quote['id'] ?></h1>
+        <?php if ($quote['status'] === 'aberto' && !$isViewOnly): ?>
+            <a href="/painel/orcamentos/<?= (int) $quote['id'] ?>/editar" class="btn btn-outline">Editar</a>
+        <?php endif; ?>
+    </div>
+<?php endif; ?>
 
 <?php if ($sucesso): ?>
     <p class="form-msg form-msg-ok">Atualizado com sucesso.</p>
@@ -19,7 +29,13 @@ $isViewOnly = in_array($user['role_slug'] ?? '', Roles::NATIONAL_SUPPORT, true);
 
 <div class="order-summary">
     <p><strong>Cliente:</strong> <?= View::e($quote['client_name']) ?></p>
+    <?php $phone = $quote['client_whatsapp'] ?? $quote['lead_whatsapp'] ?? null; ?>
+    <?php if ($phone): ?>
+        <p><strong>Telefone:</strong> <a href="https://wa.me/55<?= preg_replace('/\D/', '', $phone) ?>" target="_blank" rel="noopener">💬 <?= View::e($phone) ?></a></p>
+    <?php endif; ?>
+    <p><strong>Cidade:</strong> <?= View::e($quote['client_city'] ?? $quote['lead_city'] ?? '—') ?></p>
     <p><strong>Vendedor:</strong> <?= View::e($quote['seller_name'] ?: 'Sem vendedor') ?></p>
+    <p><strong>Situação do pagamento:</strong> <span class="status-badge status-<?= View::e($situation['badge']) ?>"><?= View::e($situation['label']) ?></span></p>
     <p><strong>Gerado em:</strong> <?= View::e(date('d/m/Y', strtotime($quote['created_at']))) ?> às <?= View::e(date('H:i', strtotime($quote['created_at']))) ?></p>
     <p><strong>Data:</strong> <?= View::e(date('d/m/Y', strtotime($quote['quote_date']))) ?></p>
     <p><strong>Válido até:</strong> <?= $quote['valid_until'] ? View::e(date('d/m/Y', strtotime($quote['valid_until']))) : '—' ?></p>
@@ -104,3 +120,4 @@ endif;
 </div>
 <p class="hint-text">Isso cria um Pedido de Venda novo com os mesmos itens deste orçamento.</p>
 <?php endif; ?>
+<?php if ($isModal): ?></div><?php endif; ?>
