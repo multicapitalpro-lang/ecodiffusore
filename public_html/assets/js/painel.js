@@ -223,7 +223,8 @@
                 modal.showModal();
 
                 fetch('/painel/usuarios/' + btn.getAttribute('data-edit-user') + '/editar?fragment=1', {
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    cache: 'no-store'
                 })
                     .then(function (r) { return r.text(); })
                     .then(function (html) {
