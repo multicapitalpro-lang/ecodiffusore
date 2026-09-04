@@ -177,7 +177,7 @@ class UserController
 
         View::render('painel/users/form', [
             'user' => $user,
-            'roles' => $this->creatableRoles($user),
+            'roles' => $this->rolesForEditing($user, $editing),
             'managers' => $this->managerOptions($user, $id),
             'supervisors' => $this->supervisorOptions($user),
             'canSetCommission' => $this->canSetCommission($user),
@@ -215,7 +215,7 @@ class UserController
             }
             View::render('painel/users/form', [
                 'user' => $user,
-                'roles' => $this->creatableRoles($user),
+                'roles' => $this->rolesForEditing($user, User::find($id)),
                 'managers' => $this->managerOptions($user, $id),
                 'supervisors' => $this->supervisorOptions($user),
                 'canSetCommission' => $this->canSetCommission($user),
@@ -342,6 +342,32 @@ class UserController
             return 'admin';
         }
         return null;
+    }
+
+    /** creatableRoles() + o papel atual de quem esta sendo editado, mesmo que quem edita nao
+     * possa ATRIBUIR esse papel a outra pessoa (ex: Gerente editando o proprio cadastro, que e
+     * "gerente" -- papel fora do que um Gerente pode escolher pra alguem). Sem isso o <select>
+     * fica sem nenhuma opcao selecionada e o form trava no "Selecione um item da lista" do
+     * navegador mesmo com os outros campos corretos. validate() ja permite manter o papel atual
+     * (ver "keepsOwnRole") -- isso so garante que a opcao exista na lista pra começar. */
+    private function rolesForEditing(array $user, ?array $editing): array
+    {
+        $roles = $this->creatableRoles($user);
+        if ($editing === null) {
+            return $roles;
+        }
+
+        $currentRoleId = (int) ($editing['role_id'] ?? 0);
+        $hasCurrentRole = in_array($currentRoleId, array_map(fn ($r) => (int) $r['id'], $roles), true);
+
+        if (!$hasCurrentRole && $currentRoleId > 0) {
+            $currentRole = current(array_filter(Role::all(), fn ($r) => (int) $r['id'] === $currentRoleId));
+            if ($currentRole) {
+                $roles[] = $currentRole;
+            }
+        }
+
+        return $roles;
     }
 
     /** Papeis que quem esta logado tem permissao de atribuir a um novo/editado usuario */
