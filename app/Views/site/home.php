@@ -9,7 +9,7 @@ $erro = isset($_GET['erro']);
     <div class="site-container hero-inner">
         <div class="hero-text">
             <span class="badge">Produto Patenteado · Registro INPI</span>
-            <h1>Economize em até 10% de Diesel e <span>Eleve a Performance do seu Veículo</span></h1>
+            <h1>Economize em até 12% de Diesel e <span>Eleve a Performance do seu Veículo</span></h1>
             <p class="hero-sub">O sistema Ecodiffusore potencializa a combustão, melhora o rendimento e reduz desperdícios. Mais força, mais economia, mais resultado — para caminhões, máquinas agrícolas e geradores a diesel.</p>
             <div class="hero-ctas">
                 <a href="#contato" class="btn btn-primary">Quero Economizar Agora</a>
@@ -100,7 +100,7 @@ $erro = isset($_GET['erro']);
             <div class="beneficio-item">
                 <img src="<?= View::asset('/assets/img/beneficio-economia.jpg') ?>" alt="Economia de Combustível" class="beneficio-icon" loading="lazy">
                 <h3>Economia de Combustível</h3>
-                <p>De 5% (mínimo garantido) a 20% (potencial máximo) de redução no consumo de diesel — 10% é a média real.</p>
+                <p>De 5% (mínimo garantido) a 20% (potencial máximo) de redução no consumo de diesel — 12% é a média real.</p>
             </div>
             <div class="beneficio-item">
                 <span class="beneficio-icon">⚙️</span>
@@ -197,7 +197,7 @@ $erro = isset($_GET['erro']);
                     </div>
                 </div>
             </div>
-            <div class="calc-results">
+            <div class="calc-results calc-results-4">
                 <div class="calc-result calc-min">
                     <span class="calc-result-icon">🛡️</span>
                     <span class="calc-result-title">5% – Mínimo Garantido</span>
@@ -207,10 +207,19 @@ $erro = isset($_GET['erro']);
                     <small><span id="calc-min-year">R$ 0</span>/ano</small>
                     <small><span id="calc-min-5y">R$ 0</span> em 5 anos</small>
                 </div>
+                <div class="calc-result calc-mid">
+                    <span class="calc-result-icon">🚚</span>
+                    <span class="calc-result-title">8% – Uso Misto</span>
+                    <span class="calc-result-desc">Caminhões com rotas de estrada e cidade</span>
+                    <span class="calc-result-label">Economia Mensal</span>
+                    <strong id="calc-mid-month">R$ 0</strong>
+                    <small><span id="calc-mid-year">R$ 0</span>/ano</small>
+                    <small><span id="calc-mid-5y">R$ 0</span> em 5 anos</small>
+                </div>
                 <div class="calc-result calc-avg">
                     <span class="calc-badge">MAIS COMUM</span>
                     <span class="calc-result-icon">📈</span>
-                    <span class="calc-result-title">10% – Média Real</span>
+                    <span class="calc-result-title">12% – Média Real</span>
                     <span class="calc-result-desc">O que a maioria dos caminhoneiros consegue</span>
                     <span class="calc-result-label">Economia Mensal</span>
                     <strong id="calc-avg-month">R$ 0</strong>
@@ -220,13 +229,14 @@ $erro = isset($_GET['erro']);
                 <div class="calc-result calc-max">
                     <span class="calc-result-icon">🚀</span>
                     <span class="calc-result-title">20% – Potencial Máximo</span>
-                    <span class="calc-result-desc">Direção econômica + rotas otimizadas</span>
+                    <span class="calc-result-desc">Direção econômica + rotas otimizadas*</span>
                     <span class="calc-result-label">Economia Mensal</span>
                     <strong id="calc-max-month">R$ 0</strong>
                     <small><span id="calc-max-year">R$ 0</span>/ano</small>
                     <small><span id="calc-max-5y">R$ 0</span> em 5 anos</small>
                 </div>
             </div>
+            <p class="calc-footnote">*Colheitadeiras e máquinas de linha amarela costumam atingir a faixa de potencial máximo.</p>
             <p class="calc-disclaimer">A economia varia de acordo com estilo de direção, tipo de carga e condições da estrada. Investimento único, sem manutenção, lucro pra sempre.</p>
             <a href="#contato" class="btn btn-primary calc-cta" id="calc-cta">Quero Economizar <span id="calc-cta-value">R$ 0</span>/mês</a>
         </div>

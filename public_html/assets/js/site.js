@@ -12,7 +12,8 @@
     var ctaValue = document.getElementById('calc-cta-value');
     var fields = {
         min: { month: 'calc-min-month', year: 'calc-min-year', y5: 'calc-min-5y', pct: 0.05 },
-        avg: { month: 'calc-avg-month', year: 'calc-avg-year', y5: 'calc-avg-5y', pct: 0.10 },
+        mid: { month: 'calc-mid-month', year: 'calc-mid-year', y5: 'calc-mid-5y', pct: 0.08 },
+        avg: { month: 'calc-avg-month', year: 'calc-avg-year', y5: 'calc-avg-5y', pct: 0.12 },
         max: { month: 'calc-max-month', year: 'calc-max-year', y5: 'calc-max-5y', pct: 0.20 }
     };
 
