@@ -26,6 +26,8 @@ class OrderController
         Auth::requireRole(Roles::STAFF);
         $user = Auth::user();
 
+        Order::expireStalePending();
+
         $filters = array_merge([
             'status' => $_GET['status'] ?? null,
             'from' => $_GET['from'] ?? null,

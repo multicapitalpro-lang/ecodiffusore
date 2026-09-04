@@ -160,6 +160,31 @@ class Order
         $update->execute(['total' => $total, 'id' => $id]);
     }
 
+    /**
+     * Cancela automaticamente pedidos "em_andamento" cuja cobranca mais recente ainda esta
+     * pendente ha mais de 24h -- pra nao acumular fila de pedido parado esperando pagamento que
+     * nunca vem. Chamado de forma "preguicosa" (a cada carregamento da lista de Pedidos) porque
+     * o projeto nao tem infraestrutura de cron ainda; nao e um agendamento fixo de verdade, mas
+     * cobre o caso pratico ja que a tela e acessada com frequencia.
+     */
+    public static function expireStalePending(): int
+    {
+        $sql = "UPDATE orders o
+                INNER JOIN (
+                    SELECT payable_id, MAX(created_at) AS max_created
+                    FROM payments
+                    WHERE payable_type = 'order'
+                    GROUP BY payable_id
+                ) latest ON latest.payable_id = o.id
+                INNER JOIN payments p ON p.payable_id = latest.payable_id AND p.created_at = latest.max_created AND p.payable_type = 'order'
+                SET o.status = 'cancelado'
+                WHERE o.status = 'em_andamento'
+                  AND p.status = 'pendente'
+                  AND p.created_at < (NOW() - INTERVAL 24 HOUR)";
+
+        return Database::connection()->exec($sql);
+    }
+
     public static function updateStatus(int $id, string $status): void
     {
         $stmt = Database::connection()->prepare('UPDATE orders SET status = :status WHERE id = :id');
