@@ -91,6 +91,7 @@ $router->get('/painel/licenciados/contrato/{id}', [App\Controllers\LicenciadoOnb
 
 // Aprovacao manual de cadastro (Admin/Gerente), depois do ClickSign confirmar a assinatura
 $router->get('/painel/licenciados/aprovacoes', [App\Controllers\LicenciadoApprovalController::class, 'index']);
+$router->get('/painel/licenciados/{id}/perfil', [App\Controllers\LicenciadoApprovalController::class, 'show']);
 $router->post('/painel/licenciados/{id}/aprovar', [App\Controllers\LicenciadoApprovalController::class, 'approve']);
 $router->post('/painel/licenciados/{id}/reprovar', [App\Controllers\LicenciadoApprovalController::class, 'reject']);
 

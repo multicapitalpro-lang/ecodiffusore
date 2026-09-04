@@ -30,6 +30,24 @@ class LicenciadoApprovalController
         ]);
     }
 
+    /** Perfil completo (dados do formulario + documentos) de um Licenciado, pra consulta a
+     * qualquer momento -- nao so durante a janela de aprovacao pendente. Mesmo escopo de
+     * visibilidade que a lista /painel/licenciados ja usa hoje (gerente ve todo mundo). */
+    public function show(string $id): void
+    {
+        Auth::requireRole(Roles::SUPERVISOR_ASSIGNMENT);
+        $target = User::find((int) $id);
+
+        if (!$target || $target['role_slug'] !== 'licenciado') {
+            Router::redirect('/painel/licenciados');
+        }
+
+        View::render('painel/licenciados/perfil', [
+            'licenciado' => $target,
+            'envelope' => LicenciadoEnvelope::findLatestByUser((int) $target['id']),
+        ]);
+    }
+
     public function approve(string $id): void
     {
         Auth::requireRole(Roles::SUPERVISOR_ASSIGNMENT);
