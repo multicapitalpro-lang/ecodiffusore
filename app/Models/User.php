@@ -201,6 +201,26 @@ class User
     }
 
     /**
+     * Time de vendas "embaixo" de um usuario qualquer, pra calcular progresso de Meta -- escolhe
+     * a travessia certa pra cada papel (supervisor usa supervisedIds, gerente usa nationalIds,
+     * os demais usam downlineIds/manager_id). Pra um vendedor, retorna so ele mesmo (meta
+     * individual).
+     */
+    public static function teamIds(int $userId): array
+    {
+        $target = self::find($userId);
+        if (!$target) {
+            return [$userId];
+        }
+
+        return match ($target['role_slug']) {
+            'supervisor' => self::supervisedIds($userId),
+            'gerente' => self::nationalIds($userId),
+            default => self::downlineIds($userId),
+        };
+    }
+
+    /**
      * Atribui/troca o supervisor de um licenciado. Acao separada de update() porque quem chama
      * isso (o Gerente) nao tem permissao de editar o resto do cadastro do licenciado.
      */

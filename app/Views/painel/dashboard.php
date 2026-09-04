@@ -39,17 +39,22 @@ $hasMetrics = isset($metrics);
     <?php if (!empty($goals)): ?>
         <div class="page-header">
             <h3 class="section-title" style="margin:28px 0 0;">Metas em andamento</h3>
-            <?php if (in_array($role, Roles::MANAGEMENT, true)): ?>
-                <a href="/painel/metas" class="link-small">Ver todas</a>
-            <?php endif; ?>
+            <a href="/painel/metas" class="link-small">Ver todas</a>
         </div>
         <div class="cards-grid">
             <?php foreach ($goals as $g): ?>
                 <div class="dash-card goal-card">
                     <span><?= View::e($g['name']) ?></span>
+                    <small class="hint-inline">
+                        <?= $g['seller_name'] ? View::e($g['seller_name']) : 'Geral' ?>
+                        <?php if ((int) $g['created_by'] !== (int) $user['id']): ?> · criada por <?= View::e($g['creator_name'] ?? '—') ?><?php endif; ?>
+                    </small>
                     <div class="progress-bar"><div class="progress-fill" style="width:<?= $g['progress']['pct'] ?>%"></div></div>
-                    <strong><?= $g['progress']['pct'] ?>%</strong>
+                    <strong><?= $g['progress']['pct'] ?>%<?= $g['progress']['reached'] ? ' 🎉' : '' ?></strong>
                     <span class="hint-inline">R$ <?= number_format($g['progress']['achieved'], 2, ',', '.') ?> de R$ <?= number_format($g['progress']['target'], 2, ',', '.') ?></span>
+                    <?php if ($g['reward_description'] || $g['reward_amount']): ?>
+                        <span class="hint-inline">🏆 <?= View::e(implode(' · ', array_filter([$g['reward_description'] ?: null, $g['reward_amount'] ? 'R$ ' . number_format((float) $g['reward_amount'], 2, ',', '.') : null]))) ?></span>
+                    <?php endif; ?>
                 </div>
             <?php endforeach; ?>
         </div>

@@ -73,13 +73,25 @@ $desempenhoOpen = $anyActive(['/painel/desempenho', '/painel/metas']);
                 </details>
             <?php endif; ?>
 
-            <?php if (in_array($role, $managerRoles, true)): ?>
+            <?php
+            $nationalSupportRoles = Roles::NATIONAL_SUPPORT;
+            $panoramaRoles = ['admin', 'gerente', 'supervisor'];
+            $desempenhoVisible = in_array($role, array_merge($managerRoles, $nationalSupportRoles, [Roles::SELLER]), true);
+            ?>
+            <?php if ($desempenhoVisible): ?>
                 <details class="nav-group" <?= $desempenhoOpen ? 'open' : '' ?>>
                     <summary><?= $icon('chart') ?> Desempenho</summary>
                     <div class="nav-subitems">
-                        <a href="/painel/desempenho/vendedores" class="<?= $isActive('/painel/desempenho/vendedores') ? 'is-active' : '' ?>">Vendedores</a>
-                        <a href="/painel/desempenho/equipe" class="<?= $isActive('/painel/desempenho/equipe') ? 'is-active' : '' ?>">Equipe</a>
+                        <?php if (in_array($role, $managerRoles, true)): ?>
+                            <a href="/painel/desempenho/vendedores" class="<?= $isActive('/painel/desempenho/vendedores') ? 'is-active' : '' ?>">Vendedores</a>
+                        <?php endif; ?>
+                        <?php if (in_array($role, array_merge($managerRoles, $nationalSupportRoles), true)): ?>
+                            <a href="/painel/desempenho/equipe" class="<?= $isActive('/painel/desempenho/equipe') ? 'is-active' : '' ?>">Equipe</a>
+                        <?php endif; ?>
                         <a href="/painel/metas" class="<?= $isActive('/painel/metas') ? 'is-active' : '' ?>">Metas</a>
+                        <?php if (in_array($role, $panoramaRoles, true)): ?>
+                            <a href="/painel/desempenho/panorama" class="<?= $isActive('/painel/desempenho/panorama') ? 'is-active' : '' ?>">Panorama Nacional</a>
+                        <?php endif; ?>
                     </div>
                 </details>
             <?php endif; ?>

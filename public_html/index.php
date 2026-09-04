@@ -168,6 +168,7 @@ $router->get('/painel/desempenho/equipe', [App\Controllers\PerformanceController
 $router->get('/painel/metas', [App\Controllers\GoalController::class, 'index']);
 $router->post('/painel/metas', [App\Controllers\GoalController::class, 'store']);
 $router->post('/painel/metas/{id}/excluir', [App\Controllers\GoalController::class, 'delete']);
+$router->post('/painel/metas/{id}/premio-pago', [App\Controllers\GoalController::class, 'markRewardPaid']);
 
 // Financeiro
 $router->get('/painel/financeiro/caixas-bancos', [App\Controllers\FinanceController::class, 'accounts']);

@@ -84,7 +84,7 @@ class DashboardController
             $data['topProducts'] = OrderItem::topProducts($from, $to, $sellerId, $sellerIds);
             $data['goals'] = array_map(
                 fn ($g) => $g + ['progress' => Goal::progress($g)],
-                Goal::activeFor($role === Roles::SELLER ? (int) $user['id'] : null)
+                Goal::activeFor((int) $user['id'])
             );
         }
 
