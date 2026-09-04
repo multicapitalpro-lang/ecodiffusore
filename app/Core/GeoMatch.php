@@ -95,7 +95,7 @@ class GeoMatch
         return $row ?: null;
     }
 
-    private static function normalize(string $s): string
+    public static function normalize(string $s): string
     {
         $transliterated = iconv('UTF-8', 'ASCII//TRANSLIT', $s);
         return mb_strtolower(trim($transliterated !== false ? $transliterated : $s));

@@ -85,12 +85,9 @@ $desempenhoOpen = $anyActive(['/painel/desempenho', '/painel/metas']);
                         <?php if (in_array($role, $managerRoles, true)): ?>
                             <a href="/painel/desempenho/vendedores" class="<?= $isActive('/painel/desempenho/vendedores') ? 'is-active' : '' ?>">Vendedores</a>
                         <?php endif; ?>
-                        <?php if (in_array($role, array_merge($managerRoles, $nationalSupportRoles), true)): ?>
-                            <a href="/painel/desempenho/equipe" class="<?= $isActive('/painel/desempenho/equipe') ? 'is-active' : '' ?>">Equipe</a>
-                        <?php endif; ?>
                         <a href="/painel/metas" class="<?= $isActive('/painel/metas') ? 'is-active' : '' ?>">Metas</a>
                         <?php if (in_array($role, $panoramaRoles, true)): ?>
-                            <a href="/painel/desempenho/panorama" class="<?= $isActive('/painel/desempenho/panorama') ? 'is-active' : '' ?>">Panorama Nacional</a>
+                            <a href="/painel/desempenho/panorama" class="<?= $isActive('/painel/desempenho/panorama') ? 'is-active' : '' ?>">Equipe Nacional</a>
                         <?php endif; ?>
                     </div>
                 </details>

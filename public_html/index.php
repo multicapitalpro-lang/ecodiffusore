@@ -164,6 +164,7 @@ $router->post('/webhooks/clicksign', [App\Controllers\ClickSignWebhookController
 $router->get('/painel/desempenho/vendedores', [App\Controllers\PerformanceController::class, 'sellers']);
 $router->get('/painel/desempenho/equipe', [App\Controllers\PerformanceController::class, 'team']);
 $router->get('/painel/desempenho/panorama', [App\Controllers\PerformanceController::class, 'panorama']);
+$router->get('/painel/desempenho/panorama/estado/{uf}', [App\Controllers\PerformanceController::class, 'stateDetail']);
 
 // Metas
 $router->get('/painel/metas', [App\Controllers\GoalController::class, 'index']);

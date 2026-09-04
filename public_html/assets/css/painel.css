@@ -419,3 +419,14 @@ dialog.modal-drawer .modal-body { max-height: calc(100dvh - 64px); padding-botto
     .br-grid { grid-template-columns: repeat(7, minmax(28px, 1fr)); grid-template-rows: repeat(10, 30px); }
     .br-cell { font-size: .6rem; }
 }
+.br-cell-clickable { cursor: pointer; }
+
+/* Drill-down por estado (Equipe Nacional) */
+.state-detail-panel { margin-top: 10px; }
+.state-map-wrap { background: #f4f6fa; border-radius: 12px; padding: 10px; margin: 14px 0; }
+.state-map-wrap svg { width: 100%; height: auto; display: block; }
+.state-region-card { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; }
+.state-region-title { font-weight: 700; color: var(--navy); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.state-region-person { display: flex; align-items: center; gap: 8px; font-size: .85rem; color: var(--gray-text); margin-top: 6px; padding-left: 4px; }
+.state-region-person .role-tag { font-size: .7rem; font-weight: 700; text-transform: uppercase; background: #e3e8f0; color: var(--navy); border-radius: 6px; padding: 1px 6px; }
+.state-loading, .state-empty { color: var(--gray-text); font-size: .9rem; padding: 8px 0; }

@@ -4,8 +4,10 @@ namespace App\Controllers;
 
 use App\Core\Auth;
 use App\Core\BrazilStates;
+use App\Core\Database;
 use App\Core\DateRange;
 use App\Core\GeoMatch;
+use App\Core\Response;
 use App\Core\Roles;
 use App\Core\View;
 use App\Models\Commission;
@@ -122,6 +124,71 @@ class PerformanceController
             'totalLicenciados' => count($ativos),
             'estadosCobertos' => count($byState),
             'totalEstados' => count(BrazilStates::NAMES),
+        ]);
+    }
+
+    /**
+     * Dados de um estado especifico pro drill-down clicavel do mapa: a equipe presente la
+     * (separada por regiao -- cada Licenciado com seu Supervisor e seu time de Gestor/Vendedor)
+     * e as cidades do estado (via br_cities) marcando quais tem Licenciado, pro mini-mapa por
+     * coordenada real (sem depender de contorno geografico desenhado a mao).
+     */
+    public function stateDetail(string $uf): void
+    {
+        Auth::requireRole(['admin', 'gerente', 'supervisor']);
+        $uf = strtoupper($uf);
+
+        if (!isset(BrazilStates::NAMES[$uf])) {
+            http_response_code(404);
+            Response::json(['error' => 'Estado invalido']);
+            return;
+        }
+
+        $licenciados = array_values(array_filter(
+            User::allByRole('licenciado'),
+            fn ($u) => strtoupper(trim($u['state'] ?? '')) === $uf
+        ));
+
+        $regions = [];
+        foreach ($licenciados as $lic) {
+            $supervisor = !empty($lic['supervisor_id']) ? User::find((int) $lic['supervisor_id']) : null;
+
+            $teamIds = array_values(array_diff(User::downlineIds((int) $lic['id']), [(int) $lic['id']]));
+            $team = array_values(array_filter(
+                array_map(fn ($id) => User::find($id), $teamIds),
+                fn ($u) => $u && in_array($u['role_slug'], ['gestor', 'vendedor'], true)
+            ));
+
+            $regions[] = [
+                'licenciado' => ['id' => (int) $lic['id'], 'name' => $lic['name'], 'city' => $lic['city'], 'whatsapp' => $lic['whatsapp']],
+                'supervisor' => $supervisor ? ['id' => (int) $supervisor['id'], 'name' => $supervisor['name'], 'whatsapp' => $supervisor['whatsapp']] : null,
+                'team' => array_map(fn ($u) => [
+                    'id' => (int) $u['id'],
+                    'name' => $u['name'],
+                    'role' => $u['role_slug'],
+                    'whatsapp' => $u['whatsapp'],
+                ], $team),
+            ];
+        }
+
+        $stmt = Database::connection()->prepare('SELECT name, lat, lng, name_normalized FROM br_cities WHERE uf = :uf');
+        $stmt->execute(['uf' => $uf]);
+        $allCities = $stmt->fetchAll();
+
+        $licenciadoCityKeys = array_map(fn ($lic) => GeoMatch::normalize($lic['city'] ?? ''), $licenciados);
+
+        $cities = array_map(fn ($c) => [
+            'name' => $c['name'],
+            'lat' => (float) $c['lat'],
+            'lng' => (float) $c['lng'],
+            'has_licenciado' => in_array($c['name_normalized'], $licenciadoCityKeys, true),
+        ], $allCities);
+
+        Response::json([
+            'uf' => $uf,
+            'state_name' => BrazilStates::NAMES[$uf],
+            'regions' => $regions,
+            'cities' => $cities,
         ]);
     }
 }
