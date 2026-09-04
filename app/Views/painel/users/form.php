@@ -8,7 +8,7 @@ $values = $editing ?? ($old ?? []);
 ?>
 <?php if ($isModal): ?>
     <div class="modal-header">
-        <h2>Editar usuário</h2>
+        <h2><?= $isEdit ? 'Editar usuário' : 'Novo usuário' ?></h2>
         <button type="button" class="modal-close" data-modal-close aria-label="Fechar">&times;</button>
     </div>
     <div class="modal-body">

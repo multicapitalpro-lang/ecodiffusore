@@ -22,7 +22,7 @@ $erroLabels = [
 ?>
 <div class="page-header">
     <h1>Usuários</h1>
-    <a href="/painel/usuarios/novo" class="btn btn-primary">+ Novo usuário</a>
+    <button type="button" class="btn btn-primary" id="btn-new-user">+ Novo usuário</button>
 </div>
 
 <?php if ($sucesso === '1'): ?>

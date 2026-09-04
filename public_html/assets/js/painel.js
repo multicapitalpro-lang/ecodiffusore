@@ -208,35 +208,46 @@
 
         bindAjaxForms(document);
 
-        // Edicao de usuario num modal: carrega o form via fetch (fragmento sem layout) em vez
-        // de navegar pra /painel/usuarios/{id}/editar -- ver UserController::edit()/update().
+        // Criacao/edicao de usuario num modal: carrega o form via fetch (fragmento sem layout)
+        // em vez de navegar pra outra pagina -- ver UserController::create()/edit()/store()/update().
+        function openUserFormModal(url, title) {
+            var modal = document.getElementById('modal-user-edit');
+            var content = document.getElementById('modal-user-edit-content');
+            if (!modal || !content) return;
+
+            content.innerHTML = '<div class="modal-header"><h2>' + title + '</h2>'
+                + '<button type="button" class="modal-close" data-modal-close aria-label="Fechar">&times;</button></div>'
+                + '<div class="modal-body"><p class="hint-text">Carregando...</p></div>';
+            bindModalClose(content);
+            modal.showModal();
+
+            fetch(url, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                cache: 'no-store'
+            })
+                .then(function (r) { return r.text(); })
+                .then(function (html) {
+                    content.innerHTML = html;
+                    bindModalClose(content);
+                    bindAjaxForms(content);
+                })
+                .catch(function () {
+                    var body = content.querySelector('.modal-body');
+                    if (body) body.innerHTML = '<p class="form-msg form-msg-erro">Erro ao carregar. Tente novamente.</p>';
+                });
+        }
+
         document.querySelectorAll('[data-edit-user]').forEach(function (btn) {
             btn.addEventListener('click', function () {
-                var modal = document.getElementById('modal-user-edit');
-                var content = document.getElementById('modal-user-edit-content');
-                if (!modal || !content) return;
-
-                content.innerHTML = '<div class="modal-header"><h2>Editar usuário</h2>'
-                    + '<button type="button" class="modal-close" data-modal-close aria-label="Fechar">&times;</button></div>'
-                    + '<div class="modal-body"><p class="hint-text">Carregando...</p></div>';
-                bindModalClose(content);
-                modal.showModal();
-
-                fetch('/painel/usuarios/' + btn.getAttribute('data-edit-user') + '/editar?fragment=1', {
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                    cache: 'no-store'
-                })
-                    .then(function (r) { return r.text(); })
-                    .then(function (html) {
-                        content.innerHTML = html;
-                        bindModalClose(content);
-                        bindAjaxForms(content);
-                    })
-                    .catch(function () {
-                        var body = content.querySelector('.modal-body');
-                        if (body) body.innerHTML = '<p class="form-msg form-msg-erro">Erro ao carregar. Tente novamente.</p>';
-                    });
+                openUserFormModal('/painel/usuarios/' + btn.getAttribute('data-edit-user') + '/editar?fragment=1', 'Editar usuário');
             });
         });
+
+        var newUserBtn = document.getElementById('btn-new-user');
+        if (newUserBtn) {
+            newUserBtn.addEventListener('click', function () {
+                openUserFormModal('/painel/usuarios/novo?fragment=1', 'Novo usuário');
+            });
+        }
     });
 })();

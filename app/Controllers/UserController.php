@@ -79,6 +79,8 @@ class UserController
         Auth::requireRole(Roles::USER_MANAGEMENT);
         $user = Auth::user();
 
+        $isFragment = isset($_GET['fragment']);
+
         View::render('painel/users/form', [
             'user' => $user,
             'roles' => $this->creatableRoles($user),
@@ -87,7 +89,8 @@ class UserController
             'canSetCommission' => $this->canSetCommission($user),
             'editing' => null,
             'errors' => [],
-        ]);
+            'isModal' => $isFragment,
+        ], $isFragment ? null : 'painel');
     }
 
     public function store(): void
@@ -96,12 +99,18 @@ class UserController
         $user = Auth::user();
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            if (Response::isAjax()) {
+                Response::json(['ok' => false, 'errors' => ['name' => 'Sessão expirada, recarregue a página.']]);
+            }
             Router::redirect('/painel/usuarios/novo?erro=1');
         }
 
         $errors = $this->validate($_POST, null, $user);
 
         if ($errors) {
+            if (Response::isAjax()) {
+                Response::json(['ok' => false, 'errors' => $errors]);
+            }
             View::render('painel/users/form', [
                 'user' => $user,
                 'roles' => $this->creatableRoles($user),
@@ -153,6 +162,10 @@ class UserController
                     User::setSupervisor($newUserId, $supervisorId);
                 }
             }
+        }
+
+        if (Response::isAjax()) {
+            Response::json(['ok' => true, 'redirect' => '/painel/usuarios?sucesso=1']);
         }
 
         Router::redirect('/painel/usuarios?sucesso=1');
