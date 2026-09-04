@@ -20,13 +20,19 @@ $renderPerson = function (array $person, string $roleLabel, string $icon) use (&
     <h1>Estrutura de Equipe</h1>
     <a href="/painel/usuarios/novo" class="btn btn-outline">+ Novo usuário</a>
 </div>
-<p class="section-sub">Hierarquia: Licenciado (dono da região) → Gestor → Vendedor. Pra editar um percentual, abra o usuário em Usuários.</p>
+<p class="section-sub">Onde estão os Licenciados hoje. Passe o mouse num estado pra ver as cidades.</p>
 
-<?php if (!$roots): ?>
-    <p>Nenhuma estrutura cadastrada ainda.</p>
-<?php endif; ?>
+<?php include __DIR__ . '/../_brazil_grid.php'; ?>
 
-<?php foreach ($roots as $licenciado): ?>
+<details class="team-tree-details" style="margin-top:28px;">
+    <summary class="section-title" style="cursor:pointer;">Ver estrutura detalhada (Licenciado → Gestor → Vendedor)</summary>
+    <p class="section-sub">Hierarquia completa com percentuais. Pra editar um percentual, abra o usuário em Usuários.</p>
+
+    <?php if (!$roots): ?>
+        <p>Nenhuma estrutura cadastrada ainda.</p>
+    <?php endif; ?>
+
+    <?php foreach ($roots as $licenciado): ?>
     <?php $rootIsGestor = $licenciado['role_slug'] === 'gestor'; ?>
     <div class="team-branch">
         <div class="team-node team-node-gestor">
@@ -71,4 +77,5 @@ $renderPerson = function (array $person, string $roleLabel, string $icon) use (&
             <?php endforeach; ?>
         </div>
     </div>
-<?php endforeach; ?>
+    <?php endforeach; ?>
+</details>

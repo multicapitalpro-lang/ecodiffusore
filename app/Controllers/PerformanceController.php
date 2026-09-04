@@ -60,6 +60,7 @@ class PerformanceController
             'roots' => $roots,
             'byManager' => $byManager,
             'totals' => $totals,
+            'byState' => \App\Core\BrazilStates::groupByState(array_values(array_filter($roots, fn ($u) => $u['role_slug'] === Roles::REGIONAL_OWNER))),
         ]);
     }
 }
