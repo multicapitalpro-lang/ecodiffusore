@@ -2,12 +2,19 @@
 use App\Core\Csrf;
 use App\Core\Roles;
 use App\Core\View;
-$sucesso = isset($_GET['sucesso']);
+$sucesso = $_GET['sucesso'] ?? null;
+$erro = $_GET['erro'] ?? null;
 $errors = $errors ?? [];
 $values = $values ?? [];
 $sellers = $sellers ?? [];
+$filters = $filters ?? [];
+$stats = $stats ?? ['total' => 0, 'pagos' => 0, 'abertos' => 0, 'nunca_compraram' => 0];
 $openModal = isset($_GET['novo']) || $errors;
 $canAssignSeller = in_array($user['role_slug'] ?? '', Roles::MANAGEMENT, true);
+$erroLabels = [
+    'csrf' => 'Sessão expirada, tente novamente.',
+    'vinculo' => 'Não é possível excluir: este cliente tem pedidos ou outros registros vinculados.',
+];
 ?>
 <div class="page-header">
     <h1>Clientes</h1>
@@ -17,63 +24,136 @@ $canAssignSeller = in_array($user['role_slug'] ?? '', Roles::MANAGEMENT, true);
     </div>
 </div>
 
-<?php if ($sucesso): ?>
+<?php if ($sucesso === '1'): ?>
     <p class="form-msg form-msg-ok">Atualizado com sucesso.</p>
+<?php elseif ($sucesso === '2'): ?>
+    <p class="form-msg form-msg-ok">Cliente excluído.</p>
+<?php elseif ($sucesso === '3'): ?>
+    <p class="form-msg form-msg-ok"><?= (int) ($_GET['deletados'] ?? 0) ?> cliente(s) excluído(s)<?php if ((int) ($_GET['falhas'] ?? 0) > 0): ?>, <?= (int) $_GET['falhas'] ?> não puderam ser excluídos (vínculos com pedidos).<?php endif; ?></p>
+<?php elseif ($erro): ?>
+    <p class="form-msg form-msg-erro"><?= View::e($erroLabels[$erro] ?? 'Não foi possível concluir a ação.') ?></p>
 <?php endif; ?>
+
+<div class="cards-grid">
+    <div class="dash-card">
+        <span>Total de clientes</span>
+        <strong><?= (int) $stats['total'] ?></strong>
+    </div>
+    <div class="dash-card">
+        <span>Já pagaram algum pedido</span>
+        <strong><?= (int) $stats['pagos'] ?></strong>
+    </div>
+    <div class="dash-card">
+        <span>Com pedido em aberto</span>
+        <strong><?= (int) $stats['abertos'] ?></strong>
+    </div>
+    <div class="dash-card">
+        <span>Nunca compraram</span>
+        <strong><?= (int) $stats['nunca_compraram'] ?></strong>
+    </div>
+</div>
+
+<form method="get" class="filter-bar">
+    <input type="text" name="q" placeholder="Nome, e-mail ou documento" value="<?= View::e($filters['q'] ?? '') ?>">
+    <select name="seller_id">
+        <option value="">Todos os vendedores</option>
+        <?php foreach ($sellers as $s): ?>
+            <option value="<?= (int) $s['id'] ?>" <?= (string) ($filters['seller_id'] ?? '') === (string) $s['id'] ? 'selected' : '' ?>><?= View::e($s['name']) ?></option>
+        <?php endforeach; ?>
+    </select>
+    <select name="status">
+        <option value="">Todos os status</option>
+        <option value="ativo" <?= ($filters['status'] ?? '') === 'ativo' ? 'selected' : '' ?>>Ativo</option>
+        <option value="inativo" <?= ($filters['status'] ?? '') === 'inativo' ? 'selected' : '' ?>>Inativo</option>
+    </select>
+    <input type="text" name="city" placeholder="Cidade" value="<?= View::e($filters['city'] ?? '') ?>">
+    <button type="submit" class="btn btn-outline">Filtrar</button>
+</form>
 
 <form action="/painel/clientes/vincular-vendedor" method="post" id="bulk-seller-form">
     <?= Csrf::field() ?>
+    <div id="bulk-actions-bar" style="display:none;margin-bottom:12px;gap:10px;align-items:center;">
+        <label>Vincular selecionados a:
+            <select name="seller_id">
+                <option value="">Sem vendedor</option>
+                <?php foreach ($sellers as $s): ?>
+                    <option value="<?= (int) $s['id'] ?>"><?= View::e($s['name']) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </label>
+        <button type="submit" class="btn btn-outline">Vincular a vendedor</button>
+        <button type="submit" formaction="/painel/clientes/excluir-lote" class="btn btn-danger" data-confirm="Excluir os clientes selecionados? Essa ação não pode ser desfeita.">🗑 Excluir selecionados (<span id="bulk-count">0</span>)</button>
+    </div>
+
     <div class="table-scroll">
         <table class="data-table">
             <thead>
                 <tr>
-                    <?php if ($canAssignSeller): ?><th><input type="checkbox" id="select-all-clients"></th><?php endif; ?>
-                    <th>Nome</th><th>Documento</th><th>Cidade/UF</th><th>WhatsApp</th><th>Vendedor</th><th>Status</th><th></th>
+                    <th><input type="checkbox" id="select-all-clients"></th>
+                    <th>Nome</th><th>Documento</th><th>Cidade/UF</th><th>WhatsApp</th><th>Vendedor</th><th>Pedidos</th><th>Status</th><th></th>
                 </tr>
             </thead>
             <tbody>
                 <?php foreach ($clients as $c): ?>
+                    <?php $purchase = $c['purchase_status'] ?? ['label' => '—', 'badge' => 'novo']; ?>
                     <tr>
-                        <?php if ($canAssignSeller): ?>
-                            <td><input type="checkbox" name="client_ids[]" value="<?= (int) $c['id'] ?>" class="client-checkbox"></td>
-                        <?php endif; ?>
+                        <td><input type="checkbox" name="ids[]" value="<?= (int) $c['id'] ?>" class="row-select-client"></td>
                         <td><a href="/painel/clientes/<?= (int) $c['id'] ?>"><?= View::e($c['name']) ?></a></td>
                         <td><?= View::e($c['document'] ?: '—') ?></td>
                         <td><?= View::e(trim(($c['city'] ?: '') . ($c['state'] ? '/' . $c['state'] : '')) ?: '—') ?></td>
-                        <td><?= View::e($c['whatsapp'] ?: '—') ?></td>
+                        <td>
+                            <?php if (!empty($c['whatsapp'])): ?>
+                                <a href="https://wa.me/55<?= preg_replace('/\D/', '', $c['whatsapp']) ?>" target="_blank" rel="noopener" class="link-small">💬 <?= View::e($c['whatsapp']) ?></a>
+                            <?php else: ?>—<?php endif; ?>
+                        </td>
                         <td><?= View::e($c['seller_name'] ?: '—') ?></td>
+                        <td>
+                            <span class="status-badge status-<?= View::e($purchase['badge']) ?>"><?= View::e($purchase['label']) ?></span>
+                            <?php if ($c['order_count'] > 0): ?><br><small class="hint-text"><?= (int) $c['order_count'] ?> pedido(s)</small><?php endif; ?>
+                        </td>
                         <td><span class="status-badge status-<?= $c['status'] === 'ativo' ? 'active' : 'inactive' ?>"><?= $c['status'] === 'ativo' ? 'Ativo' : 'Inativo' ?></span></td>
-                        <td><a href="/painel/clientes/<?= (int) $c['id'] ?>/editar">Editar</a></td>
+                        <td class="table-actions">
+                            <button type="button" class="link-button" data-edit-client="<?= (int) $c['id'] ?>">Editar</button>
+                            <button type="submit" formaction="/painel/clientes/<?= (int) $c['id'] ?>/excluir" formnovalidate class="icon-button-danger" title="Excluir" data-confirm="Excluir o cliente <?= View::e($c['name']) ?>? Essa ação não pode ser desfeita.">🗑</button>
+                        </td>
                     </tr>
                 <?php endforeach; ?>
                 <?php if (!$clients): ?>
-                    <tr><td colspan="<?= $canAssignSeller ? 8 : 7 ?>">Nenhum cliente cadastrado ainda.</td></tr>
+                    <tr><td colspan="9">Nenhum cliente encontrado.</td></tr>
                 <?php endif; ?>
             </tbody>
         </table>
     </div>
-
-    <?php if ($canAssignSeller): ?>
-        <div class="filter-bar" style="margin-top:14px;">
-            <label>Vincular selecionados a:
-                <select name="seller_id">
-                    <option value="">Sem vendedor</option>
-                    <?php foreach ($sellers as $s): ?>
-                        <option value="<?= (int) $s['id'] ?>"><?= View::e($s['name']) ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </label>
-            <button type="submit" class="btn btn-outline">Vincular a vendedor</button>
-        </div>
-    <?php endif; ?>
 </form>
 
 <script>
 (function () {
+    var form = document.getElementById('bulk-seller-form');
     var selectAll = document.getElementById('select-all-clients');
-    if (!selectAll) return;
+    var bar = document.getElementById('bulk-actions-bar');
+    var countEl = document.getElementById('bulk-count');
+
+    function rowCheckboxes() {
+        return Array.prototype.slice.call(form.querySelectorAll('.row-select-client'));
+    }
+
+    function updateBar() {
+        var checked = rowCheckboxes().filter(function (c) { return c.checked; });
+        countEl.textContent = checked.length;
+        bar.style.display = checked.length ? 'flex' : 'none';
+    }
+
     selectAll.addEventListener('change', function () {
-        document.querySelectorAll('.client-checkbox').forEach(function (cb) { cb.checked = selectAll.checked; });
+        rowCheckboxes().forEach(function (c) { c.checked = selectAll.checked; });
+        updateBar();
+    });
+    rowCheckboxes().forEach(function (c) { c.addEventListener('change', updateBar); });
+
+    form.addEventListener('submit', function (e) {
+        var btn = e.submitter;
+        if (btn && btn.dataset.confirm && !confirm(btn.dataset.confirm)) {
+            e.preventDefault();
+        }
     });
 })();
 </script>
@@ -92,5 +172,12 @@ $canAssignSeller = in_array($user['role_slug'] ?? '', Roles::MANAGEMENT, true);
                 <button type="button" class="btn btn-outline" data-modal-close>Cancelar</button>
             </div>
         </form>
+    </div>
+</dialog>
+
+<dialog class="modal" id="modal-client-edit">
+    <div id="modal-client-edit-content">
+        <div class="modal-header"><h2>Editar cliente</h2><button type="button" class="modal-close" data-modal-close aria-label="Fechar">&times;</button></div>
+        <div class="modal-body"><p class="hint-text">Carregando...</p></div>
     </div>
 </dialog>

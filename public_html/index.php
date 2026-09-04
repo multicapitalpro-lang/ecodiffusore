@@ -108,9 +108,11 @@ $router->get('/painel/clientes', [App\Controllers\ClientController::class, 'inde
 $router->get('/painel/clientes/novo', [App\Controllers\ClientController::class, 'create']);
 $router->post('/painel/clientes', [App\Controllers\ClientController::class, 'store']);
 $router->post('/painel/clientes/vincular-vendedor', [App\Controllers\ClientController::class, 'bulkAssignSeller']);
+$router->post('/painel/clientes/excluir-lote', [App\Controllers\ClientController::class, 'destroyBulk']);
 $router->get('/painel/clientes/exportar', [App\Controllers\ClientController::class, 'export']);
 $router->get('/painel/clientes/{id}/editar', [App\Controllers\ClientController::class, 'edit']);
 $router->post('/painel/clientes/{id}', [App\Controllers\ClientController::class, 'update']);
+$router->post('/painel/clientes/{id}/excluir', [App\Controllers\ClientController::class, 'destroy']);
 $router->get('/painel/clientes/{id}', [App\Controllers\ClientController::class, 'show']);
 $router->post('/painel/clientes/{id}/notas', [App\Controllers\ClientController::class, 'storeNote']);
 $router->post('/painel/clientes/{id}/criar-acesso', [App\Controllers\ClientController::class, 'createAccess']);

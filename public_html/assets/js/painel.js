@@ -293,5 +293,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 openFragmentModal('modal-quote-detail', 'modal-quote-detail-content', '/painel/orcamentos/' + id + '/editar?fragment=1', 'Editar Orçamento #' + id);
             });
         });
+
+        document.querySelectorAll('[data-edit-client]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var id = btn.getAttribute('data-edit-client');
+                openFragmentModal('modal-client-edit', 'modal-client-edit-content', '/painel/clientes/' + id + '/editar?fragment=1', 'Editar cliente');
+            });
+        });
     });
 })();

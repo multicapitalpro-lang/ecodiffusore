@@ -318,6 +318,33 @@ class Order
         return $series;
     }
 
+    /** Resumo de compras por cliente (quantos pedidos, quantos em aberto/pagos) -- usado na
+     * coluna "Pedidos" de /painel/clientes, numa unica query em vez de N+1 por cliente. */
+    public static function purchaseSummaryByClientIds(array $clientIds): array
+    {
+        if (!$clientIds) {
+            return [];
+        }
+
+        $placeholders = implode(',', array_fill(0, count($clientIds), '?'));
+        $sql = "SELECT client_id, COUNT(*) AS order_count,
+                    SUM(CASE WHEN status IN ('em_andamento', 'atendido') THEN 1 ELSE 0 END) AS open_count,
+                    SUM(CASE WHEN status = 'verificado' THEN 1 ELSE 0 END) AS paid_count,
+                    SUM(CASE WHEN status = 'cancelado' THEN 1 ELSE 0 END) AS cancelled_count
+                FROM orders
+                WHERE client_id IN ({$placeholders})
+                GROUP BY client_id";
+
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($clientIds);
+
+        $byId = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $byId[(int) $row['client_id']] = $row;
+        }
+        return $byId;
+    }
+
     public static function sellerRanking(string $from, string $to): array
     {
         $sql = 'SELECT u.id AS seller_id, u.name,

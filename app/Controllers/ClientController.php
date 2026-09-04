@@ -21,12 +21,79 @@ class ClientController
     public function index(): void
     {
         Auth::requireRole(Roles::STAFF);
+        $user = Auth::user();
+
+        $clients = Client::all();
+
+        $filters = [
+            'q' => trim($_GET['q'] ?? ''),
+            'seller_id' => $_GET['seller_id'] ?? '',
+            'status' => $_GET['status'] ?? '',
+            'city' => trim($_GET['city'] ?? ''),
+        ];
+
+        [$clients, $stats] = $this->attachPurchaseStatus($clients);
+
+        $filtered = array_values(array_filter($clients, function ($c) use ($filters) {
+            if ($filters['q'] !== '' && stripos($c['name'] . ' ' . $c['email'] . ' ' . $c['document'], $filters['q']) === false) {
+                return false;
+            }
+            if ($filters['seller_id'] !== '' && (string) ($c['seller_id'] ?? '') !== (string) $filters['seller_id']) {
+                return false;
+            }
+            if ($filters['status'] !== '' && $c['status'] !== $filters['status']) {
+                return false;
+            }
+            if ($filters['city'] !== '' && stripos((string) $c['city'], $filters['city']) === false) {
+                return false;
+            }
+            return true;
+        }));
 
         View::render('painel/clients/index', [
-            'user' => Auth::user(),
-            'clients' => Client::all(),
+            'user' => $user,
+            'clients' => $filtered,
+            'stats' => $stats,
+            'filters' => $filters,
             'sellers' => User::allByRole('vendedor'),
         ]);
+    }
+
+    /** Anexa o resumo de compras (Order::purchaseSummaryByClientIds) em cada cliente e ja soma
+     * as contagens pros cards do topo -- "status relacionado a compra": nunca comprou, tem
+     * pedido em aberto, ja pagou algum pedido. */
+    private function attachPurchaseStatus(array $clients): array
+    {
+        $ids = array_map(fn ($c) => (int) $c['id'], $clients);
+        $summaries = Order::purchaseSummaryByClientIds($ids);
+
+        $stats = ['total' => count($clients), 'pagos' => 0, 'abertos' => 0, 'nunca_compraram' => 0];
+
+        foreach ($clients as &$client) {
+            $summary = $summaries[(int) $client['id']] ?? null;
+            $orderCount = (int) ($summary['order_count'] ?? 0);
+            $openCount = (int) ($summary['open_count'] ?? 0);
+            $paidCount = (int) ($summary['paid_count'] ?? 0);
+
+            if ($orderCount === 0) {
+                $purchaseStatus = ['slug' => 'nunca_comprou', 'label' => 'Nunca comprou', 'badge' => 'inactive'];
+                $stats['nunca_compraram']++;
+            } elseif ($openCount > 0) {
+                $purchaseStatus = ['slug' => 'em_aberto', 'label' => 'Pedido em aberto', 'badge' => 'novo'];
+                $stats['abertos']++;
+            } elseif ($paidCount > 0) {
+                $purchaseStatus = ['slug' => 'pago', 'label' => 'Já pagou', 'badge' => 'active'];
+                $stats['pagos']++;
+            } else {
+                $purchaseStatus = ['slug' => 'sem_pagamento', 'label' => 'Comprou, sem pagamento confirmado', 'badge' => 'novo'];
+            }
+
+            $client['purchase_status'] = $purchaseStatus;
+            $client['order_count'] = $orderCount;
+        }
+        unset($client);
+
+        return [$clients, $stats];
     }
 
     public function create(): void
@@ -185,12 +252,15 @@ class ClientController
             Router::redirect('/painel/clientes');
         }
 
+        $isFragment = isset($_GET['fragment']);
+
         View::render('painel/clients/form', [
             'user' => Auth::user(),
             'editing' => $client,
             'sellers' => User::allByRole('vendedor'),
             'errors' => [],
-        ]);
+            'isModal' => $isFragment,
+        ], $isFragment ? null : 'painel');
     }
 
     public function update(string $id): void
@@ -199,12 +269,18 @@ class ClientController
         $id = (int) $id;
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            if (Response::isAjax()) {
+                Response::json(['ok' => false, 'errors' => ['name' => 'Sessão expirada, recarregue a página.']]);
+            }
             Router::redirect("/painel/clientes/{$id}/editar?erro=1");
         }
 
         $errors = $this->validate($_POST);
 
         if ($errors) {
+            if (Response::isAjax()) {
+                Response::json(['ok' => false, 'errors' => $errors]);
+            }
             View::render('painel/clients/form', [
                 'user' => Auth::user(),
                 'editing' => array_merge(['id' => $id], $_POST),
@@ -216,7 +292,54 @@ class ClientController
 
         Client::update($id, $_POST);
 
-        Router::redirect('/painel/clientes?sucesso=1');
+        $target = '/painel/clientes?sucesso=1';
+        if (Response::isAjax()) {
+            Response::json(['ok' => true, 'redirect' => $target]);
+        }
+
+        Router::redirect($target);
+    }
+
+    public function destroy(string $id): void
+    {
+        Auth::requireRole(Roles::STAFF);
+        $id = (int) $id;
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            Router::redirect('/painel/clientes?erro=csrf');
+        }
+
+        try {
+            Client::delete($id);
+        } catch (\PDOException $e) {
+            Router::redirect('/painel/clientes?erro=vinculo');
+        }
+
+        Router::redirect('/painel/clientes?sucesso=2');
+    }
+
+    public function destroyBulk(): void
+    {
+        Auth::requireRole(Roles::STAFF);
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            Router::redirect('/painel/clientes?erro=csrf');
+        }
+
+        $ids = array_unique(array_map('intval', $_POST['ids'] ?? []));
+        $deleted = 0;
+        $failed = 0;
+
+        foreach ($ids as $id) {
+            try {
+                Client::delete($id);
+                $deleted++;
+            } catch (\PDOException $e) {
+                $failed++;
+            }
+        }
+
+        Router::redirect("/painel/clientes?sucesso=3&deletados={$deleted}&falhas={$failed}");
     }
 
     public function bulkAssignSeller(): void

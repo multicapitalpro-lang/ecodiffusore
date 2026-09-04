@@ -67,6 +67,12 @@ class Client
         $stmt->execute([$sellerId, ...$clientIds]);
     }
 
+    public static function delete(int $id): void
+    {
+        $stmt = Database::connection()->prepare('DELETE FROM clients WHERE id = :id');
+        $stmt->execute(['id' => $id]);
+    }
+
     public static function findByUserId(int $userId): ?array
     {
         $stmt = Database::connection()->prepare('SELECT * FROM clients WHERE user_id = :id LIMIT 1');
