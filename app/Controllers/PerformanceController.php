@@ -3,10 +3,13 @@
 namespace App\Controllers;
 
 use App\Core\Auth;
+use App\Core\BrazilStates;
 use App\Core\DateRange;
+use App\Core\GeoMatch;
 use App\Core\Roles;
 use App\Core\View;
 use App\Models\Commission;
+use App\Models\Lead;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\User;
@@ -30,13 +33,21 @@ class PerformanceController
 
     public function team(): void
     {
-        Auth::requireRole(Roles::MANAGEMENT);
+        Auth::requireRole(array_merge(Roles::MANAGEMENT, Roles::NATIONAL_SUPPORT));
         $user = Auth::user();
 
-        // Admin ve todas as regioes; Licenciado/Gestor veem so a propria (ninguem enxerga a
-        // estrutura de outra regiao por aqui, mesmo path de escopo usado no Financeiro).
+        // Admin ve todas as regioes; Gerente/Supervisor veem as regioes sob sua rede nacional
+        // (varios licenciados como raiz, igual admin); Licenciado/Gestor veem so a propria.
         if ($user['role_slug'] === 'admin') {
             $users = User::all();
+            $roots = array_values(array_filter($users, fn ($u) => $u['role_slug'] === Roles::REGIONAL_OWNER));
+        } elseif ($user['role_slug'] === 'gerente') {
+            $scopeIds = User::nationalIds((int) $user['id']);
+            $users = array_values(array_filter(User::all(), fn ($u) => in_array((int) $u['id'], $scopeIds, true)));
+            $roots = array_values(array_filter($users, fn ($u) => $u['role_slug'] === Roles::REGIONAL_OWNER));
+        } elseif ($user['role_slug'] === 'supervisor') {
+            $scopeIds = User::supervisedIds((int) $user['id']);
+            $users = array_values(array_filter(User::all(), fn ($u) => in_array((int) $u['id'], $scopeIds, true)));
             $roots = array_values(array_filter($users, fn ($u) => $u['role_slug'] === Roles::REGIONAL_OWNER));
         } else {
             $downline = User::downlineIds((int) $user['id']);
@@ -61,6 +72,56 @@ class PerformanceController
             'byManager' => $byManager,
             'totals' => $totals,
             'byState' => \App\Core\BrazilStates::groupByState(array_values(array_filter($roots, fn ($u) => $u['role_slug'] === Roles::REGIONAL_OWNER))),
+        ]);
+    }
+
+    /**
+     * Visao nacional (nao escopada por rede) pra admin/gerente/supervisor enxergarem onde a
+     * Ecodiffusore ja tem Licenciado e, principalmente, onde ainda nao tem -- cruzando com a
+     * cidade dos Leads recebidos pra sinalizar demanda em estado sem cobertura ainda.
+     */
+    public function panorama(): void
+    {
+        Auth::requireRole(['admin', 'gerente', 'supervisor']);
+        $user = Auth::user();
+
+        $ativos = User::allByRole('licenciado');
+        $byState = BrazilStates::groupByState($ativos);
+
+        $missingStates = [];
+        foreach (BrazilStates::NAMES as $uf => $name) {
+            if (empty($byState[$uf])) {
+                $missingStates[$uf] = $name;
+            }
+        }
+        asort($missingStates);
+
+        // Sinal de demanda sem cobertura: em que UFs sem Licenciado ainda estao chegando Leads.
+        $cityStateCache = [];
+        $leadsByMissingState = [];
+        foreach (Lead::all() as $lead) {
+            if (empty($lead['city'])) {
+                continue;
+            }
+            $city = $lead['city'];
+            if (!array_key_exists($city, $cityStateCache)) {
+                $cityStateCache[$city] = GeoMatch::stateForCity($city);
+            }
+            $uf = $cityStateCache[$city];
+            if ($uf && isset($missingStates[$uf])) {
+                $leadsByMissingState[$uf] = ($leadsByMissingState[$uf] ?? 0) + 1;
+            }
+        }
+        arsort($leadsByMissingState);
+
+        View::render('painel/performance/panorama', [
+            'user' => $user,
+            'byState' => $byState,
+            'missingStates' => $missingStates,
+            'leadsByMissingState' => $leadsByMissingState,
+            'totalLicenciados' => count($ativos),
+            'estadosCobertos' => count($byState),
+            'totalEstados' => count(BrazilStates::NAMES),
         ]);
     }
 }

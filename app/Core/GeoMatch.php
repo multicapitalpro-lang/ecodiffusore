@@ -63,6 +63,16 @@ class GeoMatch
         return $nearest;
     }
 
+    /** UF da primeira cidade brasileira encontrada com esse nome (mesma limitacao de ambiguidade
+     *  documentada no docblock da classe -- usado so como sinal aproximado de onde ha demanda). */
+    public static function stateForCity(string $cityName): ?string
+    {
+        $stmt = Database::connection()->prepare('SELECT uf FROM br_cities WHERE name_normalized = :name LIMIT 1');
+        $stmt->execute(['name' => self::normalize($cityName)]);
+        $row = $stmt->fetch();
+        return $row ? $row['uf'] : null;
+    }
+
     /** @return array{lat: float, lng: float}|null */
     private static function findCityCoords(string $cityName, ?string $state = null): ?array
     {
