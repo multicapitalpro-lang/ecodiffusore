@@ -16,19 +16,6 @@ use App\Core\View;
 
         <div class="buy-docs-grid">
             <div class="buy-doc-card">
-                <h4>📜 Patente registrada no INPI</h4>
-                <p>Carta Patente nº <strong>BR 202020013548-7</strong>, modelo de utilidade, título
-                "Disposição construtiva aplicada em difusor de ar para motores de combustão".
-                Depósito em 01/07/2020, validade de 15 anos.</p>
-                <a href="<?= View::asset('/assets/docs/carta-patente.pdf') ?>" target="_blank" rel="noopener" class="link-small">Ver certificado completo (PDF) →</a>
-            </div>
-            <div class="buy-doc-card">
-                <h4>®️ Marca registrada</h4>
-                <p>Registro de marca Ecodiffusore no INPI, processo nº <strong>920298915</strong>,
-                concedido em 27/04/2021, com vigência até 27/04/2031.</p>
-                <a href="<?= View::asset('/assets/docs/certificado-registro-marca.pdf') ?>" target="_blank" rel="noopener" class="link-small">Ver certificado completo (PDF) →</a>
-            </div>
-            <div class="buy-doc-card">
                 <h4>🔬 Estudo técnico ECOTEC</h4>
                 <p>Acompanhamento de consumo em máquinas agrícolas (John Deere 6605, Valtra BP905,
                 John Deere STS 9670) conduzido pelo Instituto de Pesquisas Ecotecnológicas, sob
