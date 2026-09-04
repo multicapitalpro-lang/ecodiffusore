@@ -65,6 +65,11 @@ class UserController
             return true;
         }));
 
+        foreach ($users as &$u) {
+            $u['responsavel'] = User::responsibleFor($u);
+        }
+        unset($u);
+
         View::render('painel/users/index', [
             'user' => $user,
             'users' => $users,

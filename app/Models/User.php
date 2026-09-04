@@ -31,6 +31,41 @@ class User
         return $user ?: null;
     }
 
+    /**
+     * Quem "cuida" de um usuario na hierarquia comercial, pra exibicao (ex: coluna Responsavel
+     * na tela de Usuarios). Regras dadas pelo cliente: Vendedor/Gestor -> o Licenciado da regiao
+     * (sobe a cadeia de manager_id ate achar um); Licenciado -> o Supervisor responsavel
+     * (supervisor_id); Supervisor -> o Gerente que o cadastrou (manager_id); Gerente -> ele mesmo
+     * (topo da cadeia nacional, sem ninguem acima). Cliente/Admin nao tem "responsavel" nesse
+     * sentido comercial.
+     */
+    public static function responsibleFor(array $target): ?array
+    {
+        switch ($target['role_slug'] ?? null) {
+            case 'gerente':
+                return $target;
+            case 'supervisor':
+                return !empty($target['manager_id']) ? self::find((int) $target['manager_id']) : null;
+            case 'licenciado':
+                return !empty($target['supervisor_id']) ? self::find((int) $target['supervisor_id']) : null;
+            case 'gestor':
+            case 'vendedor':
+                $current = $target;
+                for ($i = 0; $i < 10 && !empty($current['manager_id']); $i++) {
+                    $current = self::find((int) $current['manager_id']);
+                    if (!$current) {
+                        return null;
+                    }
+                    if ($current['role_slug'] === 'licenciado') {
+                        return $current;
+                    }
+                }
+                return null;
+            default:
+                return null;
+        }
+    }
+
     /** Delete de verdade -- FKs sem ON DELETE CASCADE/SET NULL (ex: commissions) bloqueiam com
      * PDOException se o usuario tiver historico financeiro vinculado; o controller trata isso
      * como "nao pode excluir" em vez de deixar o registro sumir e quebrar relatorios antigos. */

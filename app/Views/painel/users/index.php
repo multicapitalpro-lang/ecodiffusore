@@ -94,7 +94,7 @@ $erroLabels = [
             <thead>
                 <tr>
                     <th><input type="checkbox" id="select-all-users"></th>
-                    <th>Nome</th><th>E-mail</th><th>Papel</th><th>Status</th><th>Onboarding</th><th>Cidade/UF</th><th>Cadastrado em</th><th>Último login</th><th></th>
+                    <th>Nome</th><th>E-mail</th><th>Papel</th><th>Status</th><th>Onboarding</th><th>Cidade/UF</th><th>Responsável</th><th>Cadastrado em</th><th>Último login</th><th></th>
                 </tr>
             </thead>
             <tbody>
@@ -114,6 +114,17 @@ $erroLabels = [
                             <?php endif; ?>
                         </td>
                         <td><?= $u['city'] ? View::e($u['city']) . ($u['state'] ? '/' . View::e($u['state']) : '') : '—' ?></td>
+                        <td>
+                            <?php if ($u['responsavel']): ?>
+                                <?= View::e($u['responsavel']['name']) ?>
+                                <?php $respFone = preg_replace('/\D/', '', (string) ($u['responsavel']['whatsapp'] ?? '')); ?>
+                                <?php if ($respFone !== ''): ?>
+                                    <a href="https://wa.me/55<?= $respFone ?>" target="_blank" rel="noopener" title="Falar no WhatsApp com <?= View::e($u['responsavel']['name']) ?>">💬</a>
+                                <?php endif; ?>
+                            <?php else: ?>
+                                —
+                            <?php endif; ?>
+                        </td>
                         <td><?= $u['created_at'] ? View::e(date('d/m/Y', strtotime($u['created_at']))) : '—' ?></td>
                         <td><?= $u['last_login_at'] ? View::e($u['last_login_at']) : '—' ?></td>
                         <td class="table-actions">
@@ -125,7 +136,7 @@ $erroLabels = [
                     </tr>
                 <?php endforeach; ?>
                 <?php if (!$users): ?>
-                    <tr><td colspan="9">Nenhum usuário encontrado com esses filtros.</td></tr>
+                    <tr><td colspan="10">Nenhum usuário encontrado com esses filtros.</td></tr>
                 <?php endif; ?>
             </tbody>
         </table>
