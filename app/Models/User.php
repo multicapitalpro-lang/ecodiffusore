@@ -31,6 +31,15 @@ class User
         return $user ?: null;
     }
 
+    /** Delete de verdade -- FKs sem ON DELETE CASCADE/SET NULL (ex: commissions) bloqueiam com
+     * PDOException se o usuario tiver historico financeiro vinculado; o controller trata isso
+     * como "nao pode excluir" em vez de deixar o registro sumir e quebrar relatorios antigos. */
+    public static function delete(int $id): void
+    {
+        $stmt = Database::connection()->prepare('DELETE FROM users WHERE id = :id');
+        $stmt->execute(['id' => $id]);
+    }
+
     public static function all(): array
     {
         $stmt = Database::connection()->query(

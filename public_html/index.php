@@ -77,7 +77,9 @@ $router->get('/painel/usuarios', [App\Controllers\UserController::class, 'index'
 $router->get('/painel/usuarios/novo', [App\Controllers\UserController::class, 'create']);
 $router->post('/painel/usuarios', [App\Controllers\UserController::class, 'store']);
 $router->get('/painel/usuarios/{id}/editar', [App\Controllers\UserController::class, 'edit']);
+$router->post('/painel/usuarios/excluir-lote', [App\Controllers\UserController::class, 'destroyBulk']);
 $router->post('/painel/usuarios/{id}', [App\Controllers\UserController::class, 'update']);
+$router->post('/painel/usuarios/{id}/excluir', [App\Controllers\UserController::class, 'destroy']);
 $router->get('/painel/licenciados', [App\Controllers\UserController::class, 'licenciados']);
 $router->post('/painel/licenciados/{id}/supervisor', [App\Controllers\UserController::class, 'assignSupervisor']);
 

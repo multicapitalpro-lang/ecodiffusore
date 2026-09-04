@@ -99,6 +99,58 @@
 
     // Modais (dialog nativo)
     document.addEventListener('DOMContentLoaded', function () {
+        function bindModalClose(root) {
+            root.querySelectorAll('[data-modal-close]').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var dialog = btn.closest('dialog');
+                    if (dialog) dialog.close();
+                });
+            });
+        }
+
+        function bindAjaxForms(root) {
+            root.querySelectorAll('form.ajax-form').forEach(function (form) {
+                form.addEventListener('submit', function (e) {
+                    e.preventDefault();
+
+                    var submitBtn = e.submitter || form.querySelector('button[type=submit]');
+                    form.querySelectorAll('button[type=submit]').forEach(function (b) { b.disabled = true; });
+
+                    form.querySelectorAll('.field-error').forEach(function (el) { el.textContent = ''; });
+                    form.querySelectorAll('.has-error').forEach(function (el) { el.classList.remove('has-error'); });
+
+                    var formData = new FormData(form);
+                    if (submitBtn && submitBtn.name) {
+                        formData.set(submitBtn.name, submitBtn.value);
+                    }
+
+                    fetch(form.getAttribute('action'), {
+                        method: 'POST',
+                        body: formData,
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    })
+                        .then(function (r) { return r.json(); })
+                        .then(function (data) {
+                            if (data.ok) {
+                                window.location.href = data.redirect;
+                                return;
+                            }
+                            Object.keys(data.errors || {}).forEach(function (field) {
+                                var errEl = form.querySelector('[data-error-for="' + field + '"]');
+                                if (errEl) errEl.textContent = data.errors[field];
+                                var input = form.querySelector('[name="' + field + '"]');
+                                if (input) input.classList.add('has-error');
+                            });
+                            form.querySelectorAll('button[type=submit]').forEach(function (b) { b.disabled = false; });
+                        })
+                        .catch(function () {
+                            alert('Erro ao salvar. Verifique sua conexão e tente novamente.');
+                            form.querySelectorAll('button[type=submit]').forEach(function (b) { b.disabled = false; });
+                        });
+                });
+            });
+        }
+
         document.querySelectorAll('[data-modal-open]').forEach(function (btn) {
             btn.addEventListener('click', function () {
                 var modal = document.getElementById(btn.getAttribute('data-modal-open'));
@@ -106,12 +158,7 @@
             });
         });
 
-        document.querySelectorAll('[data-modal-close]').forEach(function (btn) {
-            btn.addEventListener('click', function () {
-                var dialog = btn.closest('dialog');
-                if (dialog) dialog.close();
-            });
-        });
+        bindModalClose(document);
 
         document.querySelectorAll('dialog[data-autoopen]').forEach(function (dialog) {
             dialog.showModal();
@@ -159,44 +206,34 @@
             });
         });
 
-        // Envio via AJAX (fica na mesma tela, sem navegar pra outra pagina)
-        document.querySelectorAll('form.ajax-form').forEach(function (form) {
-            form.addEventListener('submit', function (e) {
-                e.preventDefault();
+        bindAjaxForms(document);
 
-                var submitBtn = e.submitter || form.querySelector('button[type=submit]');
-                form.querySelectorAll('button[type=submit]').forEach(function (b) { b.disabled = true; });
+        // Edicao de usuario num modal: carrega o form via fetch (fragmento sem layout) em vez
+        // de navegar pra /painel/usuarios/{id}/editar -- ver UserController::edit()/update().
+        document.querySelectorAll('[data-edit-user]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var modal = document.getElementById('modal-user-edit');
+                var content = document.getElementById('modal-user-edit-content');
+                if (!modal || !content) return;
 
-                form.querySelectorAll('.field-error').forEach(function (el) { el.textContent = ''; });
-                form.querySelectorAll('.has-error').forEach(function (el) { el.classList.remove('has-error'); });
+                content.innerHTML = '<div class="modal-header"><h2>Editar usuário</h2>'
+                    + '<button type="button" class="modal-close" data-modal-close aria-label="Fechar">&times;</button></div>'
+                    + '<div class="modal-body"><p class="hint-text">Carregando...</p></div>';
+                bindModalClose(content);
+                modal.showModal();
 
-                var formData = new FormData(form);
-                if (submitBtn && submitBtn.name) {
-                    formData.set(submitBtn.name, submitBtn.value);
-                }
-
-                fetch(form.getAttribute('action'), {
-                    method: 'POST',
-                    body: formData,
+                fetch('/painel/usuarios/' + btn.getAttribute('data-edit-user') + '/editar?fragment=1', {
                     headers: { 'X-Requested-With': 'XMLHttpRequest' }
                 })
-                    .then(function (r) { return r.json(); })
-                    .then(function (data) {
-                        if (data.ok) {
-                            window.location.href = data.redirect;
-                            return;
-                        }
-                        Object.keys(data.errors || {}).forEach(function (field) {
-                            var errEl = form.querySelector('[data-error-for="' + field + '"]');
-                            if (errEl) errEl.textContent = data.errors[field];
-                            var input = form.querySelector('[name="' + field + '"]');
-                            if (input) input.classList.add('has-error');
-                        });
-                        form.querySelectorAll('button[type=submit]').forEach(function (b) { b.disabled = false; });
+                    .then(function (r) { return r.text(); })
+                    .then(function (html) {
+                        content.innerHTML = html;
+                        bindModalClose(content);
+                        bindAjaxForms(content);
                     })
                     .catch(function () {
-                        alert('Erro ao salvar. Verifique sua conexão e tente novamente.');
-                        form.querySelectorAll('button[type=submit]').forEach(function (b) { b.disabled = false; });
+                        var body = content.querySelector('.modal-body');
+                        if (body) body.innerHTML = '<p class="form-msg form-msg-erro">Erro ao carregar. Tente novamente.</p>';
                     });
             });
         });

@@ -2,21 +2,30 @@
 use App\Core\Csrf;
 use App\Core\View;
 $isEdit = $editing !== null;
+$isModal = $isModal ?? false;
 $action = $isEdit ? '/painel/usuarios/' . (int) $editing['id'] : '/painel/usuarios';
 $values = $editing ?? ($old ?? []);
 ?>
-<h1><?= $isEdit ? 'Editar usuário' : 'Novo usuário' ?></h1>
+<?php if ($isModal): ?>
+    <div class="modal-header">
+        <h2>Editar usuário</h2>
+        <button type="button" class="modal-close" data-modal-close aria-label="Fechar">&times;</button>
+    </div>
+    <div class="modal-body">
+<?php else: ?>
+    <h1><?= $isEdit ? 'Editar usuário' : 'Novo usuário' ?></h1>
+<?php endif; ?>
 
-<form action="<?= $action ?>" method="post" class="panel-form">
+<form action="<?= $action ?>" method="post" class="panel-form<?= $isModal ? ' ajax-form' : '' ?>">
     <?= Csrf::field() ?>
 
     <label for="name">Nome</label>
     <input type="text" id="name" name="name" value="<?= View::e($values['name'] ?? '') ?>" required>
-    <?php if (!empty($errors['name'])): ?><p class="field-error"><?= View::e($errors['name']) ?></p><?php endif; ?>
+    <p class="field-error" data-error-for="name"><?= !empty($errors['name']) ? View::e($errors['name']) : '' ?></p>
 
     <label for="email">E-mail</label>
     <input type="email" id="email" name="email" value="<?= View::e($values['email'] ?? '') ?>" required>
-    <?php if (!empty($errors['email'])): ?><p class="field-error"><?= View::e($errors['email']) ?></p><?php endif; ?>
+    <p class="field-error" data-error-for="email"><?= !empty($errors['email']) ? View::e($errors['email']) : '' ?></p>
 
     <label for="whatsapp">WhatsApp</label>
     <input type="text" id="whatsapp" name="whatsapp" value="<?= View::e($values['whatsapp'] ?? '') ?>">
@@ -42,7 +51,7 @@ $values = $editing ?? ($old ?? []);
             </option>
         <?php endforeach; ?>
     </select>
-    <?php if (!empty($errors['role_id'])): ?><p class="field-error"><?= View::e($errors['role_id']) ?></p><?php endif; ?>
+    <p class="field-error" data-error-for="role_id"><?= !empty($errors['role_id']) ? View::e($errors['role_id']) : '' ?></p>
 
     <?php if (!empty($supervisors)): ?>
         <div id="supervisor-field-wrap" style="display:none;">
@@ -71,7 +80,7 @@ $values = $editing ?? ($old ?? []);
             </option>
         <?php endforeach; ?>
     </select>
-    <?php if (!empty($errors['manager_id'])): ?><p class="field-error"><?= View::e($errors['manager_id']) ?></p><?php endif; ?>
+    <p class="field-error" data-error-for="manager_id"><?= !empty($errors['manager_id']) ? View::e($errors['manager_id']) : '' ?></p>
 
     <?php if ($canSetCommission): ?>
         <label for="commission_pct">Comissão desta pessoa (%)</label>
@@ -97,16 +106,23 @@ $values = $editing ?? ($old ?? []);
             <input type="password" id="password" name="password" minlength="8" required>
             <?= View::passwordToggle('password') ?>
         </div>
-        <?php if (!empty($errors['password'])): ?><p class="field-error"><?= View::e($errors['password']) ?></p><?php endif; ?>
+        <p class="field-error" data-error-for="password"><?= !empty($errors['password']) ? View::e($errors['password']) : '' ?></p>
     <?php else: ?>
         <label class="checkbox-label">
             <input type="checkbox" name="reset_password" value="1"> Gerar nova senha temporária para este usuário
         </label>
     <?php endif; ?>
 
-    <button type="submit" class="btn btn-primary">Salvar</button>
-    <a href="/painel/usuarios" class="btn btn-outline">Cancelar</a>
+    <div class="<?= $isModal ? 'modal-form-actions' : '' ?>">
+        <button type="submit" class="btn btn-primary">Salvar</button>
+        <?php if ($isModal): ?>
+            <button type="button" class="btn btn-outline" data-modal-close>Cancelar</button>
+        <?php else: ?>
+            <a href="/painel/usuarios" class="btn btn-outline">Cancelar</a>
+        <?php endif; ?>
+    </div>
 </form>
+<?php if ($isModal): ?></div><?php endif; ?>
 
 <?php if (!empty($supervisors)): ?>
 <script>

@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Core\Auth;
 use App\Core\Csrf;
+use App\Core\Response;
 use App\Core\Roles;
 use App\Core\Router;
 use App\Core\View;
@@ -19,15 +20,57 @@ class UserController
         $user = Auth::user();
 
         if ($user['role_slug'] === 'admin') {
-            $users = User::all();
+            $scoped = User::all();
         } else {
             $downline = User::downlineIds((int) $user['id']);
-            $users = array_values(array_filter(User::all(), fn ($u) => in_array((int) $u['id'], $downline, true)));
+            $scoped = array_values(array_filter(User::all(), fn ($u) => in_array((int) $u['id'], $downline, true)));
         }
+
+        // Cards do topo contam sempre o total do escopo, sem aplicar os filtros abaixo.
+        $stats = ['cliente' => 0, 'licenciado' => 0, 'gestor' => 0, 'vendedor' => 0];
+        foreach ($scoped as $u) {
+            if (isset($stats[$u['role_slug']])) {
+                $stats[$u['role_slug']]++;
+            }
+        }
+
+        $filters = [
+            'q' => trim($_GET['q'] ?? ''),
+            'role' => $_GET['role'] ?? '',
+            'status' => $_GET['status'] ?? '',
+            'onboarding' => $_GET['onboarding'] ?? '',
+            'city' => trim($_GET['city'] ?? ''),
+            'state' => trim($_GET['state'] ?? ''),
+        ];
+
+        $users = array_values(array_filter($scoped, function ($u) use ($filters) {
+            if ($filters['q'] !== '' && stripos($u['name'] . ' ' . $u['email'], $filters['q']) === false) {
+                return false;
+            }
+            if ($filters['role'] !== '' && $u['role_slug'] !== $filters['role']) {
+                return false;
+            }
+            if ($filters['status'] !== '' && $u['status'] !== $filters['status']) {
+                return false;
+            }
+            if ($filters['onboarding'] !== '' && ($u['licenciado_onboarding_status'] ?? 'nao_aplicavel') !== $filters['onboarding']) {
+                return false;
+            }
+            if ($filters['city'] !== '' && stripos((string) $u['city'], $filters['city']) === false) {
+                return false;
+            }
+            if ($filters['state'] !== '' && strcasecmp((string) $u['state'], $filters['state']) !== 0) {
+                return false;
+            }
+            return true;
+        }));
 
         View::render('painel/users/index', [
             'user' => $user,
             'users' => $users,
+            'stats' => $stats,
+            'filters' => $filters,
+            'roles' => Role::all(),
         ]);
     }
 
@@ -128,6 +171,10 @@ class UserController
 
         $this->authorizeTarget($user, $id);
 
+        // ?fragment=1 -- renderiza so o <form>, sem o layout do painel, pro modal de edicao
+        // carregar via fetch() sem precisar de uma pagina cheia (ver painel.js e users/index.php).
+        $isFragment = isset($_GET['fragment']);
+
         View::render('painel/users/form', [
             'user' => $user,
             'roles' => $this->creatableRoles($user),
@@ -136,7 +183,8 @@ class UserController
             'canSetCommission' => $this->canSetCommission($user),
             'editing' => $editing,
             'errors' => [],
-        ]);
+            'isModal' => $isFragment,
+        ], $isFragment ? null : 'painel');
     }
 
     public function update(string $id): void
@@ -148,6 +196,9 @@ class UserController
         $this->authorizeTarget($user, $id);
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            if (Response::isAjax()) {
+                Response::json(['ok' => false, 'errors' => ['name' => 'Sessão expirada, recarregue a página.']]);
+            }
             Router::redirect("/painel/usuarios/{$id}/editar?erro=1");
         }
 
@@ -159,6 +210,9 @@ class UserController
         }
 
         if ($errors) {
+            if (Response::isAjax()) {
+                Response::json(['ok' => false, 'errors' => $errors]);
+            }
             View::render('painel/users/form', [
                 'user' => $user,
                 'roles' => $this->creatableRoles($user),
@@ -204,10 +258,90 @@ class UserController
         if (!empty($_POST['reset_password'])) {
             $temp = substr(bin2hex(random_bytes(6)), 0, 10);
             User::resetPassword($id, $temp);
-            Router::redirect("/painel/usuarios?sucesso=2&temp={$temp}");
+            $target = "/painel/usuarios?sucesso=2&temp={$temp}";
+        } else {
+            $target = '/painel/usuarios?sucesso=1';
         }
 
-        Router::redirect('/painel/usuarios?sucesso=1');
+        if (Response::isAjax()) {
+            Response::json(['ok' => true, 'redirect' => $target]);
+        }
+
+        Router::redirect($target);
+    }
+
+    public function destroy(string $id): void
+    {
+        Auth::requireRole(Roles::USER_MANAGEMENT);
+        $user = Auth::user();
+        $id = (int) $id;
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            Router::redirect('/painel/usuarios?erro=csrf');
+        }
+
+        $this->authorizeTarget($user, $id);
+
+        $reason = $this->blockDeletion($user, $id);
+        if ($reason !== null) {
+            Router::redirect('/painel/usuarios?erro=' . $reason);
+        }
+
+        try {
+            User::delete($id);
+        } catch (\PDOException $e) {
+            Router::redirect('/painel/usuarios?erro=vinculo');
+        }
+
+        AuditLog::record((int) $user['id'], 'usuario_excluido', 'user', $id, [], []);
+        Router::redirect('/painel/usuarios?sucesso=3');
+    }
+
+    /** Exclusao em lote -- ids fora do escopo/protegidos sao pulados, nunca derrubam o restante. */
+    public function destroyBulk(): void
+    {
+        Auth::requireRole(Roles::USER_MANAGEMENT);
+        $user = Auth::user();
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            Router::redirect('/painel/usuarios?erro=csrf');
+        }
+
+        $ids = array_unique(array_map('intval', $_POST['ids'] ?? []));
+        $deleted = 0;
+        $failed = 0;
+
+        foreach ($ids as $id) {
+            if (!$this->isAuthorizedTarget($user, $id) || $this->blockDeletion($user, $id) !== null) {
+                $failed++;
+                continue;
+            }
+            try {
+                User::delete($id);
+                AuditLog::record((int) $user['id'], 'usuario_excluido', 'user', $id, [], []);
+                $deleted++;
+            } catch (\PDOException $e) {
+                $failed++;
+            }
+        }
+
+        Router::redirect("/painel/usuarios?sucesso=4&deletados={$deleted}&falhas={$failed}");
+    }
+
+    /** Motivo (ou null se pode excluir) -- nunca deixa excluir a si mesmo nem um Admin por aqui. */
+    private function blockDeletion(array $user, int $targetId): ?string
+    {
+        $target = User::find($targetId);
+        if (!$target) {
+            return 'naoencontrado';
+        }
+        if ($targetId === (int) $user['id']) {
+            return 'self';
+        }
+        if ($target['role_slug'] === 'admin') {
+            return 'admin';
+        }
+        return null;
     }
 
     /** Papeis que quem esta logado tem permissao de atribuir a um novo/editado usuario */
@@ -320,13 +454,14 @@ class UserController
     }
 
     /** Bloqueia edicao/leitura de gente fora da propria regiao/equipe */
+    private function isAuthorizedTarget(array $user, int $targetId): bool
+    {
+        return $user['role_slug'] === 'admin' || in_array($targetId, User::downlineIds((int) $user['id']), true);
+    }
+
     private function authorizeTarget(array $user, int $targetId): void
     {
-        if ($user['role_slug'] === 'admin') {
-            return;
-        }
-
-        if (!in_array($targetId, User::downlineIds((int) $user['id']), true)) {
+        if (!$this->isAuthorizedTarget($user, $targetId)) {
             http_response_code(403);
             require BASE_PATH . '/app/Views/errors/403.php';
             exit;
