@@ -216,12 +216,14 @@ span.beneficio-icon { font-size: 2.1rem; }
 @media (min-width: 760px) { .grid-2 { grid-template-columns: 1fr 1fr; } }
 .depoimentos blockquote { margin: 0; background: var(--white); border-radius: var(--radius); padding: 26px; font-size: 1.02rem; font-style: italic; box-shadow: var(--shadow); }
 .depoimentos cite { display: block; margin-top: 12px; font-style: normal; font-weight: 700; font-size: .85rem; color: var(--green-dark); }
-.depoimentos-carousel { position: relative; max-width: 420px; margin: 34px auto 0; overflow: hidden; }
-.depoimentos-carousel-track { display: flex; transition: transform .35s ease; }
-.depoimento-slide { flex: 0 0 100%; text-align: left; padding: 0 4px; }
-.depoimento-card { background: var(--white); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+.depoimentos-carousel { position: relative; max-width: 1120px; margin: 34px auto 0; overflow: hidden; padding: 0 36px; }
+.depoimentos-carousel-track { display: flex; transition: transform .45s ease; }
+.depoimento-slide { flex: 0 0 100%; text-align: left; padding: 0 8px; box-sizing: border-box; }
+@media (min-width: 640px) { .depoimento-slide { flex: 0 0 50%; } }
+@media (min-width: 940px) { .depoimento-slide { flex: 0 0 33.3333%; } }
+.depoimento-card { background: var(--white); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); height: 100%; }
 .depoimento-video-slot {
-    width: 100%; height: 320px; background: var(--navy); color: #b9c1d9;
+    width: 100%; height: 260px; background: var(--navy); color: #b9c1d9;
     display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 8px; font-size: .8rem;
 }
 .depoimento-video-slot video { display: block; width: 100%; height: 100%; object-fit: cover; }
@@ -230,8 +232,8 @@ span.beneficio-icon { font-size: 2.1rem; }
 .depoimento-body cite { display: block; margin-top: 10px; font-style: normal; font-weight: 700; font-size: .8rem; color: var(--green-dark); }
 
 .carousel-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 34px; height: 34px; border-radius: 50%; border: none; background: var(--white); box-shadow: 0 4px 14px rgba(13,27,61,.18); cursor: pointer; font-size: 1.1rem; color: var(--navy); z-index: 2; }
-.carousel-nav.prev { left: -14px; }
-.carousel-nav.next { right: -14px; }
+.carousel-nav.prev { left: 0; }
+.carousel-nav.next { right: 0; }
 .carousel-dots { display: flex; justify-content: center; gap: 8px; margin-top: 14px; }
 .carousel-dots button { width: 8px; height: 8px; border-radius: 50%; border: none; background: #cdd4e0; cursor: pointer; padding: 0; }
 .carousel-dots button.is-active { background: var(--green-dark); }

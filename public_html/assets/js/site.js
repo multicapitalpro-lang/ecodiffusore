@@ -285,24 +285,45 @@
     updateFinalSubmit();
 })();
 
-function initCarousel(carouselId, trackSelector, slideSelector) {
+function initCarousel(carouselId, trackSelector, slideSelector, options) {
     var carousel = document.getElementById(carouselId);
     if (!carousel) return;
+    options = options || {};
 
     var track = carousel.querySelector(trackSelector);
     var slides = carousel.querySelectorAll(slideSelector);
     var dots = carousel.querySelectorAll('.carousel-dots button');
     var index = 0;
 
+    function itemsPerView() {
+        if (!slides.length) return 1;
+        return Math.max(1, Math.round(carousel.clientWidth / slides[0].offsetWidth));
+    }
+
+    function maxIndex() {
+        return Math.max(0, slides.length - itemsPerView());
+    }
+
     function goTo(i) {
-        index = (i + slides.length) % slides.length;
-        track.style.transform = 'translateX(-' + (index * 100) + '%)';
+        var max = maxIndex();
+        if (i < 0) i = max;
+        if (i > max) i = 0;
+        index = i;
+        var slideWidth = slides[0].offsetWidth;
+        track.style.transform = 'translateX(-' + (index * slideWidth) + 'px)';
         dots.forEach(function (d, di) { d.classList.toggle('is-active', di === index); });
     }
 
     carousel.querySelector('.prev').addEventListener('click', function () { goTo(index - 1); });
     carousel.querySelector('.next').addEventListener('click', function () { goTo(index + 1); });
     dots.forEach(function (d, di) { d.addEventListener('click', function () { goTo(di); }); });
+    window.addEventListener('resize', function () { goTo(Math.min(index, maxIndex())); });
+
+    if (options.autoplay) {
+        var timer = setInterval(function () { goTo(index + 1); }, options.autoplay);
+        carousel.addEventListener('mouseenter', function () { clearInterval(timer); });
+        carousel.addEventListener('mouseleave', function () { timer = setInterval(function () { goTo(index + 1); }, options.autoplay); });
+    }
 }
 
-initCarousel('depoimentos-carousel', '.depoimentos-carousel-track', '.depoimento-slide');
+initCarousel('depoimentos-carousel', '.depoimentos-carousel-track', '.depoimento-slide', { autoplay: 4500 });
