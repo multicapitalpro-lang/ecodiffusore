@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Core\Auth;
 use App\Core\Csrf;
 use App\Core\Csv;
+use App\Core\FileUpload;
 use App\Core\Response;
 use App\Core\Roles;
 use App\Core\Router;
@@ -29,16 +30,55 @@ class OrderController
             'status' => $_GET['status'] ?? null,
             'from' => $_GET['from'] ?? null,
             'to' => $_GET['to'] ?? null,
+            'city' => $_GET['city'] ?? null,
         ], $this->scopeFilters($user));
+
+        $orders = Order::all($filters);
+        [$orders, $stats] = $this->attachPaymentSituation($orders);
 
         View::render('painel/orders/index', [
             'user' => $user,
-            'orders' => Order::all($filters),
+            'orders' => $orders,
+            'stats' => $stats,
             'filters' => $filters,
             'clients' => Client::all(),
             'products' => Product::all(true),
             'sellers' => $this->sellerOptions($user),
         ]);
+    }
+
+    /** Anexa a situacao de pagamento (Payment::situationFor) em cada pedido, sem N+1 (1 query so
+     * pra buscar o pagamento mais recente de todos os pedidos da pagina), e ja soma as
+     * contagens pros cards do topo. */
+    private function attachPaymentSituation(array $orders): array
+    {
+        $ids = array_map(fn ($o) => (int) $o['id'], $orders);
+        $latestPayments = Payment::latestByPayableIds('order', $ids);
+
+        $stats = ['concluidos' => 0, 'pendentes' => 0, 'pagos' => 0, 'cancelados' => 0];
+
+        foreach ($orders as &$order) {
+            $payment = $latestPayments[(int) $order['id']] ?? null;
+            $situation = Payment::situationFor($order, $payment);
+            $order['payment_situation'] = $situation;
+            $order['payment_method'] = $payment['method'] ?? null;
+
+            if ($order['status'] === 'verificado') {
+                $stats['concluidos']++;
+            }
+            if ($situation['slug'] === 'pendente' || $situation['slug'] === 'expirado') {
+                $stats['pendentes']++;
+            }
+            if ($situation['slug'] === 'pago') {
+                $stats['pagos']++;
+            }
+            if ($situation['slug'] === 'cancelado') {
+                $stats['cancelados']++;
+            }
+        }
+        unset($order);
+
+        return [$orders, $stats];
     }
 
     public function export(): void
@@ -93,9 +133,11 @@ class OrderController
             if (Response::isAjax()) {
                 Response::json(['ok' => false, 'errors' => $errors]);
             }
+            [$ordersWithSituation, $stats] = $this->attachPaymentSituation(Order::all($this->scopeFilters($user)));
             View::render('painel/orders/index', [
                 'user' => $user,
-                'orders' => Order::all($this->scopeFilters($user)),
+                'orders' => $ordersWithSituation,
+                'stats' => $stats,
                 'filters' => [],
                 'clients' => Client::all(),
                 'products' => Product::all(true),
@@ -109,11 +151,23 @@ class OrderController
 
         $sellerId = $user['role_slug'] === Roles::SELLER ? $user['id'] : ($_POST['seller_id'] ?: null);
 
+        $vehicleDocument = null;
+        try {
+            $vehicleDocument = FileUpload::storeVehicleDocument($_FILES['vehicle_document'] ?? []);
+        } catch (\RuntimeException $e) {
+            if (Response::isAjax()) {
+                Response::json(['ok' => false, 'errors' => ['vehicle_document' => $e->getMessage()]]);
+            }
+        }
+
         $orderId = Order::create([
             'client_id' => (int) $_POST['client_id'],
             'seller_id' => $sellerId,
             'order_date' => $_POST['order_date'],
             'notes' => $_POST['notes'] ?? '',
+            'vehicle_type' => $_POST['vehicle_type'] ?? '',
+            'vehicle_plate' => $_POST['vehicle_plate'] ?? '',
+            'vehicle_document_path' => $vehicleDocument['stored_name'] ?? null,
         ], $items);
 
         if ($sellerId) {
@@ -132,14 +186,19 @@ class OrderController
     public function show(string $id): void
     {
         $order = $this->authorizeOrder((int) $id);
+        $isFragment = isset($_GET['fragment']);
+
+        $payments = Payment::forPayable('order', (int) $id);
+        $order['payment_situation'] = Payment::situationFor($order, $payments[0] ?? null);
 
         View::render('painel/orders/show', [
             'user' => Auth::user(),
             'order' => $order,
             'items' => OrderItem::forOrder((int) $id),
-            'payments' => Payment::forPayable('order', (int) $id),
+            'payments' => $payments,
             'approval' => Approval::pendingFor('order', (int) $id),
-        ]);
+            'isModal' => $isFragment,
+        ], $isFragment ? null : 'painel');
     }
 
     public function edit(string $id): void
@@ -150,6 +209,8 @@ class OrderController
             Router::redirect("/painel/pedidos/{$id}?erro=2");
         }
 
+        $isFragment = isset($_GET['fragment']);
+
         View::render('painel/orders/form', [
             'user' => Auth::user(),
             'editing' => $order,
@@ -159,7 +220,8 @@ class OrderController
             'sellers' => $this->sellerOptions(Auth::user()),
             'preselectClientId' => 0,
             'errors' => [],
-        ]);
+            'isModal' => $isFragment,
+        ], $isFragment ? null : 'painel');
     }
 
     public function update(string $id): void
@@ -169,6 +231,9 @@ class OrderController
         $this->assertNotViewOnly(Auth::user());
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            if (Response::isAjax()) {
+                Response::json(['ok' => false, 'errors' => ['client_id' => 'Sessão expirada, recarregue a página.']]);
+            }
             Router::redirect("/painel/pedidos/{$id}/editar?erro=1");
         }
 
@@ -177,6 +242,9 @@ class OrderController
         $errors = $this->validate($_POST, $items);
 
         if ($errors) {
+            if (Response::isAjax()) {
+                Response::json(['ok' => false, 'errors' => $errors]);
+            }
             View::render('painel/orders/form', [
                 'user' => $user,
                 'editing' => array_merge(['id' => $id], $_POST),
@@ -192,18 +260,39 @@ class OrderController
 
         $sellerId = $user['role_slug'] === Roles::SELLER ? $order['seller_id'] : ($_POST['seller_id'] ?: null);
 
-        Order::updateHeaderAndItems($id, [
+        $orderData = [
             'client_id' => (int) $_POST['client_id'],
             'seller_id' => $sellerId,
             'order_date' => $_POST['order_date'],
             'notes' => $_POST['notes'] ?? '',
-        ], $items);
+            'vehicle_type' => $_POST['vehicle_type'] ?? '',
+            'vehicle_plate' => $_POST['vehicle_plate'] ?? '',
+        ];
+
+        if (!empty($_FILES['vehicle_document']['name'])) {
+            try {
+                $vehicleDocument = FileUpload::storeVehicleDocument($_FILES['vehicle_document']);
+                $orderData['vehicle_document_path'] = $vehicleDocument['stored_name'] ?? null;
+            } catch (\RuntimeException $e) {
+                if (Response::isAjax()) {
+                    Response::json(['ok' => false, 'errors' => ['vehicle_document' => $e->getMessage()]]);
+                }
+            }
+        }
+
+        Order::updateHeaderAndItems($id, $orderData, $items);
 
         if ($sellerId) {
             Approval::checkAndRequest('order', $id, $items, (int) $sellerId, (int) $user['id']);
         }
 
-        Router::redirect("/painel/pedidos/{$id}?sucesso=1");
+        $target = "/painel/pedidos/{$id}?sucesso=1";
+
+        if (Response::isAjax()) {
+            Response::json(['ok' => true, 'redirect' => $target]);
+        }
+
+        Router::redirect($target);
     }
 
     public function markStatus(string $id): void
@@ -232,6 +321,51 @@ class OrderController
 
         Order::updateStatus($id, $status);
         Router::redirect("/painel/pedidos/{$id}?sucesso=1");
+    }
+
+    /** Marca o pagamento mais recente do pedido como reembolsado -- so muda a "situacao" exibida
+     * (ver Payment::situationFor), nao mexe no status do pedido nem desfaz comissao/lancamento
+     * ja gerados (isso e uma decisao financeira separada, fora do escopo deste botao). */
+    public function refundPayment(string $id): void
+    {
+        $this->authorizeOrder((int) $id);
+        $id = (int) $id;
+        $this->assertNotViewOnly(Auth::user());
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            Router::redirect("/painel/pedidos/{$id}?erro=1");
+        }
+
+        $payments = Payment::forPayable('order', $id);
+        $latest = $payments[0] ?? null;
+        if ($latest) {
+            Payment::markRefunded((int) $latest['id']);
+            AuditLog::record((int) Auth::user()['id'], 'pagamento_reembolsado', 'order', $id, ['payment_id' => $latest['id']], []);
+        }
+
+        Router::redirect("/painel/pedidos/{$id}?sucesso=1");
+    }
+
+    public function downloadVehicleDocument(string $id): void
+    {
+        $order = $this->authorizeOrder((int) $id);
+
+        if (!$order['vehicle_document_path']) {
+            http_response_code(404);
+            exit('Arquivo não encontrado.');
+        }
+
+        $path = FileUpload::path('vehicle_docs', $order['vehicle_document_path']);
+        if (!file_exists($path)) {
+            http_response_code(404);
+            exit('Arquivo não encontrado.');
+        }
+
+        header('Content-Type: application/octet-stream');
+        header('Content-Disposition: inline; filename="documento-veiculo-' . (int) $id . '"');
+        header('Content-Length: ' . filesize($path));
+        readfile($path);
+        exit;
     }
 
     private function authorizeOrder(int $id): array

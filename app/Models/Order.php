@@ -9,7 +9,9 @@ class Order
 {
     public static function all(array $filters = []): array
     {
-        $sql = 'SELECT o.*, c.name AS client_name, u.name AS seller_name
+        $sql = 'SELECT o.*, c.name AS client_name, c.whatsapp AS client_whatsapp, c.city AS client_city, c.state AS client_state,
+                    u.name AS seller_name,
+                    (SELECT GROUP_CONCAT(p.name SEPARATOR ", ") FROM order_items oi JOIN products p ON p.id = oi.product_id WHERE oi.order_id = o.id) AS product_names
                 FROM orders o
                 JOIN clients c ON c.id = o.client_id
                 LEFT JOIN users u ON u.id = o.seller_id
@@ -45,6 +47,10 @@ class Order
             $sql .= ' AND o.client_id = :client_id';
             $params['client_id'] = $filters['client_id'];
         }
+        if (!empty($filters['city'])) {
+            $sql .= ' AND c.city LIKE :city';
+            $params['city'] = '%' . $filters['city'] . '%';
+        }
 
         $sql .= ' ORDER BY o.order_date DESC, o.id DESC';
 
@@ -56,7 +62,8 @@ class Order
     public static function find(int $id): ?array
     {
         $stmt = Database::connection()->prepare(
-            'SELECT o.*, c.name AS client_name, u.name AS seller_name
+            'SELECT o.*, c.name AS client_name, c.whatsapp AS client_whatsapp, c.city AS client_city, c.state AS client_state,
+                    u.name AS seller_name
              FROM orders o
              JOIN clients c ON c.id = o.client_id
              LEFT JOIN users u ON u.id = o.seller_id
@@ -74,8 +81,8 @@ class Order
 
         try {
             $stmt = $db->prepare(
-                'INSERT INTO orders (client_id, seller_id, status, order_date, total_value, notes)
-                 VALUES (:client_id, :seller_id, :status, :order_date, 0, :notes)'
+                'INSERT INTO orders (client_id, seller_id, status, order_date, total_value, notes, vehicle_type, vehicle_plate, vehicle_document_path)
+                 VALUES (:client_id, :seller_id, :status, :order_date, 0, :notes, :vehicle_type, :vehicle_plate, :vehicle_document_path)'
             );
             $stmt->execute([
                 'client_id' => $data['client_id'],
@@ -83,6 +90,9 @@ class Order
                 'status' => $data['status'] ?? 'em_andamento',
                 'order_date' => $data['order_date'],
                 'notes' => $data['notes'] ?: null,
+                'vehicle_type' => $data['vehicle_type'] ?: null,
+                'vehicle_plate' => $data['vehicle_plate'] ?: null,
+                'vehicle_document_path' => $data['vehicle_document_path'] ?? null,
             ]);
             $orderId = (int) $db->lastInsertId();
 
@@ -108,15 +118,23 @@ class Order
         try {
             $stmt = $db->prepare(
                 'UPDATE orders SET client_id = :client_id, seller_id = :seller_id,
-                    order_date = :order_date, notes = :notes WHERE id = :id'
+                    order_date = :order_date, notes = :notes, vehicle_type = :vehicle_type,
+                    vehicle_plate = :vehicle_plate' . (isset($data['vehicle_document_path']) ? ', vehicle_document_path = :vehicle_document_path' : '') . '
+                 WHERE id = :id'
             );
-            $stmt->execute([
+            $params = [
                 'id' => $id,
                 'client_id' => $data['client_id'],
                 'seller_id' => $data['seller_id'] ?: null,
                 'order_date' => $data['order_date'],
                 'notes' => $data['notes'] ?: null,
-            ]);
+                'vehicle_type' => $data['vehicle_type'] ?: null,
+                'vehicle_plate' => $data['vehicle_plate'] ?: null,
+            ];
+            if (isset($data['vehicle_document_path'])) {
+                $params['vehicle_document_path'] = $data['vehicle_document_path'];
+            }
+            $stmt->execute($params);
 
             OrderItem::deleteForOrder($id);
             foreach ($items as $item) {

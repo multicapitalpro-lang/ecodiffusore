@@ -58,4 +58,69 @@ class Payment
         $stmt = Database::connection()->prepare("UPDATE payments SET status = 'cancelado' WHERE id = :id");
         $stmt->execute(['id' => $id]);
     }
+
+    public static function markRefunded(int $id): void
+    {
+        $stmt = Database::connection()->prepare("UPDATE payments SET status = 'reembolsado' WHERE id = :id");
+        $stmt->execute(['id' => $id]);
+    }
+
+    /** O pagamento mais recente de cada payable_id, num unico round-trip -- usado pra listar
+     * pedidos sem fazer N+1 (Payment::forPayable() por pedido). */
+    public static function latestByPayableIds(string $type, array $ids): array
+    {
+        if (!$ids) {
+            return [];
+        }
+
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $sql = "SELECT p.* FROM payments p
+                INNER JOIN (
+                    SELECT payable_id, MAX(created_at) AS max_created
+                    FROM payments
+                    WHERE payable_type = ? AND payable_id IN ({$placeholders})
+                    GROUP BY payable_id
+                ) latest ON latest.payable_id = p.payable_id AND latest.max_created = p.created_at
+                WHERE p.payable_type = ?";
+
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute(array_merge([$type], $ids, [$type]));
+
+        $byId = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $byId[(int) $row['payable_id']] = $row;
+        }
+        return $byId;
+    }
+
+    /**
+     * Situacao de pagamento pra exibicao (Pago/Pendente/Expirado/Cancelado/Reembolsado) -- so
+     * decorativo, nao mexe em orders.status nem na logica de comissao/verificacao. "Expirado" e
+     * calculado na hora (due_date vencida), ja que nao existe cron que atualize isso sozinho.
+     */
+    public static function situationFor(array $order, ?array $payment): array
+    {
+        if ($order['status'] === 'cancelado') {
+            return ['slug' => 'cancelado', 'label' => 'Cancelado', 'badge' => 'inactive'];
+        }
+        if (!$payment) {
+            return ['slug' => 'pendente', 'label' => 'Pendente de pagamento', 'badge' => 'novo'];
+        }
+        if ($payment['status'] === 'pago') {
+            return ['slug' => 'pago', 'label' => 'Pago', 'badge' => 'active'];
+        }
+        if ($payment['status'] === 'reembolsado') {
+            return ['slug' => 'reembolsado', 'label' => 'Reembolsado', 'badge' => 'inactive'];
+        }
+        if ($payment['status'] === 'cancelado') {
+            return ['slug' => 'cancelado', 'label' => 'Cancelado', 'badge' => 'inactive'];
+        }
+
+        $isExpired = $payment['status'] === 'vencido'
+            || (($payment['due_date'] ?? null) && strtotime($payment['due_date']) < strtotime(date('Y-m-d')));
+
+        return $isExpired
+            ? ['slug' => 'expirado', 'label' => 'Expirado', 'badge' => 'inactive']
+            : ['slug' => 'pendente', 'label' => 'Pendente de pagamento', 'badge' => 'novo'];
+    }
 }

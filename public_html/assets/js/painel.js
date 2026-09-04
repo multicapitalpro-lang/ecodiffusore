@@ -1,80 +1,85 @@
-(function () {
-    document.addEventListener('DOMContentLoaded', function () {
-        var body = document.getElementById('items-body');
-        if (!body) return;
+function bindItemsTable(root) {
+    var body = root.querySelector('#items-body');
+    if (!body || body.dataset.itemsBound) return;
+    body.dataset.itemsBound = '1';
 
-        var addBtn = document.getElementById('add-item-row');
-        var totalEl = document.getElementById('order-total');
+    var addBtn = root.querySelector('#add-item-row');
+    var totalEl = root.querySelector('#order-total');
 
-        function fmt(n) {
-            return 'R$ ' + n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        }
+    function fmt(n) {
+        return 'R$ ' + n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
 
-        function recalcRow(row) {
-            var qty = parseFloat(row.querySelector('.item-qty').value) || 0;
-            var price = parseFloat(row.querySelector('.item-price').value) || 0;
-            var subtotal = qty * price;
-            row.querySelector('.item-subtotal').textContent = fmt(subtotal);
-            return subtotal;
-        }
+    function recalcRow(row) {
+        var qty = parseFloat(row.querySelector('.item-qty').value) || 0;
+        var price = parseFloat(row.querySelector('.item-price').value) || 0;
+        var subtotal = qty * price;
+        row.querySelector('.item-subtotal').textContent = fmt(subtotal);
+        return subtotal;
+    }
 
-        function recalcAll() {
-            var total = 0;
-            body.querySelectorAll('.item-row').forEach(function (row) {
-                total += recalcRow(row);
-            });
-            if (totalEl) totalEl.textContent = fmt(total);
-        }
-
-        body.addEventListener('change', function (e) {
-            if (e.target.classList.contains('item-product')) {
-                var opt = e.target.selectedOptions[0];
-                var price = opt ? opt.getAttribute('data-price') : null;
-                var row = e.target.closest('.item-row');
-                if (price && row) {
-                    row.querySelector('.item-price').value = parseFloat(price).toFixed(2);
-                }
-            }
-            recalcAll();
+    function recalcAll() {
+        var total = 0;
+        body.querySelectorAll('.item-row').forEach(function (row) {
+            total += recalcRow(row);
         });
+        if (totalEl) totalEl.textContent = fmt(total);
+    }
 
-        body.addEventListener('input', function (e) {
-            if (e.target.classList.contains('item-qty') || e.target.classList.contains('item-price')) {
-                recalcAll();
+    body.addEventListener('change', function (e) {
+        if (e.target.classList.contains('item-product')) {
+            var opt = e.target.selectedOptions[0];
+            var price = opt ? opt.getAttribute('data-price') : null;
+            var row = e.target.closest('.item-row');
+            if (price && row) {
+                row.querySelector('.item-price').value = parseFloat(price).toFixed(2);
             }
-        });
-
-        body.addEventListener('click', function (e) {
-            if (e.target.classList.contains('btn-remove-row')) {
-                var rows = body.querySelectorAll('.item-row');
-                if (rows.length > 1) {
-                    e.target.closest('.item-row').remove();
-                    recalcAll();
-                }
-            }
-        });
-
-        if (addBtn) {
-            addBtn.addEventListener('click', function () {
-                var firstRow = body.querySelector('.item-row');
-                var clone = firstRow.cloneNode(true);
-                clone.querySelectorAll('select, input').forEach(function (el) {
-                    if (el.tagName === 'SELECT') {
-                        el.selectedIndex = 0;
-                    } else if (el.classList.contains('item-qty')) {
-                        el.value = 1;
-                    } else {
-                        el.value = '';
-                    }
-                });
-                clone.querySelector('.item-subtotal').textContent = fmt(0);
-                body.appendChild(clone);
-            });
         }
-
         recalcAll();
     });
 
+    body.addEventListener('input', function (e) {
+        if (e.target.classList.contains('item-qty') || e.target.classList.contains('item-price')) {
+            recalcAll();
+        }
+    });
+
+    body.addEventListener('click', function (e) {
+        if (e.target.classList.contains('btn-remove-row')) {
+            var rows = body.querySelectorAll('.item-row');
+            if (rows.length > 1) {
+                e.target.closest('.item-row').remove();
+                recalcAll();
+            }
+        }
+    });
+
+    if (addBtn) {
+        addBtn.addEventListener('click', function () {
+            var firstRow = body.querySelector('.item-row');
+            var clone = firstRow.cloneNode(true);
+            clone.querySelectorAll('select, input').forEach(function (el) {
+                if (el.tagName === 'SELECT') {
+                    el.selectedIndex = 0;
+                } else if (el.classList.contains('item-qty')) {
+                    el.value = 1;
+                } else {
+                    el.value = '';
+                }
+            });
+            clone.querySelector('.item-subtotal').textContent = fmt(0);
+            body.appendChild(clone);
+        });
+    }
+
+    recalcAll();
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    bindItemsTable(document);
+});
+
+(function () {
     // Menu mobile (drawer)
     document.addEventListener('DOMContentLoaded', function () {
         var toggle = document.getElementById('painel-menu-toggle');
@@ -151,13 +156,16 @@
             });
         }
 
-        document.querySelectorAll('[data-modal-open]').forEach(function (btn) {
-            btn.addEventListener('click', function () {
-                var modal = document.getElementById(btn.getAttribute('data-modal-open'));
-                if (modal) modal.showModal();
+        function bindModalOpen(root) {
+            root.querySelectorAll('[data-modal-open]').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var modal = document.getElementById(btn.getAttribute('data-modal-open'));
+                    if (modal) modal.showModal();
+                });
             });
-        });
+        }
 
+        bindModalOpen(document);
         bindModalClose(document);
 
         document.querySelectorAll('dialog[data-autoopen]').forEach(function (dialog) {
@@ -171,48 +179,53 @@
         });
 
         // Area de anexos (arrastar e soltar)
-        document.querySelectorAll('[data-file-drop]').forEach(function (drop) {
-            var input = drop.querySelector('input[type=file]');
-            var list = drop.parentElement.querySelector('[data-file-list]');
-            var label = drop.querySelector('[data-file-drop-label]');
+        function bindFileDrop(root) {
+            root.querySelectorAll('[data-file-drop]').forEach(function (drop) {
+                var input = drop.querySelector('input[type=file]');
+                var list = drop.parentElement.querySelector('[data-file-list]');
+                var label = drop.querySelector('[data-file-drop-label]');
 
-            function renderList() {
-                list.innerHTML = '';
-                Array.from(input.files).forEach(function (file) {
-                    var li = document.createElement('li');
-                    li.textContent = file.name + ' (' + Math.round(file.size / 1024) + ' KB)';
-                    list.appendChild(li);
-                });
-                if (label) {
-                    label.textContent = input.files.length
-                        ? input.files.length + ' arquivo(s) selecionado(s) — clique para trocar'
-                        : 'Solte seus arquivos aqui ou clique para adicionar (PDF, JPG, PNG — até 5MB cada)';
+                function renderList() {
+                    list.innerHTML = '';
+                    Array.from(input.files).forEach(function (file) {
+                        var li = document.createElement('li');
+                        li.textContent = file.name + ' (' + Math.round(file.size / 1024) + ' KB)';
+                        list.appendChild(li);
+                    });
+                    if (label) {
+                        label.textContent = input.files.length
+                            ? input.files.length + ' arquivo(s) selecionado(s) — clique para trocar'
+                            : 'Solte seus arquivos aqui ou clique para adicionar (PDF, JPG, PNG — até 5MB cada)';
+                    }
                 }
-            }
 
-            input.addEventListener('change', renderList);
+                input.addEventListener('change', renderList);
 
-            ['dragover', 'dragleave', 'drop'].forEach(function (evt) {
-                drop.addEventListener(evt, function (e) {
-                    e.preventDefault();
-                    drop.classList.toggle('is-dragover', evt === 'dragover');
+                ['dragover', 'dragleave', 'drop'].forEach(function (evt) {
+                    drop.addEventListener(evt, function (e) {
+                        e.preventDefault();
+                        drop.classList.toggle('is-dragover', evt === 'dragover');
+                    });
+                });
+                drop.addEventListener('drop', function (e) {
+                    if (e.dataTransfer.files.length) {
+                        input.files = e.dataTransfer.files;
+                        renderList();
+                    }
                 });
             });
-            drop.addEventListener('drop', function (e) {
-                if (e.dataTransfer.files.length) {
-                    input.files = e.dataTransfer.files;
-                    renderList();
-                }
-            });
-        });
+        }
 
+        bindFileDrop(document);
         bindAjaxForms(document);
 
-        // Criacao/edicao de usuario num modal: carrega o form via fetch (fragmento sem layout)
-        // em vez de navegar pra outra pagina -- ver UserController::create()/edit()/store()/update().
-        function openUserFormModal(url, title) {
-            var modal = document.getElementById('modal-user-edit');
-            var content = document.getElementById('modal-user-edit-content');
+        // Criacao/edicao de usuario/pedido num modal: carrega o form via fetch (fragmento sem
+        // layout) em vez de navegar pra outra pagina -- reaproveitado por Usuarios e Pedidos,
+        // que ganham o modo ?fragment=1 nos respectivos Controllers (renderiza so o conteudo,
+        // sem o layout do painel) pra isso funcionar.
+        function openFragmentModal(dialogId, contentId, url, title) {
+            var modal = document.getElementById(dialogId);
+            var content = document.getElementById(contentId);
             if (!modal || !content) return;
 
             content.innerHTML = '<div class="modal-header"><h2>' + title + '</h2>'
@@ -228,8 +241,11 @@
                 .then(function (r) { return r.text(); })
                 .then(function (html) {
                     content.innerHTML = html;
+                    bindModalOpen(content);
                     bindModalClose(content);
                     bindAjaxForms(content);
+                    bindFileDrop(content);
+                    bindItemsTable(content);
                 })
                 .catch(function () {
                     var body = content.querySelector('.modal-body');
@@ -239,15 +255,29 @@
 
         document.querySelectorAll('[data-edit-user]').forEach(function (btn) {
             btn.addEventListener('click', function () {
-                openUserFormModal('/painel/usuarios/' + btn.getAttribute('data-edit-user') + '/editar?fragment=1', 'Editar usuário');
+                openFragmentModal('modal-user-edit', 'modal-user-edit-content', '/painel/usuarios/' + btn.getAttribute('data-edit-user') + '/editar?fragment=1', 'Editar usuário');
             });
         });
 
         var newUserBtn = document.getElementById('btn-new-user');
         if (newUserBtn) {
             newUserBtn.addEventListener('click', function () {
-                openUserFormModal('/painel/usuarios/novo?fragment=1', 'Novo usuário');
+                openFragmentModal('modal-user-edit', 'modal-user-edit-content', '/painel/usuarios/novo?fragment=1', 'Novo usuário');
             });
         }
+
+        document.querySelectorAll('[data-view-order]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var id = btn.getAttribute('data-view-order');
+                openFragmentModal('modal-order-detail', 'modal-order-detail-content', '/painel/pedidos/' + id + '?fragment=1', 'Pedido #' + id);
+            });
+        });
+
+        document.querySelectorAll('[data-edit-order]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var id = btn.getAttribute('data-edit-order');
+                openFragmentModal('modal-order-detail', 'modal-order-detail-content', '/painel/pedidos/' + id + '/editar?fragment=1', 'Editar Pedido #' + id);
+            });
+        });
     });
 })();

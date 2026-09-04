@@ -47,6 +47,32 @@ use App\Core\View;
     </select>
 <?php endif; ?>
 
+<h3 class="section-title">Veículo</h3>
+<div class="form-grid-2">
+    <div>
+        <label for="vehicle_type">Tipo de veículo</label>
+        <select id="vehicle_type" name="vehicle_type">
+            <option value="">Selecione...</option>
+            <?php foreach (['Caminhão', 'Ônibus', 'Máquina agrícola', 'Máquina de linha amarela', 'Gerador', 'Outro'] as $tipo): ?>
+                <option value="<?= View::e($tipo) ?>" <?= ($values['vehicle_type'] ?? '') === $tipo ? 'selected' : '' ?>><?= View::e($tipo) ?></option>
+            <?php endforeach; ?>
+        </select>
+    </div>
+    <div>
+        <label for="vehicle_plate">Placa (opcional)</label>
+        <input type="text" id="vehicle_plate" name="vehicle_plate" maxlength="10" style="text-transform:uppercase" value="<?= View::e($values['vehicle_plate'] ?? '') ?>">
+    </div>
+</div>
+
+<label>Foto do documento do veículo (opcional)</label>
+<label class="file-drop" data-file-drop>
+    <span data-file-drop-label>Solte o arquivo aqui ou clique para adicionar (PDF, JPG, PNG — até 5MB)</span>
+    <input type="file" id="vehicle_document" name="vehicle_document" accept=".pdf,.jpg,.jpeg,.png,.webp">
+</label>
+<ul class="file-list" data-file-list></ul>
+<p class="hint-text">Guardado pra referência e futura análise automática do veículo.</p>
+<p class="field-error" data-error-for="vehicle_document"><?= View::e($errors['vehicle_document'] ?? '') ?></p>
+
 <h3 class="section-title">Produtos</h3>
 <div class="table-scroll">
     <table class="data-table" id="items-table">

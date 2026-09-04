@@ -66,6 +66,11 @@ class FileUpload
         return self::store($file, 'licenciados');
     }
 
+    public static function storeVehicleDocument(array $file): ?array
+    {
+        return self::store($file, 'vehicle_docs');
+    }
+
     public static function path(string $subdir, string $storedName): string
     {
         return BASE_PATH . '/storage/uploads/' . $subdir . '/' . basename($storedName);

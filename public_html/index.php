@@ -131,6 +131,8 @@ $router->get('/painel/pedidos/{id}', [App\Controllers\OrderController::class, 's
 $router->get('/painel/pedidos/{id}/editar', [App\Controllers\OrderController::class, 'edit']);
 $router->post('/painel/pedidos/{id}', [App\Controllers\OrderController::class, 'update']);
 $router->post('/painel/pedidos/{id}/status', [App\Controllers\OrderController::class, 'markStatus']);
+$router->post('/painel/pedidos/{id}/reembolsar', [App\Controllers\OrderController::class, 'refundPayment']);
+$router->get('/painel/pedidos/{id}/documento-veiculo', [App\Controllers\OrderController::class, 'downloadVehicleDocument']);
 $router->post('/painel/pedidos/{id}/cobranca', [App\Controllers\PaymentController::class, 'generateForOrder']);
 
 // Orcamentos

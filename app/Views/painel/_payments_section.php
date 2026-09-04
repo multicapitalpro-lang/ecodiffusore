@@ -5,7 +5,7 @@ use App\Core\View;
 /** @var string $chargeAction */
 $allowGenerateCharge = $allowGenerateCharge ?? true;
 $methodLabels = ['PIX' => 'Pix', 'BOLETO' => 'Boleto', 'CREDIT_CARD' => 'Cartão'];
-$statusLabels = ['pendente' => 'Pendente', 'pago' => 'Pago', 'vencido' => 'Vencido', 'cancelado' => 'Cancelado'];
+$statusLabels = ['pendente' => 'Pendente', 'pago' => 'Pago', 'vencido' => 'Vencido', 'cancelado' => 'Cancelado', 'reembolsado' => 'Reembolsado'];
 ?>
 <h3 class="section-title">Cobrança</h3>
 
@@ -23,7 +23,7 @@ $statusLabels = ['pendente' => 'Pendente', 'pago' => 'Pago', 'vencido' => 'Venci
                         <td><?= View::e($methodLabels[$p['method']] ?? $p['method']) ?></td>
                         <td>R$ <?= number_format((float) $p['amount'], 2, ',', '.') ?></td>
                         <td><?= View::e(date('d/m/Y', strtotime($p['due_date']))) ?></td>
-                        <td><span class="status-badge status-<?= $p['status'] === 'pago' ? 'active' : ($p['status'] === 'cancelado' ? 'inactive' : 'novo') ?>"><?= $statusLabels[$p['status']] ?? $p['status'] ?></span></td>
+                        <td><span class="status-badge status-<?= $p['status'] === 'pago' ? 'active' : (in_array($p['status'], ['cancelado', 'reembolsado'], true) ? 'inactive' : 'novo') ?>"><?= $statusLabels[$p['status']] ?? $p['status'] ?></span></td>
                         <td>
                             <?php if ($p['status'] === 'pendente' && $p['checkout_url']): ?>
                                 <a href="<?= View::e($p['checkout_url']) ?>" target="_blank" rel="noopener">Ver cobrança</a>
