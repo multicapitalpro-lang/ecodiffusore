@@ -317,9 +317,13 @@ tr.report-row-bold td { font-weight: 700; }
 .kanban-card:hover { box-shadow: var(--shadow-md); }
 .kanban-card.is-dragging { opacity: .4; }
 .kanban-card strong { font-size: .92rem; color: var(--navy); }
+.kanban-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; }
 .kanban-card-meta { font-size: .76rem; color: var(--gray-text); }
 .kanban-card select { margin-top: 4px; padding: 6px 8px; font-size: .78rem; border-radius: 6px; border: 1px solid var(--border); }
 .kanban-empty { text-align: center; padding: 20px 0; margin: 0; }
+.kanban-col-add { background: transparent; border: 2px dashed var(--border); justify-content: center; padding: 14px; }
+.kanban-add-form { display: flex; flex-direction: column; gap: 8px; }
+.kanban-add-form input { padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); font-size: .85rem; }
 @media (max-width: 700px) { .kanban-col { width: 82vw; } }
 
 /* Aprovacao de desconto */

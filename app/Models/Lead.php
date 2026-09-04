@@ -113,6 +113,12 @@ class Lead
         $stmt->execute(['uid' => $userId, 'id' => $id]);
     }
 
+    public static function delete(int $id): void
+    {
+        $stmt = Database::connection()->prepare('DELETE FROM leads WHERE id = :id');
+        $stmt->execute(['id' => $id]);
+    }
+
     public static function count(): int
     {
         return (int) Database::connection()->query('SELECT COUNT(*) FROM leads')->fetchColumn();
