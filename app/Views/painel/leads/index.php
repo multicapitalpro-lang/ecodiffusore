@@ -17,9 +17,6 @@ $vehicleFieldLabels = [
     'vehicle_has_arla' => 'Usa ARLA',
 ];
 ?>
-<div class="page-header">
-    <h1>Leads</h1>
-</div>
 <p class="section-sub"><?= $isViewOnly ? 'Visualização somente leitura.' : 'Arraste o card entre as colunas para atualizar o status.' ?></p>
 
 <?php if ($sucesso === '1'): ?>
