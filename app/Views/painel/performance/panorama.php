@@ -131,20 +131,16 @@ use App\Core\View;
         }).join('');
     }
 
-    function buildStateMap(cities) {
-        if (!cities.length) {
-            return '<p class="state-empty">Sem dados de cidades pra este estado.</p>';
+    function buildStateMap(pathData, viewbox, cities) {
+        if (!pathData) {
+            return '<p class="state-empty">Sem contorno disponível pra este estado.</p>';
         }
-        var lats = cities.map(function (c) { return c.lat; });
-        var lngs = cities.map(function (c) { return c.lng; });
-        var minLat = Math.min.apply(null, lats), maxLat = Math.max.apply(null, lats);
-        var minLng = Math.min.apply(null, lngs), maxLng = Math.max.apply(null, lngs);
-        var w = 600, h = 420, pad = 24;
-        var latRange = (maxLat - minLat) || 1;
-        var lngRange = (maxLng - minLng) || 1;
 
-        function px(lng) { return (pad + ((lng - minLng) / lngRange) * (w - 2 * pad)).toFixed(1); }
-        function py(lat) { return (pad + ((maxLat - lat) / latRange) * (h - 2 * pad)).toFixed(1); }
+        // Mesma projecao usada no servidor pra gerar o path (equirretangular com correcao de
+        // longitude por cos da latitude media do estado) -- garante que as cidades caiam
+        // exatamente sobre o contorno real, e nao num retangulo solto.
+        function px(lng) { return (pathData.pad + pathData.xOff + (lng - pathData.minLon) * pathData.cos * pathData.scale).toFixed(1); }
+        function py(lat) { return (pathData.pad + pathData.yOff + (pathData.maxLat - lat) * pathData.scale).toFixed(1); }
 
         var dots = '', highlighted = '';
         cities.forEach(function (c) {
@@ -152,11 +148,12 @@ use App\Core\View;
             if (c.has_licenciado) {
                 highlighted += '<circle cx="' + cx + '" cy="' + cy + '" r="6" fill="#1f7a3d" stroke="#fff" stroke-width="1.5"><title>' + esc(c.name) + ' — tem Licenciado</title></circle>';
             } else {
-                dots += '<circle cx="' + cx + '" cy="' + cy + '" r="2.2" fill="#b7c0cf"><title>' + esc(c.name) + '</title></circle>';
+                dots += '<circle cx="' + cx + '" cy="' + cy + '" r="2" fill="#98a6bd" fill-opacity=".6"><title>' + esc(c.name) + '</title></circle>';
             }
         });
 
-        return '<svg viewBox="0 0 ' + w + ' ' + h + '" xmlns="http://www.w3.org/2000/svg">' + dots + highlighted + '</svg>';
+        var outline = '<path d="' + pathData.d + '" fill="#dbe2ee" stroke="#98a6bd" stroke-width="1.5"></path>';
+        return '<svg viewBox="' + viewbox + '" xmlns="http://www.w3.org/2000/svg">' + outline + dots + highlighted + '</svg>';
     }
 
     function loadState(uf) {
@@ -170,7 +167,7 @@ use App\Core\View;
             .then(function (r) { return r.json(); })
             .then(function (data) {
                 titleEl.textContent = 'Equipe em ' + data.state_name + ' (' + data.uf + ')';
-                mapEl.innerHTML = buildStateMap(data.cities);
+                mapEl.innerHTML = buildStateMap(data.path, data.viewbox, data.cities);
                 regionsEl.innerHTML = buildRegions(data.regions);
             })
             .catch(function () {

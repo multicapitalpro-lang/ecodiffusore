@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Core\Auth;
+use App\Core\BrazilMapData;
 use App\Core\BrazilStates;
 use App\Core\Database;
 use App\Core\DateRange;
@@ -184,11 +185,15 @@ class PerformanceController
             'has_licenciado' => in_array($c['name_normalized'], $licenciadoCityKeys, true),
         ], $allCities);
 
+        $statePath = BrazilMapData::STATE_PATHS[$uf] ?? null;
+
         Response::json([
             'uf' => $uf,
             'state_name' => BrazilStates::NAMES[$uf],
             'regions' => $regions,
             'cities' => $cities,
+            'viewbox' => BrazilMapData::STATE_VIEWBOX,
+            'path' => $statePath,
         ]);
     }
 }
