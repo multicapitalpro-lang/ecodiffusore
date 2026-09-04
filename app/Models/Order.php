@@ -347,11 +347,13 @@ class Order
 
     public static function sellerRanking(string $from, string $to): array
     {
-        $sql = 'SELECT u.id AS seller_id, u.name,
+        $sql = 'SELECT u.id AS seller_id, u.name, u.city, u.state, u.manager_id, r.slug AS role_slug,
                     COUNT(o.id) AS order_count,
                     COALESCE(SUM(o.total_value), 0) AS total_value,
                     COALESCE((SELECT SUM(c.amount) FROM commissions c WHERE c.seller_id = u.id
-                        AND c.order_id IN (SELECT id FROM orders WHERE order_date BETWEEN :from2 AND :to2)), 0) AS commission_total
+                        AND c.order_id IN (SELECT id FROM orders WHERE order_date BETWEEN :from2 AND :to2)), 0) AS commission_total,
+                    (SELECT COUNT(*) FROM leads l WHERE l.assigned_to_user_id = u.id) AS lead_count,
+                    (SELECT COUNT(*) FROM leads l WHERE l.assigned_to_user_id = u.id AND l.status NOT IN (\'convertido\', \'descartado\')) AS lead_open_count
                 FROM users u
                 JOIN roles r ON r.id = u.role_id AND r.slug = \'vendedor\'
                 LEFT JOIN orders o ON o.seller_id = u.id AND o.order_date BETWEEN :from AND :to AND o.status != \'cancelado\'
@@ -360,6 +362,19 @@ class Order
 
         $stmt = Database::connection()->prepare($sql);
         $stmt->execute(['from' => $from, 'to' => $to, 'from2' => $from, 'to2' => $to]);
-        return $stmt->fetchAll();
+        $rows = $stmt->fetchAll();
+
+        foreach ($rows as &$row) {
+            $orderCount = (int) $row['order_count'];
+            $leadCount = (int) $row['lead_count'];
+            $row['avg_ticket'] = $orderCount > 0 ? (float) $row['total_value'] / $orderCount : 0.0;
+            $row['conversion_pct'] = $leadCount > 0 ? round($orderCount / $leadCount * 100, 1) : null;
+
+            $licenciado = User::responsibleFor($row);
+            $row['licenciado_name'] = $licenciado['name'] ?? null;
+        }
+        unset($row);
+
+        return $rows;
     }
 }
