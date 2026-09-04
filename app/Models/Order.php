@@ -90,8 +90,8 @@ class Order
                 'status' => $data['status'] ?? 'em_andamento',
                 'order_date' => $data['order_date'],
                 'notes' => $data['notes'] ?: null,
-                'vehicle_type' => $data['vehicle_type'] ?: null,
-                'vehicle_plate' => $data['vehicle_plate'] ?: null,
+                'vehicle_type' => !empty($data['vehicle_type']) ? $data['vehicle_type'] : null,
+                'vehicle_plate' => !empty($data['vehicle_plate']) ? $data['vehicle_plate'] : null,
                 'vehicle_document_path' => $data['vehicle_document_path'] ?? null,
             ]);
             $orderId = (int) $db->lastInsertId();
