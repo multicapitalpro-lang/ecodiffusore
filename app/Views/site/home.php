@@ -9,7 +9,7 @@ $erro = isset($_GET['erro']);
     <div class="site-container hero-inner">
         <div class="hero-text">
             <span class="badge">Produto Patenteado · Registro INPI</span>
-            <h1>Economize Diesel e <span>Eleve a Performance</span></h1>
+            <h1>Economize em até 10% de Diesel e <span>Eleve a Performance do seu Veículo</span></h1>
             <p class="hero-sub">O sistema Ecodiffusore potencializa a combustão, melhora o rendimento e reduz desperdícios. Mais força, mais economia, mais resultado — para caminhões, máquinas agrícolas e geradores a diesel.</p>
             <div class="hero-ctas">
                 <a href="#contato" class="btn btn-primary">Quero Economizar Agora</a>

@@ -221,10 +221,10 @@ span.beneficio-icon { font-size: 2.1rem; }
 .depoimento-slide { flex: 0 0 100%; text-align: left; padding: 0 4px; }
 .depoimento-card { background: var(--white); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
 .depoimento-video-slot {
-    aspect-ratio: 9/16; max-height: 320px; background: var(--navy); color: #b9c1d9;
+    width: 100%; height: 320px; background: var(--navy); color: #b9c1d9;
     display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 8px; font-size: .8rem;
 }
-.depoimento-video-slot video { width: 100%; height: 100%; object-fit: cover; }
+.depoimento-video-slot video { display: block; width: 100%; height: 100%; object-fit: cover; }
 .depoimento-body { padding: 16px 18px; }
 .depoimento-body p { margin: 0; font-size: .9rem; font-style: italic; color: var(--navy); }
 .depoimento-body cite { display: block; margin-top: 10px; font-style: normal; font-weight: 700; font-size: .8rem; color: var(--green-dark); }
