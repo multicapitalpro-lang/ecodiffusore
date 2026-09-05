@@ -5,7 +5,7 @@
     <title>Página não encontrada — Ecodiffusore Brasil</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
-        body { font-family: system-ui, sans-serif; background:#0d1b3d; color:#fff; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; text-align:center; }
+        body { font-family: system-ui, sans-serif; background:#0e0e0e; color:#fff; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; text-align:center; }
         a { color:#8dc63f; }
     </style>
 </head>
