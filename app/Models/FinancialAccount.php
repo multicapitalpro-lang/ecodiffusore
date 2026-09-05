@@ -31,12 +31,43 @@ class FinancialAccount
             'type' => $data['type'],
             'initial_balance' => $data['initial_balance'] ?: 0,
         ]);
+        $id = (int) Database::connection()->lastInsertId();
 
-        return (int) Database::connection()->lastInsertId();
+        if (!empty($data['is_default'])) {
+            self::setDefault($id);
+        }
+
+        return $id;
+    }
+
+    /** Marca essa conta como padrao (destino automatico de recebimento de pedido/comissao) e
+     *  desmarca qualquer outra -- so pode haver uma conta padrao por vez. */
+    public static function setDefault(int $id): void
+    {
+        $db = Database::connection();
+        $db->beginTransaction();
+        try {
+            $db->exec('UPDATE financial_accounts SET is_default = 0');
+            $stmt = $db->prepare('UPDATE financial_accounts SET is_default = 1 WHERE id = :id');
+            $stmt->execute(['id' => $id]);
+            $db->commit();
+        } catch (\Throwable $e) {
+            $db->rollBack();
+            throw $e;
+        }
     }
 
     public static function defaultAccountId(): ?int
     {
+        $stmt = Database::connection()->query(
+            "SELECT id FROM financial_accounts WHERE active = 1 AND is_default = 1 ORDER BY id LIMIT 1"
+        );
+        $id = $stmt->fetchColumn();
+        if ($id !== false) {
+            return (int) $id;
+        }
+
+        // Nenhuma conta marcada como padrao (ex: dado antigo) -- cai pro comportamento anterior.
         $stmt = Database::connection()->query(
             'SELECT id FROM financial_accounts WHERE active = 1 ORDER BY id LIMIT 1'
         );

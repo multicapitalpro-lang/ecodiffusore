@@ -28,9 +28,24 @@ class FinancialTransaction
             $sql .= ' AND ft.status = :status';
             $params['status'] = $filters['status'];
         }
+        if (!empty($filters['category_id'])) {
+            $sql .= ' AND ft.category_id = :category_id';
+            $params['category_id'] = $filters['category_id'];
+        }
         if (!empty($filters['client_id'])) {
             $sql .= ' AND ft.client_id = :client_id';
             $params['client_id'] = $filters['client_id'];
+        }
+        if (!empty($filters['from'])) {
+            $sql .= ' AND ft.due_date >= :from';
+            $params['from'] = $filters['from'];
+        }
+        if (!empty($filters['to'])) {
+            $sql .= ' AND ft.due_date <= :to';
+            $params['to'] = $filters['to'];
+        }
+        if (!empty($filters['exclude_transfers'])) {
+            $sql .= ' AND ft.is_transfer = 0';
         }
         if (!empty($filters['seller_ids'])) {
             // Escopo por regiao: so entra se o pedido ou o cliente vinculado pertence a alguem
@@ -82,11 +97,13 @@ class FinancialTransaction
             'INSERT INTO financial_transactions
                 (account_id, order_id, client_id, category_id, type, description, amount,
                  issue_date, competencia, due_date, paid_date, payment_method, document_number,
-                 interest_pct, penalty_pct, status)
+                 interest_pct, penalty_pct, status, is_transfer, transfer_pair_id,
+                 recurrence_frequency, recurrence_parent_id)
              VALUES
                 (:account_id, :order_id, :client_id, :category_id, :type, :description, :amount,
                  :issue_date, :competencia, :due_date, :paid_date, :payment_method, :document_number,
-                 :interest_pct, :penalty_pct, :status)'
+                 :interest_pct, :penalty_pct, :status, :is_transfer, :transfer_pair_id,
+                 :recurrence_frequency, :recurrence_parent_id)'
         );
         $stmt->execute([
             'account_id' => $data['account_id'],
@@ -105,9 +122,50 @@ class FinancialTransaction
             'interest_pct' => empty($data['interest_pct']) ? 0 : $data['interest_pct'],
             'penalty_pct' => empty($data['penalty_pct']) ? 0 : $data['penalty_pct'],
             'status' => $data['status'] ?? 'pendente',
+            'is_transfer' => !empty($data['is_transfer']) ? 1 : 0,
+            'transfer_pair_id' => empty($data['transfer_pair_id']) ? null : $data['transfer_pair_id'],
+            'recurrence_frequency' => empty($data['recurrence_frequency']) ? null : $data['recurrence_frequency'],
+            'recurrence_parent_id' => empty($data['recurrence_parent_id']) ? null : $data['recurrence_parent_id'],
         ]);
 
         return (int) Database::connection()->lastInsertId();
+    }
+
+    /** Edicao generica -- reaproveitada tanto pro lancamento simples de Caixas e Bancos quanto
+     *  pra conta a pagar/receber (o form de edicao e' o mesmo pros dois, ver _payable_fields.php). */
+    public static function update(int $id, array $data): void
+    {
+        $stmt = Database::connection()->prepare(
+            'UPDATE financial_transactions SET
+                account_id = :account_id, client_id = :client_id, category_id = :category_id,
+                description = :description, amount = :amount, issue_date = :issue_date,
+                competencia = :competencia, due_date = :due_date, payment_method = :payment_method,
+                document_number = :document_number, interest_pct = :interest_pct, penalty_pct = :penalty_pct
+             WHERE id = :id'
+        );
+        $stmt->execute([
+            'id' => $id,
+            'account_id' => $data['account_id'],
+            'client_id' => empty($data['client_id']) ? null : $data['client_id'],
+            'category_id' => empty($data['category_id']) ? null : $data['category_id'],
+            'description' => empty($data['description']) ? null : $data['description'],
+            'amount' => $data['amount'],
+            'issue_date' => empty($data['issue_date']) ? null : $data['issue_date'],
+            'competencia' => empty($data['competencia']) ? null : $data['competencia'],
+            'due_date' => $data['due_date'],
+            'payment_method' => empty($data['payment_method']) ? null : $data['payment_method'],
+            'document_number' => empty($data['document_number']) ? null : $data['document_number'],
+            'interest_pct' => empty($data['interest_pct']) ? 0 : $data['interest_pct'],
+            'penalty_pct' => empty($data['penalty_pct']) ? 0 : $data['penalty_pct'],
+        ]);
+    }
+
+    /** So remove lancamento solto -- o controller bloqueia exclusao de linha gerada pelo
+     *  sistema (vinculada a um pedido, o que inclui comissao paga, ver FinanceController). */
+    public static function delete(int $id): void
+    {
+        $stmt = Database::connection()->prepare('DELETE FROM financial_transactions WHERE id = :id');
+        $stmt->execute(['id' => $id]);
     }
 
     public static function createForOrderReceivable(int $orderId, int $accountId, float $amount, string $dueDate): void
@@ -130,6 +188,54 @@ class FinancialTransaction
             'paid_date' => $dueDate,
             'status' => 'pago',
         ]);
+    }
+
+    /** Transferencia entre contas proprias: duas pernas (saida na origem, entrada no destino),
+     *  sempre pagas na hora e marcadas is_transfer=1 pra nunca entrar em DRE/Balancete/Relatorios
+     *  de pagamento e recebimento (nao e' receita nem despesa, so move dinheiro de um bolso pro
+     *  outro) -- so aparece no extrato de Caixas e Bancos e no Controle de Caixa por conta.
+     *  @return array{from:int, to:int} ids das duas linhas criadas
+     */
+    public static function createTransfer(int $fromAccountId, int $toAccountId, float $amount, string $date, string $description): array
+    {
+        $db = Database::connection();
+        $db->beginTransaction();
+
+        try {
+            $fromAccount = FinancialAccount::find($fromAccountId);
+            $toAccount = FinancialAccount::find($toAccountId);
+
+            $fromId = self::create([
+                'account_id' => $fromAccountId,
+                'type' => 'saida',
+                'description' => 'Transferência para ' . ($toAccount['name'] ?? 'outra conta') . ($description ? ' · ' . $description : ''),
+                'amount' => $amount,
+                'due_date' => $date,
+                'paid_date' => $date,
+                'status' => 'pago',
+                'is_transfer' => true,
+            ]);
+            $toId = self::create([
+                'account_id' => $toAccountId,
+                'type' => 'entrada',
+                'description' => 'Transferência de ' . ($fromAccount['name'] ?? 'outra conta') . ($description ? ' · ' . $description : ''),
+                'amount' => $amount,
+                'due_date' => $date,
+                'paid_date' => $date,
+                'status' => 'pago',
+                'is_transfer' => true,
+                'transfer_pair_id' => $fromId,
+            ]);
+
+            $stmt = $db->prepare('UPDATE financial_transactions SET transfer_pair_id = :pair WHERE id = :id');
+            $stmt->execute(['pair' => $toId, 'id' => $fromId]);
+
+            $db->commit();
+            return ['from' => $fromId, 'to' => $toId];
+        } catch (\Throwable $e) {
+            $db->rollBack();
+            throw $e;
+        }
     }
 
     public static function markPaid(int $id, string $paidDate): void

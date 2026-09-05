@@ -30,6 +30,18 @@ class FinanceController
         return [];
     }
 
+    /** Filtros lidos da querystring, comuns a Caixas e Bancos / Contas a Pagar / Contas a Receber. */
+    private function requestFilters(): array
+    {
+        $filters = [];
+        foreach (['from', 'to', 'account_id', 'category_id', 'client_id', 'status'] as $key) {
+            if (!empty($_GET[$key])) {
+                $filters[$key] = $_GET[$key];
+            }
+        }
+        return $filters;
+    }
+
     public function accounts(): void
     {
         Auth::requireRole(Roles::MANAGEMENT);
@@ -41,7 +53,8 @@ class FinanceController
         }
         unset($account);
 
-        $transactions = FinancialTransaction::all($this->scopeFilters($user));
+        $filters = array_merge($this->requestFilters(), $this->scopeFilters($user));
+        $transactions = FinancialTransaction::all($filters);
 
         View::render('painel/finance/accounts', [
             'user' => $user,
@@ -50,9 +63,54 @@ class FinanceController
             'attachmentsByTransaction' => FinancialAttachment::forTransactions(array_column($transactions, 'id')),
             'categoryGroups' => FinancialCategory::grouped(),
             'clients' => Client::all(),
+            'filters' => $filters,
             'errors' => [],
             'values' => [],
         ]);
+    }
+
+    /** Transferencia entre contas proprias (Caixa <-> Banco) -- nao e' receita nem despesa, so
+     *  move dinheiro (ver FinancialTransaction::createTransfer, exclui dos relatorios de P&L). */
+    public function storeTransfer(): void
+    {
+        Auth::requireRole(Roles::MANAGEMENT);
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            Router::redirect('/painel/financeiro/caixas-bancos?erro=1');
+        }
+
+        $fromId = (int) ($_POST['from_account_id'] ?? 0);
+        $toId = (int) ($_POST['to_account_id'] ?? 0);
+        $amount = (float) ($_POST['amount'] ?? 0);
+
+        if (!$fromId || !$toId || $fromId === $toId || $amount <= 0) {
+            Router::redirect('/painel/financeiro/caixas-bancos?erro=1');
+        }
+
+        FinancialTransaction::createTransfer(
+            $fromId,
+            $toId,
+            $amount,
+            $_POST['date'] ?: date('Y-m-d'),
+            trim($_POST['description'] ?? '')
+        );
+
+        Router::redirect('/painel/financeiro/caixas-bancos?sucesso=1');
+    }
+
+    /** "Tornar padrao": pra onde vai automaticamente o recebimento de pedido pago e a saida de
+     *  comissao paga (antes era sempre a conta mais antiga, sem controle nenhum pro usuario). */
+    public function setDefaultAccount(string $id): void
+    {
+        Auth::requireRole(Roles::MANAGEMENT);
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            Router::redirect('/painel/financeiro/caixas-bancos?erro=1');
+        }
+
+        FinancialAccount::setDefault((int) $id);
+
+        Router::redirect('/painel/financeiro/caixas-bancos?sucesso=1');
     }
 
     public function storeAccount(): void
@@ -140,7 +198,12 @@ class FinanceController
     private function renderLedger(string $type, string $title, array $errors = [], array $values = []): void
     {
         $user = Auth::user();
-        $transactions = FinancialTransaction::all(array_merge(['type' => $type], $this->scopeFilters($user)));
+        $filters = array_merge(
+            ['type' => $type, 'exclude_transfers' => true],
+            $this->requestFilters(),
+            $this->scopeFilters($user)
+        );
+        $transactions = FinancialTransaction::all($filters);
         $today = date('Y-m-d');
 
         $summary = ['open_count' => 0, 'open_total' => 0.0, 'paid_total' => 0.0, 'overdue_count' => 0, 'overdue_total' => 0.0];
@@ -168,6 +231,7 @@ class FinanceController
             'accounts' => FinancialAccount::all(),
             'categoryGroups' => FinancialCategory::grouped($type),
             'clients' => Client::all(),
+            'filters' => $filters,
             'errors' => $errors,
             'values' => $values,
         ]);
@@ -198,6 +262,10 @@ class FinanceController
         }
 
         $dandoBaixa = !empty($_POST['salvar_e_dar_baixa']);
+        $recurrenceFrequency = in_array($_POST['recurrence_frequency'] ?? '', ['semanal', 'mensal', 'anual'], true)
+            ? $_POST['recurrence_frequency']
+            : null;
+        $recurrenceCount = max(1, min(60, (int) ($_POST['recurrence_count'] ?? 1)));
 
         $transactionId = FinancialTransaction::create([
             'account_id' => (int) $_POST['account_id'],
@@ -215,12 +283,17 @@ class FinanceController
             'penalty_pct' => (float) ($_POST['penalty_pct'] ?: 0),
             'status' => $dandoBaixa ? 'pago' : 'pendente',
             'paid_date' => $dandoBaixa ? date('Y-m-d') : null,
+            'recurrence_frequency' => $recurrenceFrequency,
         ]);
 
         try {
             $this->storeAttachments($transactionId, $_FILES['attachments'] ?? null);
         } catch (\RuntimeException $e) {
             // Segue o fluxo; o lancamento principal ja foi salvo.
+        }
+
+        if ($recurrenceFrequency && $recurrenceCount > 1) {
+            $this->generateRecurrences($transactionId, $recurrenceFrequency, $recurrenceCount, $_POST, $type);
         }
 
         $target = $backTo . '?sucesso=1';
@@ -245,6 +318,155 @@ class FinanceController
         }
 
         Router::redirect($_SERVER['HTTP_REFERER'] ?? '/painel/financeiro/contas-a-pagar');
+    }
+
+    /** Gera as ocorrencias seguintes de uma conta recorrente (aluguel mensal etc) de uma vez so
+     *  -- sem cron nesse plano, e' mais simples e previsivel gerar tudo na criacao do que tentar
+     *  criar sob demanda. A primeira ocorrencia (a que o usuario preencheu) ja foi criada antes
+     *  de chamar isso; aqui so as N-1 seguintes, sempre 'pendente'. */
+    private function generateRecurrences(int $parentId, string $frequency, int $count, array $input, string $type): void
+    {
+        $interval = match ($frequency) {
+            'semanal' => '+1 week',
+            'anual' => '+1 year',
+            default => '+1 month',
+        };
+
+        $dueDate = strtotime($input['due_date']);
+        $issueDate = !empty($input['issue_date']) ? strtotime($input['issue_date']) : null;
+        $competencia = !empty($input['competencia']) ? strtotime($input['competencia']) : null;
+
+        for ($i = 1; $i < $count; $i++) {
+            $dueDate = strtotime($interval, $dueDate);
+            if ($issueDate) {
+                $issueDate = strtotime($interval, $issueDate);
+            }
+            if ($competencia) {
+                $competencia = strtotime($interval, $competencia);
+            }
+
+            FinancialTransaction::create([
+                'account_id' => (int) $input['account_id'],
+                'client_id' => (int) $input['client_id'],
+                'category_id' => $input['category_id'] ?: null,
+                'type' => $type,
+                'description' => trim($input['description'] ?? ''),
+                'amount' => (float) $input['amount'],
+                'issue_date' => $issueDate ? date('Y-m-d', $issueDate) : null,
+                'competencia' => $competencia ? date('Y-m-d', $competencia) : null,
+                'due_date' => date('Y-m-d', $dueDate),
+                'payment_method' => $input['payment_method'] ?: null,
+                'document_number' => $input['document_number'] ?: null,
+                'interest_pct' => (float) ($input['interest_pct'] ?: 0),
+                'penalty_pct' => (float) ($input['penalty_pct'] ?: 0),
+                'status' => 'pendente',
+                'recurrence_frequency' => $frequency,
+                'recurrence_parent_id' => $parentId,
+            ]);
+        }
+    }
+
+    /** Form de edicao generico -- serve tanto pro lancamento simples de Caixas e Bancos quanto
+     *  pra conta a pagar/receber, o mesmo _payable_fields.php reaproveitado com $isEdit=true
+     *  (sem os campos de recorrencia, que so fazem sentido na criacao da serie). */
+    public function editTransaction(string $id): void
+    {
+        Auth::requireRole(Roles::MANAGEMENT);
+        $id = (int) $id;
+
+        $transaction = FinancialTransaction::find($id);
+        if (!$transaction) {
+            Router::redirect('/painel/financeiro/caixas-bancos');
+        }
+
+        $isFragment = isset($_GET['fragment']);
+
+        View::render('painel/finance/edit_transaction', [
+            'user' => Auth::user(),
+            'transaction' => $transaction,
+            'accounts' => FinancialAccount::all(),
+            'categoryGroups' => FinancialCategory::grouped($transaction['type']),
+            'clients' => Client::all(),
+            'errors' => [],
+            'isModal' => $isFragment,
+        ], $isFragment ? null : 'painel');
+    }
+
+    public function updateTransaction(string $id): void
+    {
+        Auth::requireRole(Roles::MANAGEMENT);
+        $id = (int) $id;
+
+        $transaction = FinancialTransaction::find($id);
+        if (!$transaction) {
+            Router::redirect('/painel/financeiro/caixas-bancos');
+        }
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            if (Response::isAjax()) {
+                Response::json(['ok' => false, 'errors' => ['amount' => 'Sessão expirada, recarregue a página.']]);
+            }
+            Router::redirect('/painel/financeiro/caixas-bancos?erro=1');
+        }
+
+        $errors = $this->validateTransactionUpdate($_POST);
+        if ($errors) {
+            if (Response::isAjax()) {
+                Response::json(['ok' => false, 'errors' => $errors]);
+            }
+            View::render('painel/finance/edit_transaction', [
+                'user' => Auth::user(),
+                'transaction' => array_merge($transaction, $_POST),
+                'accounts' => FinancialAccount::all(),
+                'categoryGroups' => FinancialCategory::grouped($transaction['type']),
+                'clients' => Client::all(),
+                'errors' => $errors,
+                'isModal' => false,
+            ]);
+            return;
+        }
+
+        FinancialTransaction::update($id, [
+            'account_id' => (int) $_POST['account_id'],
+            'client_id' => $_POST['client_id'] ?: null,
+            'category_id' => $_POST['category_id'] ?: null,
+            'description' => trim($_POST['description'] ?? ''),
+            'amount' => (float) $_POST['amount'],
+            'issue_date' => $_POST['issue_date'] ?: null,
+            'competencia' => $_POST['competencia'] ?: null,
+            'due_date' => $_POST['due_date'],
+            'payment_method' => $_POST['payment_method'] ?: null,
+            'document_number' => $_POST['document_number'] ?: null,
+            'interest_pct' => (float) ($_POST['interest_pct'] ?: 0),
+            'penalty_pct' => (float) ($_POST['penalty_pct'] ?: 0),
+        ]);
+
+        $target = ($_SERVER['HTTP_REFERER'] ?? null) ?: '/painel/financeiro/caixas-bancos';
+        $target .= (str_contains($target, '?') ? '&' : '?') . 'sucesso=1';
+        if (Response::isAjax()) {
+            Response::json(['ok' => true, 'redirect' => $target]);
+        }
+        Router::redirect($target);
+    }
+
+    /** So deixa excluir lancamento solto -- linha gerada pelo sistema (recebimento de pedido,
+     *  comissao paga) sempre tem order_id preenchido, e apagar ela quebraria a rastreabilidade
+     *  sem desfazer o pedido/comissao de origem. */
+    public function destroyTransaction(string $id): void
+    {
+        Auth::requireRole(Roles::MANAGEMENT);
+        $id = (int) $id;
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            Router::redirect($_SERVER['HTTP_REFERER'] ?? '/painel/financeiro/caixas-bancos');
+        }
+
+        $transaction = FinancialTransaction::find($id);
+        if ($transaction && empty($transaction['order_id'])) {
+            FinancialTransaction::delete($id);
+        }
+
+        Router::redirect($_SERVER['HTTP_REFERER'] ?? '/painel/financeiro/caixas-bancos');
     }
 
     public function downloadAttachment(string $id): void
@@ -443,6 +665,25 @@ class FinanceController
         if (empty($input['client_id'])) {
             $errors['client_id'] = 'Selecione um cliente/fornecedor.';
         }
+        if (empty($input['account_id'])) {
+            $errors['account_id'] = 'Selecione a conta financeira.';
+        }
+        if (!is_numeric($input['amount'] ?? null) || (float) $input['amount'] <= 0) {
+            $errors['amount'] = 'Informe um valor válido.';
+        }
+        if (empty($input['due_date'])) {
+            $errors['due_date'] = 'Informe o vencimento.';
+        }
+
+        return $errors;
+    }
+
+    /** Cliente/fornecedor NAO e' obrigatorio aqui -- o mesmo form de edicao tambem atende o
+     *  lancamento simples de Caixas e Bancos, que nunca teve esse campo preenchido. */
+    private function validateTransactionUpdate(array $input): array
+    {
+        $errors = [];
+
         if (empty($input['account_id'])) {
             $errors['account_id'] = 'Selecione a conta financeira.';
         }

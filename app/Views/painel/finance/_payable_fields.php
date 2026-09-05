@@ -6,8 +6,10 @@ use App\Core\View;
 /** @var array $clients */
 /** @var array $values */
 /** @var array $errors */
+/** @var bool $isEdit se true, esconde os campos de recorrencia (so fazem sentido na criacao) */
 $values = $values ?? [];
 $errors = $errors ?? [];
+$isEdit = $isEdit ?? false;
 $personLabel = $type === 'entrada' ? 'Cliente' : 'Fornecedor';
 ?>
 <input type="hidden" name="type" value="<?= $type ?>">
@@ -15,7 +17,7 @@ $personLabel = $type === 'entrada' ? 'Cliente' : 'Fornecedor';
 <label for="pay-client">
     <?= $personLabel ?>
 </label>
-<select id="pay-client" name="client_id" required>
+<select id="pay-client" name="client_id" <?= $isEdit ? '' : 'required' ?>>
     <option value="">Selecione...</option>
     <?php foreach ($clients as $c): ?>
         <option value="<?= (int) $c['id'] ?>" <?= (int) ($values['client_id'] ?? 0) === (int) $c['id'] ? 'selected' : '' ?>><?= View::e($c['name']) ?></option>
@@ -101,4 +103,27 @@ $personLabel = $type === 'entrada' ? 'Cliente' : 'Fornecedor';
     </div>
 </div>
 
-<?php include __DIR__ . '/_attachment_field.php'; ?>
+<?php if (!$isEdit): ?>
+    <div class="form-grid-2">
+        <div>
+            <label for="pay-recurrence">Repetir esse lançamento</label>
+            <select id="pay-recurrence" name="recurrence_frequency">
+                <option value="">Não repetir</option>
+                <option value="semanal" <?= ($values['recurrence_frequency'] ?? '') === 'semanal' ? 'selected' : '' ?>>Semanalmente</option>
+                <option value="mensal" <?= ($values['recurrence_frequency'] ?? '') === 'mensal' ? 'selected' : '' ?>>Mensalmente</option>
+                <option value="anual" <?= ($values['recurrence_frequency'] ?? '') === 'anual' ? 'selected' : '' ?>>Anualmente</option>
+            </select>
+        </div>
+        <div>
+            <label for="pay-recurrence-count">Quantas vezes (incluindo esta)</label>
+            <input type="number" id="pay-recurrence-count" name="recurrence_count" min="1" max="60" value="<?= View::e((string) ($values['recurrence_count'] ?? '1')) ?>">
+        </div>
+    </div>
+    <p class="hint-text" style="margin-top:-8px;">Gera todas as ocorrências futuras já na criação (ex: aluguel 12x cria os 12 lançamentos mensais de uma vez).</p>
+<?php endif; ?>
+
+<?php if (!$isEdit): ?>
+    <?php include __DIR__ . '/_attachment_field.php'; ?>
+<?php else: ?>
+    <p class="hint-text">Os anexos já enviados continuam disponíveis na coluna "Anexos" da tabela — essa edição não adiciona novos.</p>
+<?php endif; ?>

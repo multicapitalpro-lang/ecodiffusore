@@ -175,11 +175,16 @@ $router->post('/painel/metas/{id}/premio-pago', [App\Controllers\GoalController:
 // Financeiro
 $router->get('/painel/financeiro/caixas-bancos', [App\Controllers\FinanceController::class, 'accounts']);
 $router->post('/painel/financeiro/caixas-bancos/contas', [App\Controllers\FinanceController::class, 'storeAccount']);
+$router->post('/painel/financeiro/caixas-bancos/{id}/padrao', [App\Controllers\FinanceController::class, 'setDefaultAccount']);
+$router->post('/painel/financeiro/transferencia', [App\Controllers\FinanceController::class, 'storeTransfer']);
 $router->post('/painel/financeiro/lancamentos', [App\Controllers\FinanceController::class, 'storeTransaction']);
 $router->get('/painel/financeiro/contas-a-pagar', [App\Controllers\FinanceController::class, 'payable']);
 $router->get('/painel/financeiro/contas-a-receber', [App\Controllers\FinanceController::class, 'receivable']);
 $router->post('/painel/financeiro/contas', [App\Controllers\FinanceController::class, 'storePayable']);
+$router->get('/painel/financeiro/contas/{id}/editar', [App\Controllers\FinanceController::class, 'editTransaction']);
+$router->post('/painel/financeiro/contas/{id}/excluir', [App\Controllers\FinanceController::class, 'destroyTransaction']);
 $router->post('/painel/financeiro/contas/{id}/baixar', [App\Controllers\FinanceController::class, 'markPaid']);
+$router->post('/painel/financeiro/contas/{id}', [App\Controllers\FinanceController::class, 'updateTransaction']);
 $router->get('/painel/financeiro/anexos/{id}', [App\Controllers\FinanceController::class, 'downloadAttachment']);
 $router->get('/painel/financeiro/comissoes', [App\Controllers\FinanceController::class, 'commissions']);
 $router->get('/painel/financeiro/comissoes/exportar', [App\Controllers\FinanceController::class, 'exportCommissions']);

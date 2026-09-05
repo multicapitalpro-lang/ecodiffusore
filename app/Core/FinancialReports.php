@@ -23,6 +23,9 @@ class FinancialReports
             'Controle de Caixa' => [
                 'controle_caixa' => 'Relatório de Controle de Caixa',
             ],
+            'Comissões' => [
+                'comissoes' => 'Relatório de Comissões',
+            ],
         ];
     }
 
@@ -47,6 +50,7 @@ class FinancialReports
             'pagamentos' => self::movimentos($from, $to, 'saida'),
             'recebimentos' => self::movimentos($from, $to, 'entrada'),
             'controle_caixa' => self::controleCaixa($from, $to),
+            'comissoes' => self::comissoes($from, $to),
             default => ['kind' => 'simple', 'columns' => [], 'rows' => [], 'totals' => []],
         };
     }
@@ -227,7 +231,8 @@ class FinancialReports
         foreach ($buckets as $i => $b) {
             $stmt = Database::connection()->prepare(
                 "SELECT type, COALESCE(SUM(amount), 0) AS total FROM financial_transactions
-                 WHERE status IN ('pago','conciliado') AND paid_date BETWEEN :from AND :to GROUP BY type"
+                 WHERE status IN ('pago','conciliado') AND is_transfer = 0
+                    AND paid_date BETWEEN :from AND :to GROUP BY type"
             );
             $stmt->execute(['from' => $b['from'], 'to' => $b['to']]);
             $entradas[$i] = 0.0;
@@ -289,7 +294,8 @@ class FinancialReports
             "SELECT COALESCE(cl.name, 'Sem cliente/fornecedor') AS nome, ft.type, COALESCE(SUM(ft.amount), 0) AS total
              FROM financial_transactions ft
              LEFT JOIN clients cl ON cl.id = ft.client_id
-             WHERE ft.status IN ('pago','conciliado') AND ft.paid_date BETWEEN :from AND :to
+             WHERE ft.status IN ('pago','conciliado') AND ft.is_transfer = 0
+                AND ft.paid_date BETWEEN :from AND :to
              GROUP BY nome, ft.type ORDER BY total DESC"
         );
         $stmt->execute(['from' => $from, 'to' => $to]);
@@ -307,7 +313,8 @@ class FinancialReports
         $stmt = Database::connection()->prepare(
             "SELECT ft.*, cl.name AS client_name FROM financial_transactions ft
              LEFT JOIN clients cl ON cl.id = ft.client_id
-             WHERE ft.type = :type AND ft.status IN ('pago','conciliado') AND ft.paid_date BETWEEN :from AND :to
+             WHERE ft.type = :type AND ft.status IN ('pago','conciliado') AND ft.is_transfer = 0
+                AND ft.paid_date BETWEEN :from AND :to
              ORDER BY ft.paid_date"
         );
         $stmt->execute(['type' => $type, 'from' => $from, 'to' => $to]);
@@ -358,6 +365,49 @@ class FinancialReports
         return ['kind' => 'simple', 'columns' => ['Data', 'Conta', 'Histórico', 'Valor', 'Saldo'], 'rows' => $rows, 'totals' => []];
     }
 
+    private static function comissoes(string $from, string $to): array
+    {
+        $stmt = Database::connection()->prepare(
+            "SELECT c.*, b.name AS beneficiary_name, o.order_date
+             FROM commissions c
+             JOIN users b ON b.id = c.beneficiary_id
+             JOIN orders o ON o.id = c.order_id
+             WHERE o.order_date BETWEEN :from AND :to
+             ORDER BY o.order_date, c.beneficiary_id"
+        );
+        $stmt->execute(['from' => $from, 'to' => $to]);
+
+        $roleLabels = ['licenciado' => 'Licenciado', 'gestor' => 'Gestor', 'vendedor' => 'Vendedor', 'gerente' => 'Gerente', 'supervisor' => 'Supervisor'];
+        $total = 0.0;
+        $totalPago = 0.0;
+        $rows = [];
+        foreach ($stmt->fetchAll() as $r) {
+            $total += (float) $r['amount'];
+            if ($r['status'] === 'pago') {
+                $totalPago += (float) $r['amount'];
+            }
+            $rows[] = [
+                date('d/m/Y', strtotime($r['order_date'])),
+                $r['beneficiary_name'],
+                $roleLabels[$r['role_slug']] ?? $r['role_slug'],
+                '#' . $r['order_id'],
+                self::money((float) $r['amount']),
+                $r['status'] === 'pago' ? 'Pago' : 'Pendente',
+            ];
+        }
+
+        return [
+            'kind' => 'simple',
+            'columns' => ['Data', 'Beneficiário', 'Papel', 'Pedido', 'Valor', 'Situação'],
+            'rows' => $rows,
+            'totals' => [
+                'Total gerado' => self::money($total),
+                'Total pago' => self::money($totalPago),
+                'Total pendente' => self::money($total - $totalPago),
+            ],
+        ];
+    }
+
     // ---- Helpers ----
 
     private static function sumByCategory(string $from, string $to): array
@@ -369,7 +419,8 @@ class FinancialReports
              FROM financial_transactions ft
              LEFT JOIN financial_categories fc ON fc.id = ft.category_id
              LEFT JOIN financial_categories p ON p.id = fc.parent_id
-             WHERE ft.status IN ('pago','conciliado') AND ft.paid_date BETWEEN :from AND :to
+             WHERE ft.status IN ('pago','conciliado') AND ft.is_transfer = 0
+                AND ft.paid_date BETWEEN :from AND :to
              GROUP BY categoria, grupo, ft.type
              HAVING total != 0"
         );

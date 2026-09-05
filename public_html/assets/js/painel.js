@@ -300,5 +300,21 @@ document.addEventListener('DOMContentLoaded', function () {
                 openFragmentModal('modal-client-edit', 'modal-client-edit-content', '/painel/clientes/' + id + '/editar?fragment=1', 'Editar cliente');
             });
         });
+
+        document.querySelectorAll('[data-edit-transaction]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var id = btn.getAttribute('data-edit-transaction');
+                openFragmentModal('modal-transaction-edit', 'modal-transaction-edit-content', '/painel/financeiro/contas/' + id + '/editar?fragment=1', 'Editar lançamento');
+            });
+        });
+
+        // Confirmacao antes de excluir -- data-confirm no botao de submit (nao no form), pra
+        // poder escolher exatamente qual botao dispara o aviso quando o form tem mais de um.
+        document.addEventListener('submit', function (e) {
+            var btn = e.submitter;
+            if (btn && btn.dataset.confirm && !window.confirm(btn.dataset.confirm)) {
+                e.preventDefault();
+            }
+        });
     });
 })();
