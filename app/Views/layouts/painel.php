@@ -145,8 +145,8 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/metas'])
                 <span class="user-avatar"><?= View::e(mb_strtoupper(mb_substr($user['name'] ?? '?', 0, 1))) ?></span>
                 <span>Olá, <strong><?= View::e($user['name'] ?? '') ?></strong> — <?= View::e($roleLabels[$role] ?? $role) ?></span>
             </span>
-            <?php if (in_array($role, [Roles::SELLER, Roles::REGIONAL_OWNER], true)): ?>
-                <a href="/painel/proposta-facil" class="btn-proposta-facil">⚡ Proposta Fácil</a>
+            <?php if (in_array($role, $staffRoles, true)): ?>
+                <button type="button" id="btn-proposta-facil" class="btn-proposta-facil">⚡ Proposta Fácil</button>
             <?php endif; ?>
             <a class="painel-logout" href="/painel/logout">Sair</a>
         </header>
@@ -155,6 +155,13 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/metas'])
         </main>
     </div>
 </div>
+
+<?php if (in_array($role, $staffRoles, true)): ?>
+    <dialog class="modal" id="modal-proposta-facil">
+        <div id="modal-proposta-facil-content"></div>
+    </dialog>
+<?php endif; ?>
+
 <script src="<?= View::asset('/assets/js/painel.js') ?>"></script>
 <script src="<?= View::asset('/assets/js/password-toggle.js') ?>"></script>
 </body>

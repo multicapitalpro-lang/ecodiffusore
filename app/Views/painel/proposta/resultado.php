@@ -1,6 +1,7 @@
 <?php
 use App\Core\View;
 /** @var array $result */
+$isModal = $isModal ?? false;
 $payback = $result['payback'] ?? null;
 $hasPayback = $payback && $payback['tiers']['avg']['monthly'] > 0;
 $whatsappNumber = '55' . preg_replace('/\D/', '', $result['whatsapp']);
@@ -17,8 +18,16 @@ $message = "Olá, {$result['name']}! Segue a proposta do Ecodiffusore que prepar
     . $economyLine . "\n"
     . 'Qualquer dúvida, me chama por aqui — ' . $result['seller_name'];
 ?>
+<?php if ($isModal): ?>
+<div class="modal-header">
+    <h2>Proposta para <?= View::e($result['name']) ?></h2>
+    <button type="button" class="modal-close" data-modal-close aria-label="Fechar">&times;</button>
+</div>
+<div class="modal-body">
+<?php else: ?>
 <h1>Proposta para <?= View::e($result['name']) ?></h1>
-<p class="hint-text">Gerada agora — pronta pra compartilhar com o cliente.</p>
+<?php endif; ?>
+<p class="hint-text" style="margin-top:0;">Gerada agora — pronta pra compartilhar com o cliente.</p>
 
 <?php if ($hasPayback): ?>
     <h3>Quanto ele vai economizar</h3>
@@ -130,9 +139,16 @@ $message = "Olá, {$result['name']}! Segue a proposta do Ecodiffusore que prepar
 
 <div class="proposta-actions">
     <a href="https://wa.me/<?= $whatsappNumber ?>?text=<?= rawurlencode($message) ?>" target="_blank" rel="noopener" class="btn btn-whatsapp">💬 Compartilhar por WhatsApp</a>
-    <a href="/painel/proposta-facil/pdf" class="btn btn-outline">📄 Baixar PDF</a>
-    <a href="/painel/proposta-facil" class="btn btn-outline">+ Nova proposta</a>
+    <a href="/painel/proposta-facil/pdf" target="_blank" class="btn btn-outline">📄 Baixar PDF</a>
+    <?php if ($isModal): ?>
+        <button type="button" id="btn-proposta-nova" class="btn btn-outline">+ Nova proposta</button>
+    <?php else: ?>
+        <a href="/painel/proposta-facil" class="btn btn-outline">+ Nova proposta</a>
+    <?php endif; ?>
     <?php if ($result['quote_id']): ?>
         <a href="/painel/orcamentos/<?= (int) $result['quote_id'] ?>" class="btn btn-outline">Ver no CRM</a>
     <?php endif; ?>
 </div>
+<?php if ($isModal): ?>
+</div>
+<?php endif; ?>

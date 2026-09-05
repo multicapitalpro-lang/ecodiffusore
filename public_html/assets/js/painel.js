@@ -218,6 +218,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         bindFileDrop(document);
         bindAjaxForms(document);
+        bindPropostaFacil(document);
 
         // Criacao/edicao de usuario/pedido num modal: carrega o form via fetch (fragmento sem
         // layout) em vez de navegar pra outra pagina -- reaproveitado por Usuarios e Pedidos,
@@ -246,11 +247,112 @@ document.addEventListener('DOMContentLoaded', function () {
                     bindAjaxForms(content);
                     bindFileDrop(content);
                     bindItemsTable(content);
+                    bindPropostaFacil(content);
                 })
                 .catch(function () {
                     var body = content.querySelector('.modal-body');
                     if (body) body.innerHTML = '<p class="form-msg form-msg-erro">Erro ao carregar. Tente novamente.</p>';
                 });
+        }
+
+        // Proposta Facil: popup do comprador -> formulario do veiculo -> resultado, tudo dentro do
+        // mesmo dialog (ver openFragmentModal acima). Precisa ser uma funcao "bindavel" (chamada de
+        // novo a cada fragmento carregado) em vez de um <script> inline na view, porque innerHTML
+        // nao executa <script> -- mesmo padrao ja usado por bindAjaxForms/bindItemsTable/bindFileDrop.
+        function bindPropostaFacil(root) {
+            var stepComprador = root.querySelector('#proposta-step-comprador');
+            var stepDetalhes = root.querySelector('#proposta-step-detalhes');
+            var continueBtn = root.querySelector('#comprador-continue');
+            var editBtn = root.querySelector('#comprador-edit');
+            var form = root.querySelector('#proposta-form');
+            var novaBtn = root.querySelector('#btn-proposta-nova');
+
+            if (continueBtn && stepComprador && stepDetalhes) {
+                continueBtn.addEventListener('click', function () {
+                    var nameInput = root.querySelector('#comprador-name');
+                    var whatsappInput = root.querySelector('#comprador-whatsapp');
+                    var ok = true;
+                    root.querySelectorAll('#proposta-step-comprador [data-error-for]').forEach(function (p) { p.textContent = ''; });
+
+                    if (!nameInput.value.trim()) {
+                        root.querySelector('[data-error-for="name"]').textContent = 'Informe o nome.';
+                        ok = false;
+                    }
+                    if (!whatsappInput.value.trim()) {
+                        root.querySelector('[data-error-for="whatsapp"]').textContent = 'Informe o WhatsApp.';
+                        ok = false;
+                    }
+                    if (!ok) return;
+
+                    var summaryText = root.querySelector('#comprador-summary-text');
+                    if (summaryText) summaryText.textContent = nameInput.value.trim() + ' · ' + whatsappInput.value.trim();
+                    stepComprador.hidden = true;
+                    stepDetalhes.hidden = false;
+                });
+            }
+
+            if (editBtn && stepComprador && stepDetalhes) {
+                editBtn.addEventListener('click', function () {
+                    stepDetalhes.hidden = true;
+                    stepComprador.hidden = false;
+                });
+            }
+
+            if (form) {
+                form.addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    var submitBtn = form.querySelector('button[type=submit]');
+                    if (submitBtn) submitBtn.disabled = true;
+
+                    root.querySelectorAll('#proposta-form .field-error').forEach(function (p) { p.textContent = ''; });
+                    var errorBox = root.querySelector('#proposta-form-error');
+                    if (errorBox) { errorBox.hidden = true; errorBox.textContent = ''; }
+
+                    var data = new FormData(form);
+                    fetch(form.getAttribute('action'), {
+                        method: 'POST',
+                        body: data,
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    })
+                        .then(function (r) { return r.json(); })
+                        .then(function (res) {
+                            if (res.ok) {
+                                if (form.dataset.modal === '1') {
+                                    openFragmentModal('modal-proposta-facil', 'modal-proposta-facil-content', res.redirect + '?fragment=1', 'Proposta Fácil');
+                                } else {
+                                    window.location.href = res.redirect;
+                                }
+                                return;
+                            }
+                            Object.keys(res.errors || {}).forEach(function (field) {
+                                if (field === '_geral') {
+                                    if (errorBox) { errorBox.hidden = false; errorBox.textContent = res.errors._geral; }
+                                    return;
+                                }
+                                var el = root.querySelector('[data-error-for="' + field + '"]');
+                                if (el) el.textContent = res.errors[field];
+                            });
+                            if (submitBtn) submitBtn.disabled = false;
+                        })
+                        .catch(function () {
+                            alert('Erro ao gerar a proposta. Verifique sua conexão e tente novamente.');
+                            if (submitBtn) submitBtn.disabled = false;
+                        });
+                });
+            }
+
+            if (novaBtn) {
+                novaBtn.addEventListener('click', function () {
+                    openFragmentModal('modal-proposta-facil', 'modal-proposta-facil-content', '/painel/proposta-facil?fragment=1', 'Proposta Fácil');
+                });
+            }
+        }
+
+        var propostaFacilBtn = document.getElementById('btn-proposta-facil');
+        if (propostaFacilBtn) {
+            propostaFacilBtn.addEventListener('click', function () {
+                openFragmentModal('modal-proposta-facil', 'modal-proposta-facil-content', '/painel/proposta-facil?fragment=1', 'Proposta Fácil');
+            });
         }
 
         document.querySelectorAll('[data-edit-user]').forEach(function (btn) {
