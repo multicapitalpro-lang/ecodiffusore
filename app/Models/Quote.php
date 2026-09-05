@@ -75,7 +75,7 @@ class Quote
         $stmt = Database::connection()->prepare(
             'SELECT q.*, c.name AS client_name, c.whatsapp AS client_whatsapp, c.city AS client_city, c.state AS client_state,
                     u.name AS seller_name,
-                    l.city AS lead_city, l.whatsapp AS lead_whatsapp,
+                    l.city AS lead_city, l.whatsapp AS lead_whatsapp, l.source AS lead_source,
                     l.vehicle_plate, l.vehicle_year, l.vehicle_brand, l.vehicle_model,
                     l.vehicle_power, l.vehicle_ecu_status, l.vehicle_reprogrammed_power, l.vehicle_has_arla
              FROM quotes q

@@ -48,7 +48,7 @@ $situation = $quote['payment_situation'] ?? ['label' => '—', 'badge' => 'novo'
 
 <?php if (!empty($quote['lead_id'])): ?>
 <div class="order-summary">
-    <h3 style="margin-top:0;">🌐 Origem: orçamento gerado pelo site</h3>
+    <h3 style="margin-top:0;"><?= $quote['lead_source'] === 'proposta_facil' ? '⚡ Origem: Proposta Fácil (painel)' : '🌐 Origem: orçamento gerado pelo site' ?></h3>
     <p><strong>Cidade informada:</strong> <?= View::e($quote['lead_city'] ?: '—') ?></p>
     <p><strong>WhatsApp informado:</strong> <?= View::e($quote['lead_whatsapp'] ?: '—') ?></p>
     <?php if ($quote['vehicle_plate']): ?>
