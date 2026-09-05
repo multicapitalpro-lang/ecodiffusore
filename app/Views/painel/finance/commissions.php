@@ -2,16 +2,39 @@
 use App\Core\Csrf;
 use App\Core\View;
 $statusLabels = ['pendente' => 'Pendente', 'pago' => 'Pago'];
+$roleLabels = ['licenciado' => 'Licenciado', 'gestor' => 'Gestor', 'vendedor' => 'Vendedor', 'gerente' => 'Gerente', 'supervisor' => 'Supervisor'];
 $sucesso = isset($_GET['sucesso']);
+$period = $period ?? [];
+
+$today = date('Y-m-d');
+$weekStart = date('Y-m-d', strtotime('monday this week'));
+$monthStart = date('Y-m-01');
+$yearStart = date('Y-01-01');
+$presets = [
+    'Hoje' => ['from' => $today, 'to' => $today],
+    'Esta semana' => ['from' => $weekStart, 'to' => $today],
+    'Este mês' => ['from' => $monthStart, 'to' => $today],
+    'Este ano' => ['from' => $yearStart, 'to' => $today],
+];
 ?>
 <div class="page-header">
     <h1>Comissões</h1>
-    <a href="/painel/financeiro/comissoes/exportar" class="btn btn-outline">Exportar CSV</a>
+    <a href="/painel/financeiro/comissoes/exportar?<?= http_build_query($period) ?>" class="btn btn-outline">Exportar CSV</a>
 </div>
 
 <?php if ($sucesso): ?>
     <p class="form-msg form-msg-ok">Atualizado com sucesso.</p>
 <?php endif; ?>
+
+<form method="get" class="filter-bar">
+    <input type="date" name="from" value="<?= View::e($period['from'] ?? '') ?>">
+    <input type="date" name="to" value="<?= View::e($period['to'] ?? '') ?>">
+    <button type="submit" class="btn btn-outline">Filtrar</button>
+    <?php foreach ($presets as $label => $range): ?>
+        <a class="link-small" href="?from=<?= $range['from'] ?>&to=<?= $range['to'] ?>"><?= $label ?></a>
+    <?php endforeach; ?>
+    <?php if ($period): ?><a class="link-small" href="/painel/financeiro/comissoes">Tudo</a><?php endif; ?>
+</form>
 
 <div class="cards-grid">
     <div class="dash-card">
@@ -32,15 +55,36 @@ $sucesso = isset($_GET['sucesso']);
     </div>
 </div>
 
+<?php if (count($byRole) > 1): ?>
+<h3 class="section-title">Resumo por papel</h3>
+<div class="table-scroll">
+    <table class="data-table">
+        <thead><tr><th>Papel</th><th>Qtd.</th><th>Total gerado</th><th>Pago</th><th>Pendente</th></tr></thead>
+        <tbody>
+            <?php foreach ($byRole as $r): ?>
+                <tr>
+                    <td><?= View::e($roleLabels[$r['role_slug']] ?? $r['role_slug']) ?></td>
+                    <td><?= (int) $r['count_total'] ?></td>
+                    <td>R$ <?= number_format((float) $r['total'], 2, ',', '.') ?></td>
+                    <td>R$ <?= number_format((float) $r['total_pago'], 2, ',', '.') ?></td>
+                    <td>R$ <?= number_format((float) $r['total_pendente'], 2, ',', '.') ?></td>
+                </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+</div>
+<?php endif; ?>
+
 <?php if (count($bySeller) > 1 || !$canManage): ?>
 <h3 class="section-title">Resumo por beneficiário</h3>
 <div class="table-scroll">
     <table class="data-table">
-        <thead><tr><th>Beneficiário</th><th>Qtd.</th><th>Total gerado</th><th>Pago</th><th>Pendente</th></tr></thead>
+        <thead><tr><th>Beneficiário</th><th>Papel</th><th>Qtd.</th><th>Total gerado</th><th>Pago</th><th>Pendente</th></tr></thead>
         <tbody>
             <?php foreach ($bySeller as $s): ?>
                 <tr>
                     <td><?= View::e($s['name']) ?></td>
+                    <td><?= View::e($roleLabels[$s['role_slug']] ?? $s['role_slug']) ?></td>
                     <td><?= (int) $s['count_total'] ?></td>
                     <td>R$ <?= number_format((float) $s['total'], 2, ',', '.') ?></td>
                     <td>R$ <?= number_format((float) $s['total_pago'], 2, ',', '.') ?></td>
@@ -57,7 +101,6 @@ $sucesso = isset($_GET['sucesso']);
     <table class="data-table">
         <thead><tr><th>Pedido</th><th>Beneficiário</th><th>Papel</th><th>Cliente</th><th>Data</th><th>%</th><th>Comissão</th><th>Situação</th><?php if ($canManage): ?><th></th><?php endif; ?></tr></thead>
         <tbody>
-            <?php $roleLabels = ['licenciado' => 'Licenciado', 'gestor' => 'Gestor', 'vendedor' => 'Vendedor', 'gerente' => 'Gerente', 'supervisor' => 'Supervisor']; ?>
             <?php foreach ($commissions as $c): ?>
                 <tr>
                     <td>#<?= (int) $c['order_id'] ?></td>
@@ -86,7 +129,7 @@ $sucesso = isset($_GET['sucesso']);
                 </tr>
             <?php endforeach; ?>
             <?php if (!$commissions): ?>
-                <tr><td colspan="<?= $canManage ? 9 : 8 ?>">Nenhuma comissão gerada ainda.</td></tr>
+                <tr><td colspan="<?= $canManage ? 9 : 8 ?>">Nenhuma comissão gerada nesse período.</td></tr>
             <?php endif; ?>
         </tbody>
     </table>

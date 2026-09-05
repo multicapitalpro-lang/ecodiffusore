@@ -132,6 +132,14 @@ class Commission
             $sql .= ' AND c.status = :status';
             $params['status'] = $filters['status'];
         }
+        if (!empty($filters['from'])) {
+            $sql .= ' AND o.order_date >= :from';
+            $params['from'] = $filters['from'];
+        }
+        if (!empty($filters['to'])) {
+            $sql .= ' AND o.order_date <= :to';
+            $params['to'] = $filters['to'];
+        }
 
         $sql .= ' ORDER BY c.created_at DESC';
 
@@ -164,14 +172,51 @@ class Commission
 
     public static function byBeneficiary(array $filters = []): array
     {
-        $sql = "SELECT u.id AS beneficiary_id, u.name,
+        $sql = "SELECT u.id AS beneficiary_id, u.name, u.role_slug,
                     COUNT(c.id) AS count_total,
                     COALESCE(SUM(c.amount), 0) AS total,
                     COALESCE(SUM(CASE WHEN c.status = 'pago' THEN c.amount ELSE 0 END), 0) AS total_pago,
                     COALESCE(SUM(CASE WHEN c.status = 'pendente' THEN c.amount ELSE 0 END), 0) AS total_pendente
                 FROM commissions c
-                JOIN users u ON u.id = c.beneficiary_id
+                JOIN (SELECT u.id, u.name, r.slug AS role_slug FROM users u JOIN roles r ON r.id = u.role_id) u ON u.id = c.beneficiary_id
+                JOIN orders o ON o.id = c.order_id
                 WHERE 1=1";
+        $params = self::applyScopeAndPeriod($sql, $filters);
+
+        $sql .= ' GROUP BY u.id ORDER BY total DESC';
+
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
+    /** Mesmo total de byBeneficiary(), so que agrupado por papel (Vendedor/Licenciado/Gestor/
+     *  Supervisor/Gerente) em vez de pessoa -- pra comparar quanto cada nivel da hierarquia esta
+     *  ganhando no periodo, sem precisar somar linha por linha. */
+    public static function byRole(array $filters = []): array
+    {
+        $sql = "SELECT c.role_slug,
+                    COUNT(c.id) AS count_total,
+                    COALESCE(SUM(c.amount), 0) AS total,
+                    COALESCE(SUM(CASE WHEN c.status = 'pago' THEN c.amount ELSE 0 END), 0) AS total_pago,
+                    COALESCE(SUM(CASE WHEN c.status = 'pendente' THEN c.amount ELSE 0 END), 0) AS total_pendente
+                FROM commissions c
+                JOIN orders o ON o.id = c.order_id
+                WHERE 1=1";
+        $params = self::applyScopeAndPeriod($sql, $filters);
+
+        $sql .= ' GROUP BY c.role_slug ORDER BY total DESC';
+
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
+    /** Acrescenta os filtros de escopo (beneficiario) + periodo (order_date) em $sql por
+     *  referencia e devolve os parametros correspondentes -- reaproveitado por byBeneficiary()
+     *  e byRole(), que agora precisam dos dois filtros identicos. */
+    private static function applyScopeAndPeriod(string &$sql, array $filters): array
+    {
         $params = [];
 
         if (!empty($filters['beneficiary_id'])) {
@@ -186,11 +231,15 @@ class Commission
             }
             $sql .= ' AND c.beneficiary_id IN (' . implode(',', $names) . ')';
         }
+        if (!empty($filters['from'])) {
+            $sql .= ' AND o.order_date >= :from';
+            $params['from'] = $filters['from'];
+        }
+        if (!empty($filters['to'])) {
+            $sql .= ' AND o.order_date <= :to';
+            $params['to'] = $filters['to'];
+        }
 
-        $sql .= ' GROUP BY u.id ORDER BY total DESC';
-
-        $stmt = Database::connection()->prepare($sql);
-        $stmt->execute($params);
-        return $stmt->fetchAll();
+        return $params;
     }
 }

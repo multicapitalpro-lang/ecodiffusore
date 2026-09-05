@@ -516,12 +516,27 @@ class FinanceController
         return [];
     }
 
+    /** Filtro de periodo (Hoje/Semana/Mes/Ano/personalizado) pra Comissoes -- sem filtro nenhum
+     *  na querystring, mantem o comportamento de sempre (historico completo, sem corte de data). */
+    private function periodFilters(): array
+    {
+        $filters = [];
+        if (!empty($_GET['from'])) {
+            $filters['from'] = $_GET['from'];
+        }
+        if (!empty($_GET['to'])) {
+            $filters['to'] = $_GET['to'];
+        }
+        return $filters;
+    }
+
     public function commissions(): void
     {
         Auth::requireRole(Roles::STAFF);
         $user = Auth::user();
 
-        $filters = $this->commissionFilters($user);
+        $period = $this->periodFilters();
+        $filters = array_merge($this->commissionFilters($user), $period);
 
         $commissions = Commission::all($filters);
         $summary = ['total' => 0.0, 'pago' => 0.0, 'pendente' => 0.0, 'count' => count($commissions)];
@@ -535,6 +550,8 @@ class FinanceController
             'commissions' => $commissions,
             'summary' => $summary,
             'bySeller' => Commission::byBeneficiary($filters),
+            'byRole' => Commission::byRole($filters),
+            'period' => $period,
             'canManage' => in_array($user['role_slug'], Roles::MANAGEMENT, true),
         ]);
     }
@@ -544,7 +561,7 @@ class FinanceController
         Auth::requireRole(Roles::STAFF);
         $user = Auth::user();
 
-        $filters = $this->commissionFilters($user);
+        $filters = array_merge($this->commissionFilters($user), $this->periodFilters());
 
         $roleLabels = ['licenciado' => 'Licenciado', 'gestor' => 'Gestor', 'vendedor' => 'Vendedor', 'gerente' => 'Gerente', 'supervisor' => 'Supervisor'];
 
