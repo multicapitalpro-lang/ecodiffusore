@@ -14,14 +14,17 @@ $maxCount = $byState ? max(array_column($byState, 'count')) : 0;
             <?php
             $data = $byState[$uf] ?? ['count' => 0, 'cities' => []];
             $intensity = $maxCount > 0 ? $data['count'] / $maxCount : 0;
-            $title = BrazilStates::NAMES[$uf] . ($data['count'] > 0
+            $nativeTitle = BrazilStates::NAMES[$uf] . ($data['count'] > 0
                 ? ' — ' . $data['count'] . ' licenciado(s): ' . implode(', ', $data['cities'])
-                : ' — sem licenciado ainda') . ($interactive ? ' (clique pra ver detalhes)' : '');
+                : ' — sem licenciado ainda');
             ?>
             <path d="<?= $d ?>"
                   class="br-state <?= $data['count'] > 0 ? 'has-licenciado' : 'empty' ?><?= $interactive ? ' br-state-clickable' : '' ?>"
                   style="<?= $data['count'] > 0 ? 'opacity:' . max(.45, $intensity) . ';' : '' ?>"
-                  <?= $interactive ? 'data-uf="' . $uf . '"' : '' ?>><title><?= View::e($title) ?></title></path>
+                  <?php if ($interactive): ?>
+                  data-uf="<?= $uf ?>" data-name="<?= View::e(BrazilStates::NAMES[$uf]) ?>" data-count="<?= (int) $data['count'] ?>" data-cities="<?= View::e(implode(', ', $data['cities'])) ?>"
+                  <?php endif; ?>
+            ><?php if (!$interactive): ?><title><?= View::e($nativeTitle) ?></title><?php endif; ?></path>
         <?php endforeach; ?>
     </svg>
 </div>

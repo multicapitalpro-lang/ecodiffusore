@@ -27,6 +27,7 @@ $icons = [
     'wallet' => '<rect x="3" y="5.5" width="14" height="9.5" rx="1.5"/><path d="M3 8.5h14"/><circle cx="14" cy="11.5" r="1"/>',
     'percent' => '<circle cx="6" cy="6" r="2"/><circle cx="14" cy="14" r="2"/><path d="M15 5 5 15"/>',
     'gear' => '<circle cx="10" cy="10" r="2.6"/><path d="M10 3.5v2M10 14.5v2M16.5 10h-2M5.5 10h-2M14.6 5.4l-1.4 1.4M6.8 13.2l-1.4 1.4M14.6 14.6l-1.4-1.4M6.8 6.8 5.4 5.4"/>',
+    'pin' => '<path d="M10 2.2c-3 0-5.3 2.3-5.3 5.2 0 3.9 5.3 10.4 5.3 10.4s5.3-6.5 5.3-10.4c0-2.9-2.3-5.2-5.3-5.2Z"/><circle cx="10" cy="7.4" r="1.9"/>',
 ];
 $icon = function (string $name) use ($icons) {
     return '<svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' . ($icons[$name] ?? '') . '</svg>';
@@ -39,7 +40,7 @@ $supervisorAssignmentRoles = Roles::SUPERVISOR_ASSIGNMENT;
 $pendingApprovals = in_array($role, Roles::SUPERVISOR_ASSIGNMENT, true) ? \App\Models\User::pendingApprovalCount($user) : 0;
 $vendasOpen = $anyActive(['/painel/leads', '/painel/pedidos', '/painel/orcamentos', '/painel/clientes', '/painel/produtos']);
 $financeiroOpen = $anyActive(['/painel/financeiro']);
-$desempenhoOpen = $anyActive(['/painel/desempenho', '/painel/metas']);
+$desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/metas']);
 ?><!doctype html>
 <html lang="pt-BR">
 <head>
@@ -86,11 +87,14 @@ $desempenhoOpen = $anyActive(['/painel/desempenho', '/painel/metas']);
                             <a href="/painel/desempenho/vendedores" class="<?= $isActive('/painel/desempenho/vendedores') ? 'is-active' : '' ?>">Vendedores</a>
                         <?php endif; ?>
                         <a href="/painel/metas" class="<?= $isActive('/painel/metas') ? 'is-active' : '' ?>">Metas</a>
-                        <?php if (in_array($role, $panoramaRoles, true)): ?>
-                            <a href="/painel/desempenho/panorama" class="<?= $isActive('/painel/desempenho/panorama') ? 'is-active' : '' ?>">Equipe Nacional</a>
-                        <?php endif; ?>
                     </div>
                 </details>
+            <?php endif; ?>
+
+            <?php if (in_array($role, $panoramaRoles, true)): ?>
+                <a href="/painel/desempenho/panorama" class="nav-link-highlight <?= $isActive('/painel/desempenho/panorama') ? 'is-active' : '' ?>">
+                    <?= $icon('pin') ?> Expansão Licenciados
+                </a>
             <?php endif; ?>
 
             <?php if (in_array($role, $staffRoles, true)): ?>

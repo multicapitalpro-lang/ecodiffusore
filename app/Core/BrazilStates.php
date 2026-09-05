@@ -50,8 +50,8 @@ class BrazilStates
                 continue;
             }
             $byState[$uf]['count'] = ($byState[$uf]['count'] ?? 0) + 1;
-            if (!empty($u['city'])) {
-                $byState[$uf]['cities'][] = $u['city'] . (!empty($u['name']) ? ' (' . $u['name'] . ')' : '');
+            if (!empty($u['city']) && !in_array($u['city'], $byState[$uf]['cities'] ?? [], true)) {
+                $byState[$uf]['cities'][] = $u['city'];
             }
         }
         return $byState;
