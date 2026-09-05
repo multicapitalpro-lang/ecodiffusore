@@ -168,6 +168,7 @@ $router->get('/painel/proposta-facil', [App\Controllers\PropostaController::clas
 $router->post('/painel/proposta-facil', [App\Controllers\PropostaController::class, 'store']);
 $router->get('/painel/proposta-facil/resultado', [App\Controllers\PropostaController::class, 'show']);
 $router->get('/painel/proposta-facil/pdf', [App\Controllers\PropostaController::class, 'pdf']);
+$router->post('/painel/proposta-facil/concluir', [App\Controllers\PropostaController::class, 'conclude']);
 
 $router->get('/painel/auditoria', [App\Controllers\AuditController::class, 'index']);
 

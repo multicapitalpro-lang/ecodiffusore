@@ -11,6 +11,7 @@ use App\Core\Response;
 use App\Core\Roles;
 use App\Core\Router;
 use App\Core\View;
+use App\Models\AuditLog;
 use App\Models\Client;
 use App\Models\Lead;
 use App\Models\PricingTier;
@@ -217,6 +218,47 @@ class PropostaController
             'result' => $_SESSION['proposta_result'],
             'isModal' => $isFragment,
         ], $isFragment ? null : 'painel');
+    }
+
+    /** "Concluir Pedido": converte o orcamento gerado pela Proposta Facil (sessao) em Pedido de
+     *  verdade e ja gera a cobranca na Asaas na forma de pagamento que o vendedor escolheu com o
+     *  cliente (Pix/Boleto/Cartao + parcelas) -- em vez do cliente escolher de novo na pagina da
+     *  Asaas. Reaproveita PaymentController::generateForOrder() (mesmo "Gerar cobranca" do Pedido)
+     *  pra nao duplicar a logica de cobranca -- ela mesma redireciona pro Pedido criado. */
+    public function conclude(): void
+    {
+        Auth::requireRole(Roles::STAFF);
+        $user = Auth::user();
+        $this->assertNotViewOnly($user);
+
+        if (empty($_SESSION['proposta_result']['quote_id'])) {
+            Router::redirect('/painel/proposta-facil');
+        }
+
+        $quoteId = (int) $_SESSION['proposta_result']['quote_id'];
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            Router::redirect('/painel/proposta-facil/resultado?erro_concluir=' . urlencode('Sessão expirada, tente de novo.'));
+        }
+
+        $document = preg_replace('/\D/', '', (string) ($_POST['document'] ?? ''));
+        if (!in_array(strlen($document), [11, 14], true)) {
+            Router::redirect('/painel/proposta-facil/resultado?erro_concluir=' . urlencode('Informe um CPF (11 dígitos) ou CNPJ (14 dígitos) válido.'));
+        }
+
+        $quote = Quote::find($quoteId);
+        if (!$quote || (int) $quote['seller_id'] !== (int) $user['id'] || $quote['status'] === 'convertido') {
+            Router::redirect('/painel/proposta-facil/resultado?erro_concluir=' . urlencode('Orçamento não encontrado ou já concluído.'));
+        }
+
+        Client::updateDocument((int) $quote['client_id'], $document);
+
+        $orderId = Quote::convertToOrder($quoteId);
+        AuditLog::record((int) $user['id'], 'orcamento_convertido', 'quote', $quoteId, ['status' => $quote['status']], ['order_id' => $orderId]);
+
+        unset($_SESSION['proposta_result']);
+
+        (new PaymentController())->generateForOrder((string) $orderId);
     }
 
     public function pdf(): void

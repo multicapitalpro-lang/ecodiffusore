@@ -1,4 +1,5 @@
 <?php
+use App\Core\Csrf;
 use App\Core\View;
 /** @var array $result */
 $isModal = $isModal ?? false;
@@ -28,6 +29,10 @@ $message = "Olá, {$result['name']}! Segue a proposta do Ecodiffusore que prepar
 <h1>Proposta para <?= View::e($result['name']) ?></h1>
 <?php endif; ?>
 <p class="hint-text" style="margin-top:0;">Gerada agora — pronta pra compartilhar com o cliente.</p>
+
+<?php if (!empty($_GET['erro_concluir'])): ?>
+    <p class="form-msg form-msg-erro">Não foi possível concluir o pedido: <?= View::e($_GET['erro_concluir']) ?></p>
+<?php endif; ?>
 
 <?php if ($hasPayback): ?>
     <h3>Quanto ele vai economizar</h3>
@@ -112,6 +117,39 @@ $message = "Olá, {$result['name']}! Segue a proposta do Ecodiffusore que prepar
             </div>
         <?php endforeach; ?>
     </div>
+<?php endif; ?>
+
+<?php if ($result['quote_id'] && $result['product_price']): ?>
+    <h3>Concluir pedido</h3>
+    <p class="hint-text" style="margin-top:0;">Depois que o cliente decidir como vai pagar, conclua aqui — já cria o Pedido de verdade e gera a cobrança já na forma escolhida (Pix, Boleto ou Cartão com as parcelas certas), pronta pra mandar pro cliente.</p>
+    <form action="/painel/proposta-facil/concluir" method="post" class="charge-form panel-form-wide">
+        <?= Csrf::field() ?>
+        <div class="form-grid-2">
+            <div>
+                <label for="proposta-document">CPF ou CNPJ do cliente</label>
+                <input type="text" id="proposta-document" name="document" required placeholder="Só números">
+            </div>
+            <div>
+                <label for="proposta-billing-type">Forma de pagamento escolhida</label>
+                <select id="proposta-billing-type" name="billing_type" class="charge-billing-type">
+                    <option value="PIX">Pix</option>
+                    <option value="BOLETO">Boleto</option>
+                    <option value="CREDIT_CARD">Cartão de crédito</option>
+                </select>
+            </div>
+        </div>
+        <div style="margin-top:10px;">
+            <label for="proposta-installments">Parcelas combinadas com o cliente</label>
+            <select id="proposta-installments" name="installments" class="charge-installments" style="display:none;">
+                <?php foreach ($result['installments'] as $row): ?>
+                    <option value="<?= $row['n'] ?>">
+                        <?= $row['n'] ?>x de R$ <?= number_format($row['parcela'], 2, ',', '.') ?><?= $row['n'] === 1 ? ' (à vista)' : ' — total R$ ' . number_format($row['total'], 2, ',', '.') ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary" style="margin-top:14px;">Concluir pedido e gerar cobrança</button>
+    </form>
 <?php endif; ?>
 
 <div class="proposta-actions">

@@ -55,6 +55,15 @@ class Client
         $stmt->execute(['user_id' => $userId, 'id' => $clientId]);
     }
 
+    /** Preenche o CPF/CNPJ de um cliente criado sem documento (ex: Proposta Facil, que so pede
+     *  Nome/WhatsApp de inicio) -- usado na hora de "Concluir Pedido", quando o documento passa a
+     *  ser obrigatorio pra gerar cobranca na Asaas. Nao mexe nos outros campos do cliente. */
+    public static function updateDocument(int $clientId, string $document): void
+    {
+        $stmt = Database::connection()->prepare('UPDATE clients SET document = :document WHERE id = :id');
+        $stmt->execute(['document' => $document, 'id' => $clientId]);
+    }
+
     public static function bulkAssignSeller(array $clientIds, ?int $sellerId): void
     {
         $clientIds = array_filter(array_map('intval', $clientIds));
