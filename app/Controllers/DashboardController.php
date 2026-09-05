@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Core\Auth;
 use App\Core\Chart;
 use App\Core\DateRange;
+use App\Core\ReportScheduler;
 use App\Core\Roles;
 use App\Core\Router;
 use App\Core\View;
@@ -40,6 +41,12 @@ class DashboardController
 
         $role = $user['role_slug'];
         $data = ['user' => $user];
+
+        if (in_array($role, Roles::MANAGEMENT, true)) {
+            // Sem cron nesse plano Hostinger -- "lazy check" no dashboard, a pagina mais visitada
+            // por quem tem acesso a Relatorios, pra nao deixar agendamento parado sem nunca disparar.
+            ReportScheduler::processDue();
+        }
 
         if (in_array($role, Roles::STAFF, true)) {
             [$from, $to] = DateRange::fromRequest();

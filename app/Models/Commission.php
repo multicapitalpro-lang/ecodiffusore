@@ -140,12 +140,26 @@ class Commission
         return $stmt->fetchAll();
     }
 
-    public static function markPaid(int $id): void
+    public static function find(int $id): ?array
     {
         $stmt = Database::connection()->prepare(
-            "UPDATE commissions SET status = 'pago', paid_at = NOW() WHERE id = :id"
+            'SELECT c.*, b.name AS beneficiary_name, b.whatsapp AS beneficiary_whatsapp
+             FROM commissions c JOIN users b ON b.id = c.beneficiary_id
+             WHERE c.id = :id'
         );
         $stmt->execute(['id' => $id]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
+    /** Marca como pago e, quando ha um lancamento financeiro vinculado (saida real de caixa),
+     *  guarda a referencia -- sem isso o pagamento de comissao ficava invisivel pro financeiro. */
+    public static function markPaid(int $id, ?int $financialTransactionId = null): void
+    {
+        $stmt = Database::connection()->prepare(
+            "UPDATE commissions SET status = 'pago', paid_at = NOW(), financial_transaction_id = :ftid WHERE id = :id"
+        );
+        $stmt->execute(['ftid' => $financialTransactionId, 'id' => $id]);
     }
 
     public static function byBeneficiary(array $filters = []): array

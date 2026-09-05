@@ -43,4 +43,15 @@ class FinancialCategory
         $cat = $stmt->fetch();
         return $cat ?: null;
     }
+
+    /** Categoria "Comissões" (filha de Despesas com Pessoal, seedada no schema_fase3) -- usada
+     *  pra classificar automaticamente a saida de caixa gerada ao dar baixa numa comissao. */
+    public static function commissionCategoryId(): ?int
+    {
+        $stmt = Database::connection()->query(
+            "SELECT id FROM financial_categories WHERE name = 'Comissões' AND type = 'saida' LIMIT 1"
+        );
+        $id = $stmt->fetchColumn();
+        return $id !== false ? (int) $id : null;
+    }
 }

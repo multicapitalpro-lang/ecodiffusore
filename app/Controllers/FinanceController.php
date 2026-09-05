@@ -333,15 +333,40 @@ class FinanceController
         Csv::download('comissoes.csv', ['Pedido', 'Beneficiário', 'Papel', 'Cliente', 'Data', '%', 'Valor', 'Situação'], $rows);
     }
 
+    /**
+     * "Dar baixa" numa comissao precisa deixar rastro de verdade no financeiro -- antes so
+     * mudava o status na tabela commissions, e o dinheiro que saiu do caixa pra pagar
+     * vendedor/gestor/licenciado/supervisor/gerente nunca aparecia em Caixas e Bancos nem no
+     * DRE (categoria "Comissões" ja existia, mas nada gerava lancamento nela automaticamente).
+     */
     public function markCommissionPaid(string $id): void
     {
         Auth::requireRole(Roles::MANAGEMENT);
+        $id = (int) $id;
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
             Router::redirect('/painel/financeiro/comissoes');
         }
 
-        Commission::markPaid((int) $id);
+        $commission = Commission::find($id);
+        if ($commission && $commission['status'] === 'pendente') {
+            $transactionId = null;
+            $accountId = FinancialAccount::defaultAccountId();
+            if ($accountId) {
+                $transactionId = FinancialTransaction::create([
+                    'account_id' => $accountId,
+                    'order_id' => $commission['order_id'],
+                    'category_id' => FinancialCategory::commissionCategoryId(),
+                    'type' => 'saida',
+                    'description' => 'Comissão · Pedido #' . $commission['order_id'] . ' · ' . $commission['beneficiary_name'],
+                    'amount' => (float) $commission['amount'],
+                    'due_date' => date('Y-m-d'),
+                    'paid_date' => date('Y-m-d'),
+                    'status' => 'pago',
+                ]);
+            }
+            Commission::markPaid($id, $transactionId);
+        }
 
         Router::redirect('/painel/financeiro/comissoes?sucesso=1');
     }
