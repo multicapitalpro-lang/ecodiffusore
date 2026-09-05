@@ -199,8 +199,28 @@ a { text-decoration: none; color: inherit; }
 .proposta-actions .btn { flex: 1; min-width: 220px; justify-content: center; }
 .btn-whatsapp { background: #25D366; color: #fff; }
 .btn-whatsapp:hover { background: #1ebe57; }
+
+/* Listas mobile-first (parcelas, retorno ano a ano) -- linhas que quebram em flex em vez de
+   tabela com colunas fixas, pra nunca precisar de scroll horizontal num modal estreito. */
+.proposta-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.proposta-list-row {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px;
+}
+.proposta-list-n { font-weight: 800; font-family: 'Poppins', sans-serif; font-size: .92rem; min-width: 46px; }
+.proposta-list-main { flex: 1; min-width: 130px; display: flex; flex-direction: column; }
+.proposta-list-main strong { font-size: .95rem; }
+.proposta-list-main small { color: var(--gray-text); font-size: .74rem; }
+.proposta-list-tag { font-size: .8rem; font-weight: 700; white-space: nowrap; margin-left: auto; }
+.proposta-list-tag.is-positive { color: var(--green-dark); }
+.proposta-list-tag.is-negative { color: var(--gray-text); }
+
 @media (max-width: 720px) {
     .proposta-tiers { grid-template-columns: 1fr; }
+}
+@media (max-width: 420px) {
+    .proposta-list-row { padding: 10px 12px; gap: 8px; }
+    .proposta-list-tag { margin-left: 0; }
 }
 .proposta-comprador-summary {
     background: #eef8f0; border: 1px solid var(--green); border-radius: 10px;
@@ -287,7 +307,7 @@ a { text-decoration: none; color: inherit; }
 .panel-form label { font-weight: 700; font-size: .85rem; margin-top: 12px; }
 .panel-form input, .panel-form select {
     padding: 11px 14px; border-radius: 8px; border: 1.5px solid var(--border); font-family: inherit; font-size: .92rem;
-    transition: border-color .15s ease;
+    transition: border-color .15s ease; width: 100%;
 }
 .panel-form input:focus, .panel-form select:focus, .panel-form-wide textarea:focus {
     outline: none; border-color: var(--green-dark); box-shadow: 0 0 0 3px rgba(110,166,44,.12);

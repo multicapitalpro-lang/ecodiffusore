@@ -20,8 +20,8 @@ $isViewOnly = $isViewOnly ?? false;
 
     <p class="form-msg form-msg-erro" id="proposta-form-error" hidden></p>
 
-    <div id="proposta-step-comprador">
-        <p class="hint-text">Rápido: só o nome e o WhatsApp de quem vai receber a proposta. O resto (veículo e consumo) vem na próxima etapa.</p>
+    <div id="proposta-step-comprador" class="panel-form">
+        <p class="hint-text" style="margin-top:0;">Rápido: só o nome e o WhatsApp de quem vai receber a proposta. O resto (veículo e consumo) vem na próxima etapa.</p>
         <label for="comprador-name">Nome</label>
         <input type="text" id="comprador-name" name="name" form="proposta-form" required>
         <p class="field-error" data-error-for="name"></p>
@@ -39,7 +39,7 @@ $isViewOnly = $isViewOnly ?? false;
             <button type="button" id="comprador-edit" style="background:none;border:none;cursor:pointer;color:var(--green-dark);font-weight:700;">editar</button>
         </div>
 
-        <form id="proposta-form" action="/painel/proposta-facil" method="post" class="panel-form-wide" data-modal="<?= $isModal ? '1' : '' ?>">
+        <form id="proposta-form" action="/painel/proposta-facil" method="post" class="panel-form panel-form-wide" data-modal="<?= $isModal ? '1' : '' ?>">
             <?= Csrf::field() ?>
 
             <h3 style="margin-top:0;">Veículo</h3>

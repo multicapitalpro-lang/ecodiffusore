@@ -78,62 +78,45 @@ $message = "Olá, {$result['name']}! Segue a proposta do Ecodiffusore que prepar
         própria da Ecodiffusore pro parcelamento ainda será enviada e vai substituir estes valores.
     </div>
 
-    <div class="table-scroll">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Parcelas</th>
-                    <th>Valor da parcela</th>
-                    <th>Total</th>
-                    <?php if ($hasPayback): ?><th>Economia média no mês</th><th>Diferença</th><?php endif; ?>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($result['installments'] as $row): ?>
-                    <?php $diff = $hasPayback ? $payback['tiers']['avg']['monthly'] - $row['parcela'] : null; ?>
-                    <tr>
-                        <td><?= $row['n'] ?>x</td>
-                        <td>R$ <?= number_format($row['parcela'], 2, ',', '.') ?></td>
-                        <td>R$ <?= number_format($row['total'], 2, ',', '.') ?></td>
-                        <?php if ($hasPayback): ?>
-                            <td>R$ <?= number_format($payback['tiers']['avg']['monthly'], 2, ',', '.') ?></td>
-                            <td>
-                                <?php if ($diff >= 0): ?>
-                                    <strong style="color:var(--green-dark);">Sobra R$ <?= number_format($diff, 2, ',', '.') ?></strong>
-                                <?php else: ?>
-                                    Falta R$ <?= number_format(abs($diff), 2, ',', '.') ?>
-                                <?php endif; ?>
-                            </td>
-                        <?php endif; ?>
-                    </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
+    <?php if ($hasPayback): ?>
+        <p class="hint-text" style="margin-top:0;">Economia média estimada de diesel: <strong style="color:var(--green-dark);">R$ <?= number_format($payback['tiers']['avg']['monthly'], 2, ',', '.') ?>/mês</strong> — comparada com a parcela em "Diferença" abaixo.</p>
+    <?php endif; ?>
+
+    <div class="proposta-list">
+        <?php foreach ($result['installments'] as $row): ?>
+            <?php $diff = $hasPayback ? $payback['tiers']['avg']['monthly'] - $row['parcela'] : null; ?>
+            <div class="proposta-list-row">
+                <span class="proposta-list-n"><?= $row['n'] ?>x</span>
+                <span class="proposta-list-main">
+                    <strong>R$ <?= number_format($row['parcela'], 2, ',', '.') ?></strong>
+                    <small>Total R$ <?= number_format($row['total'], 2, ',', '.') ?></small>
+                </span>
+                <?php if ($hasPayback): ?>
+                    <span class="proposta-list-tag <?= $diff >= 0 ? 'is-positive' : 'is-negative' ?>">
+                        <?= $diff >= 0 ? 'Sobra R$ ' . number_format($diff, 2, ',', '.') : 'Falta R$ ' . number_format(abs($diff), 2, ',', '.') ?>
+                    </span>
+                <?php endif; ?>
+            </div>
+        <?php endforeach; ?>
     </div>
     <p class="hint-text">"Diferença" compara a parcela do produto com a economia média mensal estimada de diesel — quando positiva, o produto se paga sozinho todo mês.</p>
 <?php endif; ?>
 
 <?php if ($hasPayback): ?>
     <h3>Retorno do investimento, ano a ano</h3>
-    <div class="table-scroll">
-        <table class="data-table">
-            <thead><tr><th>Ano</th><th>Economia acumulada</th><th>Resultado líquido</th></tr></thead>
-            <tbody>
-                <?php foreach ($payback['yearly_breakdown'] as $row): ?>
-                    <tr>
-                        <td>Ano <?= (int) $row['year'] ?></td>
-                        <td>R$ <?= number_format($row['cumulative_savings'], 2, ',', '.') ?></td>
-                        <td>
-                            <?php if ($row['net_gain'] >= 0): ?>
-                                <strong style="color:var(--green-dark);">+ R$ <?= number_format($row['net_gain'], 2, ',', '.') ?></strong>
-                            <?php else: ?>
-                                Faltam R$ <?= number_format(abs($row['net_gain']), 2, ',', '.') ?>
-                            <?php endif; ?>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
+    <div class="proposta-list">
+        <?php foreach ($payback['yearly_breakdown'] as $row): ?>
+            <div class="proposta-list-row">
+                <span class="proposta-list-n">Ano <?= (int) $row['year'] ?></span>
+                <span class="proposta-list-main">
+                    <small>Economia acumulada</small>
+                    R$ <?= number_format($row['cumulative_savings'], 2, ',', '.') ?>
+                </span>
+                <span class="proposta-list-tag <?= $row['net_gain'] >= 0 ? 'is-positive' : 'is-negative' ?>">
+                    <?= $row['net_gain'] >= 0 ? '+ R$ ' . number_format($row['net_gain'], 2, ',', '.') : '− R$ ' . number_format(abs($row['net_gain']), 2, ',', '.') ?>
+                </span>
+            </div>
+        <?php endforeach; ?>
     </div>
 <?php endif; ?>
 
