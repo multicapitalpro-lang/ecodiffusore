@@ -9,6 +9,8 @@ use App\Core\Roles;
 use App\Core\Router;
 use App\Core\View;
 use App\Models\AuditLog;
+use App\Models\Commission;
+use App\Models\Order;
 use App\Models\Role;
 use App\Models\User;
 
@@ -590,11 +592,65 @@ class UserController
             $supervisors = array_values(array_filter($supervisors, fn ($s) => (int) $s['manager_id'] === (int) $user['id']));
         }
 
+        $allLicenciados = User::allByRole('licenciado');
+
+        $stats = ['total' => count($allLicenciados), 'ativos' => 0, 'sem_supervisor' => 0, 'por_status' => []];
+        foreach ($allLicenciados as $l) {
+            $status = $l['licenciado_onboarding_status'] ?? 'nao_aplicavel';
+            $stats['por_status'][$status] = ($stats['por_status'][$status] ?? 0) + 1;
+            if ($status === 'ativo') {
+                $stats['ativos']++;
+            }
+            if (empty($l['supervisor_id'])) {
+                $stats['sem_supervisor']++;
+            }
+        }
+
+        $statusFilter = trim($_GET['status'] ?? '');
+        $licenciados = $statusFilter !== ''
+            ? array_values(array_filter($allLicenciados, fn ($l) => ($l['licenciado_onboarding_status'] ?? 'nao_aplicavel') === $statusFilter))
+            : $allLicenciados;
+
+        // Resumo de vendas/comissao direto na linha -- conecta essa tela (que so servia pra
+        // atribuir supervisor) ao resto do desempenho, sem precisar abrir outra pagina.
+        $licenciadoIds = array_column($allLicenciados, 'id');
+        $commissionTotals = [];
+        foreach (Commission::byBeneficiary(['beneficiary_ids' => $licenciadoIds]) as $row) {
+            $commissionTotals[(int) $row['beneficiary_id']] = $row;
+        }
+
+        $vendasTotals = [];
+        foreach ($allLicenciados as $l) {
+            $downline = User::downlineIds((int) $l['id']);
+            $vendasTotals[(int) $l['id']] = Order::metrics('2000-01-01', date('Y-m-d'), null, $downline);
+        }
+
         View::render('painel/users/licenciados', [
             'user' => $user,
-            'licenciados' => User::allByRole('licenciado'),
+            'licenciados' => $licenciados,
             'supervisors' => $supervisors,
+            'stats' => $stats,
+            'statusFilter' => $statusFilter,
+            'commissionTotals' => $commissionTotals,
+            'vendasTotals' => $vendasTotals,
         ]);
+    }
+
+    /** Autorizacao compartilhada entre assignSupervisor() (1 licenciado) e assignSupervisorBulk()
+     *  (varios de uma vez) -- Gerente so pode apontar pra um Supervisor da propria equipe, sem
+     *  isso um Gerente poderia atribuir licenciados a supervisor de outro Gerente via POST direto. */
+    private function authorizeSupervisorTarget(array $user, ?int $supervisorId): bool
+    {
+        if ($supervisorId === null) {
+            return true;
+        }
+
+        $supervisor = User::find($supervisorId);
+        if (!$supervisor || $supervisor['role_slug'] !== 'supervisor') {
+            return false;
+        }
+
+        return $user['role_slug'] === 'admin' || (int) $supervisor['manager_id'] === (int) $user['id'];
     }
 
     public function assignSupervisor(string $id): void
@@ -614,21 +670,50 @@ class UserController
 
         $supervisorId = !empty($_POST['supervisor_id']) ? (int) $_POST['supervisor_id'] : null;
 
-        if ($supervisorId !== null) {
-            $supervisor = User::find($supervisorId);
-            // Gerente so pode apontar pra um Supervisor da propria equipe -- sem isso, um Gerente
-            // poderia atribuir licenciados a supervisor de outro Gerente via POST direto.
-            $allowed = $user['role_slug'] === 'admin'
-                || ($supervisor && $supervisor['role_slug'] === 'supervisor' && (int) $supervisor['manager_id'] === (int) $user['id']);
-            if (!$supervisor || $supervisor['role_slug'] !== 'supervisor' || !$allowed) {
-                Router::redirect('/painel/licenciados?erro=1');
-            }
+        if (!$this->authorizeSupervisorTarget($user, $supervisorId)) {
+            Router::redirect('/painel/licenciados?erro=1');
         }
 
         $before = $licenciado['supervisor_id'] ?? null;
         User::setSupervisor($id, $supervisorId);
         if ((string) $before !== (string) $supervisorId) {
             AuditLog::record((int) $user['id'], 'licenciado_supervisor_alterado', 'user', $id, ['supervisor_id' => $before], ['supervisor_id' => $supervisorId]);
+        }
+
+        Router::redirect('/painel/licenciados?sucesso=1');
+    }
+
+    public function assignSupervisorBulk(): void
+    {
+        Auth::requireRole(Roles::SUPERVISOR_ASSIGNMENT);
+        $user = Auth::user();
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            Router::redirect('/painel/licenciados?erro=1');
+        }
+
+        $ids = array_map('intval', $_POST['licenciado_ids'] ?? []);
+        if (!$ids) {
+            Router::redirect('/painel/licenciados?erro=1');
+        }
+
+        $supervisorId = !empty($_POST['supervisor_id']) ? (int) $_POST['supervisor_id'] : null;
+
+        if (!$this->authorizeSupervisorTarget($user, $supervisorId)) {
+            Router::redirect('/painel/licenciados?erro=1');
+        }
+
+        foreach ($ids as $id) {
+            $licenciado = User::find($id);
+            if (!$licenciado || $licenciado['role_slug'] !== 'licenciado') {
+                continue;
+            }
+
+            $before = $licenciado['supervisor_id'] ?? null;
+            User::setSupervisor($id, $supervisorId);
+            if ((string) $before !== (string) $supervisorId) {
+                AuditLog::record((int) $user['id'], 'licenciado_supervisor_alterado', 'user', $id, ['supervisor_id' => $before], ['supervisor_id' => $supervisorId]);
+            }
         }
 
         Router::redirect('/painel/licenciados?sucesso=1');

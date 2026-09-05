@@ -81,6 +81,7 @@ $router->post('/painel/usuarios/excluir-lote', [App\Controllers\UserController::
 $router->post('/painel/usuarios/{id}', [App\Controllers\UserController::class, 'update']);
 $router->post('/painel/usuarios/{id}/excluir', [App\Controllers\UserController::class, 'destroy']);
 $router->get('/painel/licenciados', [App\Controllers\UserController::class, 'licenciados']);
+$router->post('/painel/licenciados/atribuir-lote', [App\Controllers\UserController::class, 'assignSupervisorBulk']);
 $router->post('/painel/licenciados/{id}/supervisor', [App\Controllers\UserController::class, 'assignSupervisor']);
 
 // Onboarding de Licenciado: perfil completo + assinatura/KYC via ClickSign

@@ -185,6 +185,8 @@ a { text-decoration: none; color: inherit; }
 .dash-card-soon { opacity: .55; border-top-color: var(--border); }
 .dash-card-danger { border-top-color: #c53030; }
 .dash-card-danger strong { color: #c53030; }
+.data-table tr.row-attention { background: #fff8e6; }
+.data-table tr.row-attention:hover { background: #fef0cc; }
 .report-card { cursor: pointer; }
 .notes-list { margin-top: 14px; display: flex; flex-direction: column; gap: 10px; max-height: 280px; overflow-y: auto; }
 .note-item { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
