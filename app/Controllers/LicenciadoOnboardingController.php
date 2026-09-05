@@ -185,10 +185,12 @@ class LicenciadoOnboardingController
         // KYC automatico (selfie + foto do documento) desativado: confirmado contra a API real
         // em 2026-09-05 que a conta ClickSign atual devolve 403 "A conta nao possui acesso a essa
         // funcionalidade" nesse requirement -- e' um recurso pago a parte, nao incluso no plano
-        // de hoje. Sem isso, o envelope nunca ativava e nenhum Licenciado conseguia avancar.
-        // App\Core\ClickSignClient::addKycRequirements() continua disponivel: se a conta contratar
-        // esse recurso no ClickSign, e' so descomentar a linha abaixo pra reativar.
-        // $client->addKycRequirements($envelope['id'], $document['id'], $signer['id']);
+        // de hoje. App\Core\ClickSignClient::addKycRequirements() continua disponivel: se a conta
+        // contratar esse recurso no ClickSign, e' so trocar a linha abaixo por ela.
+        // A ativacao do envelope EXIGE pelo menos um requirement de autenticacao alem do "agree"
+        // de assinatura -- sem nenhum, falha com 422. email e' a unica opcao confirmada como
+        // gratuita nessa conta (sms/whatsapp tambem deram 403).
+        $client->addEmailAuthRequirement($envelope['id'], $document['id'], $signer['id']);
         $client->activateEnvelope($envelope['id']);
 
         // A API do ClickSign nao expoe uma "signing_url" pronta (confirmado contra a API real e a

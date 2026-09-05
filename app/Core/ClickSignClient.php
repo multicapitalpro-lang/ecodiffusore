@@ -133,13 +133,29 @@ class ClickSignClient
         return $this->createRequirement($envelopeId, $documentId, $signerId, ['action' => 'agree', 'role' => 'sign']);
     }
 
-    /** KYC "automatico": selfie + foto do documento oficial, anexados como requirements do mesmo documento. */
+    /** KYC "automatico": selfie + foto do documento oficial, anexados como requirements do mesmo documento.
+     *  NAO USADO HOJE -- confirmado contra a API real em 2026-09-05 que a conta devolve 403
+     *  "A conta nao possui acesso a essa funcionalidade" pra selfie/official_document (e tambem
+     *  pra sms/whatsapp). Fica no codigo pronto pra reativar se a conta contratar esse recurso. */
     public function addKycRequirements(string $envelopeId, string $documentId, string $signerId): array
     {
         return [
             $this->createRequirement($envelopeId, $documentId, $signerId, ['action' => 'provide_evidence', 'auth' => 'selfie']),
             $this->createRequirement($envelopeId, $documentId, $signerId, ['action' => 'provide_evidence', 'auth' => 'official_document']),
         ];
+    }
+
+    /**
+     * Requisito de autenticacao por e-mail -- confirmado contra a API real (2026-09-05) que a
+     * ativacao do envelope EXIGE pelo menos um requirement de autenticacao no signatario alem do
+     * "agree" de assinatura (sem nenhum, a ativacao falha com 422 "ha signatario(s) sem os
+     * requisitos necessarios"). email e' a unica opcao confirmada como gratuita nessa conta --
+     * sms/whatsapp/selfie/official_document deram 403, e icp_brasil nao pode ser combinado com
+     * outro auth no mesmo signatario.
+     */
+    public function addEmailAuthRequirement(string $envelopeId, string $documentId, string $signerId): array
+    {
+        return $this->createRequirement($envelopeId, $documentId, $signerId, ['action' => 'provide_evidence', 'auth' => 'email']);
     }
 
     private function createRequirement(string $envelopeId, string $documentId, string $signerId, array $attributes): array
