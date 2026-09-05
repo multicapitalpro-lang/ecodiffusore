@@ -20,17 +20,19 @@ $isViewOnly = $isViewOnly ?? false;
 
     <p class="form-msg form-msg-erro" id="proposta-form-error" hidden></p>
 
-    <div id="proposta-step-comprador" class="panel-form">
-        <p class="hint-text" style="margin-top:0;">Rápido: só o nome e o WhatsApp de quem vai receber a proposta. O resto (veículo e consumo) vem na próxima etapa.</p>
-        <label for="comprador-name">Nome</label>
-        <input type="text" id="comprador-name" name="name" form="proposta-form" required>
-        <p class="field-error" data-error-for="name"></p>
+    <div id="proposta-step-comprador">
+        <div class="panel-form">
+            <p class="hint-text" style="margin-top:0;">Rápido: só o nome e o WhatsApp de quem vai receber a proposta. O resto (veículo e consumo) vem na próxima etapa.</p>
+            <label for="comprador-name">Nome</label>
+            <input type="text" id="comprador-name" name="name" form="proposta-form" required>
+            <p class="field-error" data-error-for="name"></p>
 
-        <label for="comprador-whatsapp">WhatsApp</label>
-        <input type="text" id="comprador-whatsapp" name="whatsapp" form="proposta-form" placeholder="45999998888" required>
-        <p class="field-error" data-error-for="whatsapp"></p>
+            <label for="comprador-whatsapp">WhatsApp</label>
+            <input type="text" id="comprador-whatsapp" name="whatsapp" form="proposta-form" placeholder="45999998888" required>
+            <p class="field-error" data-error-for="whatsapp"></p>
 
-        <button type="button" class="btn btn-primary" id="comprador-continue" style="width:100%;">Continuar</button>
+            <button type="button" class="btn btn-primary" id="comprador-continue" style="width:100%;">Continuar</button>
+        </div>
     </div>
 
     <div id="proposta-step-detalhes" hidden>
