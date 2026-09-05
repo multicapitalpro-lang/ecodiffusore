@@ -135,9 +135,8 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/metas'])
                 <a href="/painel/auditoria" class="<?= $isActive('/painel/auditoria') ? 'is-active' : '' ?>"><?= $icon('chart') ?> Auditoria</a>
             <?php endif; ?>
 
-            <?php if (in_array($role, $managerRoles, true)): ?>
-                <p class="painel-nav-soon">Em breve</p>
-                <span class="painel-nav-disabled">NF-e</span>
+            <?php if ($role === 'admin'): ?>
+                <a href="/painel/configuracoes/nfe" class="<?= $isActive('/painel/configuracoes/nfe') ? 'is-active' : '' ?>"><?= $icon('wallet') ?> Config. de NF-e</a>
             <?php endif; ?>
         </nav>
     </aside>

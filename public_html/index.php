@@ -134,6 +134,10 @@ $router->post('/painel/tabela-precos/{id}/excluir', [App\Controllers\PricingTier
 $router->get('/painel/configuracoes/pagamento', [App\Controllers\PaymentSettingsController::class, 'index']);
 $router->post('/painel/configuracoes/pagamento', [App\Controllers\PaymentSettingsController::class, 'update']);
 
+$router->get('/painel/configuracoes/nfe', [App\Controllers\NfeSettingsController::class, 'index']);
+$router->post('/painel/configuracoes/nfe', [App\Controllers\NfeSettingsController::class, 'update']);
+$router->get('/painel/configuracoes/nfe/buscar-servico', [App\Controllers\NfeSettingsController::class, 'searchService']);
+
 // Pedidos
 $router->get('/painel/pedidos', [App\Controllers\OrderController::class, 'index']);
 $router->get('/painel/pedidos/novo', [App\Controllers\OrderController::class, 'create']);

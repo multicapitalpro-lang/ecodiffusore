@@ -15,6 +15,7 @@ use App\Models\Order;
 use App\Models\Payment;
 use App\Models\Quote;
 use App\Models\User;
+use App\Models\NfeSettings;
 
 class PaymentController
 {
@@ -96,8 +97,10 @@ class PaymentController
 
         Payment::markPaid((int) $payment['id']);
 
+        $orderId = null;
         if ($payment['payable_type'] === 'order') {
-            Order::markVerifiedWithCommission((int) $payment['payable_id']);
+            $orderId = (int) $payment['payable_id'];
+            Order::markVerifiedWithCommission($orderId);
         } elseif ($payment['payable_type'] === 'quote') {
             $quote = Quote::find((int) $payment['payable_id']);
             if ($quote && $quote['status'] !== 'convertido' && !Approval::pendingFor('quote', (int) $payment['payable_id'])) {
@@ -106,7 +109,50 @@ class PaymentController
             }
         }
 
+        if ($orderId) {
+            $this->maybeIssueInvoice((int) $payment['id'], $chargeId, $orderId, (float) $payment['amount']);
+        }
+
         http_response_code(200);
+    }
+
+    /** Emite NF-e automaticamente pra um pedido recem-confirmado como pago, se o admin tiver
+     *  ligado isso em /painel/configuracoes/nfe. Best-effort: qualquer falha (municipal service
+     *  ainda nao configurado do lado da Asaas, etc.) e' engolida -- nunca deve derrubar a
+     *  confirmacao do pagamento/comissao, que ja rodou antes desta chamada. */
+    private function maybeIssueInvoice(int $paymentId, string $chargeId, int $orderId, float $amount): void
+    {
+        $settings = NfeSettings::current();
+        if (empty($settings['enabled']) || empty($settings['municipal_service_id'])) {
+            return;
+        }
+
+        try {
+            $description = str_replace('{pedido}', (string) $orderId, (string) ($settings['service_description_template'] ?: 'Pedido #{pedido}'));
+
+            (new AsaasClient())->createInvoice([
+                'payment_id' => $chargeId,
+                'service_description' => $description,
+                'observations' => $settings['observations_template'] ?: null,
+                'value' => $amount,
+                'effective_date' => date('Y-m-d'),
+                'municipal_service_id' => $settings['municipal_service_id'],
+                'municipal_service_name' => $settings['municipal_service_description'] ?: $description,
+                'taxes' => [
+                    'retain_iss' => (bool) $settings['retain_iss'],
+                    'iss' => (float) $settings['iss_pct'],
+                    'cofins' => (float) $settings['cofins_pct'],
+                    'csll' => (float) $settings['csll_pct'],
+                    'inss' => (float) $settings['inss_pct'],
+                    'ir' => (float) $settings['ir_pct'],
+                    'pis' => (float) $settings['pis_pct'],
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            // Emissao de NF-e e' secundaria ao pagamento em si -- nao interrompe o webhook.
+            // Sem error_log acessivel em producao neste plano (ver reference-ecodiffusore-deploy);
+            // falha fica silenciosa do lado do sistema, visivel só como ausencia de nota na Asaas.
+        }
     }
 
     /** $basePrice e' sempre o preco de tabela puro (order/quote.total_value) -- a comissao em

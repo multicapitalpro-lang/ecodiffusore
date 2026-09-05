@@ -93,6 +93,49 @@ class AsaasClient
         return $this->request('GET', '/anticipations', ['offset' => $offset, 'limit' => $limit]);
     }
 
+    /** Busca servicos municipais cadastrados na Asaas pra essa conta (usado pra montar o seletor
+     *  de servico municipal na tela de Config. de NF-e, em vez do admin ter que digitar o codigo
+     *  cego). Read-only. */
+    public function searchFiscalServices(string $query): array
+    {
+        return $this->request('GET', '/fiscalInfo/services', ['description' => $query, 'limit' => 20]);
+    }
+
+    /** Cria uma nota fiscal de servico (NF-e) vinculada a uma cobranca ja paga. So deve ser
+     *  chamado quando NfeSettings::current()['enabled'] estiver ligado -- emitir nota fiscal e uma
+     *  acao com efeito fiscal real, nao reversivel de forma simples (cancelamento depende de prazo
+     *  e aprovacao municipal). Ver App\Models\NfeSettings. */
+    public function createInvoice(array $data): array
+    {
+        $payload = [
+            'payment' => $data['payment_id'],
+            'serviceDescription' => $data['service_description'],
+            'observations' => $data['observations'] ?? null,
+            'value' => $data['value'],
+            'effectiveDate' => $data['effective_date'],
+            'municipalServiceId' => $data['municipal_service_id'] ?? null,
+            'municipalServiceCode' => $data['municipal_service_code'] ?? null,
+            'municipalServiceName' => $data['municipal_service_name'],
+            'taxes' => [
+                'retainIss' => $data['taxes']['retain_iss'] ?? false,
+                'iss' => $data['taxes']['iss'] ?? 0,
+                'cofins' => $data['taxes']['cofins'] ?? 0,
+                'csll' => $data['taxes']['csll'] ?? 0,
+                'inss' => $data['taxes']['inss'] ?? 0,
+                'ir' => $data['taxes']['ir'] ?? 0,
+                'pis' => $data['taxes']['pis'] ?? 0,
+            ],
+        ];
+
+        $result = $this->request('POST', '/invoices', $payload);
+
+        if (empty($result['id'])) {
+            throw new \RuntimeException('Falha ao criar nota fiscal no Asaas: ' . json_encode($result));
+        }
+
+        return $result;
+    }
+
     public function registerWebhook(string $url, string $authToken): array
     {
         return $this->request('POST', '/webhooks', [
