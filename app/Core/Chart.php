@@ -12,7 +12,10 @@ class Chart
      */
     public static function dailyLine(array $current, array $previous, string $from, string $to, string $prevFrom): string
     {
-        $width = 680;
+        // Largura maior + preserveAspectRatio="none" (ver abaixo) pra ocupar 100% do card em
+        // qualquer largura de tela -- antes o SVG mantinha a proporcao 680:190 e ficava "flutuando"
+        // centralizado, com sobra em branco dos dois lados em telas largas.
+        $width = 960;
         $height = 190;
         $padLeft = 58;
         $padRight = 16;
@@ -108,13 +111,13 @@ class Chart
             }
         }
 
-        $svg = '<svg viewBox="0 0 ' . $width . ' ' . $height . '" class="chart-svg" role="img" aria-label="Valor de pedidos por dia">';
+        $svg = '<svg viewBox="0 0 ' . $width . ' ' . $height . '" preserveAspectRatio="none" class="chart-svg" role="img" aria-label="Valor de pedidos por dia">';
         $svg .= '<defs><linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1">'
             . '<stop offset="0%" stop-color="#8dc63f" stop-opacity="0.28" />'
             . '<stop offset="100%" stop-color="#8dc63f" stop-opacity="0" />'
             . '</linearGradient></defs>';
         $svg .= '<style>
-            .chart-grid{stroke:#eef0f5;stroke-width:1;}
+            .chart-grid{stroke:#eef0f5;stroke-width:1;stroke-dasharray:3 4;}
             .chart-axis-label{font-size:10.5px;fill:#8a93ab;font-family:Inter,sans-serif;}
             .chart-dot{fill:#fff;stroke:#6ea62c;stroke-width:2;}
         </style>';
@@ -123,7 +126,7 @@ class Chart
         if (array_filter($previousValues)) {
             $svg .= '<polyline points="' . $previousPoints . '" fill="none" stroke="#c9cfdc" stroke-width="1.75" stroke-dasharray="4 3" stroke-linejoin="round" stroke-linecap="round" />';
         }
-        $svg .= '<polyline points="' . $currentPoints . '" fill="none" stroke="#6ea62c" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />';
+        $svg .= '<polyline points="' . $currentPoints . '" fill="none" stroke="#6ea62c" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" />';
         $svg .= $dots;
         $svg .= $xLabels;
         $svg .= '</svg>';
