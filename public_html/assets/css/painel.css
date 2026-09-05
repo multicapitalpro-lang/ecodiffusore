@@ -202,6 +202,12 @@ a { text-decoration: none; color: inherit; }
 @media (max-width: 720px) {
     .proposta-tiers { grid-template-columns: 1fr; }
 }
+.proposta-comprador-summary {
+    background: #eef8f0; border: 1px solid var(--green); border-radius: 10px;
+    padding: 10px 16px; margin-bottom: 16px; font-size: .88rem; display: flex;
+    align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.proposta-comprador-summary button { color: var(--green-dark); font-weight: 700; }
 .painel-content { padding: 24px; flex: 1; }
 .painel-content > h1:first-child { font-size: 1.4rem; margin: 0 0 20px; }
 
