@@ -93,12 +93,6 @@ class AsaasClient
         return $this->request('GET', '/anticipations', ['offset' => $offset, 'limit' => $limit]);
     }
 
-    /** Limite disponivel pra antecipar (por forma de cobranca) -- {creditCard:{total,available}, bankSlip:{total,available}} */
-    public function getAnticipationLimits(): array
-    {
-        return $this->request('GET', '/anticipations/limits');
-    }
-
     public function registerWebhook(string $url, string $authToken): array
     {
         return $this->request('POST', '/webhooks', [

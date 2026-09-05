@@ -43,26 +43,6 @@ $erro = $_GET['erro'] ?? null;
     <p class="form-msg form-msg-erro">Não foi possível concluir a ação.</p>
 <?php endif; ?>
 
-<?php if ($limits): ?>
-<div class="cards-grid">
-    <div class="dash-card">
-        <span>Disponível pra antecipar (cartão)</span>
-        <strong>R$ <?= number_format((float) ($limits['creditCard']['available'] ?? 0), 2, ',', '.') ?></strong>
-    </div>
-    <div class="dash-card">
-        <span>Limite total (cartão)</span>
-        <strong>R$ <?= number_format((float) ($limits['creditCard']['total'] ?? 0), 2, ',', '.') ?></strong>
-    </div>
-    <div class="dash-card">
-        <span>Disponível pra antecipar (boleto)</span>
-        <strong>R$ <?= number_format((float) ($limits['bankSlip']['available'] ?? 0), 2, ',', '.') ?></strong>
-    </div>
-</div>
-<p class="hint-text">Limites atualizados em <?= $limitsUpdatedAt ? View::e(date('d/m/Y H:i', strtotime($limitsUpdatedAt))) : '—' ?>.</p>
-<?php else: ?>
-    <p class="form-msg form-msg-erro">Ainda não sincronizado — clique em "Atualizar do Asaas" pra buscar os dados pela primeira vez.</p>
-<?php endif; ?>
-
 <form method="get" class="filter-bar">
     <input type="date" name="from" value="<?= View::e($from) ?>">
     <input type="date" name="to" value="<?= View::e($to) ?>">

@@ -9,16 +9,20 @@ use App\Core\DateRange;
 use App\Core\Router;
 use App\Core\View;
 use App\Models\AsaasAnticipation;
-use App\Models\AsaasSetting;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\Quote;
 
 /**
  * Controle de antecipacao de recebiveis feita na Asaas (Fase 25): status, taxas e valores das
- * antecipacoes reais da conta, + limite disponivel pra antecipar. Espelho local (asaas_
- * anticipations), sincronizado sob demanda -- nunca busca ao vivo na Asaas em toda carga de
- * pagina (ver sync()). So admin e gerente (visao nacional) tem acesso.
+ * antecipacoes reais da conta. Espelho local (asaas_anticipations), sincronizado sob demanda --
+ * nunca busca ao vivo na Asaas em toda carga de pagina (ver sync()). So admin e gerente (visao
+ * nacional) tem acesso.
+ *
+ * Nao mostra "limite disponivel pra antecipar" (GET /anticipations/limits) -- testado ao vivo e
+ * confirmado com o usuario que esse numero e' um teto de risco/credito generico que a Asaas
+ * atribui a conta, nao dinheiro real de recebiveis confirmados prontos pra antecipar; exibir como
+ * "disponivel" era enganoso.
  */
 class AnticipationController
 {
@@ -49,13 +53,11 @@ class AnticipationController
             'to' => $to,
             'rows' => $rows,
             'totals' => AsaasAnticipation::totals(['from' => $from, 'to' => $to]),
-            'limits' => AsaasSetting::getJson('anticipation_limits'),
-            'limitsUpdatedAt' => AsaasSetting::updatedAt('anticipation_limits'),
         ]);
     }
 
-    /** Busca as antecipacoes + limite disponivel direto na Asaas e atualiza o espelho local --
-     *  unica acao desta tela que chama a API de verdade, disparada manualmente. */
+    /** Busca as antecipacoes direto na Asaas e atualiza o espelho local -- unica acao desta tela
+     *  que chama a API de verdade, disparada manualmente. */
     public function sync(): void
     {
         Auth::requireRole(self::ALLOWED_ROLES);
@@ -93,11 +95,6 @@ class AnticipationController
                 }
                 $offset += 100;
             } while (!empty($page['hasMore']));
-
-            $limits = $client->getAnticipationLimits();
-            if (isset($limits['creditCard']) || isset($limits['bankSlip'])) {
-                AsaasSetting::setJson('anticipation_limits', $limits);
-            }
 
             Router::redirect('/painel/financeiro/antecipacoes?sucesso=1&importadas=' . $imported);
         } catch (\Throwable $e) {

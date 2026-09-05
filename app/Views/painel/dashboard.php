@@ -110,11 +110,6 @@ $hasMetrics = isset($metrics);
                 <strong>R$ <?= number_format($impostoPagoPeriodo, 2, ',', '.') ?></strong>
             </div>
             <div class="dash-card">
-                <span>Disponível pra antecipar</span>
-                <strong><?= $antecipacaoDisponivel !== null ? 'R$ ' . number_format($antecipacaoDisponivel, 2, ',', '.') : '—' ?></strong>
-                <?php if ($antecipacaoDisponivel === null): ?><small class="hint-inline">sincronize em Antecipações</small><?php endif; ?>
-            </div>
-            <div class="dash-card">
                 <span>Já antecipado (líquido)</span>
                 <strong>R$ <?= number_format($antecipadoLiquidoTotal, 2, ',', '.') ?></strong>
             </div>
