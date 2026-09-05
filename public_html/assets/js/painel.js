@@ -109,6 +109,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 btn.addEventListener('click', function () {
                     var dialog = btn.closest('dialog');
                     if (dialog) dialog.close();
+                    document.body.classList.remove('modal-open');
                 });
             });
         }
@@ -188,7 +189,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
         document.querySelectorAll('dialog.modal').forEach(function (dialog) {
             dialog.addEventListener('click', function (e) {
-                if (e.target === dialog) dialog.close();
+                if (e.target === dialog) {
+                    dialog.close();
+                    document.body.classList.remove('modal-open');
+                }
             });
         });
 
