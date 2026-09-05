@@ -349,48 +349,13 @@ document.addEventListener('DOMContentLoaded', function () {
             update();
         }
 
-        // Proposta Facil: popup do comprador -> formulario do veiculo -> resultado, tudo dentro do
-        // mesmo dialog (ver openFragmentModal acima). Precisa ser uma funcao "bindavel" (chamada de
-        // novo a cada fragmento carregado) em vez de um <script> inline na view, porque innerHTML
+        // Proposta Facil: formulario unico (comprador + veiculo + consumo) -> resultado, tudo dentro
+        // do mesmo dialog (ver openFragmentModal acima). Precisa ser uma funcao "bindavel" (chamada
+        // de novo a cada fragmento carregado) em vez de um <script> inline na view, porque innerHTML
         // nao executa <script> -- mesmo padrao ja usado por bindAjaxForms/bindItemsTable/bindFileDrop.
         function bindPropostaFacil(root) {
-            var stepComprador = root.querySelector('#proposta-step-comprador');
-            var stepDetalhes = root.querySelector('#proposta-step-detalhes');
-            var continueBtn = root.querySelector('#comprador-continue');
-            var editBtn = root.querySelector('#comprador-edit');
             var form = root.querySelector('#proposta-form');
             var novaBtn = root.querySelector('#btn-proposta-nova');
-
-            if (continueBtn && stepComprador && stepDetalhes) {
-                continueBtn.addEventListener('click', function () {
-                    var nameInput = root.querySelector('#comprador-name');
-                    var whatsappInput = root.querySelector('#comprador-whatsapp');
-                    var ok = true;
-                    root.querySelectorAll('#proposta-step-comprador [data-error-for]').forEach(function (p) { p.textContent = ''; });
-
-                    if (!nameInput.value.trim()) {
-                        root.querySelector('[data-error-for="name"]').textContent = 'Informe o nome.';
-                        ok = false;
-                    }
-                    if (!whatsappInput.value.trim()) {
-                        root.querySelector('[data-error-for="whatsapp"]').textContent = 'Informe o WhatsApp.';
-                        ok = false;
-                    }
-                    if (!ok) return;
-
-                    var summaryText = root.querySelector('#comprador-summary-text');
-                    if (summaryText) summaryText.textContent = nameInput.value.trim() + ' · ' + whatsappInput.value.trim();
-                    stepComprador.hidden = true;
-                    stepDetalhes.hidden = false;
-                });
-            }
-
-            if (editBtn && stepComprador && stepDetalhes) {
-                editBtn.addEventListener('click', function () {
-                    stepDetalhes.hidden = true;
-                    stepComprador.hidden = false;
-                });
-            }
 
             // Previa do preco (Fase 24: tabela por quantidade) -- atualiza conforme a pessoa digita
             // a quantidade, so pra dar uma nocao antes de gerar a proposta de verdade.

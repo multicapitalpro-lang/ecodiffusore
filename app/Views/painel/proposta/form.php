@@ -22,32 +22,25 @@ $pricingTiers = $pricingTiers ?? [];
 
     <p class="form-msg form-msg-erro" id="proposta-form-error" hidden></p>
 
-    <div id="proposta-step-comprador">
-        <div class="panel-form">
-            <p class="hint-text" style="margin-top:0;">Rápido: só o nome e o WhatsApp de quem vai receber a proposta. O resto (veículo e consumo) vem na próxima etapa.</p>
-            <label for="comprador-name">Nome</label>
-            <input type="text" id="comprador-name" name="name" form="proposta-form" required>
-            <p class="field-error" data-error-for="name"></p>
+    <form id="proposta-form" action="/painel/proposta-facil" method="post" class="panel-form panel-form-wide" data-modal="<?= $isModal ? '1' : '' ?>"
+          data-tiers="<?= View::e(json_encode(array_map(fn ($t) => ['min_qty' => (int) $t['min_qty'], 'unit_price' => (float) $t['unit_price']], $pricingTiers))) ?>">
+        <?= Csrf::field() ?>
 
-            <label for="comprador-whatsapp">WhatsApp</label>
-            <input type="text" id="comprador-whatsapp" name="whatsapp" form="proposta-form" placeholder="45999998888" required>
-            <p class="field-error" data-error-for="whatsapp"></p>
-
-            <button type="button" class="btn btn-primary" id="comprador-continue" style="width:100%;">Continuar</button>
-        </div>
-    </div>
-
-    <div id="proposta-step-detalhes" hidden>
-        <div id="comprador-summary" class="proposta-comprador-summary">
-            Comprador: <strong id="comprador-summary-text"></strong>
-            <button type="button" id="comprador-edit" style="background:none;border:none;cursor:pointer;color:var(--green-dark);font-weight:700;">editar</button>
+        <h3 style="margin-top:0;">Comprador</h3>
+        <div class="form-grid-2">
+            <div>
+                <label for="name">Nome</label>
+                <input type="text" id="name" name="name" required>
+                <p class="field-error" data-error-for="name"></p>
+            </div>
+            <div>
+                <label for="whatsapp">WhatsApp</label>
+                <input type="text" id="whatsapp" name="whatsapp" placeholder="45999998888" required>
+                <p class="field-error" data-error-for="whatsapp"></p>
+            </div>
         </div>
 
-        <form id="proposta-form" action="/painel/proposta-facil" method="post" class="panel-form panel-form-wide" data-modal="<?= $isModal ? '1' : '' ?>"
-              data-tiers="<?= View::e(json_encode(array_map(fn ($t) => ['min_qty' => (int) $t['min_qty'], 'unit_price' => (float) $t['unit_price']], $pricingTiers))) ?>">
-            <?= Csrf::field() ?>
-
-            <h3 style="margin-top:0;">Veículo</h3>
+        <h3>Veículo</h3>
             <div class="form-grid-2">
                 <div>
                     <label for="plate">Placa</label>
@@ -127,7 +120,6 @@ $pricingTiers = $pricingTiers ?? [];
 
             <button type="submit" class="btn btn-primary">Gerar proposta</button>
         </form>
-    </div>
 <?php endif; ?>
 
 <?php if ($isModal): ?>
