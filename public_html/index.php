@@ -125,6 +125,12 @@ $router->post('/painel/produtos', [App\Controllers\ProductController::class, 'st
 $router->get('/painel/produtos/{id}/editar', [App\Controllers\ProductController::class, 'edit']);
 $router->post('/painel/produtos/{id}', [App\Controllers\ProductController::class, 'update']);
 
+$router->get('/painel/tabela-precos', [App\Controllers\PricingTierController::class, 'index']);
+$router->post('/painel/tabela-precos', [App\Controllers\PricingTierController::class, 'store']);
+$router->get('/painel/tabela-precos/{id}/editar', [App\Controllers\PricingTierController::class, 'edit']);
+$router->post('/painel/tabela-precos/{id}', [App\Controllers\PricingTierController::class, 'update']);
+$router->post('/painel/tabela-precos/{id}/excluir', [App\Controllers\PricingTierController::class, 'destroy']);
+
 // Pedidos
 $router->get('/painel/pedidos', [App\Controllers\OrderController::class, 'index']);
 $router->get('/painel/pedidos/novo', [App\Controllers\OrderController::class, 'create']);

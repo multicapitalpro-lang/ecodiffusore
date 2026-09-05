@@ -66,7 +66,7 @@ $message = "Olá, {$result['name']}! Segue a proposta do Ecodiffusore que prepar
     <p style="font-size:1.1rem;">
         <strong style="font-size:1.3rem;color:var(--green-dark);">R$ <?= number_format((float) $result['product_price'], 2, ',', '.') ?></strong>
         <?= $result['product_name'] ? '— ' . View::e($result['product_name']) : '' ?>
-        <span class="tag-default"><?= $result['price_tier'] === 'alto' ? 'MÁXIMO' : 'PADRÃO' ?></span>
+        <span class="tag-default"><?= (int) $result['quantidade'] ?>x R$ <?= number_format((float) $result['unit_price'], 2, ',', '.') ?></span>
     </p>
 
     <h3>Formas de pagamento</h3>

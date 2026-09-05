@@ -13,15 +13,18 @@ use App\Core\Router;
 use App\Core\View;
 use App\Models\Client;
 use App\Models\Lead;
+use App\Models\PricingTier;
 use App\Models\Product;
 use App\Models\Quote;
 
 /**
  * "Proposta Fácil": ferramenta interna pro Vendedor/Licenciado gerar um orçamento completo do
  * interessado em um único formulário, reaproveitando o mesmo motor de calculo (EconomyCalculator/
- * CardPricing/Product) já usado no orçamento por placa público (PublicController::submitOrcamento).
+ * CardPricing) já usado no orçamento por placa público (PublicController::submitOrcamento).
  * Diferença chave: aqui o vendedor logado É o seller_id (nunca GeoMatch -- é o prospect dele, não um
  * palpite geográfico), e o resultado fica disponível também em PDF/WhatsApp pro vendedor compartilhar.
+ * Preço (Fase 24): vem da tabela de preco por quantidade (PricingTier::forQuantity), nao mais de
+ * 2 opcoes fixas por produto -- o Produto so entra pra identificar nome/id pro item do Orcamento.
  * Acesso: todo STAFF ve o botao no header, mas Gerente/Supervisor sao papel de suporte nacional
  * (Roles::NATIONAL_SUPPORT) e so visualizam -- mesmo tratamento view-only ja usado em
  * OrderController/QuoteController, nunca criam Pedido/Orcamento de verdade.
@@ -43,7 +46,7 @@ class PropostaController
             'user' => $user,
             'isModal' => $isFragment,
             'isViewOnly' => in_array($user['role_slug'], Roles::NATIONAL_SUPPORT, true),
-            'priceRange' => Product::priceRange(),
+            'pricingTiers' => PricingTier::all(),
         ], $isFragment ? null : 'painel');
     }
 
@@ -78,23 +81,39 @@ class PropostaController
         $ecuStatus = $_POST['ecu_status'];
         $reprogrammedPower = trim($_POST['reprogrammed_power'] ?? '');
         $hasArla = $_POST['has_arla'];
+        $qty = max(1, (int) $_POST['quantidade']);
 
         $kmMensal = self::parseBrNumber($_POST['km_mensal']);
         $kmLitro = self::parseBrNumber($_POST['km_litro']);
         $precoDiesel = self::parseBrNumber($_POST['preco_diesel']);
-        $priceTier = $_POST['price_tier'] === 'alto' ? 'alto' : 'baixo';
+
+        $tier = PricingTier::forQuantity($qty);
+        $unitPrice = $tier ? (float) $tier['unit_price'] : 0.0;
+        $totalPrice = $unitPrice * $qty;
 
         $product = Product::findByBrandKeyword($brand) ?? Product::cheapest();
-        $productPrice = (float) ($product[$priceTier === 'alto' ? 'price_high' : 'price_cash'] ?? 0);
-        $payback = EconomyCalculator::estimate($kmMensal, $kmLitro, $precoDiesel, $productPrice);
+
+        $payback = EconomyCalculator::estimate($kmMensal, $kmLitro, $precoDiesel, $totalPrice);
+        // EconomyCalculator assume UM veiculo (o km/consumo informado e de 1 caminhao); com mais de
+        // 1 placa, a economia total (e por isso o payback) escala pela quantidade -- ajuste feito
+        // aqui no controller pra nao mexer no calculo por-veiculo em si (EconomyCalculator).
+        if ($qty > 1 && $payback['tiers']['avg']['monthly'] > 0) {
+            $avgMonthlyFleet = $payback['tiers']['avg']['monthly'] * $qty;
+            $payback['payback_months'] = $totalPrice > 0 ? $totalPrice / $avgMonthlyFleet : null;
+            foreach ($payback['yearly_breakdown'] as &$row) {
+                $row['cumulative_savings'] = $avgMonthlyFleet * 12 * $row['year'];
+                $row['net_gain'] = $row['cumulative_savings'] - $totalPrice;
+            }
+            unset($row);
+        }
 
         $installments = [];
-        if ($productPrice > 0) {
+        if ($totalPrice > 0) {
             foreach (self::INSTALLMENT_OPTIONS as $n) {
                 $installments[] = [
                     'n' => $n,
-                    'total' => CardPricing::chargeAmount($productPrice, $n),
-                    'parcela' => CardPricing::installmentValue($productPrice, $n),
+                    'total' => CardPricing::chargeAmount($totalPrice, $n),
+                    'parcela' => CardPricing::installmentValue($totalPrice, $n),
                 ];
             }
         }
@@ -102,7 +121,7 @@ class PropostaController
         $sellerId = (int) $user['id'];
         $quoteId = null;
 
-        if ($product) {
+        if ($product && $tier) {
             $leadId = Lead::create([
                 'name' => $name,
                 'whatsapp' => $whatsapp,
@@ -143,7 +162,7 @@ class PropostaController
                 'notes' => 'Gerado pela Proposta Fácil no painel. Economia média estimada: R$ '
                     . number_format($payback['tiers']['avg']['monthly'], 2, ',', '.') . '/mês.',
             ], [
-                ['product_id' => $product['id'], 'quantity' => 1, 'unit_price' => $productPrice],
+                ['product_id' => $product['id'], 'quantity' => $qty, 'unit_price' => $unitPrice],
             ]);
         }
 
@@ -163,9 +182,10 @@ class PropostaController
             'km_mensal' => $kmMensal,
             'km_litro' => $kmLitro,
             'preco_diesel' => $precoDiesel,
+            'quantidade' => $qty,
+            'unit_price' => $unitPrice ?: null,
             'product_name' => $product['name'] ?? null,
-            'product_price' => $productPrice ?: null,
-            'price_tier' => $priceTier,
+            'product_price' => $totalPrice ?: null,
             'payback' => $payback,
             'installments' => $installments,
         ];
@@ -259,8 +279,8 @@ class PropostaController
         if (!in_array($post['has_arla'] ?? '', ['sim', 'nao'], true)) {
             $errors['has_arla'] = 'Selecione uma opção.';
         }
-        if (!in_array($post['price_tier'] ?? '', ['baixo', 'alto'], true)) {
-            $errors['price_tier'] = 'Selecione o preço da venda.';
+        if (!is_numeric($post['quantidade'] ?? '') || (int) $post['quantidade'] < 1) {
+            $errors['quantidade'] = 'Informe pelo menos 1 placa.';
         }
         if (self::parseBrNumber($post['km_mensal'] ?? '') <= 0) {
             $errors['km_mensal'] = 'Informe um valor válido.';

@@ -9,24 +9,26 @@ class Commission
     /**
      * Duas cascatas independentes disparam a partir do mesmo Licenciado:
      *
-     * 1) Pool regional: o Licenciado (dono da regiao) recebe um % fixo contratual sobre o total
-     *    do pedido -- isso forma o "pool". A partir do pool, Gestor recebe o % que o proprio
-     *    Licenciado configurou (commission_pct dele = % do pool, nao % do pedido). Vendedor tem
-     *    DOIS esquemas possiveis, escolhidos pelo Licenciado no cadastro (Fase 23):
-     *      a) Tabela por faixa de preco (commission_type + commission_value_baixo/alto): sai
-     *         direto do valor da venda -- % da venda ou R$ fixo por unidade, dependendo da faixa
-     *         de preco de cada item (produtos.price_cash "padrao" ou price_high "maximo"). Ver
-     *         vendorTierAmount(). Vem DO POOL (subtrai de $distribuido igual aos outros).
-     *      b) Sem commission_type configurado, ou preco do item nao bate com nenhuma faixa
-     *         oficial (venda antiga/preco manual): cai no esquema antigo, commission_pct do
-     *         Vendedor = % do pool, igual Gestor.
-     *    O que sobra do pool fica com o Licenciado. Sem % contratual definido, nao ha pool e
-     *    ninguem desse nivel recebe.
+     * 1) Pool regional: a quantidade total de placas do pedido define a faixa de preco (Fase 24,
+     *    PricingTier::forQuantity) -- a % de comissao do Licenciado (o "pool") vem SEMPRE dessa
+     *    faixa, nao e mais um commission_pct negociado por licenciado (esse campo continua
+     *    existindo em users, mas so vale pra Gestor/Supervisor/Gerente agora). A partir do pool,
+     *    Gestor recebe o % que o Licenciado configurou pra ele (commission_pct dele = % do pool,
+     *    nao % do pedido). Vendedor tem DOIS esquemas possiveis, escolhidos pelo Licenciado no
+     *    cadastro:
+     *      a) Tabela por faixa de quantidade (commission_type + user_commission_tiers): sai
+     *         direto do valor da venda -- % da venda ou R$ fixo por unidade, conforme a MESMA
+     *         faixa de quantidade que definiu o pool. Ver vendorTierAmount(). Vem DO POOL
+     *         (subtrai de $distribuido igual aos outros).
+     *      b) Sem commission_type configurado, ou sem valor pra essa faixa especifica: cai no
+     *         esquema antigo, commission_pct do Vendedor = % do pool, igual Gestor.
+     *    O que sobra do pool fica com o Licenciado. Pedido sem itens (quantidade zero) nao gera
+     *    pool nenhum.
      *
      * 2) Comissao nacional: se o Licenciado tiver um Supervisor atribuido (supervisor_id, definido
      *    pelo Gerente em /painel/licenciados), Supervisor e Gerente recebem um % do TOTAL do
      *    pedido -- paga direto pela Ecodiffusore, nunca sai do pool acima. Por isso roda num bloco
-     *    totalmente a parte, mesmo se o Licenciado nao tiver pool configurado ainda.
+     *    totalmente a parte, mesmo se o pedido nao tiver faixa de preco valida.
      */
     public static function createCascadeForOrder(int $orderId, int $sellerId, float $orderTotal): void
     {
@@ -45,8 +47,14 @@ class Commission
             }
         }
 
-        if ($licenciado && (float) ($licenciado['commission_pct'] ?? 0) > 0) {
-            $pool = round($orderTotal * (float) $licenciado['commission_pct'] / 100, 2);
+        $totalQty = 0;
+        foreach (OrderItem::forOrder($orderId) as $item) {
+            $totalQty += (int) $item['quantity'];
+        }
+        $tier = $totalQty > 0 ? PricingTier::forQuantity($totalQty) : null;
+
+        if ($licenciado && $tier) {
+            $pool = round($orderTotal * (float) $tier['licenciado_commission_pct'] / 100, 2);
             $distribuido = 0.0;
 
             foreach ($chain as $p) {
@@ -54,7 +62,7 @@ class Commission
                     continue;
                 }
 
-                $tierAmount = (int) $p['id'] === $sellerId ? self::vendorTierAmount($p, $orderId) : null;
+                $tierAmount = (int) $p['id'] === $sellerId ? self::vendorTierAmount($p, $tier, $orderTotal, $totalQty) : null;
 
                 if ($tierAmount !== null) {
                     $effectivePct = $orderTotal > 0 ? round($tierAmount / $orderTotal * 100, 2) : 0.0;
@@ -75,7 +83,7 @@ class Commission
 
             $restante = max(0, round($pool - $distribuido, 2));
             if ($restante > 0) {
-                self::insertRow($orderId, $sellerId, (int) $licenciado['id'], 'licenciado', (float) $licenciado['commission_pct'], $restante);
+                self::insertRow($orderId, $sellerId, (int) $licenciado['id'], 'licenciado', (float) $tier['licenciado_commission_pct'], $restante);
             }
         }
 
@@ -100,49 +108,34 @@ class Commission
     }
 
     /**
-     * Comissao do Vendedor pela tabela de faixa de preco (Fase 23) -- null se o Vendedor nao tem
-     * commission_type configurado (ainda no esquema antigo de % do pool) OU se NENHUM item do
-     * pedido bate com uma das duas faixas oficiais do produto (price_cash "padrao"/price_high
-     * "maximo"), ex: venda antiga com preco manual diferente. Nesse caso o chamador cai de volta
-     * pro % do pool, igual Gestor. Soma por item (normalmente 1 item, mas cobre pedido com
-     * varios produtos/faixas misturadas).
+     * Comissao do Vendedor pela tabela de faixa de quantidade (Fase 24) -- null se o Vendedor nao
+     * tem commission_type configurado (ainda no esquema antigo de % do pool) OU se nao ha valor
+     * cadastrado especificamente pra essa faixa. Nesse caso o chamador cai de volta pro % do pool,
+     * igual Gestor. "percentual" e sobre o TOTAL do pedido (nao o pool); "fixo" e por unidade
+     * vendida (valor x quantidade total do pedido).
      */
-    private static function vendorTierAmount(array $vendedor, int $orderId): ?float
+    private static function vendorTierAmount(array $vendedor, array $tier, float $orderTotal, int $totalQty): ?float
     {
         if (empty($vendedor['commission_type'])) {
             return null;
         }
 
-        $matchedAny = false;
-        $total = 0.0;
-
-        foreach (OrderItem::forOrder($orderId) as $item) {
-            $unitPrice = (float) $item['unit_price'];
-            $isAlto = abs($unitPrice - (float) $item['price_high']) < 0.01;
-            $isBaixo = !$isAlto && abs($unitPrice - (float) $item['price_cash']) < 0.01;
-
-            if (!$isAlto && !$isBaixo) {
-                continue;
-            }
-
-            $matchedAny = true;
-            $tierValue = $isAlto ? $vendedor['commission_value_alto'] : $vendedor['commission_value_baixo'];
-            if ($tierValue === null) {
-                continue;
-            }
-
-            $total += $vendedor['commission_type'] === 'percentual'
-                ? round($unitPrice * (float) $item['quantity'] * (float) $tierValue / 100, 2)
-                : round((float) $tierValue * (float) $item['quantity'], 2);
+        $value = UserCommissionTier::valueFor((int) $vendedor['id'], (int) $tier['id']);
+        if ($value === null) {
+            return null;
         }
 
-        return $matchedAny ? round($total, 2) : null;
+        return $vendedor['commission_type'] === 'percentual'
+            ? round($orderTotal * $value / 100, 2)
+            : round($value * $totalQty, 2);
     }
 
     /**
-     * `percentage` guardado aqui significa coisas diferentes por papel: pro Licenciado e o %
-     * contratual sobre o total do pedido; pro Gestor/Vendedor e o % do pool do Licenciado; pro
-     * Supervisor/Gerente e o % do total do pedido pago direto pela Ecodiffusore (fora do pool).
+     * `percentage` guardado aqui significa coisas diferentes por papel: pro Licenciado e o % da
+     * faixa de quantidade (PricingTier) sobre o total do pedido; pro Gestor/Vendedor (esquema
+     * antigo) e o % do pool do Licenciado; pro Vendedor na tabela por faixa e o % EFETIVO sobre o
+     * pedido (calculado a partir do valor, so pra exibicao/relatorio); pro Supervisor/Gerente e o
+     * % do total do pedido pago direto pela Ecodiffusore (fora do pool).
      */
     private static function insertRow(int $orderId, int $sellerId, int $beneficiaryId, string $roleSlug, float $percentage, float $amount): void
     {

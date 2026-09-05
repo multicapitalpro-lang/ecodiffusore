@@ -12,6 +12,7 @@ use App\Models\Approval;
 use App\Models\AuditLog;
 use App\Models\Client;
 use App\Models\Payment;
+use App\Models\PricingTier;
 use App\Models\Product;
 use App\Models\Quote;
 use App\Models\QuoteItem;
@@ -52,6 +53,7 @@ class QuoteController
             ]),
             'clients' => Client::all(),
             'products' => Product::all(true),
+            'pricingTiers' => PricingTier::all(),
             'sellers' => $this->sellerOptions($user),
             'licenciados' => $this->licenciadoOptions($user),
         ]);
@@ -270,6 +272,7 @@ class QuoteController
             'items' => QuoteItem::forQuote((int) $id),
             'clients' => Client::all(),
             'products' => Product::all(true),
+            'pricingTiers' => PricingTier::all(),
             'sellers' => $this->sellerOptions($user),
             'preselectClientId' => 0,
             'errors' => [],
@@ -304,6 +307,7 @@ class QuoteController
                 'items' => $items,
                 'clients' => Client::all(),
                 'products' => Product::all(true),
+            'pricingTiers' => PricingTier::all(),
                 'sellers' => $this->sellerOptions($user),
                 'preselectClientId' => 0,
                 'errors' => $errors,

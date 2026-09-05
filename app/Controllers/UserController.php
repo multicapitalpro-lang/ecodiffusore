@@ -11,9 +11,10 @@ use App\Core\View;
 use App\Models\AuditLog;
 use App\Models\Commission;
 use App\Models\Order;
-use App\Models\Product;
+use App\Models\PricingTier;
 use App\Models\Role;
 use App\Models\User;
+use App\Models\UserCommissionTier;
 
 class UserController
 {
@@ -95,7 +96,8 @@ class UserController
             'managers' => $this->managerOptions($user, null),
             'supervisors' => $this->supervisorOptions($user),
             'canSetCommission' => $this->canSetCommission($user),
-            'priceRange' => Product::priceRange(),
+            'pricingTiers' => PricingTier::all(),
+            'vendorTierValues' => [],
             'editing' => null,
             'errors' => [],
             'isModal' => $isFragment,
@@ -126,7 +128,8 @@ class UserController
                 'managers' => $this->managerOptions($user, null),
                 'supervisors' => $this->supervisorOptions($user),
                 'canSetCommission' => $this->canSetCommission($user),
-                'priceRange' => Product::priceRange(),
+                'pricingTiers' => PricingTier::all(),
+                'vendorTierValues' => $this->tierValuesFromPost($_POST),
                 'editing' => null,
                 'errors' => $errors,
                 'old' => $_POST,
@@ -145,7 +148,9 @@ class UserController
             }
         }
 
-        $newUserId = User::create(array_merge([
+        $vendorType = $this->vendorCommissionType($user, $createdRoleSlug, $_POST);
+
+        $newUserId = User::create([
             'role_id' => (int) $_POST['role_id'],
             'manager_id' => $managerId,
             'name' => trim($_POST['name']),
@@ -156,9 +161,14 @@ class UserController
             'password' => $_POST['password'],
             'status' => $_POST['status'] ?? 'active',
             'commission_pct' => $commissionPct,
+            'commission_type' => $vendorType,
             'must_change_password' => true,
             'licenciado_onboarding_status' => $createdRoleSlug === 'licenciado' ? 'aguardando_perfil' : 'nao_aplicavel',
-        ], $this->vendorCommissionFields($user, $createdRoleSlug, $_POST)));
+        ]);
+
+        if ($createdRoleSlug === 'vendedor' && $this->canSetCommission($user)) {
+            UserCommissionTier::setForUser($newUserId, $this->vendorTierValues($_POST));
+        }
 
         if ($createdRoleSlug === 'licenciado') {
             // Supervisor cadastrando o proprio Licenciado ja assume a supervisao na hora -- evita
@@ -204,7 +214,8 @@ class UserController
             'managers' => $this->managerOptions($user, $id),
             'supervisors' => $this->supervisorOptions($user),
             'canSetCommission' => $this->canSetCommission($user),
-            'priceRange' => Product::priceRange(),
+            'pricingTiers' => PricingTier::all(),
+            'vendorTierValues' => UserCommissionTier::forUser($id),
             'editing' => $editing,
             'errors' => [],
             'isModal' => $isFragment,
@@ -243,7 +254,8 @@ class UserController
                 'managers' => $this->managerOptions($user, $id),
                 'supervisors' => $this->supervisorOptions($user),
                 'canSetCommission' => $this->canSetCommission($user),
-                'priceRange' => Product::priceRange(),
+                'pricingTiers' => PricingTier::all(),
+                'vendorTierValues' => $this->tierValuesFromPost($_POST),
                 'editing' => array_merge(['id' => $id], $_POST),
                 'errors' => $errors,
             ]);
@@ -263,9 +275,9 @@ class UserController
             }
         }
 
-        $vendorFields = $this->vendorCommissionFields($user, $editedRoleSlug, $_POST);
+        $vendorType = $this->vendorCommissionType($user, $editedRoleSlug, $_POST);
 
-        User::update($id, array_merge([
+        User::update($id, [
             'role_id' => (int) $_POST['role_id'],
             'manager_id' => $managerId,
             'name' => trim($_POST['name']),
@@ -275,15 +287,21 @@ class UserController
             'state' => trim($_POST['state'] ?? ''),
             'status' => $_POST['status'] ?? 'active',
             'commission_pct' => $commissionPct,
+            'commission_type' => $vendorType,
             'discount_limit_pct' => $discountLimitPct,
-        ], $vendorFields));
+        ]);
+
+        if ($editedRoleSlug === 'vendedor' && $this->canSetCommission($user)) {
+            UserCommissionTier::setForUser($id, $this->vendorTierValues($_POST));
+        } elseif ($editedRoleSlug !== 'vendedor') {
+            // Papel deixou de ser vendedor -- limpa qualquer faixa configurada antes.
+            UserCommissionTier::setForUser($id, []);
+        }
 
         $this->logIfChanged($before, 'commission_pct', $commissionPct, $id);
         $this->logIfChanged($before, 'discount_limit_pct', $discountLimitPct, $id);
         $this->logIfChanged($before, 'manager_id', $managerId, $id);
-        $this->logIfChanged($before, 'commission_type', $vendorFields['commission_type'], $id);
-        $this->logIfChanged($before, 'commission_value_baixo', $vendorFields['commission_value_baixo'], $id);
-        $this->logIfChanged($before, 'commission_value_alto', $vendorFields['commission_value_alto'], $id);
+        $this->logIfChanged($before, 'commission_type', $vendorType, $id);
 
         if ($before['role_slug'] === 'licenciado' && in_array($user['role_slug'], Roles::SUPERVISOR_ASSIGNMENT, true)) {
             $supervisorId = $this->resolveSupervisorId($user, $_POST);
@@ -485,25 +503,43 @@ class UserController
     }
 
     /**
-     * So relevante quando o papel cadastrado/editado e' vendedor -- comissao por faixa de preco
-     * (padrao/maximo do produto), em % da venda ou valor fixo por venda, definida pelo Licenciado
-     * (ou admin), nunca pela Ecodiffusore -- sai do pool do Licenciado (ver Commission::
+     * So relevante quando o papel cadastrado/editado e' vendedor -- comissao por faixa de
+     * quantidade (Fase 24, pricing_tiers), em % da venda ou valor fixo por venda, definida pelo
+     * Licenciado (ou admin), nunca pela Ecodiffusore -- sai do pool do Licenciado (ver Commission::
      * createCascadeForOrder). Quando o papel NAO e' vendedor, ou quem esta logado nao pode definir
-     * comissao, devolve os 3 campos como null (limpa config antiga se o papel deixou de ser vendedor).
+     * comissao, devolve null (limpa o tipo -- os valores por faixa sao limpos a parte, ver
+     * UserCommissionTier::setForUser() nas chamadas de store()/update()).
      */
-    private function vendorCommissionFields(array $user, ?string $roleSlug, array $input): array
+    private function vendorCommissionType(array $user, ?string $roleSlug, array $input): ?string
     {
         if (!$this->canSetCommission($user) || $roleSlug !== 'vendedor') {
-            return ['commission_type' => null, 'commission_value_baixo' => null, 'commission_value_alto' => null];
+            return null;
         }
 
-        $type = in_array($input['commission_type'] ?? '', ['percentual', 'fixo'], true) ? $input['commission_type'] : null;
+        return in_array($input['commission_type'] ?? '', ['percentual', 'fixo'], true) ? $input['commission_type'] : null;
+    }
 
-        return [
-            'commission_type' => $type,
-            'commission_value_baixo' => $type !== null && ($input['commission_value_baixo'] ?? '') !== '' ? $input['commission_value_baixo'] : null,
-            'commission_value_alto' => $type !== null && ($input['commission_value_alto'] ?? '') !== '' ? $input['commission_value_alto'] : null,
-        ];
+    /** [pricing_tier_id => float|null], a partir dos campos commission_tier_{id} do POST --
+     *  usado pra gravar em UserCommissionTier::setForUser(). */
+    private function vendorTierValues(array $input): array
+    {
+        $values = [];
+        foreach (PricingTier::all() as $tier) {
+            $raw = $input['commission_tier_' . $tier['id']] ?? '';
+            $values[(int) $tier['id']] = $raw !== '' ? (float) $raw : null;
+        }
+        return $values;
+    }
+
+    /** Mesma leitura de vendorTierValues(), mas mantendo os valores como string (ou '') pra
+     *  repopular o formulario quando a validacao falha, sem perder o que a pessoa digitou. */
+    private function tierValuesFromPost(array $input): array
+    {
+        $values = [];
+        foreach (PricingTier::all() as $tier) {
+            $values[(int) $tier['id']] = $input['commission_tier_' . $tier['id']] ?? '';
+        }
+        return $values;
     }
 
     /**
@@ -621,7 +657,8 @@ class UserController
 
         $commissionType = $input['commission_type'] ?? '';
         if ($commissionType !== '' && in_array($commissionType, ['percentual', 'fixo'], true)) {
-            foreach (['commission_value_baixo', 'commission_value_alto'] as $field) {
+            foreach (PricingTier::all() as $tier) {
+                $field = 'commission_tier_' . $tier['id'];
                 $value = $input[$field] ?? '';
                 if ($value === '') {
                     continue;

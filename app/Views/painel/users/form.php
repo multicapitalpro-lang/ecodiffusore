@@ -83,10 +83,16 @@ $values = $editing ?? ($old ?? []);
     <p class="field-error" data-error-for="manager_id"><?= !empty($errors['manager_id']) ? View::e($errors['manager_id']) : '' ?></p>
 
     <?php if ($canSetCommission): ?>
-        <label for="commission_pct">Comissão desta pessoa (%)</label>
-        <input type="number" id="commission_pct" name="commission_pct" step="0.01" min="0" max="100"
-               value="<?= View::e((string) ($values['commission_pct'] ?? '')) ?>" placeholder="Ex: 15.00">
-        <p class="hint-text">Para licenciado: % fixo contratual sobre o total do pedido (define o "pool" da região). Para gestor: % do pool do licenciado que será repassado a esta pessoa. Para gerente/supervisor: % do total do pedido pago direto pela Ecodiffusore (não sai do pool de ninguém). Para vendedor: usado só se a venda não bater com nenhum dos preços oficiais abaixo.</p>
+        <div id="commission-pct-wrap">
+            <label for="commission_pct">Comissão desta pessoa (%)</label>
+            <input type="number" id="commission_pct" name="commission_pct" step="0.01" min="0" max="100"
+                   value="<?= View::e((string) ($values['commission_pct'] ?? '')) ?>" placeholder="Ex: 15.00">
+            <p class="hint-text">Para gestor: % do pool do licenciado que será repassado a esta pessoa. Para gerente/supervisor: % do total do pedido pago direto pela Ecodiffusore (não sai do pool de ninguém). Para vendedor: usado só se a venda não tiver faixa de preço configurada abaixo.</p>
+        </div>
+
+        <div id="licenciado-commission-note" style="display:none;">
+            <p class="hint-text" style="margin-top:0;">A comissão do Licenciado agora vem sempre da <a href="/painel/tabela-precos" target="_blank">tabela de preços por quantidade</a> — não é mais definida aqui.</p>
+        </div>
 
         <div id="vendedor-commission-wrap" style="display:none;">
             <label>Como pagar este Vendedor por venda?</label>
@@ -94,24 +100,26 @@ $values = $editing ?? ($old ?? []);
                 <input type="radio" name="commission_type" value="percentual" <?= ($values['commission_type'] ?? 'percentual') === 'percentual' ? 'checked' : '' ?>> % da venda
             </label>
             <label class="checkbox-label">
-                <input type="radio" name="commission_type" value="fixo" <?= ($values['commission_type'] ?? '') === 'fixo' ? 'checked' : '' ?>> Valor fixo (R$)
+                <input type="radio" name="commission_type" value="fixo" <?= ($values['commission_type'] ?? '') === 'fixo' ? 'checked' : '' ?>> Valor fixo (R$) por unidade
             </label>
 
-            <div class="form-grid-2">
-                <div>
-                    <label for="commission_value_baixo">Ao vender por R$ <?= number_format($priceRange['low'] ?? 0, 2, ',', '.') ?> (padrão)</label>
-                    <input type="number" id="commission_value_baixo" name="commission_value_baixo" step="0.01" min="0"
-                           value="<?= View::e((string) ($values['commission_value_baixo'] ?? '')) ?>">
-                    <p class="field-error" data-error-for="commission_value_baixo"><?= View::e($errors['commission_value_baixo'] ?? '') ?></p>
-                </div>
-                <div>
-                    <label for="commission_value_alto">Ao vender por R$ <?= number_format($priceRange['high'] ?? 0, 2, ',', '.') ?> (máximo)</label>
-                    <input type="number" id="commission_value_alto" name="commission_value_alto" step="0.01" min="0"
-                           value="<?= View::e((string) ($values['commission_value_alto'] ?? '')) ?>">
-                    <p class="field-error" data-error-for="commission_value_alto"><?= View::e($errors['commission_value_alto'] ?? '') ?></p>
-                </div>
-            </div>
-            <p class="hint-text">Esse valor sai do pool que você (Licenciado) recebe da Ecodiffusore — não é um custo adicional.</p>
+            <table class="data-table" style="margin-top:10px;">
+                <thead><tr><th>A partir de</th><th>Preço unitário</th><th>Comissão do vendedor</th></tr></thead>
+                <tbody>
+                    <?php foreach ($pricingTiers as $tier): ?>
+                        <tr>
+                            <td><?= (int) $tier['min_qty'] ?> placa<?= (int) $tier['min_qty'] > 1 ? 's' : '' ?></td>
+                            <td>R$ <?= number_format((float) $tier['unit_price'], 2, ',', '.') ?></td>
+                            <td>
+                                <input type="number" name="commission_tier_<?= (int) $tier['id'] ?>" step="0.01" min="0"
+                                       value="<?= View::e((string) ($vendorTierValues[$tier['id']] ?? '')) ?>" style="width:100px;">
+                                <p class="field-error" data-error-for="commission_tier_<?= (int) $tier['id'] ?>"><?= View::e($errors['commission_tier_' . $tier['id']] ?? '') ?></p>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+            <p class="hint-text">Um valor por faixa (vazio = essa faixa cai no % de comissão padrão acima). Sai do pool que o Licenciado recebe da Ecodiffusore — não é um custo adicional.</p>
         </div>
     <?php endif; ?>
 

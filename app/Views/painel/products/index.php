@@ -18,7 +18,7 @@ $openModal = isset($_GET['novo']) || $errors;
 <div class="table-scroll">
     <table class="data-table">
         <thead>
-            <tr><th>SKU</th><th>Nome</th><th>Mínimo</th><th>Máximo</th><th>Parcela (6x)</th><th>Custo</th><th>Status</th><th></th></tr>
+            <tr><th>SKU</th><th>Nome</th><th>À vista</th><th>Parcela (6x)</th><th>Custo</th><th>Status</th><th></th></tr>
         </thead>
         <tbody>
             <?php foreach ($products as $p): ?>
@@ -26,7 +26,6 @@ $openModal = isset($_GET['novo']) || $errors;
                     <td><?= View::e($p['sku']) ?></td>
                     <td><?= View::e($p['name']) ?></td>
                     <td>R$ <?= number_format((float) $p['price_cash'], 2, ',', '.') ?></td>
-                    <td>R$ <?= number_format((float) $p['price_high'], 2, ',', '.') ?></td>
                     <td>R$ <?= number_format((float) $p['price_installment'], 2, ',', '.') ?></td>
                     <td>R$ <?= number_format((float) $p['cost_price'], 2, ',', '.') ?></td>
                     <td><span class="status-badge status-<?= $p['active'] ? 'active' : 'inactive' ?>"><?= $p['active'] ? 'Ativo' : 'Inativo' ?></span></td>

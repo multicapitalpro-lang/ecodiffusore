@@ -16,6 +16,7 @@ use App\Models\Client;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Payment;
+use App\Models\PricingTier;
 use App\Models\Product;
 use App\Models\User;
 
@@ -45,6 +46,7 @@ class OrderController
             'filters' => $filters,
             'clients' => Client::all(),
             'products' => Product::all(true),
+            'pricingTiers' => PricingTier::all(),
             'sellers' => $this->sellerOptions($user),
         ]);
     }
@@ -143,6 +145,7 @@ class OrderController
                 'filters' => [],
                 'clients' => Client::all(),
                 'products' => Product::all(true),
+            'pricingTiers' => PricingTier::all(),
                 'sellers' => $this->sellerOptions($user),
                 'errors' => $errors,
                 'values' => $_POST,
@@ -219,6 +222,7 @@ class OrderController
             'items' => OrderItem::forOrder((int) $id),
             'clients' => Client::all(),
             'products' => Product::all(true),
+            'pricingTiers' => PricingTier::all(),
             'sellers' => $this->sellerOptions(Auth::user()),
             'preselectClientId' => 0,
             'errors' => [],
@@ -253,6 +257,7 @@ class OrderController
                 'items' => $items,
                 'clients' => Client::all(),
                 'products' => Product::all(true),
+            'pricingTiers' => PricingTier::all(),
                 'sellers' => $this->sellerOptions($user),
                 'preselectClientId' => 0,
                 'errors' => $errors,

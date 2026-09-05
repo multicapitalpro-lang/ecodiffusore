@@ -5,6 +5,24 @@ function bindItemsTable(root) {
 
     var addBtn = root.querySelector('#add-item-row');
     var totalEl = root.querySelector('#order-total');
+    var table = body.closest('table');
+    var tiers = [];
+    try {
+        tiers = table && table.dataset.tiers ? JSON.parse(table.dataset.tiers) : [];
+    } catch (e) {
+        tiers = [];
+    }
+
+    // Preco unitario nao depende mais do produto escolhido, so da quantidade total do item (Fase
+    // 24 -- tabela de precos por atacado): a faixa aplicada e a de maior min_qty que ainda seja <=
+    // a quantidade. So preenche automaticamente -- o campo continua editavel pra excecoes.
+    function priceForQty(qty) {
+        var match = null;
+        tiers.forEach(function (t) {
+            if (t.min_qty <= qty && (!match || t.min_qty > match.min_qty)) match = t;
+        });
+        return match ? match.unit_price : null;
+    }
 
     function fmt(n) {
         return 'R$ ' + n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -26,19 +44,27 @@ function bindItemsTable(root) {
         if (totalEl) totalEl.textContent = fmt(total);
     }
 
+    function applyTierPrice(row) {
+        if (!tiers.length) return;
+        var qty = parseInt(row.querySelector('.item-qty').value, 10) || 1;
+        var price = priceForQty(qty);
+        if (price !== null) {
+            row.querySelector('.item-price').value = price.toFixed(2);
+        }
+    }
+
     body.addEventListener('change', function (e) {
         if (e.target.classList.contains('item-product')) {
-            var opt = e.target.selectedOptions[0];
-            var price = opt ? opt.getAttribute('data-price') : null;
             var row = e.target.closest('.item-row');
-            if (price && row) {
-                row.querySelector('.item-price').value = parseFloat(price).toFixed(2);
-            }
+            if (row) applyTierPrice(row);
         }
         recalcAll();
     });
 
     body.addEventListener('input', function (e) {
+        if (e.target.classList.contains('item-qty')) {
+            applyTierPrice(e.target.closest('.item-row'));
+        }
         if (e.target.classList.contains('item-qty') || e.target.classList.contains('item-price')) {
             recalcAll();
         }
@@ -68,6 +94,7 @@ function bindItemsTable(root) {
                 }
             });
             clone.querySelector('.item-subtotal').textContent = fmt(0);
+            applyTierPrice(clone);
             body.appendChild(clone);
         });
     }
@@ -286,12 +313,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
             var supervisorWrap = root.querySelector('#supervisor-field-wrap');
             var vendedorWrap = root.querySelector('#vendedor-commission-wrap');
+            var commissionPctWrap = root.querySelector('#commission-pct-wrap');
+            var licenciadoNote = root.querySelector('#licenciado-commission-note');
 
             function update() {
                 var opt = roleSelect.options[roleSelect.selectedIndex];
                 var slug = opt ? opt.dataset.slug : null;
                 if (supervisorWrap) supervisorWrap.style.display = slug === 'licenciado' ? '' : 'none';
                 if (vendedorWrap) vendedorWrap.style.display = slug === 'vendedor' ? '' : 'none';
+                if (commissionPctWrap) commissionPctWrap.style.display = slug === 'licenciado' ? 'none' : '';
+                if (licenciadoNote) licenciadoNote.style.display = slug === 'licenciado' ? '' : 'none';
             }
 
             roleSelect.addEventListener('change', update);
@@ -339,6 +370,37 @@ document.addEventListener('DOMContentLoaded', function () {
                     stepDetalhes.hidden = true;
                     stepComprador.hidden = false;
                 });
+            }
+
+            // Previa do preco (Fase 24: tabela por quantidade) -- atualiza conforme a pessoa digita
+            // a quantidade, so pra dar uma nocao antes de gerar a proposta de verdade.
+            var qtyInput = root.querySelector('#quantidade');
+            var pricePreview = root.querySelector('#proposta-price-preview');
+            if (form && qtyInput && pricePreview) {
+                var tiers = [];
+                try {
+                    tiers = form.dataset.tiers ? JSON.parse(form.dataset.tiers) : [];
+                } catch (e) {
+                    tiers = [];
+                }
+
+                var updatePreview = function () {
+                    var qty = parseInt(qtyInput.value, 10) || 1;
+                    var match = null;
+                    tiers.forEach(function (t) {
+                        if (t.min_qty <= qty && (!match || t.min_qty > match.min_qty)) match = t;
+                    });
+                    if (!match) {
+                        pricePreview.textContent = '';
+                        return;
+                    }
+                    var total = match.unit_price * qty;
+                    var fmt = function (n) { return 'R$ ' + n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+                    pricePreview.textContent = qty + 'x ' + fmt(match.unit_price) + ' = ' + fmt(total);
+                };
+
+                qtyInput.addEventListener('input', updatePreview);
+                updatePreview();
             }
 
             if (form) {

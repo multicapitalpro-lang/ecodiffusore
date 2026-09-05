@@ -1,7 +1,9 @@
 <?php
 use App\Core\Csrf;
+use App\Core\View;
 $isModal = $isModal ?? false;
 $isViewOnly = $isViewOnly ?? false;
+$pricingTiers = $pricingTiers ?? [];
 ?>
 <?php if ($isModal): ?>
 <div class="modal-header">
@@ -41,7 +43,8 @@ $isViewOnly = $isViewOnly ?? false;
             <button type="button" id="comprador-edit" style="background:none;border:none;cursor:pointer;color:var(--green-dark);font-weight:700;">editar</button>
         </div>
 
-        <form id="proposta-form" action="/painel/proposta-facil" method="post" class="panel-form panel-form-wide" data-modal="<?= $isModal ? '1' : '' ?>">
+        <form id="proposta-form" action="/painel/proposta-facil" method="post" class="panel-form panel-form-wide" data-modal="<?= $isModal ? '1' : '' ?>"
+              data-tiers="<?= View::e(json_encode(array_map(fn ($t) => ['min_qty' => (int) $t['min_qty'], 'unit_price' => (float) $t['unit_price']], $pricingTiers))) ?>">
             <?= Csrf::field() ?>
 
             <h3 style="margin-top:0;">Veículo</h3>
@@ -116,14 +119,11 @@ $isViewOnly = $isViewOnly ?? false;
             <input type="text" id="preco_diesel" name="preco_diesel" placeholder="Ex: 6,10" required>
             <p class="field-error" data-error-for="preco_diesel"></p>
 
-            <h3>Preço da venda</h3>
-            <label class="checkbox-label">
-                <input type="radio" name="price_tier" value="baixo" checked> Padrão — R$ <?= number_format($priceRange['low'] ?? 0, 2, ',', '.') ?>
-            </label>
-            <label class="checkbox-label">
-                <input type="radio" name="price_tier" value="alto"> Máximo — R$ <?= number_format($priceRange['high'] ?? 0, 2, ',', '.') ?>
-            </label>
-            <p class="field-error" data-error-for="price_tier"></p>
+            <h3>Quantidade</h3>
+            <label for="quantidade">Quantas placas nessa venda?</label>
+            <input type="number" id="quantidade" name="quantidade" min="1" step="1" value="1" required>
+            <p class="field-error" data-error-for="quantidade"></p>
+            <p class="hint-text" id="proposta-price-preview"></p>
 
             <button type="submit" class="btn btn-primary">Gerar proposta</button>
         </form>

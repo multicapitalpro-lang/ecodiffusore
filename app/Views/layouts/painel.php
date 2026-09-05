@@ -69,6 +69,7 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/metas'])
                         <a href="/painel/clientes" class="<?= $isActive('/painel/clientes') ? 'is-active' : '' ?>">Clientes</a>
                         <?php if ($role === 'admin'): ?>
                             <a href="/painel/produtos" class="<?= $isActive('/painel/produtos') ? 'is-active' : '' ?>">Produtos</a>
+                            <a href="/painel/tabela-precos" class="<?= $isActive('/painel/tabela-precos') ? 'is-active' : '' ?>">Tabela de preços</a>
                         <?php endif; ?>
                     </div>
                 </details>

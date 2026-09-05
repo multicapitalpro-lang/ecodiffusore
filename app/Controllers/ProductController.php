@@ -114,12 +114,7 @@ class ProductController
             $errors['name'] = 'Informe o nome do produto.';
         }
         if (!is_numeric($input['price_cash'] ?? null) || (float) $input['price_cash'] <= 0) {
-            $errors['price_cash'] = 'Informe um preço mínimo válido.';
-        }
-        if (!is_numeric($input['price_high'] ?? null) || (float) $input['price_high'] <= 0) {
-            $errors['price_high'] = 'Informe um preço máximo válido.';
-        } elseif (is_numeric($input['price_cash'] ?? null) && (float) $input['price_high'] < (float) $input['price_cash']) {
-            $errors['price_high'] = 'O preço máximo não pode ser menor que o mínimo.';
+            $errors['price_cash'] = 'Informe um preço à vista válido.';
         }
         if (!is_numeric($input['price_installment'] ?? null) || (float) $input['price_installment'] <= 0) {
             $errors['price_installment'] = 'Informe um valor de parcela válido.';
