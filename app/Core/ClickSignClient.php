@@ -200,10 +200,15 @@ class ClickSignClient
         return $this->request('GET', "/api/v3/envelopes/{$envelopeId}");
     }
 
+    /**
+     * Confirmado contra a API real (2026-09-05): nao existe um endpoint "/download" separado
+     * (da 404) -- a URL assinada (S3, expira em ~5min) vem dentro do proprio recurso do
+     * documento, em data.links.files.signed (so aparece depois que o envelope fecha).
+     */
     public function downloadSignedDocument(string $envelopeId, string $documentId): string
     {
-        $result = $this->request('GET', "/api/v3/envelopes/{$envelopeId}/documents/{$documentId}/download");
-        $url = $result['data']['attributes']['download_url'] ?? null;
+        $result = $this->request('GET', "/api/v3/envelopes/{$envelopeId}/documents/{$documentId}");
+        $url = $result['data']['links']['files']['signed'] ?? null;
 
         if (!$url) {
             throw new \RuntimeException('ClickSign não retornou a URL de download do documento assinado: ' . json_encode($result));

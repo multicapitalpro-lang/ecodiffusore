@@ -26,15 +26,58 @@ $showWidget = $status === 'aguardando_assinatura' && !empty($envelope['clicksign
 
     <?php if ($showWidget): ?>
         <div id="clicksign-widget-container" style="width:100%;height:85vh;min-height:700px;border-radius:12px;overflow:hidden;margin-top:10px;"></div>
+        <p class="hint-text" id="clicksign-poll-hint" style="display:none;">Confirmando sua assinatura com o ClickSign...</p>
         <script src="https://cdn-public-library.clicksign.com/embedded/embedded.min-2.1.0.js"></script>
         <script>
         (function () {
             var widget = new Clicksign(<?= json_encode($envelope['clicksign_signer_id']) ?>);
             widget.endpoint = <?= json_encode($clicksignBaseUrl) ?>;
             widget.origin = window.location.origin;
-            widget.on('signed', function () {
-                document.getElementById('clicksign-refresh-form').submit();
-            });
+
+            var polling = false;
+            var attempts = 0;
+            var MAX_ATTEMPTS = 8;
+
+            function pollStatus() {
+                if (polling) return;
+                polling = true;
+                var hint = document.getElementById('clicksign-poll-hint');
+                if (hint) hint.style.display = 'block';
+                attempt();
+            }
+
+            function attempt() {
+                attempts++;
+                var form = document.getElementById('clicksign-refresh-form');
+                var formData = new FormData(form);
+                fetch(form.getAttribute('action'), {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        // O widget as vezes reporta "assinado" no navegador um pouco antes do
+                        // ClickSign fechar o envelope de fato -- tenta de novo com espaçamento
+                        // crescente em vez de desistir na primeira checagem.
+                        if (data.status && data.status !== 'aguardando_assinatura') {
+                            window.location.reload();
+                            return;
+                        }
+                        if (attempts < MAX_ATTEMPTS) {
+                            setTimeout(attempt, Math.min(3000 * attempts, 12000));
+                        } else {
+                            polling = false;
+                            var hint = document.getElementById('clicksign-poll-hint');
+                            if (hint) hint.textContent = 'Já assinou? Clique em "Verificar novamente" abaixo.';
+                        }
+                    })
+                    .catch(function () {
+                        polling = false;
+                    });
+            }
+
+            widget.on('signed', pollStatus);
             widget.mount('clicksign-widget-container');
         })();
         </script>

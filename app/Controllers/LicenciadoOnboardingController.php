@@ -8,6 +8,7 @@ use App\Core\Config;
 use App\Core\ContractTemplateFiller;
 use App\Core\Csrf;
 use App\Core\FileUpload;
+use App\Core\Response;
 use App\Core\Roles;
 use App\Core\Router;
 use App\Core\View;
@@ -235,6 +236,9 @@ class LicenciadoOnboardingController
         $user = Auth::user();
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null) || $user['role_slug'] !== 'licenciado') {
+            if (Response::isAjax()) {
+                Response::json(['status' => $user['licenciado_onboarding_status'] ?? null]);
+            }
             Router::redirect('/painel/licenciados/aguardando-assinatura');
         }
 
@@ -244,9 +248,26 @@ class LicenciadoOnboardingController
                 $remote = (new ClickSignClient())->getEnvelope($envelope['clicksign_envelope_id']);
                 $remoteStatus = $remote['data']['attributes']['status'] ?? null;
 
+                // O widget embutido reporta "assinado" no navegador as vezes antes do envelope
+                // fechar de fato do lado do ClickSign (pequeno atraso de propagacao) -- por isso
+                // o front tenta de novo algumas vezes em vez de checar uma unica vez.
                 if (in_array($remoteStatus, ['closed', 'auto_closed'], true) && $envelope['status'] !== 'closed') {
                     LicenciadoEnvelope::updateStatus((int) $envelope['id'], 'closed');
                     User::setOnboardingStatus((int) $user['id'], 'aguardando_aprovacao');
+
+                    try {
+                        $content = (new ClickSignClient())->downloadSignedDocument($envelope['clicksign_envelope_id'], $envelope['clicksign_document_id']);
+                        $storedName = bin2hex(random_bytes(16)) . '.pdf';
+                        $dir = BASE_PATH . '/storage/uploads/licenciados';
+                        if (!is_dir($dir)) {
+                            mkdir($dir, 0750, true);
+                        }
+                        file_put_contents($dir . '/' . $storedName, $content);
+                        LicenciadoEnvelope::attachSignedDocument((int) $envelope['id'], $storedName);
+                    } catch (\Throwable $e) {
+                        // Nao bloqueia a aprovacao por falha no download do PDF -- pode ser baixado depois
+                        // (o webhook do ClickSign tambem tenta isso de forma independente).
+                    }
                 }
             } catch (\Throwable $e) {
                 // Sem sorte agora -- o usuario ve o mesmo status de antes e pode tentar de novo.
@@ -254,6 +275,11 @@ class LicenciadoOnboardingController
         }
 
         $fresh = User::find((int) $user['id']);
+
+        if (Response::isAjax()) {
+            Response::json(['status' => $fresh['licenciado_onboarding_status']]);
+        }
+
         if ($fresh['licenciado_onboarding_status'] === 'ativo') {
             Router::redirect('/painel');
         }
