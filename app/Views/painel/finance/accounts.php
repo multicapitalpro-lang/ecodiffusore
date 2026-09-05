@@ -116,11 +116,13 @@ $filters = $filters ?? [];
                     <td><span class="status-badge status-<?= $t['status'] === 'pendente' ? 'contatado' : 'active' ?>"><?= $statusLabels[$t['status']] ?? $t['status'] ?></span></td>
                     <td><?php $items = $attachmentsByTransaction[$t['id']] ?? []; include __DIR__ . '/_attachments_cell.php'; ?></td>
                     <td class="table-actions">
-                        <button type="button" class="link-small" data-edit-transaction="<?= (int) $t['id'] ?>">Editar</button>
+                        <?php if (empty($t['is_transfer'])): ?>
+                            <button type="button" class="link-small" data-edit-transaction="<?= (int) $t['id'] ?>">Editar</button>
+                        <?php endif; ?>
                         <?php if (empty($t['order_id'])): ?>
                             <form action="/painel/financeiro/contas/<?= (int) $t['id'] ?>/excluir" method="post" class="inline-form">
                                 <?= Csrf::field() ?>
-                                <button type="submit" class="link-button icon-button-danger" data-confirm="Excluir esse lançamento? Essa ação não pode ser desfeita.">Excluir</button>
+                                <button type="submit" class="link-button icon-button-danger" data-confirm="<?= !empty($t['is_transfer']) ? 'Excluir essa transferência? As duas pernas (origem e destino) serão removidas juntas.' : 'Excluir esse lançamento? Essa ação não pode ser desfeita.' ?>">Excluir</button>
                             </form>
                         <?php endif; ?>
                     </td>

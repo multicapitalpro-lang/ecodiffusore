@@ -375,7 +375,9 @@ class FinanceController
         $id = (int) $id;
 
         $transaction = FinancialTransaction::find($id);
-        if (!$transaction) {
+        if (!$transaction || !empty($transaction['is_transfer'])) {
+            // Transferencia tem duas pernas que precisam ficar sempre em espelho -- editar so
+            // uma desbalancearia a outra conta. Pra corrigir, exclui (as duas juntas) e refaz.
             Router::redirect('/painel/financeiro/caixas-bancos');
         }
 
@@ -398,7 +400,7 @@ class FinanceController
         $id = (int) $id;
 
         $transaction = FinancialTransaction::find($id);
-        if (!$transaction) {
+        if (!$transaction || !empty($transaction['is_transfer'])) {
             Router::redirect('/painel/financeiro/caixas-bancos');
         }
 
@@ -463,6 +465,11 @@ class FinanceController
 
         $transaction = FinancialTransaction::find($id);
         if ($transaction && empty($transaction['order_id'])) {
+            // Transferencia tem duas pernas (uma por conta) -- excluir uma sem a outra deixaria
+            // a movimentacao desbalanceada (dinheiro "aparecendo" ou "sumindo" de uma conta so).
+            if (!empty($transaction['is_transfer']) && !empty($transaction['transfer_pair_id'])) {
+                FinancialTransaction::delete((int) $transaction['transfer_pair_id']);
+            }
             FinancialTransaction::delete($id);
         }
 
