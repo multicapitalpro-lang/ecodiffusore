@@ -215,6 +215,12 @@ a { text-decoration: none; color: inherit; }
 .status-inactive, .status-descartado { background: #f1f2f5; color: #6b7280; }
 .status-contatado { background: #fff4dc; color: #b7791f; }
 .status-convertido { background: #dbeafe; color: #1d4ed8; }
+/* Onboarding de Licenciado -- cores proprias pra diferenciar de "novo"/"active" dos Leads
+   (antes reaproveitava as mesmas classes e ficava tudo verde, sem diferenciar etapa). */
+.status-aguardando-perfil { background: #f1f2f5; color: #6b7280; }
+.status-aguardando-assinatura { background: #fff4dc; color: #b7791f; }
+.status-aguardando-aprovacao { background: #dbeafe; color: #1d4ed8; }
+.status-recusado { background: #fde8e8; color: #c53030; }
 
 /* Forms */
 .panel-form { max-width: 480px; display: flex; flex-direction: column; gap: 4px; }

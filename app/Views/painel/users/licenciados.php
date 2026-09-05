@@ -5,12 +5,12 @@ $sucesso = isset($_GET['sucesso']);
 $erro = isset($_GET['erro']);
 $statusFilter = $statusFilter ?? '';
 $onboardingLabels = [
-    'aguardando_perfil' => ['Aguardando perfil', 'novo'],
-    'aguardando_assinatura' => ['Aguardando assinatura', 'novo'],
-    'aguardando_aprovacao' => ['Aguardando aprovação', 'novo'],
+    'aguardando_perfil' => ['Aguardando perfil', 'aguardando-perfil'],
+    'aguardando_assinatura' => ['Aguardando assinatura', 'aguardando-assinatura'],
+    'aguardando_aprovacao' => ['Aguardando aprovação', 'aguardando-aprovacao'],
     'ativo' => ['Ativo', 'active'],
-    'assinatura_recusada' => ['Assinatura recusada', 'inactive'],
-    'kyc_recusado' => ['KYC recusado', 'inactive'],
+    'assinatura_recusada' => ['Assinatura recusada', 'recusado'],
+    'kyc_recusado' => ['KYC recusado', 'recusado'],
 ];
 ?>
 <div class="page-header">
