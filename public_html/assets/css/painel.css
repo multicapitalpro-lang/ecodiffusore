@@ -464,6 +464,7 @@ tr.report-row-bold td { font-weight: 700; }
 .checkbox-inline input { width: auto; }
 
 /* Modais */
+body.modal-open { overflow: hidden; }
 dialog.modal {
     border: none; border-radius: 16px; padding: 0; width: min(640px, 92vw); max-height: 88vh;
     box-shadow: 0 20px 60px rgba(13,27,61,.25);

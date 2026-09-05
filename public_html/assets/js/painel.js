@@ -160,7 +160,10 @@ document.addEventListener('DOMContentLoaded', function () {
             root.querySelectorAll('[data-modal-open]').forEach(function (btn) {
                 btn.addEventListener('click', function () {
                     var modal = document.getElementById(btn.getAttribute('data-modal-open'));
-                    if (modal) modal.showModal();
+                    if (modal) {
+                        modal.showModal();
+                        document.body.classList.add('modal-open');
+                    }
                 });
             });
         }
@@ -168,8 +171,19 @@ document.addEventListener('DOMContentLoaded', function () {
         bindModalOpen(document);
         bindModalClose(document);
 
+        // Trava o scroll da pagina de fundo enquanto um dialog esta aberto -- sem isso, no mobile
+        // (onde o dialog cobre a tela via 100dvh) a pagina por tras ainda rola atras do modal em
+        // alguns navegadores/engines, ficando visivel nas bordas. O evento "close" do <dialog> nao
+        // faz bubble, entao cada dialog precisa do proprio listener.
+        document.querySelectorAll('dialog').forEach(function (dialog) {
+            dialog.addEventListener('close', function () {
+                document.body.classList.remove('modal-open');
+            });
+        });
+
         document.querySelectorAll('dialog[data-autoopen]').forEach(function (dialog) {
             dialog.showModal();
+            document.body.classList.add('modal-open');
         });
 
         document.querySelectorAll('dialog.modal').forEach(function (dialog) {
@@ -234,6 +248,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 + '<div class="modal-body"><p class="hint-text">Carregando...</p></div>';
             bindModalClose(content);
             modal.showModal();
+            document.body.classList.add('modal-open');
 
             fetch(url, {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
