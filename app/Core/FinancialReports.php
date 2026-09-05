@@ -2,6 +2,9 @@
 
 namespace App\Core;
 
+use App\Models\AsaasAnticipation;
+use App\Models\Order;
+
 class FinancialReports
 {
     public static function catalog(): array
@@ -25,6 +28,10 @@ class FinancialReports
             ],
             'Comissões' => [
                 'comissoes' => 'Relatório de Comissões',
+            ],
+            'Fiscal e Antecipações' => [
+                'impostos' => 'Relatório de Impostos e Custo Real',
+                'antecipacoes' => 'Relatório de Antecipações (Asaas)',
             ],
         ];
     }
@@ -51,6 +58,8 @@ class FinancialReports
             'recebimentos' => self::movimentos($from, $to, 'entrada'),
             'controle_caixa' => self::controleCaixa($from, $to),
             'comissoes' => self::comissoes($from, $to),
+            'impostos' => self::impostos($from, $to),
+            'antecipacoes' => self::antecipacoes($from, $to),
             default => ['kind' => 'simple', 'columns' => [], 'rows' => [], 'totals' => []],
         };
     }
@@ -404,6 +413,65 @@ class FinancialReports
                 'Total gerado' => self::money($total),
                 'Total pago' => self::money($totalPago),
                 'Total pendente' => self::money($total - $totalPago),
+            ],
+        ];
+    }
+
+    /** Imposto e custo real por pedido verificado no periodo (Fase 25) -- mesma tabela de precos
+     *  por quantidade que ja define a comissao do Licenciado (ver App\Core\TaxReport). */
+    private static function impostos(string $from, string $to): array
+    {
+        $orders = Order::all(['status' => 'verificado', 'from' => $from, 'to' => $to]);
+        $report = TaxReport::forOrders($orders);
+
+        $rows = array_map(fn ($r) => [
+            '#' . $r['id'],
+            date('d/m/Y', strtotime($r['order_date'])),
+            $r['client_name'],
+            (int) $r['total_qty'],
+            self::money((float) $r['total_value']),
+            self::money($r['tax']),
+            self::money($r['cost']),
+            self::money($r['net']),
+        ], $report['rows']);
+
+        return [
+            'kind' => 'simple',
+            'columns' => ['Pedido', 'Data', 'Cliente', 'Qtd.', 'Faturamento', 'Imposto', 'Custo', 'Margem líquida'],
+            'rows' => $rows,
+            'totals' => [
+                'Faturamento' => self::money($report['totals']['revenue']),
+                'Imposto' => self::money($report['totals']['tax']),
+                'Custo' => self::money($report['totals']['cost']),
+                'Margem líquida' => self::money($report['totals']['net']),
+            ],
+        ];
+    }
+
+    /** Antecipacoes feitas na Asaas no periodo (espelho local, ver App\Models\AsaasAnticipation)
+     *  -- so pedidas via /painel/financeiro/antecipacoes ("Atualizar do Asaas"), nao busca ao vivo. */
+    private static function antecipacoes(string $from, string $to): array
+    {
+        $filters = ['from' => $from, 'to' => $to];
+        $rows = AsaasAnticipation::all($filters);
+        $totals = AsaasAnticipation::totals($filters);
+
+        $tableRows = array_map(fn ($r) => [
+            $r['request_date'] ? date('d/m/Y', strtotime($r['request_date'])) : '—',
+            $r['status'],
+            self::money((float) $r['value']),
+            self::money((float) $r['fee']),
+            self::money((float) $r['net_value']),
+        ], $rows);
+
+        return [
+            'kind' => 'simple',
+            'columns' => ['Solicitada em', 'Situação', 'Valor', 'Taxa', 'Líquido'],
+            'rows' => $tableRows,
+            'totals' => [
+                'Valor bruto (efetivadas)' => self::money($totals['value_effective']),
+                'Taxa paga (efetivadas)' => self::money($totals['fee_effective']),
+                'Líquido recebido (efetivadas)' => self::money($totals['net_value_effective']),
             ],
         ];
     }

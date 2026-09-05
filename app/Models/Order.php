@@ -11,7 +11,8 @@ class Order
     {
         $sql = 'SELECT o.*, c.name AS client_name, c.whatsapp AS client_whatsapp, c.city AS client_city, c.state AS client_state,
                     u.name AS seller_name,
-                    (SELECT GROUP_CONCAT(p.name SEPARATOR ", ") FROM order_items oi JOIN products p ON p.id = oi.product_id WHERE oi.order_id = o.id) AS product_names
+                    (SELECT GROUP_CONCAT(p.name SEPARATOR ", ") FROM order_items oi JOIN products p ON p.id = oi.product_id WHERE oi.order_id = o.id) AS product_names,
+                    (SELECT COALESCE(SUM(oi.quantity), 0) FROM order_items oi WHERE oi.order_id = o.id) AS total_qty
                 FROM orders o
                 JOIN clients c ON c.id = o.client_id
                 LEFT JOIN users u ON u.id = o.seller_id

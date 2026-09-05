@@ -112,6 +112,10 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/metas'])
                         <?php if (in_array($role, $managerRoles, true)): ?>
                             <a href="/painel/financeiro/relatorios" class="<?= $isActive('/painel/financeiro/relatorios') ? 'is-active' : '' ?>">Relatórios</a>
                         <?php endif; ?>
+                        <?php if (in_array($role, ['admin', 'gerente'], true)): ?>
+                            <a href="/painel/financeiro/impostos" class="<?= $isActive('/painel/financeiro/impostos') ? 'is-active' : '' ?>">Controle Fiscal</a>
+                            <a href="/painel/financeiro/antecipacoes" class="<?= $isActive('/painel/financeiro/antecipacoes') ? 'is-active' : '' ?>">Antecipações</a>
+                        <?php endif; ?>
                     </div>
                 </details>
             <?php endif; ?>

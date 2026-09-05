@@ -17,19 +17,32 @@ class ReportController
 {
     private const ALLOWED_ROLES = Roles::MANAGEMENT;
 
+    /** Fiscal/Antecipacoes sao dado nacional sensivel (nao so da regiao de um Licenciado) --
+     *  fica de fora do catalogo e bloqueado por tipo mesmo pra quem tem acesso ao resto de
+     *  Relatorios (Gestor/Licenciado). */
+    private const NATIONAL_ONLY_TYPES = ['impostos', 'antecipacoes'];
+    private const NATIONAL_ONLY_ROLES = ['admin', 'gerente'];
+
     public function index(): void
     {
         Auth::requireRole(self::ALLOWED_ROLES);
+        $user = Auth::user();
+
+        $catalog = FinancialReports::catalog();
+        if (!in_array($user['role_slug'], self::NATIONAL_ONLY_ROLES, true)) {
+            unset($catalog['Fiscal e Antecipações']);
+        }
 
         View::render('painel/reports/index', [
-            'user' => Auth::user(),
-            'catalog' => FinancialReports::catalog(),
+            'user' => $user,
+            'catalog' => $catalog,
         ]);
     }
 
     public function show(string $type): void
     {
         Auth::requireRole(self::ALLOWED_ROLES);
+        $this->assertTypeAllowed($type, Auth::user());
 
         [$from, $to] = DateRange::fromRequest();
 
@@ -46,6 +59,7 @@ class ReportController
     public function pdf(string $type): void
     {
         Auth::requireRole(self::ALLOWED_ROLES);
+        $this->assertTypeAllowed($type, Auth::user());
 
         [$from, $to] = DateRange::fromRequest();
         $title = FinancialReports::title($type);
@@ -57,6 +71,15 @@ class ReportController
 
         $filename = 'relatorio-' . $type . '-' . date('Y-m-d') . '.pdf';
         Pdf::download($html, $filename);
+    }
+
+    private function assertTypeAllowed(string $type, array $user): void
+    {
+        if (in_array($type, self::NATIONAL_ONLY_TYPES, true) && !in_array($user['role_slug'], self::NATIONAL_ONLY_ROLES, true)) {
+            http_response_code(403);
+            require BASE_PATH . '/app/Views/errors/403.php';
+            exit;
+        }
     }
 
     public function schedules(): void

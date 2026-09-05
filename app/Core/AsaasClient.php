@@ -87,6 +87,18 @@ class AsaasClient
         return $this->request('DELETE', "/payments/{$chargeId}");
     }
 
+    /** Lista antecipacoes (paginado, 100 por pagina -- limite maximo da Asaas). */
+    public function listAnticipations(int $offset = 0, int $limit = 100): array
+    {
+        return $this->request('GET', '/anticipations', ['offset' => $offset, 'limit' => $limit]);
+    }
+
+    /** Limite disponivel pra antecipar (por forma de cobranca) -- {creditCard:{total,available}, bankSlip:{total,available}} */
+    public function getAnticipationLimits(): array
+    {
+        return $this->request('GET', '/anticipations/limits');
+    }
+
     public function registerWebhook(string $url, string $authToken): array
     {
         return $this->request('POST', '/webhooks', [

@@ -203,6 +203,11 @@ $router->get('/painel/financeiro/comissoes', [App\Controllers\FinanceController:
 $router->get('/painel/financeiro/comissoes/exportar', [App\Controllers\FinanceController::class, 'exportCommissions']);
 $router->post('/painel/financeiro/comissoes/{id}/baixar', [App\Controllers\FinanceController::class, 'markCommissionPaid']);
 
+$router->get('/painel/financeiro/impostos', [App\Controllers\TaxController::class, 'index']);
+
+$router->get('/painel/financeiro/antecipacoes', [App\Controllers\AnticipationController::class, 'index']);
+$router->post('/painel/financeiro/antecipacoes/sincronizar', [App\Controllers\AnticipationController::class, 'sync']);
+
 // Remessa e Retorno
 $router->get('/painel/financeiro/remessas', [App\Controllers\RemittanceController::class, 'index']);
 $router->get('/painel/financeiro/remessas/nova', [App\Controllers\RemittanceController::class, 'create']);

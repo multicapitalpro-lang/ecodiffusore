@@ -9,7 +9,10 @@ use App\Core\DateRange;
 use App\Core\ReportScheduler;
 use App\Core\Roles;
 use App\Core\Router;
+use App\Core\TaxReport;
 use App\Core\View;
+use App\Models\AsaasAnticipation;
+use App\Models\AsaasSetting;
 use App\Models\Client;
 use App\Models\Commission;
 use App\Models\FinancialAccount;
@@ -146,6 +149,22 @@ class DashboardController
 
         if (in_array($role, Roles::SUPERVISOR_ASSIGNMENT, true)) {
             $data['aprovacoesPendentes'] = User::pendingApprovalCount($user);
+
+            // Fiscal/Antecipacoes: mesmo par admin+gerente (visao nacional), so dado sensivel da
+            // operacao inteira. Imposto calculado no periodo do filtro (from/to ja resolvido no
+            // bloco STAFF acima); antecipacao vem sempre do espelho local (nunca busca na Asaas
+            // ao vivo aqui -- ver AnticipationController::sync).
+            $taxOrders = Order::all(['status' => 'verificado', 'from' => $data['from'] ?? date('Y-m-01'), 'to' => $data['to'] ?? date('Y-m-t')]);
+            $data['impostoPagoPeriodo'] = TaxReport::forOrders($taxOrders)['totals']['tax'];
+
+            $anticipationTotals = AsaasAnticipation::totals();
+            $data['antecipadoLiquidoTotal'] = $anticipationTotals['net_value_effective'];
+            $data['antecipacaoTaxaTotal'] = $anticipationTotals['fee_effective'];
+
+            $limits = AsaasSetting::getJson('anticipation_limits');
+            $data['antecipacaoDisponivel'] = $limits
+                ? (float) ($limits['creditCard']['available'] ?? 0) + (float) ($limits['bankSlip']['available'] ?? 0)
+                : null;
         }
 
         if (in_array($role, ['admin', 'gerente', 'supervisor'], true)) {

@@ -99,6 +99,32 @@ $hasMetrics = isset($metrics);
         </div>
     <?php endif; ?>
 
+    <?php if (isset($impostoPagoPeriodo)): ?>
+        <div class="page-header">
+            <h3 class="section-title" style="margin:28px 0 0;">Fiscal e Antecipações</h3>
+            <a href="/painel/financeiro/impostos" class="link-small">Ver tudo</a>
+        </div>
+        <div class="cards-grid">
+            <div class="dash-card">
+                <span>Imposto devido no período</span>
+                <strong>R$ <?= number_format($impostoPagoPeriodo, 2, ',', '.') ?></strong>
+            </div>
+            <div class="dash-card">
+                <span>Disponível pra antecipar</span>
+                <strong><?= $antecipacaoDisponivel !== null ? 'R$ ' . number_format($antecipacaoDisponivel, 2, ',', '.') : '—' ?></strong>
+                <?php if ($antecipacaoDisponivel === null): ?><small class="hint-inline">sincronize em Antecipações</small><?php endif; ?>
+            </div>
+            <div class="dash-card">
+                <span>Já antecipado (líquido)</span>
+                <strong>R$ <?= number_format($antecipadoLiquidoTotal, 2, ',', '.') ?></strong>
+            </div>
+            <div class="dash-card dash-card-danger">
+                <span>Taxa de antecipação paga</span>
+                <strong>R$ <?= number_format($antecipacaoTaxaTotal, 2, ',', '.') ?></strong>
+            </div>
+        </div>
+    <?php endif; ?>
+
     <?php if (isset($minhaComissaoPendente)): ?>
         <div class="page-header">
             <h3 class="section-title" style="margin:28px 0 0;">Minhas comissões</h3>
