@@ -49,6 +49,27 @@ class Quote
         return $stmt->fetchAll();
     }
 
+    /** Mesma ideia de Order::countPendingPayment() -- usado no card de alerta do Dashboard. */
+    public static function countPendingPayment(array $filters = []): int
+    {
+        $quotes = self::all($filters);
+        if (!$quotes) {
+            return 0;
+        }
+
+        $ids = array_map(fn ($q) => (int) $q['id'], $quotes);
+        $payments = Payment::latestByPayableIds('quote', $ids);
+
+        $count = 0;
+        foreach ($quotes as $q) {
+            $situation = Payment::situationFor($q, $payments[(int) $q['id']] ?? null, 'recusado');
+            if (in_array($situation['slug'], ['pendente', 'expirado'], true)) {
+                $count++;
+            }
+        }
+        return $count;
+    }
+
     public static function find(int $id): ?array
     {
         $stmt = Database::connection()->prepare(

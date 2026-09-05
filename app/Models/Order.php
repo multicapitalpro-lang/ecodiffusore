@@ -59,6 +59,29 @@ class Order
         return $stmt->fetchAll();
     }
 
+    /** Quantos pedidos (no escopo de $filters) estao com pagamento pendente ou expirado agora --
+     *  usado no card de alerta do Dashboard. Situacao derivada (nao e' so status do pedido),
+     *  entao reaproveita a mesma logica de Payment::situationFor ja usada em Pedidos/Orcamentos. */
+    public static function countPendingPayment(array $filters = []): int
+    {
+        $orders = self::all($filters);
+        if (!$orders) {
+            return 0;
+        }
+
+        $ids = array_map(fn ($o) => (int) $o['id'], $orders);
+        $payments = Payment::latestByPayableIds('order', $ids);
+
+        $count = 0;
+        foreach ($orders as $o) {
+            $situation = Payment::situationFor($o, $payments[(int) $o['id']] ?? null);
+            if (in_array($situation['slug'], ['pendente', 'expirado'], true)) {
+                $count++;
+            }
+        }
+        return $count;
+    }
+
     public static function find(int $id): ?array
     {
         $stmt = Database::connection()->prepare(

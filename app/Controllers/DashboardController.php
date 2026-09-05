@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Core\Auth;
+use App\Core\BrazilStates;
 use App\Core\Chart;
 use App\Core\DateRange;
 use App\Core\ReportScheduler;
@@ -10,11 +11,15 @@ use App\Core\Roles;
 use App\Core\Router;
 use App\Core\View;
 use App\Models\Client;
+use App\Models\Commission;
+use App\Models\FinancialAccount;
+use App\Models\FinancialTransaction;
 use App\Models\Goal;
 use App\Models\Lead;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Payment;
+use App\Models\Quote;
 use App\Models\User;
 
 class DashboardController
@@ -93,6 +98,60 @@ class DashboardController
                 fn ($g) => $g + ['progress' => Goal::progress($g)],
                 Goal::activeFor((int) $user['id'])
             );
+
+            // ---- Visao geral (overview): resumo do resto do painel direto no inicio ----
+
+            // CRM: mesmo escopo ja calculado acima pros pedidos (sellerId/sellerIds), reaproveitado
+            // pra nao duplicar consulta de downlineIds/supervisedIds/nationalIds.
+            $crmScope = $sellerId !== null ? ['seller_id' => $sellerId] : ($sellerIds !== null ? ['seller_ids' => $sellerIds] : []);
+            $data['pedidosPendentes'] = Order::countPendingPayment($crmScope);
+            $data['orcamentosPendentes'] = Quote::countPendingPayment($crmScope);
+
+            if ($role === 'admin') {
+                $leads = Lead::all();
+            } else {
+                $leadIds = $sellerId !== null ? [$sellerId] : ($sellerIds ?? []);
+                $includeUnassigned = !in_array($role, [Roles::SELLER, 'supervisor', 'gerente'], true);
+                $leads = Lead::forScope($leadIds, $includeUnassigned);
+            }
+            $data['leadsNovos'] = count(array_filter($leads, fn ($l) => $l['status'] === 'novo'));
+
+            // Comissao pendente da propria pessoa (vendedor/gestor/licenciado/supervisor/gerente
+            // podem todos ser beneficiario de comissao -- admin normalmente nao, fica 0).
+            $myCommission = Commission::byBeneficiary(['beneficiary_id' => (int) $user['id']]);
+            $data['minhaComissaoPendente'] = (float) ($myCommission[0]['total_pendente'] ?? 0);
+        }
+
+        if (in_array($role, Roles::MANAGEMENT, true)) {
+            // Financeiro: mesmo escopo que FinanceController::scopeFilters() ja usa (so licenciado
+            // e' escopado por regiao; admin/gestor veem tudo, igual ja veem em Caixas e Bancos).
+            $financeScope = $role === Roles::REGIONAL_OWNER
+                ? ['seller_ids' => User::downlineIds((int) $user['id'])]
+                : [];
+
+            $accounts = FinancialAccount::all();
+            $data['saldoCaixa'] = array_sum(array_map(
+                fn ($a) => FinancialAccount::currentBalance((int) $a['id']),
+                $accounts
+            ));
+
+            $today = date('Y-m-d');
+            $payables = FinancialTransaction::all(array_merge(['type' => 'saida', 'status' => 'pendente', 'exclude_transfers' => true], $financeScope));
+            $receivables = FinancialTransaction::all(array_merge(['type' => 'entrada', 'status' => 'pendente', 'exclude_transfers' => true], $financeScope));
+
+            $data['contasPagarAberto'] = array_sum(array_map(fn ($t) => FinancialTransaction::totalValue($t), $payables));
+            $data['contasPagarVencidas'] = count(array_filter($payables, fn ($t) => $t['due_date'] < $today));
+            $data['contasReceberAberto'] = array_sum(array_map(fn ($t) => FinancialTransaction::totalValue($t), $receivables));
+        }
+
+        if (in_array($role, Roles::SUPERVISOR_ASSIGNMENT, true)) {
+            $data['aprovacoesPendentes'] = User::pendingApprovalCount($user);
+        }
+
+        if (in_array($role, ['admin', 'gerente', 'supervisor'], true)) {
+            $licenciadosAtivos = User::allByRole('licenciado');
+            $data['licenciadosAtivos'] = count($licenciadosAtivos);
+            $data['estadosCobertos'] = count(BrazilStates::groupByState($licenciadosAtivos));
         }
 
         if ($role === 'admin') {

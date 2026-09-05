@@ -13,6 +13,47 @@ $hasMetrics = isset($metrics);
         <button type="submit" class="btn btn-outline">Visualizar</button>
     </form>
 
+    <?php if (isset($leadsNovos) || isset($pedidosPendentes) || isset($orcamentosPendentes) || !empty($aprovacoesPendentes) || !empty($contasPagarVencidas)): ?>
+        <h3 class="section-title" style="margin-top:0;">Requer atenção</h3>
+        <div class="cards-grid">
+            <?php if (!empty($aprovacoesPendentes)): ?>
+                <div class="dash-card dash-card-danger">
+                    <span>Cadastros aguardando aprovação</span>
+                    <strong><?= (int) $aprovacoesPendentes ?></strong>
+                    <a href="/painel/licenciados/aprovacoes">Revisar agora</a>
+                </div>
+            <?php endif; ?>
+            <?php if (!empty($contasPagarVencidas)): ?>
+                <div class="dash-card dash-card-danger">
+                    <span>Contas a pagar vencidas</span>
+                    <strong><?= (int) $contasPagarVencidas ?></strong>
+                    <a href="/painel/financeiro/contas-a-pagar">Ver contas</a>
+                </div>
+            <?php endif; ?>
+            <?php if (isset($pedidosPendentes)): ?>
+                <div class="dash-card <?= $pedidosPendentes > 0 ? 'dash-card-danger' : '' ?>">
+                    <span>Pedidos com pagamento pendente</span>
+                    <strong><?= (int) $pedidosPendentes ?></strong>
+                    <a href="/painel/pedidos">Ver pedidos</a>
+                </div>
+            <?php endif; ?>
+            <?php if (isset($orcamentosPendentes)): ?>
+                <div class="dash-card">
+                    <span>Orçamentos pendentes</span>
+                    <strong><?= (int) $orcamentosPendentes ?></strong>
+                    <a href="/painel/orcamentos">Ver orçamentos</a>
+                </div>
+            <?php endif; ?>
+            <?php if (isset($leadsNovos)): ?>
+                <div class="dash-card">
+                    <span>Leads novos</span>
+                    <strong><?= (int) $leadsNovos ?></strong>
+                    <a href="/painel/leads">Ver leads</a>
+                </div>
+            <?php endif; ?>
+        </div>
+    <?php endif; ?>
+
     <div class="cards-grid">
         <div class="dash-card">
             <span>Valor Total</span>
@@ -36,6 +77,41 @@ $hasMetrics = isset($metrics);
         </div>
     </div>
 
+    <?php if (isset($saldoCaixa)): ?>
+        <div class="page-header">
+            <h3 class="section-title" style="margin:28px 0 0;">Financeiro</h3>
+            <a href="/painel/financeiro/caixas-bancos" class="link-small">Ver tudo</a>
+        </div>
+        <div class="cards-grid">
+            <div class="dash-card">
+                <span>Saldo em caixa</span>
+                <strong>R$ <?= number_format($saldoCaixa, 2, ',', '.') ?></strong>
+            </div>
+            <div class="dash-card <?= $contasPagarVencidas > 0 ? 'dash-card-danger' : '' ?>">
+                <span>Contas a pagar em aberto</span>
+                <strong>R$ <?= number_format($contasPagarAberto, 2, ',', '.') ?></strong>
+                <?php if ($contasPagarVencidas > 0): ?><small class="text-red"><?= (int) $contasPagarVencidas ?> vencida(s)</small><?php endif; ?>
+            </div>
+            <div class="dash-card">
+                <span>Contas a receber em aberto</span>
+                <strong>R$ <?= number_format($contasReceberAberto, 2, ',', '.') ?></strong>
+            </div>
+        </div>
+    <?php endif; ?>
+
+    <?php if (isset($minhaComissaoPendente)): ?>
+        <div class="page-header">
+            <h3 class="section-title" style="margin:28px 0 0;">Minhas comissões</h3>
+            <a href="/painel/financeiro/comissoes" class="link-small">Ver detalhes</a>
+        </div>
+        <div class="cards-grid">
+            <div class="dash-card <?= $minhaComissaoPendente > 0 ? 'dash-card-danger' : '' ?>">
+                <span>Pendente de pagamento</span>
+                <strong>R$ <?= number_format($minhaComissaoPendente, 2, ',', '.') ?></strong>
+            </div>
+        </div>
+    <?php endif; ?>
+
     <?php if (!empty($goals)): ?>
         <div class="page-header">
             <h3 class="section-title" style="margin:28px 0 0;">Metas em andamento</h3>
@@ -57,6 +133,23 @@ $hasMetrics = isset($metrics);
                     <?php endif; ?>
                 </div>
             <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
+
+    <?php if (isset($licenciadosAtivos)): ?>
+        <div class="page-header">
+            <h3 class="section-title" style="margin:28px 0 0;">Expansão nacional</h3>
+            <a href="/painel/desempenho/panorama" class="link-small">Ver mapa completo</a>
+        </div>
+        <div class="cards-grid">
+            <div class="dash-card">
+                <span>Licenciados ativos</span>
+                <strong><?= (int) $licenciadosAtivos ?></strong>
+            </div>
+            <div class="dash-card">
+                <span>Estados com cobertura</span>
+                <strong><?= (int) $estadosCobertos ?> / 27</strong>
+            </div>
         </div>
     <?php endif; ?>
 
