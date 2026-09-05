@@ -70,12 +70,7 @@ $message = "Olá, {$result['name']}! Segue a proposta do Ecodiffusore que prepar
     </p>
 
     <h3>Formas de pagamento</h3>
-    <p>Pix ou cartão à vista pelo preço acima. Parcelado no cartão:</p>
-
-    <div class="proposta-installments-note">
-        ⚠️ Tabela provisória, calculada com a taxa de cartão (2,99% + antecipação). A tabela de juros
-        própria da Ecodiffusore pro parcelamento ainda será enviada e vai substituir estes valores.
-    </div>
+    <p>Pix, boleto ou cartão à vista pelo preço acima. Parcelado no cartão:</p>
 
     <?php if ($hasPayback): ?>
         <p class="hint-text" style="margin-top:0;">Economia média estimada de diesel: <strong style="color:var(--green-dark);">R$ <?= number_format($payback['tiers']['avg']['monthly'], 2, ',', '.') ?>/mês</strong> — comparada com a parcela em "Diferença" abaixo.</p>

@@ -131,6 +131,9 @@ $router->get('/painel/tabela-precos/{id}/editar', [App\Controllers\PricingTierCo
 $router->post('/painel/tabela-precos/{id}', [App\Controllers\PricingTierController::class, 'update']);
 $router->post('/painel/tabela-precos/{id}/excluir', [App\Controllers\PricingTierController::class, 'destroy']);
 
+$router->get('/painel/configuracoes/pagamento', [App\Controllers\PaymentSettingsController::class, 'index']);
+$router->post('/painel/configuracoes/pagamento', [App\Controllers\PaymentSettingsController::class, 'update']);
+
 // Pedidos
 $router->get('/painel/pedidos', [App\Controllers\OrderController::class, 'index']);
 $router->get('/painel/pedidos/novo', [App\Controllers\OrderController::class, 'create']);

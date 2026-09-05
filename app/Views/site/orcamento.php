@@ -1,4 +1,5 @@
 <?php
+use App\Core\CardPricing;
 use App\Core\View;
 /** @var array $result */
 $hasSeller = !empty($result['seller_whatsapp']);
@@ -79,7 +80,7 @@ $hasPayback = $payback && $payback['tiers']['avg']['monthly'] > 0;
                     <strong>R$ <?= number_format((float) $result['product_price'], 2, ',', '.') ?></strong>
                     <?= $result['product_name'] ? '— ' . View::e($result['product_name']) : '' ?>
                 </p>
-                <p class="hint-text">À vista (Pix ou Boleto) ou parcelado em até 12x no cartão. Condições finais confirmadas com o vendedor.</p>
+                <p class="hint-text">À vista (Pix ou Boleto) ou parcelado em até <?= CardPricing::maxInstallments() ?>x no cartão. Condições finais confirmadas com o vendedor.</p>
             <?php endif; ?>
 
             <h3><?= $hasSeller ? 'Encontramos um Licenciado perto de você' : 'Fale com nosso atendimento' ?></h3>

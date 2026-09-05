@@ -59,10 +59,6 @@ $hasPayback = $payback && $payback['tiers']['avg']['monthly'] > 0;
 
 <?php if (!empty($result['installments'])): ?>
 <h2>Condições de pagamento parcelado</h2>
-<div class="warn-box">
-    Tabela provisória, calculada com a taxa de cartão. A tabela de juros própria da Ecodiffusore
-    ainda será definida e vai substituir estes valores.
-</div>
 <table class="tiers-table">
     <thead><tr><th>Parcelas</th><th>Valor da parcela</th><th>Total</th><?= $hasPayback ? '<th>Economia média/mês</th>' : '' ?></tr></thead>
     <tbody>

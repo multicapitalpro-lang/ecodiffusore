@@ -301,7 +301,7 @@ class PublicController
         $billingType = in_array($_POST['billing_type'] ?? '', ['PIX', 'BOLETO', 'CREDIT_CARD'], true)
             ? $_POST['billing_type']
             : 'PIX';
-        $installments = $billingType === 'CREDIT_CARD' ? max(1, min(12, (int) ($_POST['installments'] ?? 1))) : 1;
+        $installments = $billingType === 'CREDIT_CARD' ? max(1, min(CardPricing::maxInstallments(), (int) ($_POST['installments'] ?? 1))) : 1;
 
         $product = Product::find($productId);
 

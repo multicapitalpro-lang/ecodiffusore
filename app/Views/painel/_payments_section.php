@@ -1,9 +1,11 @@
 <?php
+use App\Core\CardPricing;
 use App\Core\Csrf;
 use App\Core\View;
 /** @var array $payments */
 /** @var string $chargeAction */
 $allowGenerateCharge = $allowGenerateCharge ?? true;
+$maxInstallments = CardPricing::maxInstallments();
 $methodLabels = ['PIX' => 'Pix', 'BOLETO' => 'Boleto', 'CREDIT_CARD' => 'Cartão'];
 $statusLabels = ['pendente' => 'Pendente', 'pago' => 'Pago', 'vencido' => 'Vencido', 'cancelado' => 'Cancelado', 'reembolsado' => 'Reembolsado'];
 ?>
@@ -45,14 +47,19 @@ $statusLabels = ['pendente' => 'Pendente', 'pago' => 'Pago', 'vencido' => 'Venci
 <?php endif; ?>
 
 <?php if ($allowGenerateCharge): ?>
-    <form action="<?= View::e($chargeAction) ?>" method="post" class="inline-form" style="margin-top:12px;">
+    <form action="<?= View::e($chargeAction) ?>" method="post" class="inline-form charge-form" style="margin-top:12px;">
         <?= Csrf::field() ?>
-        <select name="billing_type">
+        <select name="billing_type" class="charge-billing-type">
             <option value="PIX">Pix</option>
             <option value="BOLETO">Boleto</option>
             <option value="CREDIT_CARD">Cartão de crédito</option>
         </select>
+        <select name="installments" class="charge-installments" style="display:none;">
+            <?php for ($n = 1; $n <= $maxInstallments; $n++): ?>
+                <option value="<?= $n ?>"><?= $n ?>x<?= $n === 1 ? ' (à vista)' : '' ?></option>
+            <?php endfor; ?>
+        </select>
         <button type="submit" class="btn btn-outline">Gerar cobrança</button>
     </form>
-    <p class="hint-text">O cliente precisa ter CPF/CNPJ cadastrado para gerar a cobrança.</p>
+    <p class="hint-text">O cliente precisa ter CPF/CNPJ cadastrado para gerar a cobrança. No cartão, a taxa de processamento e de antecipação já entram no valor cobrado — o cliente só vê o total/parcela final.</p>
 <?php endif; ?>

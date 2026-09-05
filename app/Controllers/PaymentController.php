@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Core\AsaasClient;
 use App\Core\Auth;
+use App\Core\CardPricing;
 use App\Core\Config;
 use App\Core\Csrf;
 use App\Core\Roles;
@@ -108,7 +109,11 @@ class PaymentController
         http_response_code(200);
     }
 
-    private function generateCharge(string $payableType, int $payableId, int $clientId, float $amount, string $description): void
+    /** $basePrice e' sempre o preco de tabela puro (order/quote.total_value) -- a comissao em
+     *  cascata (Commission::createCascadeForOrder) e' calculada sobre esse valor, nunca sobre o
+     *  valor com taxa de cartao/antecipacao embutida. So o valor de fato cobrado (Payment::amount)
+     *  reflete o repasse -- o cliente nunca ve essas taxas separadas, so o total/parcela final. */
+    private function generateCharge(string $payableType, int $payableId, int $clientId, float $basePrice, string $description): void
     {
         $client = Client::find($clientId);
         if (!$client) {
@@ -119,6 +124,13 @@ class PaymentController
             ? $_POST['billing_type']
             : 'PIX';
 
+        $installments = 1;
+        $chargeAmount = $basePrice;
+        if ($billingType === 'CREDIT_CARD') {
+            $installments = max(1, min(CardPricing::maxInstallments(), (int) ($_POST['installments'] ?? 1)));
+            $chargeAmount = CardPricing::chargeAmount($basePrice, $installments);
+        }
+
         $asaas = new AsaasClient();
         $customerId = $asaas->createOrFindCustomer($client);
 
@@ -126,10 +138,11 @@ class PaymentController
         $charge = $asaas->createCharge([
             'customer' => $customerId,
             'billing_type' => $billingType,
-            'value' => $amount,
+            'value' => $chargeAmount,
             'due_date' => $dueDate,
             'description' => $description,
             'external_reference' => $payableType . ':' . $payableId,
+            'installment_count' => $installments > 1 ? $installments : null,
         ]);
 
         $pixPayload = null;
@@ -144,7 +157,7 @@ class PaymentController
             'asaas_customer_id' => $customerId,
             'asaas_charge_id' => $charge['id'],
             'method' => $billingType,
-            'amount' => $amount,
+            'amount' => $chargeAmount,
             'checkout_url' => $charge['invoiceUrl'] ?? null,
             'pix_payload' => $pixPayload,
             'due_date' => $dueDate,

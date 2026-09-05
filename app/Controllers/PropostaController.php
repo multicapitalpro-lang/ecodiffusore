@@ -31,11 +31,6 @@ use App\Models\Quote;
  */
 class PropostaController
 {
-    /** Parcelas mostradas na tabela de pagamento no cartão. A tabela de juros real pro parcelamento
-     *  "próprio" (fora do cartão) ainda não foi passada pelo cliente -- usamos CardPricing (mesma
-     *  regra já usada no checkout público) como valor provisório, sinalizado na tela e no PDF. */
-    private const INSTALLMENT_OPTIONS = [1, 2, 3, 6, 10, 12];
-
     public function create(): void
     {
         Auth::requireRole(Roles::STAFF);
@@ -107,9 +102,12 @@ class PropostaController
             unset($row);
         }
 
+        // Parcelas mostradas na tabela de pagamento no cartao -- 1 a max_installments (Fase 26,
+        // configuravel em /painel/configuracoes/pagamento), com taxa de cartao + antecipacao ja
+        // embutidas via CardPricing (a antecipacao pro cliente final nunca aparece separada).
         $installments = [];
         if ($totalPrice > 0) {
-            foreach (self::INSTALLMENT_OPTIONS as $n) {
+            for ($n = 1; $n <= CardPricing::maxInstallments(); $n++) {
                 $installments[] = [
                     'n' => $n,
                     'total' => CardPricing::chargeAmount($totalPrice, $n),

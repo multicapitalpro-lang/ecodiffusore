@@ -265,6 +265,7 @@ document.addEventListener('DOMContentLoaded', function () {
         bindAjaxForms(document);
         bindPropostaFacil(document);
         bindUserRoleFields(document);
+        bindChargeForms(document);
 
         // Criacao/edicao de usuario/pedido num modal: carrega o form via fetch (fragmento sem
         // layout) em vez de navegar pra outra pagina -- reaproveitado por Usuarios e Pedidos,
@@ -296,11 +297,30 @@ document.addEventListener('DOMContentLoaded', function () {
                     bindItemsTable(content);
                     bindPropostaFacil(content);
                     bindUserRoleFields(content);
+                    bindChargeForms(content);
                 })
                 .catch(function () {
                     var body = content.querySelector('.modal-body');
                     if (body) body.innerHTML = '<p class="form-msg form-msg-erro">Erro ao carregar. Tente novamente.</p>';
                 });
+        }
+
+        // Form de "Gerar cobranca" (Pedido/Orcamento): so mostra o seletor de parcelas quando o
+        // meio escolhido e' Cartao de credito -- Pix/Boleto sao sempre a vista, sem parcela.
+        // Bindavel pelo mesmo motivo das outras (form carrega via fetch no modal de detalhe).
+        function bindChargeForms(root) {
+            root.querySelectorAll('.charge-form').forEach(function (form) {
+                var billingSelect = form.querySelector('.charge-billing-type');
+                var installmentsSelect = form.querySelector('.charge-installments');
+                if (!billingSelect || !installmentsSelect) return;
+
+                function update() {
+                    installmentsSelect.style.display = billingSelect.value === 'CREDIT_CARD' ? '' : 'none';
+                }
+
+                billingSelect.addEventListener('change', update);
+                update();
+            });
         }
 
         // Form de usuario: mostra "Supervisor responsavel" so pra Licenciado e "Como pagar este
