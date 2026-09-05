@@ -467,8 +467,15 @@ tr.report-row-bold td { font-weight: 700; }
 body.modal-open { overflow: hidden; }
 dialog.modal {
     border: none; border-radius: 16px; padding: 0; width: min(640px, 92vw); max-height: 88vh;
-    box-shadow: 0 20px 60px rgba(13,27,61,.25); overflow: hidden; display: flex; flex-direction: column;
+    box-shadow: 0 20px 60px rgba(13,27,61,.25); overflow: hidden;
 }
+/* display:flex precisa ficar preso a [open] -- um <dialog> sem o atributo "open" ja e escondido
+   pelo stylesheet nativo do navegador (dialog:not([open]){display:none}), mas uma regra de autor
+   tipo "dialog.modal{display:flex}" (sem o [open]) TEM PRIORIDADE sobre esse escondimento nativo
+   mesmo com dialog ainda fechado -- foi exatamente esse bug: todo <dialog class="modal"> da pagina
+   (inclusive o vazio da Proposta Facil, presente em toda pagina via o layout) ficava visivel,
+   empilhado no fim do conteudo, mesmo sem showModal() ter sido chamado. */
+dialog.modal[open] { display: flex; flex-direction: column; }
 dialog.modal::backdrop { background: rgba(13,27,61,.5); }
 /* Modais carregados via fetch (openFragmentModal) tem uma div "envelope" sem classe (so id) entre
    o <dialog> e o .modal-header/.modal-body reais, pra poder trocar o innerHTML todo de uma vez.
@@ -504,8 +511,9 @@ dialog.modal > div:not([class]) { display: contents; }
 dialog.modal-drawer {
     border: none; padding: 0; margin: 0 0 0 auto; inset: 0 0 0 auto;
     width: min(460px, 94vw); height: 100dvh; max-height: 100dvh; border-radius: 0;
-    box-shadow: -12px 0 40px rgba(13,27,61,.2); overflow: hidden; display: flex; flex-direction: column;
+    box-shadow: -12px 0 40px rgba(13,27,61,.2); overflow: hidden;
 }
+dialog.modal-drawer[open] { display: flex; flex-direction: column; }
 dialog.modal-drawer::backdrop { background: rgba(13,27,61,.45); }
 dialog.modal-drawer .modal-header { border-radius: 0; }
 dialog.modal-drawer .modal-body { flex: 1; min-height: 0; padding-bottom: 90px; }
