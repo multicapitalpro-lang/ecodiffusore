@@ -61,9 +61,17 @@ use App\Core\View;
                     <select name="product_id[]" class="item-product" required>
                         <option value="">Selecione...</option>
                         <?php foreach ($products as $p): ?>
-                            <option value="<?= (int) $p['id'] ?>" data-price="<?= (float) $p['price_cash'] ?>"
-                                <?= (int) ($item['product_id'] ?? 0) === (int) $p['id'] ? 'selected' : '' ?>>
-                                <?= View::e($p['name']) ?>
+                            <?php
+                            $isThisProduct = (int) ($item['product_id'] ?? 0) === (int) $p['id'];
+                            $unitPrice = (float) ($item['unit_price'] ?? 0);
+                            $selectedBaixo = $isThisProduct && abs($unitPrice - (float) $p['price_cash']) < 0.01;
+                            $selectedAlto = $isThisProduct && abs($unitPrice - (float) $p['price_high']) < 0.01;
+                            ?>
+                            <option value="<?= (int) $p['id'] ?>" data-price="<?= (float) $p['price_cash'] ?>" <?= $selectedBaixo ? 'selected' : '' ?>>
+                                <?= View::e($p['name']) ?> — R$ <?= number_format((float) $p['price_cash'], 2, ',', '.') ?> (padrão)
+                            </option>
+                            <option value="<?= (int) $p['id'] ?>" data-price="<?= (float) $p['price_high'] ?>" <?= $selectedAlto ? 'selected' : '' ?>>
+                                <?= View::e($p['name']) ?> — R$ <?= number_format((float) $p['price_high'], 2, ',', '.') ?> (máximo)
                             </option>
                         <?php endforeach; ?>
                     </select>

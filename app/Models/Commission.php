@@ -10,10 +10,18 @@ class Commission
      * Duas cascatas independentes disparam a partir do mesmo Licenciado:
      *
      * 1) Pool regional: o Licenciado (dono da regiao) recebe um % fixo contratual sobre o total
-     *    do pedido -- isso forma o "pool". A partir do pool, Gestor e Vendedor recebem o % que o
-     *    proprio Licenciado configurou pra cada um (commission_pct deles = % do pool, nao % do
-     *    pedido). O que sobra do pool fica com o Licenciado. Sem % contratual definido, nao ha
-     *    pool e ninguem desse nivel recebe.
+     *    do pedido -- isso forma o "pool". A partir do pool, Gestor recebe o % que o proprio
+     *    Licenciado configurou (commission_pct dele = % do pool, nao % do pedido). Vendedor tem
+     *    DOIS esquemas possiveis, escolhidos pelo Licenciado no cadastro (Fase 23):
+     *      a) Tabela por faixa de preco (commission_type + commission_value_baixo/alto): sai
+     *         direto do valor da venda -- % da venda ou R$ fixo por unidade, dependendo da faixa
+     *         de preco de cada item (produtos.price_cash "padrao" ou price_high "maximo"). Ver
+     *         vendorTierAmount(). Vem DO POOL (subtrai de $distribuido igual aos outros).
+     *      b) Sem commission_type configurado, ou preco do item nao bate com nenhuma faixa
+     *         oficial (venda antiga/preco manual): cai no esquema antigo, commission_pct do
+     *         Vendedor = % do pool, igual Gestor.
+     *    O que sobra do pool fica com o Licenciado. Sem % contratual definido, nao ha pool e
+     *    ninguem desse nivel recebe.
      *
      * 2) Comissao nacional: se o Licenciado tiver um Supervisor atribuido (supervisor_id, definido
      *    pelo Gerente em /painel/licenciados), Supervisor e Gerente recebem um % do TOTAL do
@@ -43,6 +51,15 @@ class Commission
 
             foreach ($chain as $p) {
                 if ((int) $p['id'] === (int) $licenciado['id']) {
+                    continue;
+                }
+
+                $tierAmount = (int) $p['id'] === $sellerId ? self::vendorTierAmount($p, $orderId) : null;
+
+                if ($tierAmount !== null) {
+                    $effectivePct = $orderTotal > 0 ? round($tierAmount / $orderTotal * 100, 2) : 0.0;
+                    $distribuido += $tierAmount;
+                    self::insertRow($orderId, $sellerId, (int) $p['id'], $p['role_slug'], $effectivePct, $tierAmount);
                     continue;
                 }
 
@@ -80,6 +97,46 @@ class Commission
                 }
             }
         }
+    }
+
+    /**
+     * Comissao do Vendedor pela tabela de faixa de preco (Fase 23) -- null se o Vendedor nao tem
+     * commission_type configurado (ainda no esquema antigo de % do pool) OU se NENHUM item do
+     * pedido bate com uma das duas faixas oficiais do produto (price_cash "padrao"/price_high
+     * "maximo"), ex: venda antiga com preco manual diferente. Nesse caso o chamador cai de volta
+     * pro % do pool, igual Gestor. Soma por item (normalmente 1 item, mas cobre pedido com
+     * varios produtos/faixas misturadas).
+     */
+    private static function vendorTierAmount(array $vendedor, int $orderId): ?float
+    {
+        if (empty($vendedor['commission_type'])) {
+            return null;
+        }
+
+        $matchedAny = false;
+        $total = 0.0;
+
+        foreach (OrderItem::forOrder($orderId) as $item) {
+            $unitPrice = (float) $item['unit_price'];
+            $isAlto = abs($unitPrice - (float) $item['price_high']) < 0.01;
+            $isBaixo = !$isAlto && abs($unitPrice - (float) $item['price_cash']) < 0.01;
+
+            if (!$isAlto && !$isBaixo) {
+                continue;
+            }
+
+            $matchedAny = true;
+            $tierValue = $isAlto ? $vendedor['commission_value_alto'] : $vendedor['commission_value_baixo'];
+            if ($tierValue === null) {
+                continue;
+            }
+
+            $total += $vendedor['commission_type'] === 'percentual'
+                ? round($unitPrice * (float) $item['quantity'] * (float) $tierValue / 100, 2)
+                : round((float) $tierValue * (float) $item['quantity'], 2);
+        }
+
+        return $matchedAny ? round($total, 2) : null;
     }
 
     /**

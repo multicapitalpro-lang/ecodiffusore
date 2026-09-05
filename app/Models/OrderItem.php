@@ -9,7 +9,7 @@ class OrderItem
     public static function forOrder(int $orderId): array
     {
         $stmt = Database::connection()->prepare(
-            'SELECT oi.*, p.name AS product_name
+            'SELECT oi.*, p.name AS product_name, p.price_cash, p.price_high
              FROM order_items oi JOIN products p ON p.id = oi.product_id
              WHERE oi.order_id = :order_id'
         );

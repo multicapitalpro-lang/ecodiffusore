@@ -14,7 +14,7 @@ $economyLine = $hasPayback
 $message = "Olá, {$result['name']}! Segue a proposta do Ecodiffusore que preparei pra você.\n"
     . "Veículo: {$result['brand']}" . ($result['model'] ? " {$result['model']}" : '') . ", {$result['year']}.\n"
     . ($result['product_name'] ? 'Produto: ' . $result['product_name'] . "\n" : '')
-    . ($result['product_price'] ? 'Investimento: ' . ($result['product_is_exact_match'] ? '' : 'a partir de ') . 'R$ ' . number_format((float) $result['product_price'], 2, ',', '.') . "\n" : '')
+    . ($result['product_price'] ? 'Investimento: R$ ' . number_format((float) $result['product_price'], 2, ',', '.') . "\n" : '')
     . $economyLine . "\n"
     . 'Qualquer dúvida, me chama por aqui — ' . $result['seller_name'];
 ?>
@@ -64,11 +64,10 @@ $message = "Olá, {$result['name']}! Segue a proposta do Ecodiffusore que prepar
 <?php if ($result['product_price']): ?>
     <h3>Investimento</h3>
     <p style="font-size:1.1rem;">
-        <?= $result['product_is_exact_match'] ? '' : 'A partir de ' ?>
         <strong style="font-size:1.3rem;color:var(--green-dark);">R$ <?= number_format((float) $result['product_price'], 2, ',', '.') ?></strong>
         <?= $result['product_name'] ? '— ' . View::e($result['product_name']) : '' ?>
+        <span class="tag-default"><?= $result['price_tier'] === 'alto' ? 'MÁXIMO' : 'PADRÃO' ?></span>
     </p>
-    <p class="hint-text">Preço padrão do produto — em breve será ajustado pra um valor único de tabela.</p>
 
     <h3>Formas de pagamento</h3>
     <p>Pix ou cartão à vista pelo preço acima. Parcelado no cartão:</p>

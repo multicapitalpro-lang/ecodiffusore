@@ -43,6 +43,7 @@ class PropostaController
             'user' => $user,
             'isModal' => $isFragment,
             'isViewOnly' => in_array($user['role_slug'], Roles::NATIONAL_SUPPORT, true),
+            'priceRange' => Product::priceRange(),
         ], $isFragment ? null : 'painel');
     }
 
@@ -81,9 +82,10 @@ class PropostaController
         $kmMensal = self::parseBrNumber($_POST['km_mensal']);
         $kmLitro = self::parseBrNumber($_POST['km_litro']);
         $precoDiesel = self::parseBrNumber($_POST['preco_diesel']);
+        $priceTier = $_POST['price_tier'] === 'alto' ? 'alto' : 'baixo';
 
         $product = Product::findByBrandKeyword($brand) ?? Product::cheapest();
-        $productPrice = (float) ($product['price_cash'] ?? 0);
+        $productPrice = (float) ($product[$priceTier === 'alto' ? 'price_high' : 'price_cash'] ?? 0);
         $payback = EconomyCalculator::estimate($kmMensal, $kmLitro, $precoDiesel, $productPrice);
 
         $installments = [];
@@ -163,7 +165,7 @@ class PropostaController
             'preco_diesel' => $precoDiesel,
             'product_name' => $product['name'] ?? null,
             'product_price' => $productPrice ?: null,
-            'product_is_exact_match' => $product && stripos($product['name'], $brand) !== false,
+            'price_tier' => $priceTier,
             'payback' => $payback,
             'installments' => $installments,
         ];
@@ -256,6 +258,9 @@ class PropostaController
 
         if (!in_array($post['has_arla'] ?? '', ['sim', 'nao'], true)) {
             $errors['has_arla'] = 'Selecione uma opção.';
+        }
+        if (!in_array($post['price_tier'] ?? '', ['baixo', 'alto'], true)) {
+            $errors['price_tier'] = 'Selecione o preço da venda.';
         }
         if (self::parseBrNumber($post['km_mensal'] ?? '') <= 0) {
             $errors['km_mensal'] = 'Informe um valor válido.';

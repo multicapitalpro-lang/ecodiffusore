@@ -44,16 +44,31 @@ class Product
         return $product ?: null;
     }
 
+    /** Faixa de preco padrao/maximo entre os produtos ativos -- usado pra rotular os campos de
+     *  comissao por faixa no cadastro de Vendedor (ver UserController) sem hardcode dos valores. */
+    public static function priceRange(): array
+    {
+        $row = Database::connection()->query(
+            'SELECT MIN(price_cash) AS low, MAX(price_high) AS high FROM products WHERE active = 1'
+        )->fetch();
+
+        return [
+            'low' => (float) ($row['low'] ?? 0),
+            'high' => (float) ($row['high'] ?? 0),
+        ];
+    }
+
     public static function create(array $data): int
     {
         $stmt = Database::connection()->prepare(
-            'INSERT INTO products (sku, name, price_cash, price_installment, cost_price, active)
-             VALUES (:sku, :name, :price_cash, :price_installment, :cost_price, :active)'
+            'INSERT INTO products (sku, name, price_cash, price_high, price_installment, cost_price, active)
+             VALUES (:sku, :name, :price_cash, :price_high, :price_installment, :cost_price, :active)'
         );
         $stmt->execute([
             'sku' => $data['sku'],
             'name' => $data['name'],
             'price_cash' => $data['price_cash'],
+            'price_high' => $data['price_high'],
             'price_installment' => $data['price_installment'],
             'cost_price' => $data['cost_price'] ?: 0,
             'active' => !empty($data['active']) ? 1 : 0,
@@ -65,7 +80,7 @@ class Product
     public static function update(int $id, array $data): void
     {
         $stmt = Database::connection()->prepare(
-            'UPDATE products SET sku = :sku, name = :name, price_cash = :price_cash,
+            'UPDATE products SET sku = :sku, name = :name, price_cash = :price_cash, price_high = :price_high,
                 price_installment = :price_installment, cost_price = :cost_price, active = :active
              WHERE id = :id'
         );
@@ -74,6 +89,7 @@ class Product
             'sku' => $data['sku'],
             'name' => $data['name'],
             'price_cash' => $data['price_cash'],
+            'price_high' => $data['price_high'],
             'price_installment' => $data['price_installment'],
             'cost_price' => $data['cost_price'] ?: 0,
             'active' => !empty($data['active']) ? 1 : 0,

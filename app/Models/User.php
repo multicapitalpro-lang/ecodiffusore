@@ -235,8 +235,10 @@ class User
         $emailVerified = array_key_exists('email_verified', $data) ? !empty($data['email_verified']) : true;
 
         $stmt = Database::connection()->prepare(
-            'INSERT INTO users (role_id, manager_id, name, email, whatsapp, city, state, password_hash, status, commission_pct, must_change_password, email_verified_at, licenciado_onboarding_status)
-             VALUES (:role_id, :manager_id, :name, :email, :whatsapp, :city, :state, :password_hash, :status, :commission_pct, :must_change_password, :email_verified_at, :licenciado_onboarding_status)'
+            'INSERT INTO users (role_id, manager_id, name, email, whatsapp, city, state, password_hash, status, commission_pct,
+                commission_type, commission_value_baixo, commission_value_alto, must_change_password, email_verified_at, licenciado_onboarding_status)
+             VALUES (:role_id, :manager_id, :name, :email, :whatsapp, :city, :state, :password_hash, :status, :commission_pct,
+                :commission_type, :commission_value_baixo, :commission_value_alto, :must_change_password, :email_verified_at, :licenciado_onboarding_status)'
         );
         $stmt->execute([
             'role_id' => $data['role_id'],
@@ -249,6 +251,9 @@ class User
             'password_hash' => password_hash($data['password'], PASSWORD_DEFAULT),
             'status' => $data['status'] ?? 'active',
             'commission_pct' => $data['commission_pct'] ?? null,
+            'commission_type' => $data['commission_type'] ?? null,
+            'commission_value_baixo' => $data['commission_value_baixo'] ?? null,
+            'commission_value_alto' => $data['commission_value_alto'] ?? null,
             'must_change_password' => !empty($data['must_change_password']) ? 1 : 0,
             'email_verified_at' => $emailVerified ? date('Y-m-d H:i:s') : null,
             'licenciado_onboarding_status' => $data['licenciado_onboarding_status'] ?? 'nao_aplicavel',
@@ -299,6 +304,7 @@ class User
         $stmt = Database::connection()->prepare(
             'UPDATE users SET role_id = :role_id, manager_id = :manager_id, name = :name, email = :email,
                 whatsapp = :whatsapp, city = :city, state = :state, status = :status, commission_pct = :commission_pct,
+                commission_type = :commission_type, commission_value_baixo = :commission_value_baixo, commission_value_alto = :commission_value_alto,
                 discount_limit_pct = :discount_limit_pct WHERE id = :id'
         );
         $stmt->execute([
@@ -311,6 +317,9 @@ class User
             'city' => ($data['city'] ?? '') ?: null,
             'state' => ($data['state'] ?? '') ?: null,
             'commission_pct' => $data['commission_pct'] ?? null,
+            'commission_type' => $data['commission_type'] ?? null,
+            'commission_value_baixo' => $data['commission_value_baixo'] ?? null,
+            'commission_value_alto' => $data['commission_value_alto'] ?? null,
             'discount_limit_pct' => $data['discount_limit_pct'] ?? null,
             'status' => $data['status'],
         ]);

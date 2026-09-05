@@ -51,9 +51,9 @@ $hasPayback = $payback && $payback['tiers']['avg']['monthly'] > 0;
 <?php if (!empty($result['product_price'])): ?>
 <h2>Investimento estimado</h2>
 <div class="price-box">
-    <?= $result['product_is_exact_match'] ? '' : 'A partir de ' ?>
     <strong>R$ <?= number_format((float) $result['product_price'], 2, ',', '.') ?></strong>
-    <?= $result['product_name'] ? '— ' . htmlspecialchars($result['product_name'], ENT_QUOTES, 'UTF-8') : '' ?><br>
+    <?= $result['product_name'] ? '— ' . htmlspecialchars($result['product_name'], ENT_QUOTES, 'UTF-8') : '' ?>
+    (<?= ($result['price_tier'] ?? 'baixo') === 'alto' ? 'preço máximo' : 'preço padrão' ?>)<br>
     À vista (Pix ou cartão) ou parcelado — ver tabela abaixo.
 </div>
 

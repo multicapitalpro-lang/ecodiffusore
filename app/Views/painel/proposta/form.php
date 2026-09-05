@@ -116,6 +116,15 @@ $isViewOnly = $isViewOnly ?? false;
             <input type="text" id="preco_diesel" name="preco_diesel" placeholder="Ex: 6,10" required>
             <p class="field-error" data-error-for="preco_diesel"></p>
 
+            <h3>Preço da venda</h3>
+            <label class="checkbox-label">
+                <input type="radio" name="price_tier" value="baixo" checked> Padrão — R$ <?= number_format($priceRange['low'] ?? 0, 2, ',', '.') ?>
+            </label>
+            <label class="checkbox-label">
+                <input type="radio" name="price_tier" value="alto"> Máximo — R$ <?= number_format($priceRange['high'] ?? 0, 2, ',', '.') ?>
+            </label>
+            <p class="field-error" data-error-for="price_tier"></p>
+
             <button type="submit" class="btn btn-primary">Gerar proposta</button>
         </form>
     </div>

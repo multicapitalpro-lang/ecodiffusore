@@ -86,7 +86,33 @@ $values = $editing ?? ($old ?? []);
         <label for="commission_pct">Comissão desta pessoa (%)</label>
         <input type="number" id="commission_pct" name="commission_pct" step="0.01" min="0" max="100"
                value="<?= View::e((string) ($values['commission_pct'] ?? '')) ?>" placeholder="Ex: 15.00">
-        <p class="hint-text">Para licenciado: % fixo contratual sobre o total do pedido (define o "pool" da região). Para gestor/vendedor: % do pool do licenciado que será repassado a esta pessoa. Para gerente/supervisor: % do total do pedido pago direto pela Ecodiffusore (não sai do pool de ninguém).</p>
+        <p class="hint-text">Para licenciado: % fixo contratual sobre o total do pedido (define o "pool" da região). Para gestor: % do pool do licenciado que será repassado a esta pessoa. Para gerente/supervisor: % do total do pedido pago direto pela Ecodiffusore (não sai do pool de ninguém). Para vendedor: usado só se a venda não bater com nenhum dos preços oficiais abaixo.</p>
+
+        <div id="vendedor-commission-wrap" style="display:none;">
+            <label>Como pagar este Vendedor por venda?</label>
+            <label class="checkbox-label">
+                <input type="radio" name="commission_type" value="percentual" <?= ($values['commission_type'] ?? 'percentual') === 'percentual' ? 'checked' : '' ?>> % da venda
+            </label>
+            <label class="checkbox-label">
+                <input type="radio" name="commission_type" value="fixo" <?= ($values['commission_type'] ?? '') === 'fixo' ? 'checked' : '' ?>> Valor fixo (R$)
+            </label>
+
+            <div class="form-grid-2">
+                <div>
+                    <label for="commission_value_baixo">Ao vender por R$ <?= number_format($priceRange['low'] ?? 0, 2, ',', '.') ?> (padrão)</label>
+                    <input type="number" id="commission_value_baixo" name="commission_value_baixo" step="0.01" min="0"
+                           value="<?= View::e((string) ($values['commission_value_baixo'] ?? '')) ?>">
+                    <p class="field-error" data-error-for="commission_value_baixo"><?= View::e($errors['commission_value_baixo'] ?? '') ?></p>
+                </div>
+                <div>
+                    <label for="commission_value_alto">Ao vender por R$ <?= number_format($priceRange['high'] ?? 0, 2, ',', '.') ?> (máximo)</label>
+                    <input type="number" id="commission_value_alto" name="commission_value_alto" step="0.01" min="0"
+                           value="<?= View::e((string) ($values['commission_value_alto'] ?? '')) ?>">
+                    <p class="field-error" data-error-for="commission_value_alto"><?= View::e($errors['commission_value_alto'] ?? '') ?></p>
+                </div>
+            </div>
+            <p class="hint-text">Esse valor sai do pool que você (Licenciado) recebe da Ecodiffusore — não é um custo adicional.</p>
+        </div>
     <?php endif; ?>
 
     <label for="discount_limit_pct">Limite de desconto sem aprovação (%)</label>
@@ -123,18 +149,3 @@ $values = $editing ?? ($old ?? []);
     </div>
 </form>
 <?php if ($isModal): ?></div><?php endif; ?>
-
-<?php if (!empty($supervisors)): ?>
-<script>
-(function () {
-    var roleSelect = document.getElementById('role_id');
-    var wrap = document.getElementById('supervisor-field-wrap');
-    function update() {
-        var opt = roleSelect.options[roleSelect.selectedIndex];
-        wrap.style.display = (opt && opt.dataset.slug === 'licenciado') ? '' : 'none';
-    }
-    roleSelect.addEventListener('change', update);
-    update();
-})();
-</script>
-<?php endif; ?>

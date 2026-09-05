@@ -233,6 +233,7 @@ document.addEventListener('DOMContentLoaded', function () {
         bindFileDrop(document);
         bindAjaxForms(document);
         bindPropostaFacil(document);
+        bindUserRoleFields(document);
 
         // Criacao/edicao de usuario/pedido num modal: carrega o form via fetch (fragmento sem
         // layout) em vez de navegar pra outra pagina -- reaproveitado por Usuarios e Pedidos,
@@ -263,11 +264,34 @@ document.addEventListener('DOMContentLoaded', function () {
                     bindFileDrop(content);
                     bindItemsTable(content);
                     bindPropostaFacil(content);
+                    bindUserRoleFields(content);
                 })
                 .catch(function () {
                     var body = content.querySelector('.modal-body');
                     if (body) body.innerHTML = '<p class="form-msg form-msg-erro">Erro ao carregar. Tente novamente.</p>';
                 });
+        }
+
+        // Form de usuario: mostra "Supervisor responsavel" so pra Licenciado e "Como pagar este
+        // Vendedor" so pra Vendedor, conforme o papel escolhido no <select>. Bindavel (nao <script>
+        // inline na view) pelo mesmo motivo de bindPropostaFacil acima -- innerHTML nao executa
+        // <script>, e este form e carregado via fetch no modal de Novo/Editar usuario.
+        function bindUserRoleFields(root) {
+            var roleSelect = root.querySelector('#role_id');
+            if (!roleSelect) return;
+
+            var supervisorWrap = root.querySelector('#supervisor-field-wrap');
+            var vendedorWrap = root.querySelector('#vendedor-commission-wrap');
+
+            function update() {
+                var opt = roleSelect.options[roleSelect.selectedIndex];
+                var slug = opt ? opt.dataset.slug : null;
+                if (supervisorWrap) supervisorWrap.style.display = slug === 'licenciado' ? '' : 'none';
+                if (vendedorWrap) vendedorWrap.style.display = slug === 'vendedor' ? '' : 'none';
+            }
+
+            roleSelect.addEventListener('change', update);
+            update();
         }
 
         // Proposta Facil: popup do comprador -> formulario do veiculo -> resultado, tudo dentro do
