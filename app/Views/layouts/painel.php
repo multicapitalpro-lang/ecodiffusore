@@ -109,7 +109,7 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/metas'])
                             <a href="/painel/financeiro/remessas" class="<?= $isActive('/painel/financeiro/remessas') ? 'is-active' : '' ?>">Remessa e Retorno</a>
                         <?php endif; ?>
                         <a href="/painel/financeiro/comissoes" class="<?= $isActive('/painel/financeiro/comissoes') ? 'is-active' : '' ?>">Comissões</a>
-                        <?php if (in_array($role, $managerRoles, true)): ?>
+                        <?php if (in_array($role, array_merge($managerRoles, ['gerente']), true)): ?>
                             <a href="/painel/financeiro/relatorios" class="<?= $isActive('/painel/financeiro/relatorios') ? 'is-active' : '' ?>">Relatórios</a>
                         <?php endif; ?>
                         <?php if (in_array($role, ['admin', 'gerente'], true)): ?>

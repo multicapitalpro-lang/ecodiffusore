@@ -17,20 +17,27 @@ class ReportController
 {
     private const ALLOWED_ROLES = Roles::MANAGEMENT;
 
-    /** Fiscal/Antecipacoes sao dado nacional sensivel (nao so da regiao de um Licenciado) --
-     *  fica de fora do catalogo e bloqueado por tipo mesmo pra quem tem acesso ao resto de
-     *  Relatorios (Gestor/Licenciado). */
+    /** Fiscal/Antecipacoes sao dado nacional sensivel (nao da regiao de um Licenciado) -- so
+     *  admin/gerente veem esse grupo. Gerente e' um papel de suporte nacional sem pool proprio
+     *  (Roles::NATIONAL_SUPPORT), entao NAO teria acesso nenhum a Relatorios pelo gate normal
+     *  (Roles::MANAGEMENT); index/show/pdf abrem uma excecao so pra esse grupo, restringindo
+     *  gerente a EXATAMENTE esses dois tipos -- nunca aos relatorios regionais/de pool
+     *  (Caixas, Contas, Comissoes) que ficam com Gestor/Licenciado/Admin de sempre. */
     private const NATIONAL_ONLY_TYPES = ['impostos', 'antecipacoes'];
     private const NATIONAL_ONLY_ROLES = ['admin', 'gerente'];
+    private const NATIONAL_ONLY_GROUP = 'Fiscal e Antecipações';
 
     public function index(): void
     {
-        Auth::requireRole(self::ALLOWED_ROLES);
+        Auth::requireRole([...self::ALLOWED_ROLES, ...self::NATIONAL_ONLY_ROLES]);
         $user = Auth::user();
 
         $catalog = FinancialReports::catalog();
         if (!in_array($user['role_slug'], self::NATIONAL_ONLY_ROLES, true)) {
-            unset($catalog['Fiscal e Antecipações']);
+            unset($catalog[self::NATIONAL_ONLY_GROUP]);
+        } elseif (!in_array($user['role_slug'], self::ALLOWED_ROLES, true)) {
+            // gerente (fora de Roles::MANAGEMENT): so enxerga o grupo nacional, resto e regional/pool
+            $catalog = array_intersect_key($catalog, [self::NATIONAL_ONLY_GROUP => true]);
         }
 
         View::render('painel/reports/index', [
@@ -41,7 +48,7 @@ class ReportController
 
     public function show(string $type): void
     {
-        Auth::requireRole(self::ALLOWED_ROLES);
+        Auth::requireRole([...self::ALLOWED_ROLES, ...self::NATIONAL_ONLY_ROLES]);
         $this->assertTypeAllowed($type, Auth::user());
 
         [$from, $to] = DateRange::fromRequest();
@@ -58,7 +65,7 @@ class ReportController
 
     public function pdf(string $type): void
     {
-        Auth::requireRole(self::ALLOWED_ROLES);
+        Auth::requireRole([...self::ALLOWED_ROLES, ...self::NATIONAL_ONLY_ROLES]);
         $this->assertTypeAllowed($type, Auth::user());
 
         [$from, $to] = DateRange::fromRequest();
@@ -75,11 +82,25 @@ class ReportController
 
     private function assertTypeAllowed(string $type, array $user): void
     {
-        if (in_array($type, self::NATIONAL_ONLY_TYPES, true) && !in_array($user['role_slug'], self::NATIONAL_ONLY_ROLES, true)) {
-            http_response_code(403);
-            require BASE_PATH . '/app/Views/errors/403.php';
-            exit;
+        $isNationalType = in_array($type, self::NATIONAL_ONLY_TYPES, true);
+        $isNationalRole = in_array($user['role_slug'], self::NATIONAL_ONLY_ROLES, true);
+
+        // Dado nacional sensivel, so admin/gerente.
+        if ($isNationalType && !$isNationalRole) {
+            $this->deny();
         }
+        // Gerente fica restrito aos relatorios nacionais -- nao acessa Caixas/Contas/Comissoes
+        // (regional/pool) so por ter ganhado essa excecao de acesso a Relatorios.
+        if ($user['role_slug'] === 'gerente' && !$isNationalType) {
+            $this->deny();
+        }
+    }
+
+    private function deny(): void
+    {
+        http_response_code(403);
+        require BASE_PATH . '/app/Views/errors/403.php';
+        exit;
     }
 
     public function schedules(): void
