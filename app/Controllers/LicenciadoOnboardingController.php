@@ -318,8 +318,15 @@ class LicenciadoOnboardingController
             exit('Arquivo não encontrado.');
         }
 
-        header('Content-Type: application/octet-stream');
-        header('Content-Disposition: inline; filename="' . $tipo . '-' . (int) $id . '"');
+        // O nome salvo (stored_name) ja tem a extensao real do arquivo enviado -- sem repassar
+        // ela pro download, o navegador salvava sem extensao e com Content-Type generico
+        // (application/octet-stream), entao o SO nao sabia com o que abrir (nem em outro app,
+        // pois o conteudo em si nunca teve o tipo declarado corretamente).
+        $extension = pathinfo($target[$field], PATHINFO_EXTENSION);
+        $mimeType = mime_content_type($path) ?: 'application/octet-stream';
+
+        header('Content-Type: ' . $mimeType);
+        header('Content-Disposition: inline; filename="' . $tipo . '-' . (int) $id . ($extension ? '.' . $extension : '') . '"');
         header('Content-Length: ' . filesize($path));
         readfile($path);
         exit;

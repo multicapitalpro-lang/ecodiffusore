@@ -363,8 +363,13 @@ class OrderController
             exit('Arquivo não encontrado.');
         }
 
-        header('Content-Type: application/octet-stream');
-        header('Content-Disposition: inline; filename="documento-veiculo-' . (int) $id . '"');
+        // Sem a extensao real e o Content-Type certo, o navegador salvava um arquivo generico
+        // que nao abria em nenhum programa (mesmo bug corrigido em LicenciadoOnboardingController).
+        $extension = pathinfo($order['vehicle_document_path'], PATHINFO_EXTENSION);
+        $mimeType = mime_content_type($path) ?: 'application/octet-stream';
+
+        header('Content-Type: ' . $mimeType);
+        header('Content-Disposition: inline; filename="documento-veiculo-' . (int) $id . ($extension ? '.' . $extension : '') . '"');
         header('Content-Length: ' . filesize($path));
         readfile($path);
         exit;
