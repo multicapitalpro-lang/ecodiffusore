@@ -155,6 +155,53 @@ a { text-decoration: none; color: inherit; }
     transition: background .15s ease;
 }
 .painel-logout:hover { background: rgba(255,255,255,.1); }
+
+/* Botao de destaque no header, so pro Vendedor/Licenciado -- "chamar atencao" pedido pelo usuario */
+.btn-proposta-facil {
+    background: var(--green); color: var(--navy); font-weight: 800; font-size: .84rem;
+    padding: 9px 18px; border-radius: 999px; white-space: nowrap;
+    box-shadow: 0 0 0 0 rgba(141,198,63,.5); animation: proposta-pulse 2.2s infinite;
+    transition: background .15s ease, transform .1s ease;
+}
+.btn-proposta-facil:hover { background: var(--green-dark); }
+.btn-proposta-facil:active { transform: translateY(1px); }
+@keyframes proposta-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(141,198,63,.55); }
+    70% { box-shadow: 0 0 0 8px rgba(141,198,63,0); }
+    100% { box-shadow: 0 0 0 0 rgba(141,198,63,0); }
+}
+
+/* Proposta Facil: cards de economia (min/avg/max) e comparativo parcela x economia */
+.proposta-tiers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 16px 0 20px; }
+.proposta-tier {
+    background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 18px;
+    text-align: center; position: relative; box-shadow: var(--shadow-sm);
+}
+.proposta-tier.is-avg { border-color: var(--green); box-shadow: var(--shadow-md); }
+.proposta-tier-badge {
+    position: absolute; top: -11px; left: 50%; transform: translateX(-50%);
+    background: var(--green); color: var(--navy); font-size: .68rem; font-weight: 800;
+    padding: 3px 10px; border-radius: 999px;
+}
+.proposta-tier-title { font-weight: 700; font-size: .85rem; color: var(--gray-text); display: block; margin-bottom: 6px; }
+.proposta-tier strong { font-size: 1.5rem; font-family: 'Poppins', sans-serif; color: var(--navy); display: block; }
+.proposta-tier small { display: block; color: var(--gray-text); font-size: .78rem; margin-top: 2px; }
+.proposta-payback {
+    background: #eef8f0; border: 1px solid var(--green); border-radius: 12px;
+    padding: 14px 18px; text-align: center; font-size: .95rem; margin-bottom: 20px;
+}
+.proposta-payback strong { color: var(--green-dark); }
+.proposta-installments-note {
+    background: #fff4dc; color: #7a5a10; border-radius: 8px; padding: 10px 14px;
+    font-size: .8rem; margin-bottom: 12px;
+}
+.proposta-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px; }
+.proposta-actions .btn { flex: 1; min-width: 220px; justify-content: center; }
+.btn-whatsapp { background: #25D366; color: #fff; }
+.btn-whatsapp:hover { background: #1ebe57; }
+@media (max-width: 720px) {
+    .proposta-tiers { grid-template-columns: 1fr; }
+}
 .painel-content { padding: 24px; flex: 1; }
 .painel-content > h1:first-child { font-size: 1.4rem; margin: 0 0 20px; }
 

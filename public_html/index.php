@@ -150,6 +150,12 @@ $router->post('/painel/orcamentos/{id}/status', [App\Controllers\QuoteController
 $router->post('/painel/orcamentos/{id}/converter', [App\Controllers\QuoteController::class, 'convert']);
 $router->post('/painel/orcamentos/{id}/cobranca', [App\Controllers\PaymentController::class, 'generateForQuote']);
 
+// Proposta Facil
+$router->get('/painel/proposta-facil', [App\Controllers\PropostaController::class, 'create']);
+$router->post('/painel/proposta-facil', [App\Controllers\PropostaController::class, 'store']);
+$router->get('/painel/proposta-facil/resultado', [App\Controllers\PropostaController::class, 'show']);
+$router->get('/painel/proposta-facil/pdf', [App\Controllers\PropostaController::class, 'pdf']);
+
 $router->get('/painel/auditoria', [App\Controllers\AuditController::class, 'index']);
 
 // Aprovacao de desconto

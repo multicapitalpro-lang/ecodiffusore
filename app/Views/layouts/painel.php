@@ -145,6 +145,9 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/metas'])
                 <span class="user-avatar"><?= View::e(mb_strtoupper(mb_substr($user['name'] ?? '?', 0, 1))) ?></span>
                 <span>Olá, <strong><?= View::e($user['name'] ?? '') ?></strong> — <?= View::e($roleLabels[$role] ?? $role) ?></span>
             </span>
+            <?php if (in_array($role, [Roles::SELLER, Roles::REGIONAL_OWNER], true)): ?>
+                <a href="/painel/proposta-facil" class="btn-proposta-facil">⚡ Proposta Fácil</a>
+            <?php endif; ?>
             <a class="painel-logout" href="/painel/logout">Sair</a>
         </header>
         <main class="painel-content">
