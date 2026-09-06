@@ -88,13 +88,13 @@ class DashboardController
             ];
             $data['grossMargin'] = $current['total_value'] - $cost;
             $data['costTotal'] = $cost;
-            $data['chartSvg'] = Chart::dailyLine(
+            $data['chartDailyJson'] = json_encode(Chart::dailySeriesData(
                 Order::dailySeries($from, $to, $sellerId, $sellerIds),
                 Order::dailySeries($prevFrom, $prevTo, $sellerId, $sellerIds),
                 $from,
                 $to,
                 $prevFrom
-            );
+            ), JSON_UNESCAPED_UNICODE);
             $data['topProducts'] = OrderItem::topProducts($from, $to, $sellerId, $sellerIds);
             $data['goals'] = array_map(
                 fn ($g) => $g + ['progress' => Goal::progress($g)],

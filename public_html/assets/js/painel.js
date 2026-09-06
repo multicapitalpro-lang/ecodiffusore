@@ -102,8 +102,101 @@ function bindItemsTable(root) {
     recalcAll();
 }
 
+function bindDashboardChart(root) {
+    var canvas = root.querySelector('#dashboard-daily-chart');
+    var dataScript = root.querySelector('#dashboard-daily-chart-data');
+    if (!canvas || !dataScript || canvas.dataset.chartBound || typeof Chart === 'undefined') return;
+    canvas.dataset.chartBound = '1';
+
+    var data;
+    try {
+        data = JSON.parse(dataScript.textContent);
+    } catch (e) {
+        return;
+    }
+
+    var ctx = canvas.getContext('2d');
+    var gradient = ctx.createLinearGradient(0, 0, 0, 320);
+    gradient.addColorStop(0, 'rgba(110, 166, 44, 0.24)');
+    gradient.addColorStop(1, 'rgba(110, 166, 44, 0)');
+
+    function fmtCurrency(v) {
+        return 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    new Chart(canvas, {
+        type: 'line',
+        data: {
+            labels: data.labels,
+            datasets: [
+                {
+                    label: 'Período atual',
+                    data: data.current,
+                    borderColor: '#6ea62c',
+                    backgroundColor: gradient,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 0,
+                    pointHoverRadius: 5,
+                    pointBackgroundColor: '#fff',
+                    pointBorderColor: '#6ea62c',
+                    pointBorderWidth: 2,
+                    borderWidth: 2.5
+                },
+                {
+                    label: 'Período anterior',
+                    data: data.previous,
+                    borderColor: '#c9cfdc',
+                    backgroundColor: 'transparent',
+                    borderDash: [4, 3],
+                    fill: false,
+                    tension: 0.4,
+                    pointRadius: 0,
+                    pointHoverRadius: 4,
+                    borderWidth: 1.75
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#2c2c2a',
+                    titleColor: '#f0efec',
+                    bodyColor: '#c3c2b7',
+                    padding: 10,
+                    cornerRadius: 6,
+                    callbacks: {
+                        label: function (item) {
+                            return item.dataset.label + ': ' + fmtCurrency(item.raw);
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: { grid: { display: false }, ticks: { color: '#8a93ab', font: { size: 11 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 8 } },
+                y: {
+                    beginAtZero: true,
+                    grid: { color: '#eef0f5' },
+                    ticks: {
+                        color: '#8a93ab',
+                        font: { size: 11 },
+                        callback: function (v) {
+                            return v >= 1000 ? 'R$ ' + (v / 1000).toFixed(1).replace('.0', '') + 'k' : 'R$ ' + v;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
 document.addEventListener('DOMContentLoaded', function () {
     bindItemsTable(document);
+    bindDashboardChart(document);
 });
 
 (function () {

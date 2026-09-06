@@ -368,9 +368,6 @@ a { text-decoration: none; color: inherit; }
 .dash-card small { font-size: .76rem; font-weight: 700; }
 
 .chart-box { background: #fff; border-radius: 14px; padding: 20px; box-shadow: var(--shadow-md); }
-/* aspect-ratio (em vez de altura fixa em px) escala com a largura do card -- numa tela larga o
-   grafico ganha mais altura junto, em vez de ficar "achatado" esticando so na horizontal. */
-.chart-svg-wrap { width: 100%; aspect-ratio: 960 / 300; max-height: 420px; }
 .chart-svg { width: 100%; height: 100%; display: block; }
 .chart-legend { margin: 10px 0 0; font-size: .78rem; color: var(--gray-text); display: flex; align-items: center; gap: 6px; }
 .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-left: 10px; }

@@ -180,6 +180,7 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/metas'])
     </dialog>
 <?php endif; ?>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="<?= View::asset('/assets/js/painel.js') ?>"></script>
 <script src="<?= View::asset('/assets/js/password-toggle.js') ?>"></script>
 </body>

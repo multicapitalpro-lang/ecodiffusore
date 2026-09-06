@@ -176,7 +176,10 @@ $hasMetrics = isset($metrics);
 
     <h3 class="section-title">Valor total de pedidos por dia</h3>
     <div class="chart-box">
-        <div class="chart-svg-wrap"><?= $chartSvg ?></div>
+        <div style="position:relative; width:100%; height:320px;">
+            <canvas id="dashboard-daily-chart" role="img" aria-label="Valor total de pedidos por dia, período atual comparado ao anterior">Gráfico de valor de pedidos por dia.</canvas>
+        </div>
+        <script id="dashboard-daily-chart-data" type="application/json"><?= $chartDailyJson ?></script>
         <p class="chart-legend"><span class="dot dot-current"></span> Período atual &nbsp; <span class="dot dot-previous"></span> Período anterior</p>
     </div>
 
