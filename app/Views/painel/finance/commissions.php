@@ -75,7 +75,7 @@ $presets = [
 </div>
 <?php endif; ?>
 
-<?php if (count($bySeller) > 1 || !$canManage): ?>
+<?php if (count($bySeller) > 1 || !$canManageAny): ?>
 <h3 class="section-title">Resumo por beneficiário</h3>
 <div class="table-scroll">
     <table class="data-table">
@@ -99,7 +99,7 @@ $presets = [
 <h3 class="section-title">Lançamentos</h3>
 <div class="table-scroll">
     <table class="data-table">
-        <thead><tr><th>Pedido</th><th>Beneficiário</th><th>Papel</th><th>Cliente</th><th>Data</th><th>%</th><th>Comissão</th><th>Situação</th><?php if ($canManage): ?><th></th><?php endif; ?></tr></thead>
+        <thead><tr><th>Pedido</th><th>Beneficiário</th><th>Papel</th><th>Cliente</th><th>Data</th><th>%</th><th>Comissão</th><th>Situação</th><?php if ($canManageAny): ?><th></th><?php endif; ?></tr></thead>
         <tbody>
             <?php foreach ($commissions as $c): ?>
                 <tr>
@@ -116,9 +116,9 @@ $presets = [
                     <td><?= number_format((float) $c['percentage'], 2, ',', '.') ?>%</td>
                     <td>R$ <?= number_format((float) $c['amount'], 2, ',', '.') ?></td>
                     <td><span class="status-badge status-<?= $c['status'] === 'pendente' ? 'contatado' : 'active' ?>"><?= $statusLabels[$c['status']] ?? $c['status'] ?></span></td>
-                    <?php if ($canManage): ?>
+                    <?php if ($canManageAny): ?>
                         <td>
-                            <?php if ($c['status'] === 'pendente'): ?>
+                            <?php if ($c['status'] === 'pendente' && $c['can_manage']): ?>
                                 <form action="/painel/financeiro/comissoes/<?= (int) $c['id'] ?>/baixar" method="post" class="inline-form">
                                     <?= Csrf::field() ?>
                                     <button type="submit" class="link-button">Dar baixa</button>
@@ -129,7 +129,7 @@ $presets = [
                 </tr>
             <?php endforeach; ?>
             <?php if (!$commissions): ?>
-                <tr><td colspan="<?= $canManage ? 9 : 8 ?>">Nenhuma comissão gerada nesse período.</td></tr>
+                <tr><td colspan="<?= $canManageAny ? 9 : 8 ?>">Nenhuma comissão gerada nesse período.</td></tr>
             <?php endif; ?>
         </tbody>
     </table>

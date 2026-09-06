@@ -515,14 +515,61 @@ class FinanceController
      */
     private function commissionFilters(array $user): array
     {
-        if (in_array($user['role_slug'], [Roles::SELLER, 'gerente', 'supervisor'], true)) {
+        if ($user['role_slug'] === Roles::SELLER) {
             return ['beneficiary_id' => $user['id']];
         }
         if (in_array($user['role_slug'], [Roles::REGIONAL_OWNER, 'gestor'], true)) {
             return ['beneficiary_ids' => User::downlineIds((int) $user['id'])];
         }
+        // Gerente/Supervisor: a propria comissao nacional (como sempre) + a comissao de cada
+        // Licenciado da rede que supervisionam -- precisam enxergar essas linhas pra poder dar
+        // baixa nelas (ver commissionManageScope()), nao so na propria.
+        if ($user['role_slug'] === 'gerente') {
+            $ids = array_merge([(int) $user['id']], $this->licenciadoIdsWithin(User::nationalIds((int) $user['id'])));
+            return ['beneficiary_ids' => array_values(array_unique($ids))];
+        }
+        if ($user['role_slug'] === 'supervisor') {
+            $ids = array_merge([(int) $user['id']], $this->licenciadoIdsWithin(User::supervisedIds((int) $user['id'])));
+            return ['beneficiary_ids' => array_values(array_unique($ids))];
+        }
 
         return [];
+    }
+
+    /**
+     * Quem cada papel pode de fato CONFIRMAR pagamento (dar baixa) -- diferente de
+     * commissionFilters() (o que cada um ENXERGA na lista). Duas regras de negocio pedidas pelo
+     * usuario: (1) Licenciado/Gestor pagam quem esta ABAIXO deles (Vendedor/Gestor), nunca a
+     * propria comissao -- quem paga eles e' quem esta acima (a empresa, via Gerente/Admin), entao
+     * autoconfirmar a propria comissao nao faz sentido; (2) Gerente/Supervisor (que antes eram
+     * so visualizacao) ganham a funcao de confirmar que a empresa pagou a comissao de cada
+     * Licenciado da rede que cuidam.
+     * @return int[] ids de beneficiario que esse usuario pode marcar como pago
+     */
+    private function commissionManageScope(array $user): array
+    {
+        $role = $user['role_slug'];
+
+        if ($role === 'admin') {
+            return array_map(fn ($u) => (int) $u['id'], User::all());
+        }
+        if ($role === 'gerente') {
+            return $this->licenciadoIdsWithin(User::nationalIds((int) $user['id']));
+        }
+        if ($role === 'supervisor') {
+            return $this->licenciadoIdsWithin(User::supervisedIds((int) $user['id']));
+        }
+        if (in_array($role, [Roles::REGIONAL_OWNER, 'gestor'], true)) {
+            return array_values(array_diff(User::downlineIds((int) $user['id']), [(int) $user['id']]));
+        }
+
+        return [];
+    }
+
+    /** @param int[] $ids @return int[] so os que sao Licenciado */
+    private function licenciadoIdsWithin(array $ids): array
+    {
+        return array_values(array_filter($ids, fn ($id) => (User::find($id)['role_slug'] ?? null) === Roles::REGIONAL_OWNER));
     }
 
     /** Filtro de periodo (Hoje/Semana/Mes/Ano/personalizado) pra Comissoes -- sem filtro nenhum
@@ -549,10 +596,13 @@ class FinanceController
 
         $commissions = Commission::all($filters);
         $summary = ['total' => 0.0, 'pago' => 0.0, 'pendente' => 0.0, 'count' => count($commissions)];
-        foreach ($commissions as $c) {
+        $manageScope = $this->commissionManageScope($user);
+        foreach ($commissions as &$c) {
             $summary['total'] += (float) $c['amount'];
             $summary[$c['status']] += (float) $c['amount'];
+            $c['can_manage'] = in_array((int) $c['beneficiary_id'], $manageScope, true);
         }
+        unset($c);
 
         View::render('painel/finance/commissions', [
             'user' => $user,
@@ -561,7 +611,7 @@ class FinanceController
             'bySeller' => Commission::byBeneficiary($filters),
             'byRole' => Commission::byRole($filters),
             'period' => $period,
-            'canManage' => in_array($user['role_slug'], Roles::MANAGEMENT, true),
+            'canManageAny' => (bool) $manageScope,
         ]);
     }
 
@@ -596,7 +646,7 @@ class FinanceController
      */
     public function markCommissionPaid(string $id): void
     {
-        Auth::requireRole(Roles::MANAGEMENT);
+        Auth::requireRole(array_merge(Roles::MANAGEMENT, Roles::NATIONAL_SUPPORT));
         $user = Auth::user();
         $id = (int) $id;
 
@@ -606,14 +656,16 @@ class FinanceController
 
         $commission = Commission::find($id);
 
-        // Nao deixa dar baixa numa comissao de outra rede (Gestor/Licenciado so a propria).
-        $commissionScope = $this->commissionFilters($user);
-        if ($commission && !empty($commissionScope['beneficiary_ids'])
-            && !in_array((int) $commission['beneficiary_id'], $commissionScope['beneficiary_ids'], true)) {
+        // commissionManageScope() (nao commissionFilters()) -- quem pode CONFIRMAR pagamento e'
+        // mais restrito do que quem pode VER: exclui a propria comissao de Licenciado/Gestor
+        // (quem paga eles e' quem esta acima), inclui Gerente/Supervisor confirmando a comissao
+        // de Licenciado da rede deles (funcao nova que eles nao tinham antes).
+        $manageScope = $this->commissionManageScope($user);
+        if (!$commission || !in_array((int) $commission['beneficiary_id'], $manageScope, true)) {
             Router::redirect('/painel/financeiro/comissoes?erro=1');
         }
 
-        if ($commission && $commission['status'] === 'pendente') {
+        if ($commission['status'] === 'pendente') {
             $transactionId = null;
             $accountId = FinancialAccount::defaultAccountId();
             if ($accountId) {

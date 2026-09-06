@@ -67,10 +67,11 @@ class Notifier
             return;
         }
 
+        $vars = self::pedidoVars($order);
         [$subject, $title, $body] = self::eventBody(
             'pedido_registrado',
-            self::pedidoVars($order),
-            self::orderDetails($order),
+            $vars,
+            self::pedidoDetails($vars),
             self::BASE_URL . '/painel/pedidos/' . (int) $order['id']
         );
 
@@ -84,14 +85,45 @@ class Notifier
             return;
         }
 
+        $vars = self::pedidoVars($order);
         [$subject, $title, $body] = self::eventBody(
             'pedido_aprovado',
-            self::pedidoVars($order),
-            self::orderDetails($order),
+            $vars,
+            self::pedidoDetails($vars),
             self::BASE_URL . '/painel/pedidos/' . (int) $order['id']
         );
 
         self::sendToFullChain((int) $order['seller_id'], $subject, $title, $body);
+    }
+
+    private const PEDIDO_DETAIL_LABELS = [
+        'cliente' => 'Cliente',
+        'comprador_documento' => 'Documento',
+        'comprador_whatsapp' => 'WhatsApp',
+        'comprador_email' => 'E-mail',
+        'comprador_cidade' => 'Cidade',
+        'produto' => 'Produto',
+        'veiculo_tipo' => 'Veículo',
+        'veiculo_placa' => 'Placa',
+        'pagamento_forma' => 'Pagamento',
+        'pagamento_status' => 'Status do pagamento',
+        'valor' => 'Valor',
+        'vendedor' => 'Vendedor',
+        'licenciado' => 'Licenciado',
+    ];
+
+    /** Tabela de detalhes dos e-mails de Pedido -- pedido explicito do usuario de ter produto/
+     *  veiculo/comprador/pagamento/licenciado visiveis, nao so Cliente/Valor. Pula campo que veio
+     *  "—" (sem dado) pra nao poluir o e-mail com linha vazia. */
+    private static function pedidoDetails(array $vars): string
+    {
+        $pairs = [];
+        foreach (self::PEDIDO_DETAIL_LABELS as $key => $label) {
+            if (!empty($vars[$key]) && $vars[$key] !== '—') {
+                $pairs[$label] = $vars[$key];
+            }
+        }
+        return self::infoList($pairs);
     }
 
     /**
@@ -386,9 +418,9 @@ class Notifier
                 self::BASE_URL . '/painel/leads'
             ),
             'orcamento_registrado' => self::eventBody('orcamento_registrado', self::orderVars($sampleOrder), self::orderDetails($sampleOrder), self::BASE_URL . '/painel/orcamentos/1'),
-            'pedido_aprovado' => self::eventBody('pedido_aprovado', self::samplePedidoVars(), self::orderDetails($sampleOrder), self::BASE_URL . '/painel/pedidos/1'),
+            'pedido_aprovado' => self::eventBody('pedido_aprovado', self::samplePedidoVars(), self::pedidoDetails(self::samplePedidoVars()), self::BASE_URL . '/painel/pedidos/1'),
             'cadastro_aprovado' => self::eventBody('cadastro_aprovado', ['nome' => 'Licenciado Exemplo'], '', self::BASE_URL . '/painel'),
-            default => self::eventBody('pedido_registrado', self::samplePedidoVars(), self::orderDetails($sampleOrder), self::BASE_URL . '/painel/pedidos/1'),
+            default => self::eventBody('pedido_registrado', self::samplePedidoVars(), self::pedidoDetails(self::samplePedidoVars()), self::BASE_URL . '/painel/pedidos/1'),
         };
 
         return self::template($title, $body);
