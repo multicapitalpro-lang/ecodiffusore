@@ -104,7 +104,8 @@ $erroLabels = [
                         <td><?= View::e(trim(($c['city'] ?: '') . ($c['state'] ? '/' . $c['state'] : '')) ?: '—') ?></td>
                         <td>
                             <?php if (!empty($c['whatsapp'])): ?>
-                                <a href="https://wa.me/55<?= preg_replace('/\D/', '', $c['whatsapp']) ?>" target="_blank" rel="noopener" class="link-small">💬 <?= View::e($c['whatsapp']) ?></a>
+                                <?php $waMessage = 'Olá, ' . $c['name'] . '! Aqui é da Ecodiffusore Brasil.'; ?>
+                                <a href="https://wa.me/55<?= preg_replace('/\D/', '', $c['whatsapp']) ?>?text=<?= rawurlencode($waMessage) ?>" target="_blank" rel="noopener" class="link-small">💬 <?= View::e($c['whatsapp']) ?></a>
                             <?php else: ?>—<?php endif; ?>
                         </td>
                         <td><?= View::e($c['seller_name'] ?: '—') ?></td>

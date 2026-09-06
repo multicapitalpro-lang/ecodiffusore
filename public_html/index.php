@@ -112,6 +112,8 @@ $router->get('/painel/simulador', [App\Controllers\SimuladorController::class, '
 $router->post('/painel/simulador', [App\Controllers\SimuladorController::class, 'calcular']);
 $router->post('/painel/simulador/pdf', [App\Controllers\SimuladorController::class, 'downloadPdf']);
 
+$router->get('/painel/materiais', [App\Controllers\MaterialController::class, 'index']);
+
 // Clientes
 $router->get('/painel/clientes', [App\Controllers\ClientController::class, 'index']);
 $router->get('/painel/clientes/novo', [App\Controllers\ClientController::class, 'create']);

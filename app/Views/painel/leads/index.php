@@ -83,8 +83,15 @@ $vehicleFieldLabels = [
                             <strong><?= View::e($lead['name']) ?></strong>
                             <button type="button" class="icon-button-danger" data-delete-lead="<?= (int) $lead['id'] ?>" title="Excluir lead">🗑</button>
                         </div>
+                        <?php
+                        // Mensagem pronta com nome + contexto do veiculo -- elimina o vendedor ter
+                        // que copiar numero e lembrar o que o lead informou toda vez que for chamar.
+                        $waMessage = 'Olá, ' . $lead['name'] . '! Aqui é da Ecodiffusore Brasil.'
+                            . ($vehicleInfo ? ' Vi as informações do seu veículo (' . implode(', ', $vehicleInfo) . ')' : ($lead['truck_brand'] ? ' Vi seu interesse no ' . $lead['truck_brand'] : ''))
+                            . ' e queria te ajudar a economizar no diesel.';
+                        ?>
                         <span class="lead-phone">
-                            <a href="https://wa.me/55<?= preg_replace('/\D/', '', $lead['whatsapp']) ?>" target="_blank" rel="noopener" class="link-small" onclick="event.stopPropagation()">💬 <?= View::e($lead['whatsapp']) ?></a>
+                            <a href="https://wa.me/55<?= preg_replace('/\D/', '', $lead['whatsapp']) ?>?text=<?= rawurlencode($waMessage) ?>" target="_blank" rel="noopener" class="link-small" onclick="event.stopPropagation()">💬 <?= View::e($lead['whatsapp']) ?></a>
                         </span>
                         <span class="kanban-card-meta"><?= View::e($lead['city'] ?: '—') ?> · <?= View::e($lead['truck_brand'] ?: '—') ?></span>
                         <?php if ($vehicleInfo): ?>
@@ -175,6 +182,23 @@ $vehicleFieldLabels = [
 
     let draggedId = null;
 
+    function buildWaMessage(card) {
+        const name = card.dataset.leadName || '';
+        const truck = card.dataset.leadTruck || '';
+        let vehicleParts = [];
+        try {
+            vehicleParts = Object.values(JSON.parse(card.dataset.leadVehicle || '{}'));
+        } catch (e) { /* ignora JSON invalido, so nao mostra detalhe do veiculo */ }
+
+        let msg = 'Olá' + (name ? ', ' + name : '') + '! Aqui é da Ecodiffusore Brasil.';
+        if (vehicleParts.length) {
+            msg += ' Vi as informações do seu veículo (' + vehicleParts.join(', ') + ')';
+        } else if (truck) {
+            msg += ' Vi seu interesse no ' + truck;
+        }
+        return msg + ' e queria te ajudar a economizar no diesel.';
+    }
+
     board.querySelectorAll('.kanban-card').forEach((card) => {
         card.addEventListener('dragstart', () => { draggedId = card.dataset.leadId; card.classList.add('is-dragging'); });
         card.addEventListener('dragend', () => card.classList.remove('is-dragging'));
@@ -185,7 +209,7 @@ $vehicleFieldLabels = [
             document.getElementById('lead-detail-name').textContent = card.dataset.leadName || 'Lead';
             const waLink = document.getElementById('lead-detail-whatsapp-link');
             const phone = (card.dataset.leadWhatsapp || '').replace(/\D/g, '');
-            waLink.href = phone ? 'https://wa.me/55' + phone : '#';
+            waLink.href = phone ? 'https://wa.me/55' + phone + '?text=' + encodeURIComponent(buildWaMessage(card)) : '#';
             waLink.textContent = card.dataset.leadWhatsapp || '—';
             document.getElementById('lead-detail-city').textContent = card.dataset.leadCity || '—';
             document.getElementById('lead-detail-truck').textContent = card.dataset.leadTruck || '—';

@@ -38,7 +38,7 @@ $staffRoles = Roles::STAFF;
 $userManagementRoles = Roles::USER_MANAGEMENT;
 $supervisorAssignmentRoles = Roles::SUPERVISOR_ASSIGNMENT;
 $pendingApprovals = in_array($role, Roles::SUPERVISOR_ASSIGNMENT, true) ? \App\Models\User::pendingApprovalCount($user) : 0;
-$vendasOpen = $anyActive(['/painel/pedidos', '/painel/orcamentos', '/painel/produtos', '/painel/tabela-precos', '/painel/configuracoes/pagamento', '/painel/simulador']);
+$vendasOpen = $anyActive(['/painel/pedidos', '/painel/orcamentos', '/painel/produtos', '/painel/tabela-precos', '/painel/configuracoes/pagamento', '/painel/simulador', '/painel/materiais']);
 $leadsOpen = $anyActive(['/painel/leads', '/painel/clientes', '/painel/configuracoes/roteamento']);
 $financeiroOpen = $anyActive(['/painel/financeiro']);
 $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/metas']);
@@ -79,6 +79,7 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/metas'])
                     <summary><?= $icon('cart') ?> Vendas (CRM)</summary>
                     <div class="nav-subitems">
                         <a href="/painel/simulador" class="<?= $isActive('/painel/simulador') ? 'is-active' : '' ?>">Simulador de Economia</a>
+                        <a href="/painel/materiais" class="<?= $isActive('/painel/materiais') ? 'is-active' : '' ?>">Materiais de Venda</a>
                         <a href="/painel/pedidos" class="<?= $isActive('/painel/pedidos') ? 'is-active' : '' ?>">Pedidos</a>
                         <a href="/painel/orcamentos" class="<?= $isActive('/painel/orcamentos') ? 'is-active' : '' ?>">Orçamentos</a>
                         <?php if ($role === 'admin'): ?>
