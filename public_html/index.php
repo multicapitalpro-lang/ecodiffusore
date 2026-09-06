@@ -108,6 +108,10 @@ $router->post('/painel/leads/{id}/estender', [App\Controllers\LeadController::cl
 $router->get('/painel/leads/extensoes', [App\Controllers\LeadExtensionController::class, 'index']);
 $router->get('/painel/leads/extensoes/{id}/anexo', [App\Controllers\LeadExtensionController::class, 'downloadAttachment']);
 
+$router->get('/painel/simulador', [App\Controllers\SimuladorController::class, 'index']);
+$router->post('/painel/simulador', [App\Controllers\SimuladorController::class, 'calcular']);
+$router->post('/painel/simulador/pdf', [App\Controllers\SimuladorController::class, 'downloadPdf']);
+
 // Clientes
 $router->get('/painel/clientes', [App\Controllers\ClientController::class, 'index']);
 $router->get('/painel/clientes/novo', [App\Controllers\ClientController::class, 'create']);
