@@ -2,12 +2,22 @@
 
 namespace App\Core;
 
+use App\Models\Lead;
 use App\Models\User;
 
 /**
- * Acha o Licenciado ativo mais proximo da cidade informada pelo cliente, dentro de um raio maximo.
- * Usa a tabela de referencia br_cities (importada 1x, ver database/import_br_cities.php) e a formula
- * de Haversine -- sem depender de nenhuma API externa de geocodificacao.
+ * Acha o Vendedor ativo pra atender um cliente que chegou pelo site, dentro de um raio maximo da
+ * cidade informada. Usa a tabela de referencia br_cities (importada 1x, ver
+ * database/import_br_cities.php) e a formula de Haversine -- sem depender de nenhuma API externa
+ * de geocodificacao. Se ninguem estiver no raio, devolve null (o caller cai no WhatsApp central da
+ * Ecodiffusore -- o cliente nunca precisa saber que nao tinha vendedor por perto).
+ *
+ * Distribuicao meritocratica por ordem de chegada: quando mais de um Vendedor esta dentro do raio
+ * (ex: 3 vendedores na mesma cidade/regiao do Licenciado), NAO escolhe sempre o mais proximo --
+ * escolhe quem esta ha mais tempo sem receber um lead (rodizio tipo fila, ver
+ * Lead::lastAssignedAt()), so usando distancia como criterio de desempate quando ninguem do grupo
+ * recebeu lead ainda. Isso evita que o vendedor "sorte" de ficar mais perto do centro da cidade
+ * fique sempre com todos os leads da regiao.
  *
  * Limitacao conhecida e aceita: o cliente so informa a cidade (sem estado) no popup de /comprar: se
  * houver mais de um municipio brasileiro com o mesmo nome em UFs diferentes, usa o primeiro que
@@ -26,18 +36,17 @@ class GeoMatch
             return null;
         }
 
-        $nearest = null;
-        $nearestDistance = null;
+        $candidates = [];
 
-        foreach (User::allByRole('licenciado') as $licenciado) {
-            if (empty($licenciado['city']) || empty($licenciado['whatsapp'])) {
+        foreach (User::allByRole('vendedor') as $vendedor) {
+            if (empty($vendedor['city']) || empty($vendedor['whatsapp'])) {
                 continue;
             }
 
-            // O Licenciado tem estado cadastrado (users.state) -- usa pra desambiguar cidades
+            // O Vendedor tem estado cadastrado (users.state) -- usa pra desambiguar cidades
             // homonimas (ex: existe mais de um "Toledo" no Brasil). O cliente so informa a cidade
             // no popup, sem estado, entao esse lado da busca continua aproximado (ver docblock).
-            $sellerCoords = self::findCityCoords($licenciado['city'], $licenciado['state'] ?? null);
+            $sellerCoords = self::findCityCoords($vendedor['city'], $vendedor['state'] ?? null);
             if (!$sellerCoords) {
                 continue;
             }
@@ -49,18 +58,40 @@ class GeoMatch
                 (float) $sellerCoords['lng']
             );
 
-            if ($distance <= self::RADIUS_KM && ($nearestDistance === null || $distance < $nearestDistance)) {
-                $nearestDistance = $distance;
-                $nearest = [
-                    'id' => (int) $licenciado['id'],
-                    'name' => $licenciado['name'],
-                    'whatsapp' => $licenciado['whatsapp'],
+            if ($distance <= self::RADIUS_KM) {
+                $candidates[] = [
+                    'id' => (int) $vendedor['id'],
+                    'name' => $vendedor['name'],
+                    'whatsapp' => $vendedor['whatsapp'],
                     'distance_km' => round($distance, 1),
                 ];
             }
         }
 
-        return $nearest;
+        if (!$candidates) {
+            return null;
+        }
+
+        $lastAssigned = Lead::lastAssignedAt(array_column($candidates, 'id'));
+        usort($candidates, function ($a, $b) use ($lastAssigned) {
+            $lastA = $lastAssigned[$a['id']] ?? null;
+            $lastB = $lastAssigned[$b['id']] ?? null;
+
+            // Quem nunca recebeu lead vai pra frente da fila; entre dois que nunca receberam
+            // (ou empate exato de horario), desempata pelo mais proximo.
+            if ($lastA === $lastB) {
+                return $a['distance_km'] <=> $b['distance_km'];
+            }
+            if ($lastA === null) {
+                return -1;
+            }
+            if ($lastB === null) {
+                return 1;
+            }
+            return strcmp($lastA, $lastB);
+        });
+
+        return $candidates[0];
     }
 
     /** UF da primeira cidade brasileira encontrada com esse nome (mesma limitacao de ambiguidade

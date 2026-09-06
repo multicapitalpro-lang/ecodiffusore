@@ -107,6 +107,30 @@ class Lead
         return $row ?: null;
     }
 
+    /** Data do lead mais recente ja atribuido a cada um de $userIds -- usado pelo GeoMatch pra
+     *  fazer rodizio meritocratico entre Vendedores empatados no mesmo raio (quem recebeu um lead
+     *  ha mais tempo entra na frente da fila). Quem nunca recebeu nenhum nao aparece no resultado
+     *  (o caller trata ausencia como "sempre na frente da fila"). */
+    public static function lastAssignedAt(array $userIds): array
+    {
+        if (!$userIds) {
+            return [];
+        }
+
+        $placeholders = implode(',', array_fill(0, count($userIds), '?'));
+        $stmt = Database::connection()->prepare(
+            "SELECT assigned_to_user_id, MAX(created_at) AS last_at FROM leads
+             WHERE assigned_to_user_id IN ({$placeholders}) GROUP BY assigned_to_user_id"
+        );
+        $stmt->execute(array_values($userIds));
+
+        $result = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $result[(int) $row['assigned_to_user_id']] = $row['last_at'];
+        }
+        return $result;
+    }
+
     public static function assignTo(int $id, ?int $userId): void
     {
         $stmt = Database::connection()->prepare('UPDATE leads SET assigned_to_user_id = :uid WHERE id = :id');
