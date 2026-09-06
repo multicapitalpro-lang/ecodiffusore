@@ -107,15 +107,20 @@ $myId = (int) $user['id'];
                 </div>
             </div>
 
+            <?php $vendedorTargets = array_filter($targets, fn ($t) => $t['role_slug'] === 'vendedor'); ?>
             <label for="goal-seller">Meta para</label>
             <select id="goal-seller" name="seller_id" required>
                 <option value="">Selecione...</option>
+                <?php if (count($vendedorTargets) > 1): ?>
+                    <option value="team">— Toda a equipe (<?= count($vendedorTargets) ?> Vendedores) —</option>
+                <?php endif; ?>
                 <?php foreach ($targets as $t): ?>
                     <option value="<?= (int) $t['id'] ?>" <?= (int) $t['id'] === $myId && count($targets) === 1 ? 'selected' : '' ?>>
                         <?= View::e($t['name']) ?> <?= (int) $t['id'] === $myId ? '(eu mesmo)' : '(' . ($roleLabels[$t['role_slug']] ?? $t['role_slug']) . ')' ?>
                     </option>
                 <?php endforeach; ?>
             </select>
+            <p class="hint-text" style="margin-top:2px;">"Toda a equipe" cria a mesma meta, individualmente, pra cada Vendedor — não divide o valor entre eles.</p>
 
             <label for="goal-value">Valor da meta (R$)</label>
             <input type="number" step="0.01" id="goal-value" name="target_value" placeholder="Ex: 50000,00" required>

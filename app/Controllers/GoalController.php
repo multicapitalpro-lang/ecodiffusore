@@ -83,26 +83,46 @@ class GoalController
             $errors['target_value'] = 'Informe um valor de meta válido.';
         }
 
-        $targetId = (int) ($_POST['seller_id'] ?? 0);
-        $allowedIds = array_map(fn ($t) => (int) $t['id'], $this->assignableTargets($user));
-        if (!$targetId || !in_array($targetId, $allowedIds, true)) {
-            $errors['seller_id'] = 'Selecione um destinatário válido pra essa meta.';
+        // "Toda a equipe" cria UMA meta (mesmo nome/valor/premio) pra CADA Vendedor entre os
+        // destinatarios permitidos -- nao um alvo agregado dividido entre eles, cada um persegue
+        // o mesmo numero de forma independente. So Vendedor (nao Gestor/sub-Licenciado) entram
+        // aqui, mesmo que assignableTargets() devolva o downline inteiro.
+        $applyToTeam = ($_POST['seller_id'] ?? '') === 'team';
+        $allTargets = $this->assignableTargets($user);
+        $allowedIds = array_map(fn ($t) => (int) $t['id'], $allTargets);
+
+        $targetIds = [];
+        if ($applyToTeam) {
+            $vendedores = array_values(array_filter($allTargets, fn ($t) => $t['role_slug'] === Roles::SELLER));
+            if (!$vendedores) {
+                $errors['seller_id'] = 'Você não tem nenhum Vendedor na equipe pra aplicar essa meta.';
+            }
+            $targetIds = array_map(fn ($t) => (int) $t['id'], $vendedores);
+        } else {
+            $targetId = (int) ($_POST['seller_id'] ?? 0);
+            if (!$targetId || !in_array($targetId, $allowedIds, true)) {
+                $errors['seller_id'] = 'Selecione um destinatário válido pra essa meta.';
+            } else {
+                $targetIds = [$targetId];
+            }
         }
 
         if ($errors) {
             Router::redirect('/painel/metas?erro=1');
         }
 
-        Goal::create([
-            'name' => trim($_POST['name']),
-            'start_date' => $_POST['start_date'],
-            'end_date' => $_POST['end_date'],
-            'target_value' => $_POST['target_value'],
-            'reward_description' => trim($_POST['reward_description'] ?? ''),
-            'reward_amount' => trim($_POST['reward_amount'] ?? ''),
-            'seller_id' => $targetId,
-            'created_by' => $user['id'],
-        ]);
+        foreach ($targetIds as $targetId) {
+            Goal::create([
+                'name' => trim($_POST['name']),
+                'start_date' => $_POST['start_date'],
+                'end_date' => $_POST['end_date'],
+                'target_value' => $_POST['target_value'],
+                'reward_description' => trim($_POST['reward_description'] ?? ''),
+                'reward_amount' => trim($_POST['reward_amount'] ?? ''),
+                'seller_id' => $targetId,
+                'created_by' => $user['id'],
+            ]);
+        }
 
         Router::redirect('/painel/metas?sucesso=1');
     }
