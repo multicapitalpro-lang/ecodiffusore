@@ -6,6 +6,7 @@ $isViewOnly = $isViewOnly ?? false;
 $showLicenciadoBadge = $showLicenciadoBadge ?? false;
 $sucesso = $_GET['sucesso'] ?? null;
 $erro = $_GET['erro'] ?? null;
+$expirationWarningDays = $expirationWarningDays ?? 5;
 
 $vehicleFieldLabels = [
     'vehicle_plate' => 'Placa',
@@ -24,8 +25,14 @@ $vehicleFieldLabels = [
     <p class="form-msg form-msg-ok">Lead excluído.</p>
 <?php elseif ($sucesso === '2'): ?>
     <p class="form-msg form-msg-ok">Coluna criada.</p>
+<?php elseif ($sucesso === '3'): ?>
+    <p class="form-msg form-msg-ok">Prazo estendido por mais 30 dias.</p>
 <?php elseif ($erro === 'csrf'): ?>
     <p class="form-msg form-msg-erro">Sessão expirada, tente novamente.</p>
+<?php elseif ($erro === 'justificativa'): ?>
+    <p class="form-msg form-msg-erro">Informe a justificativa pra estender o prazo.</p>
+<?php elseif ($erro): ?>
+    <p class="form-msg form-msg-erro"><?= View::e($erro) ?></p>
 <?php endif; ?>
 
 <div class="cards-grid">
@@ -96,6 +103,16 @@ $vehicleFieldLabels = [
                         <?php if ($showLicenciadoBadge && !empty($lead['licenciado_name'])): ?>
                             <span class="kanban-card-meta">Licenciado: <?= View::e($lead['licenciado_name']) ?></span>
                         <?php endif; ?>
+                        <?php if ($lead['days_until_expiration'] !== null && $lead['days_until_expiration'] <= $expirationWarningDays): ?>
+                            <div class="lead-expiration-warning">
+                                ⏳ <?= $lead['days_until_expiration'] > 0
+                                    ? 'Expira em ' . (int) $lead['days_until_expiration'] . ' dia' . ((int) $lead['days_until_expiration'] === 1 ? '' : 's')
+                                    : 'Prazo vencido — será devolvido ao Licenciado' ?>
+                                <?php if (!$isViewOnly): ?>
+                                    <button type="button" class="link-button" data-request-extension="<?= (int) $lead['id'] ?>" onclick="event.stopPropagation()">Solicitar extensão</button>
+                                <?php endif; ?>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 <?php endforeach; ?>
                 <?php if (!($columns[$status] ?? [])): ?>
@@ -114,6 +131,23 @@ $vehicleFieldLabels = [
         </form>
     </div>
 </div>
+
+<dialog class="modal" id="modal-lead-extension">
+    <div class="modal-header">
+        <h2>Solicitar extensão de prazo</h2>
+        <button type="button" class="modal-close" data-modal-close aria-label="Fechar">&times;</button>
+    </div>
+    <div class="modal-body">
+        <p class="hint-text" style="margin-top:0;">Explique por que precisa manter esse lead por mais 30 dias. Fica registrado no histórico, visível pro Licenciado/Supervisor/Gerente/Admin.</p>
+        <form id="lead-extension-form" class="panel-form" enctype="multipart/form-data">
+            <label for="extension-justification">Justificativa</label>
+            <textarea id="extension-justification" name="justification" rows="4" required></textarea>
+            <label for="extension-attachment">Anexo (opcional — print da conversa, etc.)</label>
+            <input type="file" id="extension-attachment" name="attachment" accept=".pdf,.jpg,.jpeg,.png,.webp">
+            <button type="submit" class="btn btn-primary" style="margin-top:10px;">Estender por 30 dias</button>
+        </form>
+    </div>
+</dialog>
 
 <dialog class="modal" id="modal-lead-detail">
     <div class="modal-header">
@@ -217,6 +251,43 @@ $vehicleFieldLabels = [
             window.location.reload();
         });
     });
+
+    const extensionModal = document.getElementById('modal-lead-extension');
+    const extensionForm = document.getElementById('lead-extension-form');
+    let extensionLeadId = null;
+
+    board.querySelectorAll('[data-request-extension]').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            extensionLeadId = btn.dataset.requestExtension;
+            extensionForm.reset();
+            extensionModal.showModal();
+        });
+    });
+
+    if (extensionForm) {
+        extensionForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!extensionLeadId) return;
+
+            const formData = new FormData(extensionForm);
+            formData.set('csrf_token', csrfToken);
+
+            const submitBtn = extensionForm.querySelector('button[type=submit]');
+            submitBtn.disabled = true;
+
+            try {
+                await fetch('/painel/leads/' + extensionLeadId + '/estender', {
+                    method: 'POST',
+                    body: formData,
+                });
+                window.location.href = '/painel/leads?sucesso=3';
+            } catch (err) {
+                submitBtn.disabled = false;
+                alert('Erro ao enviar. Tente novamente.');
+            }
+        });
+    }
 
     board.querySelectorAll('.lead-assign-select').forEach((select) => {
         select.addEventListener('change', async () => {

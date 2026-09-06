@@ -64,6 +64,9 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/metas'])
                     <summary><?= $icon('cart') ?> Vendas (CRM)</summary>
                     <div class="nav-subitems">
                         <a href="/painel/leads" class="<?= $isActive('/painel/leads') ? 'is-active' : '' ?>">Leads</a>
+                        <?php if (in_array($role, array_merge($managerRoles, Roles::NATIONAL_SUPPORT), true)): ?>
+                            <a href="/painel/leads/extensoes" class="<?= $isActive('/painel/leads/extensoes') ? 'is-active' : '' ?>">Extensões de Prazo</a>
+                        <?php endif; ?>
                         <a href="/painel/pedidos" class="<?= $isActive('/painel/pedidos') ? 'is-active' : '' ?>">Pedidos</a>
                         <a href="/painel/orcamentos" class="<?= $isActive('/painel/orcamentos') ? 'is-active' : '' ?>">Orçamentos</a>
                         <a href="/painel/clientes" class="<?= $isActive('/painel/clientes') ? 'is-active' : '' ?>">Clientes</a>

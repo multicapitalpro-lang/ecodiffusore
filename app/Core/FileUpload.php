@@ -71,6 +71,11 @@ class FileUpload
         return self::store($file, 'vehicle_docs');
     }
 
+    public static function storeLeadExtensionAttachment(array $file): ?array
+    {
+        return self::store($file, 'lead_extensions');
+    }
+
     public static function path(string $subdir, string $storedName): string
     {
         return BASE_PATH . '/storage/uploads/' . $subdir . '/' . basename($storedName);

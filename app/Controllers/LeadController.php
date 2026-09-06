@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Core\Auth;
 use App\Core\Csrf;
+use App\Core\FileUpload;
 use App\Core\Response;
 use App\Core\Roles;
 use App\Core\Router;
@@ -14,21 +15,31 @@ use App\Models\User;
 
 class LeadController
 {
+    private const EXPIRATION_WARNING_DAYS = 5;
+
     public function index(): void
     {
         Auth::requireRole(Roles::STAFF);
         $user = Auth::user();
 
+        // Sem cron nesse plano Hostinger -- lazy check a cada carga da tela de Leads, mesmo
+        // padrao ja usado em Order::expireStalePending()/ReportScheduler::processDue().
+        Lead::expireStaleAssignments();
+
         $leads = $this->scopedLeads($user);
         $stages = LeadStage::all();
 
         $showLicenciadoBadge = in_array($user['role_slug'], ['supervisor', 'gerente'], true);
-        if ($showLicenciadoBadge) {
-            foreach ($leads as &$l) {
+        $now = time();
+        foreach ($leads as &$l) {
+            if ($showLicenciadoBadge) {
                 $l['licenciado_name'] = User::licenciadoNameFor((int) ($l['assigned_to_user_id'] ?? 0));
             }
-            unset($l);
+            $l['days_until_expiration'] = $l['expires_at']
+                ? (int) ceil((strtotime($l['expires_at']) - $now) / 86400)
+                : null;
         }
+        unset($l);
 
         $columns = [];
         foreach ($stages as $stage) {
@@ -45,6 +56,7 @@ class LeadController
             'isViewOnly' => $isViewOnly,
             'sellers' => !$isViewOnly ? $this->sellerOptions($user) : [],
             'showLicenciadoBadge' => $showLicenciadoBadge,
+            'expirationWarningDays' => self::EXPIRATION_WARNING_DAYS,
         ]);
     }
 
@@ -146,6 +158,49 @@ class LeadController
 
         Lead::delete($id);
         Router::redirect('/painel/leads?sucesso=1');
+    }
+
+    /** Justificativa do Vendedor pra nao perder o lead que esta perto (ou ja passou) do prazo de
+     *  30 dias -- estende na hora (self-service, sem aprovacao), fica registrado pra auditoria
+     *  em /painel/leads/extensoes. Aceita print/anexo opcional (mesmo padrao de FileUpload ja
+     *  usado em Financeiro/Licenciados/documento de veiculo). */
+    public function requestExtension(string $id): void
+    {
+        Auth::requireRole(Roles::STAFF);
+        $user = Auth::user();
+        $id = (int) $id;
+
+        if (in_array($user['role_slug'], Roles::NATIONAL_SUPPORT, true)) {
+            http_response_code(403);
+            require BASE_PATH . '/app/Views/errors/403.php';
+            exit;
+        }
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            Router::redirect('/painel/leads?erro=1');
+        }
+
+        if (!in_array($id, array_column($this->scopedLeads($user), 'id'), true)) {
+            http_response_code(403);
+            require BASE_PATH . '/app/Views/errors/403.php';
+            exit;
+        }
+
+        $justification = trim($_POST['justification'] ?? '');
+        if ($justification === '') {
+            Router::redirect('/painel/leads?erro=justificativa');
+        }
+
+        $attachment = null;
+        try {
+            $attachment = FileUpload::storeLeadExtensionAttachment($_FILES['attachment'] ?? []);
+        } catch (\RuntimeException $e) {
+            Router::redirect('/painel/leads?erro=' . urlencode($e->getMessage()));
+        }
+
+        Lead::requestExtension($id, (int) $user['id'], $justification, $attachment);
+
+        Router::redirect('/painel/leads?sucesso=3');
     }
 
     /** Nova coluna do kanban -- compartilhada com toda a equipe (o mesmo lead e visto por gente

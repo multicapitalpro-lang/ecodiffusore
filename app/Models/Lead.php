@@ -131,10 +131,79 @@ class Lead
         return $result;
     }
 
+    /** Ao atribuir a um Vendedor, comeca a contar 30 dias (leads.expires_at) -- se ele nao
+     *  converter a tempo, o lead volta pro Licenciado da rede (ver expireStaleAssignments()).
+     *  Atribuir a qualquer outro papel (Licenciado, admin etc) ou desatribuir (null) zera o prazo
+     *  -- so o Vendedor tem essa pressao de tempo. */
     public static function assignTo(int $id, ?int $userId): void
     {
-        $stmt = Database::connection()->prepare('UPDATE leads SET assigned_to_user_id = :uid WHERE id = :id');
-        $stmt->execute(['uid' => $userId, 'id' => $id]);
+        $expiresAt = null;
+        if ($userId) {
+            $user = User::find($userId);
+            if ($user && $user['role_slug'] === 'vendedor') {
+                $expiresAt = date('Y-m-d H:i:s', strtotime('+30 days'));
+            }
+        }
+
+        $stmt = Database::connection()->prepare('UPDATE leads SET assigned_to_user_id = :uid, expires_at = :exp WHERE id = :id');
+        $stmt->execute(['uid' => $userId, 'exp' => $expiresAt, 'id' => $id]);
+    }
+
+    /** Lead com um Vendedor ha mais de 30 dias sem converter/descartar volta pro Licenciado da
+     *  MESMA rede (nunca fica "sem responsavel" global -- isso vazaria pra outras redes, mesmo
+     *  problema que a Fase 35 corrigiu pro orcamento sem Vendedor no raio). Lazy-check (sem cron
+     *  nesse plano Hostinger), chamado em LeadController::index() a cada carga da tela -- mesmo
+     *  padrao de Order::expireStalePending(). */
+    public static function expireStaleAssignments(): int
+    {
+        $stale = Database::connection()->query(
+            "SELECT l.id, u.id AS vendedor_id
+             FROM leads l
+             JOIN users u ON u.id = l.assigned_to_user_id
+             JOIN roles r ON r.id = u.role_id
+             WHERE r.slug = 'vendedor' AND l.expires_at IS NOT NULL AND l.expires_at < NOW()
+                AND l.status NOT IN ('convertido', 'descartado')"
+        )->fetchAll();
+
+        $count = 0;
+        foreach ($stale as $row) {
+            $licenciadoId = User::licenciadoIdFor((int) $row['vendedor_id']);
+            if (!$licenciadoId) {
+                continue;
+            }
+            $vendedorId = (int) $row['vendedor_id'];
+            self::assignTo((int) $row['id'], $licenciadoId);
+            AuditLog::record($vendedorId, 'lead_expirado_devolvido', 'lead', (int) $row['id'],
+                ['assigned_to_user_id' => $vendedorId], ['assigned_to_user_id' => $licenciadoId]);
+            $count++;
+        }
+        return $count;
+    }
+
+    /** Justificativa do Vendedor pra nao perder o lead -- estende 30 dias a partir de agora e
+     *  deixa um registro permanente (ver LeadExtensionRequest) visivel pro Licenciado/Supervisor/
+     *  Gerente/Admin da rede, mesmo sem precisar de aprovacao de ninguem (decisao do usuario:
+     *  extensao e' self-service, o historico e' so pra auditoria). */
+    public static function requestExtension(int $leadId, int $requestedBy, string $justification, ?array $attachment): void
+    {
+        $lead = self::find($leadId);
+        if (!$lead) {
+            throw new \RuntimeException('Lead não encontrado.');
+        }
+
+        $newExpiresAt = date('Y-m-d H:i:s', strtotime('+30 days'));
+
+        LeadExtensionRequest::create([
+            'lead_id' => $leadId,
+            'requested_by_user_id' => $requestedBy,
+            'justification' => $justification,
+            'attachment_path' => $attachment['stored_name'] ?? null,
+            'previous_expires_at' => $lead['expires_at'],
+            'new_expires_at' => $newExpiresAt,
+        ]);
+
+        $stmt = Database::connection()->prepare('UPDATE leads SET expires_at = :exp WHERE id = :id');
+        $stmt->execute(['exp' => $newExpiresAt, 'id' => $leadId]);
     }
 
     public static function delete(int $id): void

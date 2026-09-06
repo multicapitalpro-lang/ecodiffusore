@@ -39,12 +39,10 @@ class User
      * (topo da cadeia nacional, sem ninguem acima). Cliente/Admin nao tem "responsavel" nesse
      * sentido comercial.
      */
-    /** Nome do Licenciado dono da rede de um vendedor/gestor (sobe a cadeia de manager_id) -- ou o
-     *  proprio nome, se $sellerId ja for um Licenciado. Usado nas telas de CRM (Leads/Pedidos/
-     *  Orcamentos/Clientes) pra Supervisor/Gerente verem de qual rede cada registro e', sem
-     *  precisar entrar no CRM de cada Licenciado individualmente (a funcao do Supervisor e'
-     *  supervisionar Licenciados, nao Vendedores diretamente). */
-    public static function licenciadoNameFor(?int $sellerId): ?string
+    /** Registro completo do Licenciado dono da rede de um vendedor/gestor (sobe a cadeia de
+     *  manager_id) -- ou o proprio registro, se $sellerId ja for um Licenciado. Base compartilhada
+     *  de licenciadoNameFor()/licenciadoIdFor(). */
+    public static function licenciadoFor(?int $sellerId): ?array
     {
         if (!$sellerId) {
             return null;
@@ -53,7 +51,7 @@ class User
         $current = self::find($sellerId);
         for ($i = 0; $i < 10 && $current; $i++) {
             if ($current['role_slug'] === 'licenciado') {
-                return $current['name'];
+                return $current;
             }
             if (empty($current['manager_id'])) {
                 return null;
@@ -61,6 +59,23 @@ class User
             $current = self::find((int) $current['manager_id']);
         }
         return null;
+    }
+
+    /** Nome do Licenciado dono da rede de um vendedor/gestor. Usado nas telas de CRM (Leads/
+     *  Pedidos/Orcamentos/Clientes) pra Supervisor/Gerente verem de qual rede cada registro e',
+     *  sem precisar entrar no CRM de cada Licenciado individualmente (a funcao do Supervisor e'
+     *  supervisionar Licenciados, nao Vendedores diretamente). */
+    public static function licenciadoNameFor(?int $sellerId): ?string
+    {
+        return self::licenciadoFor($sellerId)['name'] ?? null;
+    }
+
+    /** Id do Licenciado dono da rede de um vendedor/gestor -- usado pra devolver um lead expirado
+     *  pra dentro da mesma rede (nunca fica "sem responsavel" global, ver Lead::expireStaleAssignments()). */
+    public static function licenciadoIdFor(?int $sellerId): ?int
+    {
+        $licenciado = self::licenciadoFor($sellerId);
+        return $licenciado ? (int) $licenciado['id'] : null;
     }
 
     public static function responsibleFor(array $target): ?array
