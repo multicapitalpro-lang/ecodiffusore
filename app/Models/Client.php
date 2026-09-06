@@ -6,11 +6,38 @@ use App\Core\Database;
 
 class Client
 {
-    public static function all(): array
+    /** $filters: 'seller_id' (um vendedor so) ou 'seller_ids' (lista -- downline de gestor/
+     *  licenciado/supervisor/gerente) + 'include_unassigned' (mostra tambem cliente sem vendedor
+     *  vinculado -- so faz sentido junto de 'seller_ids', pra quem gerencia poder assumir/distribuir
+     *  um cliente orfao; vendedor comum nunca usa isso, mesmo padrao de Lead::forScope). Sem filtro
+     *  nenhum = sem escopo (uso interno do admin). */
+    public static function all(array $filters = []): array
     {
-        return Database::connection()
-            ->query('SELECT c.*, u.name AS seller_name FROM clients c LEFT JOIN users u ON u.id = c.seller_id ORDER BY c.name')
-            ->fetchAll();
+        $conditions = ['1=1'];
+        $params = [];
+
+        if (!empty($filters['seller_id'])) {
+            $conditions[] = 'c.seller_id = :seller_id';
+            $params['seller_id'] = $filters['seller_id'];
+        } elseif (!empty($filters['seller_ids'])) {
+            $names = [];
+            foreach (array_values($filters['seller_ids']) as $i => $sid) {
+                $key = "sid{$i}";
+                $names[] = ":{$key}";
+                $params[$key] = $sid;
+            }
+            $scoped = 'c.seller_id IN (' . implode(',', $names) . ')';
+            $conditions[] = !empty($filters['include_unassigned'])
+                ? "({$scoped} OR c.seller_id IS NULL)"
+                : $scoped;
+        }
+
+        $sql = 'SELECT c.*, u.name AS seller_name FROM clients c LEFT JOIN users u ON u.id = c.seller_id
+                WHERE ' . implode(' AND ', $conditions) . ' ORDER BY c.name';
+
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
     }
 
     public static function find(int $id): ?array

@@ -23,7 +23,7 @@ class ClientController
         Auth::requireRole(Roles::STAFF);
         $user = Auth::user();
 
-        $clients = Client::all();
+        $clients = Client::all($this->scopeFilters($user));
 
         $filters = [
             'q' => trim($_GET['q'] ?? ''),
@@ -55,7 +55,7 @@ class ClientController
             'clients' => $filtered,
             'stats' => $stats,
             'filters' => $filters,
-            'sellers' => User::allByRole('vendedor'),
+            'sellers' => $this->sellerOptions($user),
         ]);
     }
 
@@ -117,7 +117,7 @@ class ClientController
             $c['state'] ?: '',
             $c['seller_name'] ?: '',
             $c['status'] === 'ativo' ? 'Ativo' : 'Inativo',
-        ], Client::all());
+        ], Client::all($this->scopeFilters(Auth::user())));
 
         Csv::download('clientes.csv', ['ID', 'Nome', 'Documento', 'Tipo', 'E-mail', 'WhatsApp', 'Cidade', 'UF', 'Vendedor', 'Status'], $rows);
     }
@@ -125,6 +125,7 @@ class ClientController
     public function store(): void
     {
         Auth::requireRole(Roles::STAFF);
+        $user = Auth::user();
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
             if (Response::isAjax()) {
@@ -140,16 +141,23 @@ class ClientController
                 Response::json(['ok' => false, 'errors' => $errors]);
             }
             View::render('painel/clients/index', [
-                'user' => Auth::user(),
-                'clients' => Client::all(),
-                'sellers' => User::allByRole('vendedor'),
+                'user' => $user,
+                'clients' => Client::all($this->scopeFilters($user)),
+                'sellers' => $this->sellerOptions($user),
                 'errors' => $errors,
                 'values' => $_POST,
             ]);
             return;
         }
 
-        $clientId = Client::create($_POST);
+        // Vendedor so cadastra cliente pra si mesmo -- nunca aceita seller_id vindo do POST (evita
+        // atribuir o cliente novo a outro vendedor da mesma equipe via campo escondido/editado).
+        $data = $_POST;
+        if ($user['role_slug'] === Roles::SELLER) {
+            $data['seller_id'] = $user['id'];
+        }
+
+        $clientId = Client::create($data);
         $redirectTo = $_GET['redirect_to'] ?? null;
 
         if ($redirectTo && str_starts_with($redirectTo, '/painel/')) {
@@ -168,13 +176,8 @@ class ClientController
 
     public function show(string $id): void
     {
-        Auth::requireRole(Roles::STAFF);
+        $client = $this->authorizeClient((int) $id);
         $id = (int) $id;
-
-        $client = Client::find($id);
-        if (!$client) {
-            Router::redirect('/painel/clientes');
-        }
 
         View::render('painel/clients/show', [
             'user' => Auth::user(),
@@ -187,13 +190,8 @@ class ClientController
 
     public function createAccess(string $id): void
     {
-        Auth::requireRole(Roles::STAFF);
+        $client = $this->authorizeClient((int) $id);
         $id = (int) $id;
-
-        $client = Client::find($id);
-        if (!$client) {
-            Router::redirect('/painel/clientes');
-        }
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
             Router::redirect("/painel/clientes/{$id}?erro=1");
@@ -231,7 +229,7 @@ class ClientController
 
     public function storeNote(string $id): void
     {
-        Auth::requireRole(Roles::STAFF);
+        $this->authorizeClient((int) $id);
         $id = (int) $id;
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null) || trim($_POST['note'] ?? '') === '') {
@@ -245,19 +243,15 @@ class ClientController
 
     public function edit(string $id): void
     {
-        Auth::requireRole(Roles::STAFF);
-
-        $client = Client::find((int) $id);
-        if (!$client) {
-            Router::redirect('/painel/clientes');
-        }
+        $client = $this->authorizeClient((int) $id);
+        $user = Auth::user();
 
         $isFragment = isset($_GET['fragment']);
 
         View::render('painel/clients/form', [
-            'user' => Auth::user(),
+            'user' => $user,
             'editing' => $client,
-            'sellers' => User::allByRole('vendedor'),
+            'sellers' => $this->sellerOptions($user),
             'errors' => [],
             'isModal' => $isFragment,
         ], $isFragment ? null : 'painel');
@@ -265,7 +259,8 @@ class ClientController
 
     public function update(string $id): void
     {
-        Auth::requireRole(Roles::STAFF);
+        $user = Auth::user();
+        $this->authorizeClient((int) $id);
         $id = (int) $id;
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
@@ -282,15 +277,23 @@ class ClientController
                 Response::json(['ok' => false, 'errors' => $errors]);
             }
             View::render('painel/clients/form', [
-                'user' => Auth::user(),
+                'user' => $user,
                 'editing' => array_merge(['id' => $id], $_POST),
-                'sellers' => User::allByRole('vendedor'),
+                'sellers' => $this->sellerOptions($user),
                 'errors' => $errors,
             ]);
             return;
         }
 
-        Client::update($id, $_POST);
+        // Mesma trava do store(): vendedor nao consegue reatribuir o proprio cliente pra outro
+        // vendedor via POST direto (o campo do form nem deveria oferecer essa opcao, mas o
+        // controller e' a barreira que realmente vale).
+        $data = $_POST;
+        if ($user['role_slug'] === Roles::SELLER) {
+            $data['seller_id'] = $user['id'];
+        }
+
+        Client::update($id, $data);
 
         $target = '/painel/clientes?sucesso=1';
         if (Response::isAjax()) {
@@ -302,7 +305,7 @@ class ClientController
 
     public function destroy(string $id): void
     {
-        Auth::requireRole(Roles::STAFF);
+        $this->authorizeClient((int) $id);
         $id = (int) $id;
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
@@ -321,6 +324,7 @@ class ClientController
     public function destroyBulk(): void
     {
         Auth::requireRole(Roles::STAFF);
+        $user = Auth::user();
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
             Router::redirect('/painel/clientes?erro=csrf');
@@ -331,6 +335,14 @@ class ClientController
         $failed = 0;
 
         foreach ($ids as $id) {
+            // Mesmo escopo de acesso individual (canAccessSeller) -- evita excluir em lote um
+            // cliente fora da propria rede via POST direto (a tela so lista/marca clientes do
+            // proprio escopo, mas o controller e' a barreira real).
+            $client = Client::find($id);
+            if (!$client || !$this->canAccessSeller($user, (int) ($client['seller_id'] ?? 0))) {
+                $failed++;
+                continue;
+            }
             try {
                 Client::delete($id);
                 $deleted++;
@@ -345,16 +357,32 @@ class ClientController
     public function bulkAssignSeller(): void
     {
         Auth::requireRole(Roles::MANAGEMENT);
+        $user = Auth::user();
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
             Router::redirect('/painel/clientes?erro=1');
         }
 
-        $clientIds = $_POST['client_ids'] ?? [];
         $sellerId = !empty($_POST['seller_id']) ? (int) $_POST['seller_id'] : null;
 
-        if ($clientIds) {
-            Client::bulkAssignSeller($clientIds, $sellerId);
+        // Trava dupla: so reatribui cliente que ja esta no escopo de quem esta agindo (evita
+        // sequestrar cliente de outra rede via POST direto), e so pra um vendedor que tambem esta
+        // no proprio escopo (evita "doar" cliente pra vendedor de outro licenciado).
+        if ($sellerId !== null && !in_array($sellerId, array_column($this->sellerOptions($user), 'id'), true)) {
+            Router::redirect('/painel/clientes?erro=1');
+        }
+
+        $clientIds = array_unique(array_map('intval', $_POST['client_ids'] ?? []));
+        $allowedIds = [];
+        foreach ($clientIds as $id) {
+            $client = Client::find($id);
+            if ($client && $this->canAccessSeller($user, (int) ($client['seller_id'] ?? 0))) {
+                $allowedIds[] = $id;
+            }
+        }
+
+        if ($allowedIds) {
+            Client::bulkAssignSeller($allowedIds, $sellerId);
         }
 
         Router::redirect('/painel/clientes?sucesso=1');
@@ -373,5 +401,83 @@ class ClientController
         }
 
         return $errors;
+    }
+
+    /** Verifica que o cliente {id} existe e esta no escopo de quem esta logado -- barreira real
+     *  contra acesso direto por URL a um cliente de outro vendedor/rede (index/export ja escopam a
+     *  listagem, mas sem isso um vendedor ainda conseguiria abrir /painel/clientes/{id} de qualquer
+     *  cliente digitando o id na URL). Mesmo padrao de OrderController::authorizeOrder. */
+    private function authorizeClient(int $id): array
+    {
+        Auth::requireRole(Roles::STAFF);
+        $user = Auth::user();
+
+        $client = Client::find($id);
+        if (!$client) {
+            Router::redirect('/painel/clientes');
+        }
+
+        if (!$this->canAccessSeller($user, (int) ($client['seller_id'] ?? 0))) {
+            http_response_code(403);
+            require BASE_PATH . '/app/Views/errors/403.php';
+            exit;
+        }
+
+        return $client;
+    }
+
+    /** Filtro de escopo pra listar clientes: vendedor so os proprios (estrito, sem orfaos --
+     *  cliente sem vendedor nunca foi dele), gestor/licenciado a regiao (+ orfaos, pra poder
+     *  assumir/distribuir), supervisor/gerente a rede que cuidam, admin tudo. Mesmo padrao ja
+     *  usado em OrderController/QuoteController/LeadController. */
+    private function scopeFilters(array $user): array
+    {
+        if ($user['role_slug'] === 'admin') {
+            return [];
+        }
+        if ($user['role_slug'] === Roles::SELLER) {
+            return ['seller_id' => $user['id']];
+        }
+        if ($user['role_slug'] === 'supervisor') {
+            return ['seller_ids' => User::supervisedIds((int) $user['id'])];
+        }
+        if ($user['role_slug'] === 'gerente') {
+            return ['seller_ids' => User::nationalIds((int) $user['id'])];
+        }
+
+        return ['seller_ids' => User::downlineIds((int) $user['id']), 'include_unassigned' => true];
+    }
+
+    /** Cliente sem vendedor (seller_id null) so e' acessivel por quem gerencia (fallback abaixo),
+     *  nunca por um vendedor comum -- mesma logica de "orfao" do scopeFilters(). */
+    private function canAccessSeller(array $user, int $sellerId): bool
+    {
+        if ($user['role_slug'] === 'admin') {
+            return true;
+        }
+        if ($user['role_slug'] === Roles::SELLER) {
+            return $sellerId === (int) $user['id'];
+        }
+        if ($user['role_slug'] === 'supervisor') {
+            return in_array($sellerId, User::supervisedIds((int) $user['id']), true);
+        }
+        if ($user['role_slug'] === 'gerente') {
+            return in_array($sellerId, User::nationalIds((int) $user['id']), true);
+        }
+
+        return $sellerId === 0 || in_array($sellerId, User::downlineIds((int) $user['id']), true);
+    }
+
+    /** Vendedores disponiveis pro dropdown "Vendedor vinculado" no form de cliente, escopado por
+     *  regiao -- mesmo padrao de OrderController::sellerOptions. */
+    private function sellerOptions(array $user): array
+    {
+        $sellers = User::allByRole(Roles::SELLER);
+        if ($user['role_slug'] === 'admin') {
+            return $sellers;
+        }
+
+        $downline = User::downlineIds((int) $user['id']);
+        return array_values(array_filter($sellers, fn ($s) => in_array((int) $s['id'], $downline, true)));
     }
 }

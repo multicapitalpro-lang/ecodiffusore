@@ -3,7 +3,9 @@ use App\Core\View;
 /** @var array $values */
 /** @var array $errors */
 /** @var array $sellers */
+/** @var array $user */
 $sellers = $sellers ?? [];
+$isSeller = ($user['role_slug'] ?? '') === 'vendedor';
 ?>
 <label for="name">Nome / Razão social</label>
 <input type="text" id="name" name="name" value="<?= View::e($values['name'] ?? '') ?>" required>
@@ -60,13 +62,19 @@ $sellers = $sellers ?? [];
 <label for="payment_terms">Condição de pagamento</label>
 <input type="text" id="payment_terms" name="payment_terms" value="<?= View::e($values['payment_terms'] ?? '') ?>" placeholder="Ex: 30/60/90 dias, à vista...">
 
-<label for="seller_id">Vendedor vinculado</label>
-<select id="seller_id" name="seller_id">
-    <option value="">Sem vendedor</option>
-    <?php foreach ($sellers as $s): ?>
-        <option value="<?= (int) $s['id'] ?>" <?= (int) ($values['seller_id'] ?? 0) === (int) $s['id'] ? 'selected' : '' ?>><?= View::e($s['name']) ?></option>
-    <?php endforeach; ?>
-</select>
+<?php if ($isSeller): ?>
+    <label>Vendedor vinculado</label>
+    <input type="text" value="<?= View::e($user['name']) ?> (você)" disabled>
+    <p class="hint-text" style="margin-top:0;">Cliente cadastrado por você — sempre vinculado ao seu nome.</p>
+<?php else: ?>
+    <label for="seller_id">Vendedor vinculado</label>
+    <select id="seller_id" name="seller_id">
+        <option value="">Sem vendedor</option>
+        <?php foreach ($sellers as $s): ?>
+            <option value="<?= (int) $s['id'] ?>" <?= (int) ($values['seller_id'] ?? 0) === (int) $s['id'] ? 'selected' : '' ?>><?= View::e($s['name']) ?></option>
+        <?php endforeach; ?>
+    </select>
+<?php endif; ?>
 
 <label for="status">Status</label>
 <select id="status" name="status">
