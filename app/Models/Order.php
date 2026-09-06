@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Core\Database;
+use App\Core\Notifier;
 use PDO;
 
 class Order
@@ -242,6 +243,8 @@ class Order
         if ($accountId) {
             FinancialTransaction::createForOrderReceivable($id, $accountId, (float) $order['total_value'], date('Y-m-d'));
         }
+
+        Notifier::pedidoAprovado($order);
 
         return true;
     }

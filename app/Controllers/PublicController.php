@@ -8,6 +8,7 @@ use App\Core\Csrf;
 use App\Core\DataflowClient;
 use App\Core\EconomyCalculator;
 use App\Core\GeoMatch;
+use App\Core\Notifier;
 use App\Core\Pdf;
 use App\Core\Router;
 use App\Core\VehicleCatalog;
@@ -178,6 +179,7 @@ class PublicController
         $currentLead = Lead::find((int) $_SESSION['checkout_lead_id']);
         if ($ownerId && empty($currentLead['assigned_to_user_id'])) {
             Lead::assignTo((int) $_SESSION['checkout_lead_id'], $ownerId);
+            Notifier::leadRoteado($currentLead, $ownerId);
         }
 
         // O orcamento por placa ja e um orcamento de verdade, mesmo que o cliente nunca chame o
@@ -209,6 +211,11 @@ class PublicController
             ], [
                 ['product_id' => $product['id'], 'quantity' => 1, 'unit_price' => (float) $product['price_cash']],
             ]);
+
+            $quote = Quote::find($quoteId);
+            if ($quote) {
+                Notifier::orcamentoRealizado($quote);
+            }
         }
 
         $_SESSION['orcamento_result'] = [

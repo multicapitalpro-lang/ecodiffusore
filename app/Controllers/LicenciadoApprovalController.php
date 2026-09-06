@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Core\Auth;
 use App\Core\Csrf;
+use App\Core\Notifier;
 use App\Core\Roles;
 use App\Core\Router;
 use App\Core\View;
@@ -62,6 +63,11 @@ class LicenciadoApprovalController
 
         User::setOnboardingStatus($id, 'ativo');
         AuditLog::record((int) $user['id'], 'licenciado_cadastro_aprovado', 'user', $id, [], []);
+
+        $licenciado = User::find($id);
+        if ($licenciado) {
+            Notifier::cadastroAprovado($licenciado);
+        }
 
         Router::redirect('/painel/licenciados/aprovacoes?sucesso=1');
     }

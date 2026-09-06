@@ -6,6 +6,7 @@ use App\Core\Auth;
 use App\Core\Csrf;
 use App\Core\Csv;
 use App\Core\FileUpload;
+use App\Core\Notifier;
 use App\Core\Response;
 use App\Core\Roles;
 use App\Core\Router;
@@ -186,6 +187,10 @@ class OrderController
 
         if ($sellerId) {
             Approval::checkAndRequest('order', $orderId, $items, (int) $sellerId, (int) $user['id']);
+            $createdOrder = Order::find($orderId);
+            if ($createdOrder) {
+                Notifier::pedidoRealizado($createdOrder);
+            }
         }
 
         $target = "/painel/pedidos/{$orderId}?sucesso=1";

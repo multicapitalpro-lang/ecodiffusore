@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Core\Auth;
 use App\Core\Csrf;
 use App\Core\FileUpload;
+use App\Core\Notifier;
 use App\Core\Response;
 use App\Core\Roles;
 use App\Core\Router;
@@ -129,6 +130,13 @@ class LeadController
         }
 
         Lead::assignTo((int) $id, $sellerId);
+
+        if ($sellerId !== null) {
+            $lead = Lead::find((int) $id);
+            if ($lead) {
+                Notifier::leadRoteado($lead, $sellerId);
+            }
+        }
 
         if (Response::isAjax()) {
             Response::json(['ok' => true]);

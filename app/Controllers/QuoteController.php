@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Core\Auth;
 use App\Core\Csrf;
+use App\Core\Notifier;
 use App\Core\Response;
 use App\Core\Roles;
 use App\Core\Router;
@@ -235,6 +236,10 @@ class QuoteController
 
         if ($sellerId) {
             Approval::checkAndRequest('quote', $quoteId, $items, (int) $sellerId, (int) $user['id']);
+            $createdQuote = Quote::find($quoteId);
+            if ($createdQuote) {
+                Notifier::orcamentoRealizado($createdQuote);
+            }
         }
 
         $target = "/painel/orcamentos/{$quoteId}?sucesso=1";
