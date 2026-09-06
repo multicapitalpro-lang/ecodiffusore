@@ -148,6 +148,9 @@ $router->get('/painel/configuracoes/nfe', [App\Controllers\NfeSettingsController
 $router->post('/painel/configuracoes/nfe', [App\Controllers\NfeSettingsController::class, 'update']);
 $router->get('/painel/configuracoes/nfe/buscar-servico', [App\Controllers\NfeSettingsController::class, 'searchService']);
 
+$router->get('/painel/configuracoes/email', [App\Controllers\EmailTemplateSettingsController::class, 'index']);
+$router->post('/painel/configuracoes/email', [App\Controllers\EmailTemplateSettingsController::class, 'update']);
+
 $router->get('/painel/configuracoes/roteamento', [App\Controllers\LeadRoutingSettingsController::class, 'index']);
 $router->post('/painel/configuracoes/roteamento', [App\Controllers\LeadRoutingSettingsController::class, 'update']);
 

@@ -2,6 +2,7 @@
 
 namespace App\Core;
 
+use App\Models\EmailTemplateSettings;
 use App\Models\User;
 
 /**
@@ -209,32 +210,50 @@ class Notifier
 
     private static function button(string $url, string $label): string
     {
-        return '<table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="border-radius:8px; background:#6ea62c;">'
+        $accent = EmailTemplateSettings::current()['accent_color'];
+
+        return '<table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="border-radius:8px; background:' . self::esc($accent) . ';">'
             . '<a href="' . $url . '" style="display:inline-block; padding:11px 22px; font-size:14px; font-weight:600; color:#ffffff; text-decoration:none; border-radius:8px;">' . self::esc($label) . '</a>'
             . '</td></tr></table>';
     }
 
     /**
-     * Envelope padrao de todos os e-mails: cabecalho com logo (fundo escuro, mesmo tom da barra
-     * lateral do painel), corpo branco, rodape discreto. Tabelas + estilo inline (nao <style>) --
-     * e-mail HTML precisa disso pra renderizar igual em qualquer cliente (Gmail, Outlook etc.).
+     * Preview do template pra tela de configuracoes (App\Controllers\EmailTemplateSettingsController) --
+     * usa um evento de exemplo (Pedido registrado) so pra ilustrar como o layout fica com as
+     * configuracoes atuais, sem mandar e-mail nenhum de verdade.
+     */
+    public static function previewHtml(): string
+    {
+        $body = '<p>Um pedido foi registrado:</p>'
+            . self::infoList(['Cliente' => 'Cliente Exemplo', 'Valor' => 'R$ 2.836,00'])
+            . self::button(self::BASE_URL . '/painel/pedidos/1', 'Ver pedido no painel');
+
+        return self::template('Pedido registrado', $body);
+    }
+
+    /**
+     * Envelope padrao de todos os e-mails: cabecalho com logo, corpo branco, rodape discreto --
+     * visual configuravel em /painel/configuracoes/email (App\Models\EmailTemplateSettings),
+     * pedido explicito do usuario pra nao depender de deploy de codigo pra ajustar isso. Tabelas +
+     * estilo inline (nao <style>) -- e-mail HTML precisa disso pra renderizar igual em qualquer
+     * cliente (Gmail, Outlook etc.).
      */
     private static function template(string $title, string $bodyHtml): string
     {
-        $logo = self::BASE_URL . '/assets/img/logo-full-white.png';
+        $settings = EmailTemplateSettings::current();
 
         return '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f1f0e8; padding:32px 16px; font-family:Arial,Helvetica,sans-serif;">'
             . '<tr><td align="center">'
             . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px; background:#ffffff; border-radius:14px; overflow:hidden;">'
-            . '<tr><td style="background:#0e0e0e; padding:22px 32px;" align="left">'
-            . '<img src="' . $logo . '" alt="Ecodiffusore Brasil" height="28" style="display:block; border:0;">'
+            . '<tr><td style="background:' . self::esc($settings['header_bg']) . '; padding:22px 32px;" align="left">'
+            . '<img src="' . self::esc($settings['logo_url']) . '" alt="Ecodiffusore Brasil" height="28" style="display:block; border:0;">'
             . '</td></tr>'
             . '<tr><td style="padding:32px 32px 28px;">'
             . '<h1 style="margin:0 0 16px; font-size:18px; font-weight:600; color:#1a1a1a;">' . self::esc($title) . '</h1>'
             . '<div style="font-size:14px; line-height:1.6; color:#333333;">' . $bodyHtml . '</div>'
             . '</td></tr>'
             . '<tr><td style="padding:16px 32px; background:#f7f7f5; border-top:1px solid #ececec;">'
-            . '<p style="margin:0; font-size:12px; color:#8a8a8a;">Ecodiffusore Brasil · e-mail automático do painel, não é necessário responder.</p>'
+            . '<p style="margin:0; font-size:12px; color:#8a8a8a;">' . self::esc($settings['footer_text']) . '</p>'
             . '</td></tr>'
             . '</table>'
             . '</td></tr>'
