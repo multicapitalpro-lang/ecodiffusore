@@ -107,6 +107,25 @@ class Lead
         return $row ?: null;
     }
 
+    /** Lead existente com o mesmo WhatsApp (so digitos, ignorando mascara) -- usado pra nao
+     *  duplicar o pre-lead quando a mesma pessoa preenche o popup de /comprar de novo (Fase 36:
+     *  "nao podemos ter o mesmo lead em dois CRMs diferentes"). Pega o mais recente se houver
+     *  mais de um (nao deveria, mas dados antigos podem ter). */
+    public static function findByWhatsapp(string $whatsapp): ?array
+    {
+        $digits = preg_replace('/\D/', '', $whatsapp);
+        if ($digits === '') {
+            return null;
+        }
+
+        $stmt = Database::connection()->prepare(
+            "SELECT * FROM leads WHERE REGEXP_REPLACE(whatsapp, '[^0-9]', '') = :wa ORDER BY created_at DESC LIMIT 1"
+        );
+        $stmt->execute(['wa' => $digits]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
     /** Data do lead mais recente ja atribuido a cada um de $userIds -- usado pelo GeoMatch pra
      *  fazer rodizio meritocratico entre Vendedores empatados no mesmo raio (quem recebeu um lead
      *  ha mais tempo entra na frente da fila). Quem nunca recebeu nenhum nao aparece no resultado

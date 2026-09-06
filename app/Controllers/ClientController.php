@@ -279,7 +279,7 @@ class ClientController
             Router::redirect("/painel/clientes/{$id}/editar?erro=1");
         }
 
-        $errors = $this->validate($_POST);
+        $errors = $this->validate($_POST, $id);
 
         if ($errors) {
             if (Response::isAjax()) {
@@ -397,7 +397,7 @@ class ClientController
         Router::redirect('/painel/clientes?sucesso=1');
     }
 
-    private function validate(array $input): array
+    private function validate(array $input, ?int $excludeId = null): array
     {
         $errors = [];
 
@@ -407,6 +407,18 @@ class ClientController
 
         if (!empty($input['email']) && !filter_var($input['email'], FILTER_VALIDATE_EMAIL)) {
             $errors['email'] = 'E-mail inválido.';
+        }
+
+        // Nao pode ter o mesmo CPF/CNPJ ou WhatsApp em dois cadastros diferentes -- documento e
+        // telefone identificam a pessoa de forma confiavel, nome e' subjetivo demais (pedido
+        // explicito do usuario: "nao podemos ter o mesmo lead em dois CRMs diferentes").
+        $duplicate = Client::findDuplicate($input['document'] ?? null, $input['whatsapp'] ?? null, $excludeId);
+        if ($duplicate) {
+            $field = !empty($input['document']) && preg_replace('/\D/', '', $input['document']) === preg_replace('/\D/', '', (string) $duplicate['document'])
+                ? 'document'
+                : 'whatsapp';
+            $errors[$field] = 'Já existe um cliente cadastrado com esse ' . ($field === 'document' ? 'CPF/CNPJ' : 'WhatsApp')
+                . ' (' . $duplicate['name'] . ($duplicate['seller_name'] ? ', vendedor ' . $duplicate['seller_name'] : '') . ').';
         }
 
         return $errors;

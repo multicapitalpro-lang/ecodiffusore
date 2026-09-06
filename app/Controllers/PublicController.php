@@ -163,6 +163,14 @@ class PublicController
         // isso -- ver orcamento_result abaixo), essa fila e' so pro dono interno no CRM.
         $ownerId = $seller['id'] ?? LeadRoutingSettings::centralLicenciadoId();
 
+        // Mesmo WhatsApp que ja e' cliente de alguem tem prioridade sobre o palpite geografico de
+        // agora -- "nao podemos ter o mesmo lead em dois CRMs diferentes" (pedido do usuario):
+        // quem capturou primeiro mantem, o resto (Lead/Orcamento novo) segue o MESMO dono.
+        $existingClient = Client::findDuplicate(null, $_SESSION['checkout_whatsapp'] ?? '');
+        if ($existingClient && $existingClient['seller_id']) {
+            $ownerId = (int) $existingClient['seller_id'];
+        }
+
         // Mesmo que o cliente nao chame o vendedor pelo WhatsApp, o orcamento ja foi gerado --
         // atribui o Lead ao Vendedor/Licenciado Central pra ele aparecer no CRM/hierarquia
         // certa (ate o admin). So atribui se ainda nao tinha dono (ex: indicacao por ?ref= de
@@ -174,12 +182,12 @@ class PublicController
 
         // O orcamento por placa ja e um orcamento de verdade, mesmo que o cliente nunca chame o
         // vendedor no WhatsApp -- precisa aparecer em /painel/orcamentos (Kanban/lista/CRM), nao so
-        // como um Lead solto. Cria Cliente (sem email/CPF, que essa etapa publica nao coleta) +
-        // Orcamento vinculado ao Lead (via lead_id), pra tela/CRM poderem mostrar cidade/veiculo
-        // completos a partir do Lead sem duplicar esses dados na tabela de orcamentos.
+        // como um Lead solto. Reaproveita o Cliente existente (mesmo WhatsApp) se houver, em vez
+        // de duplicar, + cria Orcamento vinculado ao Lead (via lead_id), pra tela/CRM poderem
+        // mostrar cidade/veiculo completos a partir do Lead sem duplicar esses dados na tabela.
         $quoteId = null;
         if ($product) {
-            $clientId = Client::create([
+            $clientId = $existingClient ? (int) $existingClient['id'] : Client::create([
                 'name' => $name,
                 'whatsapp' => $_SESSION['checkout_whatsapp'] ?? '',
                 'city' => $_SESSION['checkout_city'] ?? '',
@@ -288,14 +296,23 @@ class PublicController
 
         $ref = $this->trackReferral();
 
-        $leadId = Lead::create([
-            'name' => mb_substr($name, 0, 120),
-            'whatsapp' => mb_substr($whatsapp, 0, 30),
-            'city' => mb_substr($city, 0, 120),
-            'truck_brand' => null,
-            'message' => null,
-            'source' => 'checkout',
-        ]);
+        // Mesmo WhatsApp que ja preencheu o popup antes reaproveita o Lead existente (com o dono
+        // que ja tinha, se tiver) em vez de criar outro -- "nao podemos ter o mesmo lead em dois
+        // CRMs diferentes" (pedido do usuario). Nome/cidade sao atualizados pro que a pessoa
+        // informou agora, caso tenha mudado.
+        $existingLead = Lead::findByWhatsapp($whatsapp);
+        if ($existingLead) {
+            $leadId = (int) $existingLead['id'];
+        } else {
+            $leadId = Lead::create([
+                'name' => mb_substr($name, 0, 120),
+                'whatsapp' => mb_substr($whatsapp, 0, 30),
+                'city' => mb_substr($city, 0, 120),
+                'truck_brand' => null,
+                'message' => null,
+                'source' => 'checkout',
+            ]);
+        }
 
         if ($ref) {
             Lead::assignTo($leadId, $ref);

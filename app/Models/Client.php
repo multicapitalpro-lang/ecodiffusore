@@ -117,6 +117,45 @@ class Client
         return $client ?: null;
     }
 
+    /** Cliente existente com o mesmo CPF/CNPJ ou WhatsApp (comparado so pelos digitos, ignorando
+     *  mascara) -- usado pra impedir cadastro duplicado em rede diferente (Fase 36, pedido do
+     *  usuario: "nao podemos ter o mesmo lead em dois CRMs diferentes"). Documento/WhatsApp
+     *  identificam a pessoa de forma confiavel; nome e' subjetivo demais pra esse fim.
+     *  $excludeId ignora o proprio registro (uso em update()). */
+    public static function findDuplicate(?string $document, ?string $whatsapp, ?int $excludeId = null): ?array
+    {
+        $documentDigits = $document ? preg_replace('/\D/', '', $document) : '';
+        $whatsappDigits = $whatsapp ? preg_replace('/\D/', '', $whatsapp) : '';
+
+        if ($documentDigits === '' && $whatsappDigits === '') {
+            return null;
+        }
+
+        $conditions = [];
+        $params = [];
+        if ($documentDigits !== '') {
+            $conditions[] = "REGEXP_REPLACE(c.document, '[^0-9]', '') = :doc";
+            $params['doc'] = $documentDigits;
+        }
+        if ($whatsappDigits !== '') {
+            $conditions[] = "REGEXP_REPLACE(c.whatsapp, '[^0-9]', '') = :wa";
+            $params['wa'] = $whatsappDigits;
+        }
+
+        $sql = 'SELECT c.*, u.name AS seller_name FROM clients c LEFT JOIN users u ON u.id = c.seller_id
+                WHERE (' . implode(' OR ', $conditions) . ')';
+        if ($excludeId) {
+            $sql .= ' AND c.id != :exclude_id';
+            $params['exclude_id'] = $excludeId;
+        }
+        $sql .= ' LIMIT 1';
+
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
     private static function params(array $data): array
     {
         $creditType = in_array($data['credit_limit_type'] ?? '', ['ilimitado', 'zero', 'valor'], true)

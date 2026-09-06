@@ -69,6 +69,20 @@ class PropostaController
 
         $name = trim($_POST['name']);
         $whatsapp = trim($_POST['whatsapp']);
+
+        // Mesmo WhatsApp ja cadastrado como cliente de outro vendedor/rede -- bloqueia em vez de
+        // duplicar ("nao podemos ter o mesmo lead em dois CRMs diferentes", pedido do usuario).
+        // Diferente do fluxo publico (que reaproveita o cliente em silencio), aqui e' uma acao
+        // manual do vendedor na tela, entao faz sentido avisar em vez de so redirecionar.
+        $duplicateClient = Client::findDuplicate(null, $whatsapp);
+        if ($duplicateClient) {
+            $message = 'Esse WhatsApp já está cadastrado' . ($duplicateClient['seller_name'] ? ' com o vendedor ' . $duplicateClient['seller_name'] : '') . '.';
+            if (Response::isAjax()) {
+                Response::json(['ok' => false, 'errors' => ['whatsapp' => $message]]);
+            }
+            Router::redirect('/painel/proposta-facil?erro=' . urlencode($message));
+        }
+
         $plate = strtoupper(trim($_POST['plate'] ?? ''));
         $brand = trim($_POST['brand']);
         $model = trim($_POST['model'] ?? '');
