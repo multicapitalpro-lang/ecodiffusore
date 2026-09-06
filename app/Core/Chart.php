@@ -15,8 +15,11 @@ class Chart
         // Largura maior + preserveAspectRatio="none" (ver abaixo) pra ocupar 100% do card em
         // qualquer largura de tela -- antes o SVG mantinha a proporcao 680:190 e ficava "flutuando"
         // centralizado, com sobra em branco dos dois lados em telas largas.
+        // Altura maior que a original (190) -- em telas largas o card ocupa ~1400px de largura e
+        // com preserveAspectRatio="none" esticando pra caber, uma altura baixa deixava o grafico
+        // "achatado" (proporcao quase 7:1), difícil de ler a variacao entre os dias.
         $width = 960;
-        $height = 190;
+        $height = 300;
         $padLeft = 58;
         $padRight = 16;
         $padTop = 14;
@@ -131,6 +134,73 @@ class Chart
         $svg .= $xLabels;
         $svg .= '</svg>';
 
+        return $svg;
+    }
+
+    /**
+     * Barras horizontais (sem JS) pra rankings curtos -- vendas por estado/cidade/licenciado/
+     * vendedor. Diferente do dailyLine, a altura do viewBox cresce com a quantidade de itens e
+     * o CSS deixa o wrapper com height:auto (ver .chart-bar-wrap) -- sem preserveAspectRatio="none"
+     * aqui, entao o SVG nunca fica "achatado" esticando: escala mantendo a propria proporcao.
+     * @param array<int, array{label: string, value: float}> $items ja ordenado (maior primeiro)
+     */
+    public static function bar(array $items, int $maxItems = 10): string
+    {
+        $items = array_slice($items, 0, $maxItems);
+
+        $width = 640;
+        $barHeight = 26;
+        $barGap = 12;
+        $labelWidth = 152;
+        $padRight = 78;
+        $padTop = 4;
+        $padBottom = 4;
+        $barMaxWidth = $width - $labelWidth - $padRight;
+        $count = count($items);
+        $height = $count > 0
+            ? $padTop + $padBottom + $count * $barHeight + max(0, $count - 1) * $barGap
+            : 50;
+
+        $svg = '<svg viewBox="0 0 ' . $width . ' ' . $height . '" class="chart-svg chart-bar-svg" role="img" aria-label="Grafico de barras">';
+        $svg .= '<style>
+            .bar-label{font-size:12px;fill:#4a5170;font-family:Inter,sans-serif;}
+            .bar-value{font-size:12px;fill:#4a5170;font-family:Inter,sans-serif;font-weight:600;}
+        </style>';
+
+        if (!$items) {
+            $svg .= '<text x="' . ($width / 2) . '" y="28" text-anchor="middle" class="bar-label">Sem dados no período.</text></svg>';
+            return $svg;
+        }
+
+        $max = max(array_map(fn ($i) => (float) $i['value'], $items));
+        $max = $max > 0 ? $max : 1.0;
+
+        foreach ($items as $i => $item) {
+            $y = $padTop + $i * ($barHeight + $barGap);
+            $barWidth = max(2, ((float) $item['value'] / $max) * $barMaxWidth);
+            $label = mb_strlen($item['label']) > 22 ? mb_substr($item['label'], 0, 21) . '…' : $item['label'];
+
+            $svg .= sprintf(
+                '<text x="0" y="%.1f" class="bar-label" dominant-baseline="middle">%s</text>',
+                $y + $barHeight / 2,
+                View::e($label)
+            );
+            $svg .= sprintf(
+                '<rect x="%d" y="%.1f" width="%.1f" height="%d" rx="4" fill="#6ea62c" />',
+                $labelWidth,
+                $y,
+                $barWidth,
+                $barHeight
+            );
+            $svg .= sprintf(
+                '<text x="%.1f" y="%.1f" class="bar-value" dominant-baseline="middle">%s</text>',
+                $labelWidth + $barWidth + 8,
+                $y + $barHeight / 2,
+                View::e(self::compactCurrency((float) $item['value']))
+            );
+        }
+
+        $svg .= '</svg>';
         return $svg;
     }
 

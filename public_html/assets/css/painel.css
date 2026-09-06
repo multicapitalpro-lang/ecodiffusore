@@ -368,13 +368,23 @@ a { text-decoration: none; color: inherit; }
 .dash-card small { font-size: .76rem; font-weight: 700; }
 
 .chart-box { background: #fff; border-radius: 14px; padding: 20px; box-shadow: var(--shadow-md); }
-.chart-svg-wrap { width: 100%; height: 200px; max-height: 30vh; }
+/* aspect-ratio (em vez de altura fixa em px) escala com a largura do card -- numa tela larga o
+   grafico ganha mais altura junto, em vez de ficar "achatado" esticando so na horizontal. */
+.chart-svg-wrap { width: 100%; aspect-ratio: 960 / 300; max-height: 420px; }
 .chart-svg { width: 100%; height: 100%; display: block; }
 .chart-legend { margin: 10px 0 0; font-size: .78rem; color: var(--gray-text); display: flex; align-items: center; gap: 6px; }
 .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-left: 10px; }
 .dot:first-child { margin-left: 0; }
 .dot-current { background: #6ea62c; }
 .dot-previous { background: #c9cfdc; }
+
+/* Barras horizontais (rankings de vendas): sem altura fixa -- o SVG tem sua propria proporcao
+   (viewBox varia com a quantidade de itens), o wrapper so deixa a largura ocupar o card. */
+.chart-bar-wrap { width: 100%; }
+.chart-bar-wrap .chart-bar-svg { width: 100%; height: auto; display: block; }
+.charts-grid-3 { display: grid; gap: 22px; grid-template-columns: 1fr; margin-top: 28px; }
+@media (min-width: 720px) { .charts-grid-3 { grid-template-columns: 1fr 1fr; } }
+@media (min-width: 1280px) { .charts-grid-3 { grid-template-columns: 1fr 1fr 1fr; } }
 
 .form-grid-2 { display: grid; gap: 16px; grid-template-columns: 1fr; }
 @media (min-width: 760px) { .form-grid-2 { grid-template-columns: 1fr 1fr; } }

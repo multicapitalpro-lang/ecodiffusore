@@ -101,6 +101,17 @@ class DashboardController
                 Goal::activeFor((int) $user['id'])
             );
 
+            // Vendas por Vendedor: so pro painel do Licenciado (visao do proprio time). Reaproveita
+            // sellerRanking() -- ja filtra role_slug='vendedor', entao mesmo $sellerIds incluindo
+            // gestor(es)/o proprio licenciado (downlineIds) nao contamina o resultado.
+            if ($role === Roles::REGIONAL_OWNER) {
+                $vendedorItems = array_map(
+                    fn ($row) => ['label' => $row['name'], 'value' => (float) $row['total_value']],
+                    Order::sellerRanking($from, $to, $sellerIds)
+                );
+                $data['chartByVendedor'] = Chart::bar($vendedorItems, 10);
+            }
+
             // ---- Visao geral (overview): resumo do resto do painel direto no inicio ----
 
             // CRM: mesmo escopo ja calculado acima pros pedidos (sellerId/sellerIds), reaproveitado
@@ -167,6 +178,53 @@ class DashboardController
             $licenciadosAtivos = User::allByRole('licenciado');
             $data['licenciadosAtivos'] = count($licenciadosAtivos);
             $data['estadosCobertos'] = count(BrazilStates::groupByState($licenciadosAtivos));
+
+            // Vendas por Estado / Cidade / Licenciado: reaproveita o mesmo sellerRanking() de
+            // /painel/desempenho/vendedores, ja escopado (nacional pro admin, rede supervisionada
+            // pro supervisor/gerente -- $sellerIds calculado mais acima, no bloco STAFF). Estado e
+            // cidade sao os do VENDEDOR (users.city/state), mesmo modelo geografico que o resto do
+            // sistema ja usa (GeoMatch, BrazilStates) -- nao o endereco de cobranca do cliente.
+            $ranking = Order::sellerRanking($data['from'], $data['to'], $sellerIds);
+            $byState = [];
+            $byCity = [];
+            $byLicenciado = [];
+            $licenciadoNameCache = [];
+            foreach ($ranking as $row) {
+                $value = (float) $row['total_value'];
+                if ($value <= 0) {
+                    continue;
+                }
+
+                $uf = strtoupper(trim($row['state'] ?? ''));
+                $stateKey = $uf !== '' ? $uf : 'Não informado';
+                $byState[$stateKey] = ($byState[$stateKey] ?? 0) + $value;
+
+                $city = trim($row['city'] ?? '');
+                $cityLabel = ($city !== '' ? $city : 'Não informada') . ($uf !== '' ? " / {$uf}" : '');
+                $byCity[$cityLabel] = ($byCity[$cityLabel] ?? 0) + $value;
+
+                $sellerId = (int) $row['seller_id'];
+                if (!array_key_exists($sellerId, $licenciadoNameCache)) {
+                    $licenciadoNameCache[$sellerId] = User::licenciadoNameFor($sellerId) ?? 'Sem licenciado';
+                }
+                $licName = $licenciadoNameCache[$sellerId];
+                $byLicenciado[$licName] = ($byLicenciado[$licName] ?? 0) + $value;
+            }
+
+            arsort($byState);
+            arsort($byCity);
+            arsort($byLicenciado);
+
+            $stateItems = [];
+            foreach ($byState as $uf => $value) {
+                $stateItems[] = ['label' => BrazilStates::NAMES[$uf] ?? $uf, 'value' => $value];
+            }
+            $cityItems = array_map(fn ($label, $value) => ['label' => $label, 'value' => $value], array_keys($byCity), $byCity);
+            $licItems = array_map(fn ($label, $value) => ['label' => $label, 'value' => $value], array_keys($byLicenciado), $byLicenciado);
+
+            $data['chartByState'] = Chart::bar($stateItems);
+            $data['chartByCity'] = Chart::bar($cityItems, 8);
+            $data['chartByLicenciado'] = Chart::bar($licItems, 8);
         }
 
         if ($role === 'admin') {

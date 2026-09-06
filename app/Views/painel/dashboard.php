@@ -180,6 +180,31 @@ $hasMetrics = isset($metrics);
         <p class="chart-legend"><span class="dot dot-current"></span> Período atual &nbsp; <span class="dot dot-previous"></span> Período anterior</p>
     </div>
 
+    <?php if (isset($chartByState)): ?>
+        <h3 class="section-title">Vendas por região (período filtrado)</h3>
+        <div class="charts-grid-3">
+            <div class="chart-box">
+                <span class="hint-inline">Por estado</span>
+                <div class="chart-bar-wrap"><?= $chartByState ?></div>
+            </div>
+            <div class="chart-box">
+                <span class="hint-inline">Por cidade (top 8)</span>
+                <div class="chart-bar-wrap"><?= $chartByCity ?></div>
+            </div>
+            <div class="chart-box">
+                <span class="hint-inline">Por licenciado (top 8)</span>
+                <div class="chart-bar-wrap"><?= $chartByLicenciado ?></div>
+            </div>
+        </div>
+    <?php endif; ?>
+
+    <?php if (isset($chartByVendedor)): ?>
+        <h3 class="section-title">Vendas por vendedor (período filtrado)</h3>
+        <div class="chart-box">
+            <div class="chart-bar-wrap"><?= $chartByVendedor ?></div>
+        </div>
+    <?php endif; ?>
+
     <div class="two-col">
         <div>
             <h3 class="section-title">Top produtos vendidos</h3>
