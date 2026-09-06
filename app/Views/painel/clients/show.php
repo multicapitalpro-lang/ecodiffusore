@@ -68,11 +68,16 @@ $totalComprado = array_sum(array_map(fn ($o) => $o['status'] !== 'cancelado' ? (
 
     <div id="notas">
         <h3 class="section-title" style="margin-top:0;">Observações internas</h3>
-        <form action="/painel/clientes/<?= (int) $client['id'] ?>/notas" method="post" class="panel-form">
+        <?php if (isset($_GET['erro_anexo'])): ?>
+            <p class="form-msg form-msg-erro">Anexo inválido (use PDF, JPG, PNG ou WEBP, até 5MB).</p>
+        <?php endif; ?>
+        <form action="/painel/clientes/<?= (int) $client['id'] ?>/notas" method="post" class="panel-form" enctype="multipart/form-data">
             <?= Csrf::field() ?>
             <textarea name="note" placeholder="Escreva uma observação sobre este cliente..." required></textarea>
             <label for="follow_up_date" style="margin-top:6px;">Lembrar de retornar em (opcional)</label>
             <input type="date" id="follow_up_date" name="follow_up_date" style="max-width:180px;">
+            <label for="client-note-attachment" style="margin-top:6px;">Anexo (opcional — docs do veículo, print da conversa etc.)</label>
+            <input type="file" id="client-note-attachment" name="attachment" accept=".pdf,.jpg,.jpeg,.png,.webp">
             <button type="submit" class="btn btn-outline btn-sm" style="margin-top:8px;">Adicionar observação</button>
         </form>
         <div class="notes-list">
@@ -85,6 +90,9 @@ $totalComprado = array_sum(array_map(fn ($o) => $o['status'] !== 'cancelado' ? (
                         <small class="<?= !$n['follow_up_done'] && $n['follow_up_date'] <= $today ? 'text-red' : 'hint-text' ?>" style="display:block;">
                             🔔 Retorno <?= $n['follow_up_done'] ? 'concluído' : 'combinado' ?> pra <?= View::e(date('d/m/Y', strtotime($n['follow_up_date']))) ?>
                         </small>
+                    <?php endif; ?>
+                    <?php if (!empty($n['attachment_path'])): ?>
+                        <a href="/painel/clientes/notas/<?= (int) $n['id'] ?>/anexo" target="_blank" rel="noopener" class="attachment-link" style="margin-top:4px;">📎 <?= View::e($n['attachment_original_name'] ?: 'Anexo') ?></a>
                     <?php endif; ?>
                 </div>
             <?php endforeach; ?>

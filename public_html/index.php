@@ -107,6 +107,7 @@ $router->post('/painel/leads/colunas', [App\Controllers\LeadController::class, '
 $router->post('/painel/leads/{id}/excluir', [App\Controllers\LeadController::class, 'destroy']);
 $router->post('/painel/leads/{id}/estender', [App\Controllers\LeadController::class, 'requestExtension']);
 $router->post('/painel/leads/{id}/notas', [App\Controllers\LeadController::class, 'storeNote']);
+$router->get('/painel/leads/notas/{noteId}/anexo', [App\Controllers\LeadController::class, 'downloadNoteAttachment']);
 $router->get('/painel/leads/extensoes', [App\Controllers\LeadExtensionController::class, 'index']);
 $router->get('/painel/leads/extensoes/{id}/anexo', [App\Controllers\LeadExtensionController::class, 'downloadAttachment']);
 
@@ -128,6 +129,7 @@ $router->post('/painel/clientes/{id}', [App\Controllers\ClientController::class,
 $router->post('/painel/clientes/{id}/excluir', [App\Controllers\ClientController::class, 'destroy']);
 $router->get('/painel/clientes/{id}', [App\Controllers\ClientController::class, 'show']);
 $router->post('/painel/clientes/{id}/notas', [App\Controllers\ClientController::class, 'storeNote']);
+$router->get('/painel/clientes/notas/{id}/anexo', [App\Controllers\ClientController::class, 'downloadNoteAttachment']);
 $router->post('/painel/clientes/{id}/criar-acesso', [App\Controllers\ClientController::class, 'createAccess']);
 
 // Produtos

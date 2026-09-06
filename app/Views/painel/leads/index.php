@@ -98,6 +98,10 @@ $vehicleFieldLabels = [
                         <?php if ($vehicleInfo): ?>
                             <span class="kanban-card-meta">🚚 <?= View::e(implode(' · ', $vehicleInfo)) ?></span>
                         <?php endif; ?>
+                        <?php if (!empty($lead['notes'])): ?>
+                            <?php $hasAttachment = array_filter($lead['notes'], fn ($n) => !empty($n['attachment_path'])); ?>
+                            <span class="kanban-card-meta">📝 <?= count($lead['notes']) ?> observação<?= count($lead['notes']) === 1 ? '' : 'ões' ?><?= $hasAttachment ? ' · 📎' : '' ?></span>
+                        <?php endif; ?>
                         <?php if ($canAssign): ?>
                             <select class="lead-assign-select" data-lead-id="<?= (int) $lead['id'] ?>" onclick="event.stopPropagation()">
                                 <option value="">Sem responsável</option>
@@ -175,23 +179,26 @@ $vehicleFieldLabels = [
         <button type="button" class="modal-close" data-modal-close aria-label="Fechar">&times;</button>
     </div>
     <div class="modal-body">
-        <p><strong>WhatsApp:</strong> <a id="lead-detail-whatsapp-link" href="#" target="_blank" rel="noopener"></a></p>
-        <p><strong>Cidade:</strong> <span id="lead-detail-city"></span></p>
-        <p><strong>Marca do caminhão:</strong> <span id="lead-detail-truck"></span></p>
-        <p><strong>Origem:</strong> <span id="lead-detail-source"></span></p>
-        <p><strong>Responsável:</strong> <span id="lead-detail-assigned"></span></p>
-        <p><strong>Cadastrado em:</strong> <span id="lead-detail-created"></span></p>
-        <div id="lead-detail-vehicle"></div>
-        <p><strong>Mensagem:</strong></p>
-        <p id="lead-detail-message" class="hint-text"></p>
+        <div class="lead-detail-grid" id="lead-detail-grid">
+            <div><span class="hint-text">WhatsApp</span><br><a id="lead-detail-whatsapp-link" href="#" target="_blank" rel="noopener"></a></div>
+            <div><span class="hint-text">Cidade</span><br><span id="lead-detail-city"></span></div>
+            <div><span class="hint-text">Marca do caminhão</span><br><span id="lead-detail-truck"></span></div>
+            <div><span class="hint-text">Origem</span><br><span id="lead-detail-source"></span></div>
+            <div><span class="hint-text">Responsável</span><br><span id="lead-detail-assigned"></span></div>
+            <div><span class="hint-text">Cadastrado em</span><br><span id="lead-detail-created"></span></div>
+        </div>
+        <div class="lead-detail-grid" id="lead-detail-vehicle-grid"></div>
+        <p id="lead-detail-message-wrap"><strong>Mensagem:</strong> <span id="lead-detail-message" class="hint-text"></span></p>
 
-        <div id="notas" style="margin-top:18px; border-top:1px solid var(--border); padding-top:14px;">
+        <div id="notas" style="margin-top:14px; border-top:1px solid var(--border); padding-top:14px;">
             <h3 class="section-title" style="margin-top:0;">Observações</h3>
             <?php if ($canAddNotes ?? true): ?>
-                <form id="lead-note-form" class="panel-form">
+                <form id="lead-note-form" class="panel-form" enctype="multipart/form-data">
                     <textarea name="note" placeholder="Ex: liguei, disse que vai pensar, volto a ligar semana que vem..." required></textarea>
                     <label for="lead-note-followup" style="margin-top:6px;">Lembrar de retornar em (opcional)</label>
                     <input type="date" id="lead-note-followup" name="follow_up_date" style="max-width:180px;">
+                    <label for="lead-note-attachment" style="margin-top:6px;">Anexo (opcional — docs do veículo, print da conversa etc.)</label>
+                    <input type="file" id="lead-note-attachment" name="attachment" accept=".pdf,.jpg,.jpeg,.png,.webp">
                     <button type="submit" class="btn btn-outline btn-sm" style="margin-top:8px;">Adicionar observação</button>
                 </form>
             <?php endif; ?>
@@ -235,6 +242,16 @@ $vehicleFieldLabels = [
                 fu.textContent = '🔔 Retorno ' + label + ' pra ' + n.follow_up_date.split('-').reverse().join('/');
                 item.appendChild(fu);
             }
+            if (n.attachment_path) {
+                const link = document.createElement('a');
+                link.href = '/painel/leads/notas/' + n.id + '/anexo';
+                link.target = '_blank';
+                link.rel = 'noopener';
+                link.className = 'attachment-link';
+                link.style.marginTop = '4px';
+                link.textContent = '📎 ' + (n.attachment_original_name || 'Anexo');
+                item.appendChild(link);
+            }
             list.appendChild(item);
         });
     }
@@ -276,22 +293,20 @@ $vehicleFieldLabels = [
             document.getElementById('lead-detail-created').textContent = card.dataset.leadCreated || '—';
             document.getElementById('lead-detail-message').textContent = card.dataset.leadMessage || '— sem mensagem —';
 
-            const vehicleBox = document.getElementById('lead-detail-vehicle');
-            vehicleBox.innerHTML = '';
+            const vehicleGrid = document.getElementById('lead-detail-vehicle-grid');
+            vehicleGrid.innerHTML = '';
             try {
                 const vehicle = JSON.parse(card.dataset.leadVehicle || '{}');
-                const keys = Object.keys(vehicle);
-                if (keys.length) {
-                    const title = document.createElement('p');
-                    title.innerHTML = '<strong>Veículo:</strong>';
-                    vehicleBox.appendChild(title);
-                    keys.forEach((k) => {
-                        const line = document.createElement('p');
-                        line.className = 'hint-text';
-                        line.textContent = k + ': ' + vehicle[k];
-                        vehicleBox.appendChild(line);
-                    });
-                }
+                Object.keys(vehicle).forEach((k) => {
+                    const cell = document.createElement('div');
+                    const label = document.createElement('span');
+                    label.className = 'hint-text';
+                    label.textContent = k;
+                    cell.appendChild(label);
+                    cell.appendChild(document.createElement('br'));
+                    cell.appendChild(document.createTextNode(vehicle[k]));
+                    vehicleGrid.appendChild(cell);
+                });
             } catch (err) { /* sem dados de veiculo */ }
 
             let notes = [];

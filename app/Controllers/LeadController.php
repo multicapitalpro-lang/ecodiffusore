@@ -192,10 +192,49 @@ class LeadController
             $followUpDate = '';
         }
 
-        LeadNote::create((int) $id, (int) $user['id'], $note, $followUpDate !== '' ? $followUpDate : null);
+        $attachment = null;
+        try {
+            // Motorista as vezes manda os docs do veiculo direto no WhatsApp -- da pra anexar
+            // junto da observacao (mesmo formato/tamanho ja aceito na extensao de prazo).
+            $attachment = FileUpload::storeLeadNoteAttachment($_FILES['attachment'] ?? []);
+        } catch (\RuntimeException $e) {
+            Response::json(['ok' => false, 'error' => $e->getMessage()]);
+        }
+
+        LeadNote::create((int) $id, (int) $user['id'], $note, $followUpDate !== '' ? $followUpDate : null, $attachment);
 
         $notes = LeadNote::forLead((int) $id);
         Response::json(['ok' => true, 'notes' => $notes]);
+    }
+
+    public function downloadNoteAttachment(string $noteId): void
+    {
+        Auth::requireRole(Roles::STAFF);
+        $user = Auth::user();
+
+        $note = LeadNote::find((int) $noteId);
+        if (!$note || !$note['attachment_path']) {
+            http_response_code(404);
+            exit('Anexo não encontrado.');
+        }
+
+        if (!in_array((int) $note['lead_id'], array_column($this->scopedLeads($user), 'id'), true)) {
+            http_response_code(403);
+            require BASE_PATH . '/app/Views/errors/403.php';
+            exit;
+        }
+
+        $path = FileUpload::path('lead_notes', $note['attachment_path']);
+        if (!file_exists($path)) {
+            http_response_code(404);
+            exit('Arquivo não encontrado.');
+        }
+
+        header('Content-Type: ' . (mime_content_type($path) ?: 'application/octet-stream'));
+        header('Content-Disposition: inline; filename="' . basename($note['attachment_original_name'] ?: $note['attachment_path']) . '"');
+        header('Content-Length: ' . filesize($path));
+        readfile($path);
+        exit;
     }
 
     /** Exclusao liberada pra qualquer STAFF (inclusive Gerente/Supervisor, que sao view-only pro

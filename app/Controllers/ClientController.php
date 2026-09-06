@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Core\Auth;
 use App\Core\Csrf;
 use App\Core\Csv;
+use App\Core\FileUpload;
 use App\Core\Response;
 use App\Core\Roles;
 use App\Core\Router;
@@ -250,9 +251,41 @@ class ClientController
             $followUpDate = '';
         }
 
-        ClientNote::create($id, (int) Auth::user()['id'], trim($_POST['note']), $followUpDate !== '' ? $followUpDate : null);
+        $attachment = null;
+        try {
+            $attachment = FileUpload::storeClientNoteAttachment($_FILES['attachment'] ?? []);
+        } catch (\RuntimeException $e) {
+            Router::redirect("/painel/clientes/{$id}?erro_anexo=1#notas");
+        }
+
+        ClientNote::create($id, (int) Auth::user()['id'], trim($_POST['note']), $followUpDate !== '' ? $followUpDate : null, $attachment);
 
         Router::redirect("/painel/clientes/{$id}#notas");
+    }
+
+    public function downloadNoteAttachment(string $id): void
+    {
+        Auth::requireRole(Roles::STAFF);
+
+        $note = ClientNote::find((int) $id);
+        if (!$note || !$note['attachment_path']) {
+            http_response_code(404);
+            exit('Anexo não encontrado.');
+        }
+
+        $this->authorizeClient((int) $note['client_id']);
+
+        $path = FileUpload::path('client_notes', $note['attachment_path']);
+        if (!file_exists($path)) {
+            http_response_code(404);
+            exit('Arquivo não encontrado.');
+        }
+
+        header('Content-Type: ' . (mime_content_type($path) ?: 'application/octet-stream'));
+        header('Content-Disposition: inline; filename="' . basename($note['attachment_original_name'] ?: $note['attachment_path']) . '"');
+        header('Content-Length: ' . filesize($path));
+        readfile($path);
+        exit;
     }
 
     public function edit(string $id): void

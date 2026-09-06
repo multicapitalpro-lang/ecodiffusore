@@ -455,6 +455,12 @@ tr.report-row-bold td { font-weight: 700; }
 }
 .lead-expiration-warning .link-button { font-size: .74rem; font-weight: 700; }
 .lead-expiration-warning-early { background: #eef2fb; color: #33507a; }
+/* Grade compacta do modal de detalhe do Lead -- antes era uma lista de <p> empilhados (6+ linhas
+   so pros dados basicos, mais o veiculo embaixo), ficava um modal bem alto pra rolar. 2 colunas
+   corta a altura pela metade; empilha em 1 coluna so em tela bem estreita. */
+.lead-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; margin-bottom: 14px; font-size: .88rem; }
+.lead-detail-grid:empty { display: none; margin: 0; }
+@media (max-width: 420px) { .lead-detail-grid { grid-template-columns: 1fr; } }
 .kanban-card select { margin-top: 4px; padding: 6px 8px; font-size: .78rem; border-radius: 6px; border: 1px solid var(--border); }
 .kanban-empty { text-align: center; padding: 20px 0; margin: 0; }
 .kanban-col-add { background: transparent; border: 2px dashed var(--border); justify-content: center; padding: 14px; }

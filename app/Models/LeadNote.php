@@ -11,6 +11,14 @@ use App\Core\Database;
  */
 class LeadNote
 {
+    public static function find(int $id): ?array
+    {
+        $stmt = Database::connection()->prepare('SELECT * FROM lead_notes WHERE id = :id');
+        $stmt->execute(['id' => $id]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
     public static function forLead(int $leadId): array
     {
         $stmt = Database::connection()->prepare(
@@ -23,15 +31,24 @@ class LeadNote
     }
 
     /** Uma nova nota conta como "acabei de dar retorno" -- fecha qualquer lembrete pendente
-     *  anterior desse mesmo lead automaticamente. */
-    public static function create(int $leadId, int $userId, string $note, ?string $followUpDate = null): void
+     *  anterior desse mesmo lead automaticamente.
+     * @param ?array $attachment resultado de App\Core\FileUpload::storeLeadNoteAttachment() */
+    public static function create(int $leadId, int $userId, string $note, ?string $followUpDate = null, ?array $attachment = null): void
     {
         $db = Database::connection();
 
         $stmt = $db->prepare(
-            'INSERT INTO lead_notes (lead_id, user_id, note, follow_up_date) VALUES (:lead_id, :user_id, :note, :follow_up_date)'
+            'INSERT INTO lead_notes (lead_id, user_id, note, follow_up_date, attachment_path, attachment_original_name)
+             VALUES (:lead_id, :user_id, :note, :follow_up_date, :attachment_path, :attachment_original_name)'
         );
-        $stmt->execute(['lead_id' => $leadId, 'user_id' => $userId, 'note' => $note, 'follow_up_date' => $followUpDate]);
+        $stmt->execute([
+            'lead_id' => $leadId,
+            'user_id' => $userId,
+            'note' => $note,
+            'follow_up_date' => $followUpDate,
+            'attachment_path' => $attachment['stored_name'] ?? null,
+            'attachment_original_name' => $attachment['original_name'] ?? null,
+        ]);
 
         $db->prepare('UPDATE lead_notes SET follow_up_done = 1 WHERE lead_id = :id AND follow_up_done = 0 AND id != :new_id')
             ->execute(['id' => $leadId, 'new_id' => $db->lastInsertId()]);
