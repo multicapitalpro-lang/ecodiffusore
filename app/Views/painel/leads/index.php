@@ -119,6 +119,13 @@ $vehicleFieldLabels = [
                                     <button type="button" class="link-button" data-request-extension="<?= (int) $lead['id'] ?>" onclick="event.stopPropagation()">Solicitar extensão</button>
                                 <?php endif; ?>
                             </div>
+                        <?php elseif ($lead['days_until_expiration'] !== null && $lead['days_until_expiration'] <= $earlyWarningDays): ?>
+                            <div class="lead-expiration-warning lead-expiration-warning-early">
+                                👀 Fica de olho: expira em <?= (int) $lead['days_until_expiration'] ?> dias
+                                <?php if (!$isViewOnly): ?>
+                                    <button type="button" class="link-button" data-request-extension="<?= (int) $lead['id'] ?>" onclick="event.stopPropagation()">Solicitar extensão</button>
+                                <?php endif; ?>
+                            </div>
                         <?php endif; ?>
                     </div>
                 <?php endforeach; ?>

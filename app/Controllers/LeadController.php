@@ -17,6 +17,9 @@ use App\Models\User;
 class LeadController
 {
     private const EXPIRATION_WARNING_DAYS = 5;
+    /** Aviso mais cedo, mais discreto -- antes so avisava 5 dias antes de expirar, o que dava
+     *  pouca margem pro vendedor agir. Este soma-se ao aviso urgente, nao substitui. */
+    private const EARLY_WARNING_DAYS = 15;
 
     public function index(): void
     {
@@ -58,6 +61,7 @@ class LeadController
             'sellers' => !$isViewOnly ? $this->sellerOptions($user) : [],
             'showLicenciadoBadge' => $showLicenciadoBadge,
             'expirationWarningDays' => self::EXPIRATION_WARNING_DAYS,
+            'earlyWarningDays' => self::EARLY_WARNING_DAYS,
         ]);
     }
 

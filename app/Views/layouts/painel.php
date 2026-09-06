@@ -41,7 +41,7 @@ $pendingApprovals = in_array($role, Roles::SUPERVISOR_ASSIGNMENT, true) ? \App\M
 $vendasOpen = $anyActive(['/painel/pedidos', '/painel/orcamentos', '/painel/produtos', '/painel/tabela-precos', '/painel/configuracoes/pagamento', '/painel/simulador', '/painel/materiais']);
 $leadsOpen = $anyActive(['/painel/leads', '/painel/clientes', '/painel/configuracoes/roteamento']);
 $financeiroOpen = $anyActive(['/painel/financeiro']);
-$desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/metas']);
+$desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/meu-ranking', '/painel/metas']);
 ?><!doctype html>
 <html lang="pt-BR">
 <head>
@@ -102,6 +102,9 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/metas'])
                     <div class="nav-subitems">
                         <?php if (in_array($role, $managerRoles, true)): ?>
                             <a href="/painel/desempenho/vendedores" class="<?= $isActive('/painel/desempenho/vendedores') ? 'is-active' : '' ?>">Vendedores</a>
+                        <?php endif; ?>
+                        <?php if ($role === Roles::SELLER): ?>
+                            <a href="/painel/meu-ranking" class="<?= $isActive('/painel/meu-ranking') ? 'is-active' : '' ?>">Meu Ranking</a>
                         <?php endif; ?>
                         <a href="/painel/metas" class="<?= $isActive('/painel/metas') ? 'is-active' : '' ?>">Metas</a>
                     </div>

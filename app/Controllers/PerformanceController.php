@@ -41,6 +41,37 @@ class PerformanceController
         ]);
     }
 
+    /**
+     * Ranking do proprio time visivel PRO VENDEDOR (nao so pro Licenciado/Gestor) -- reforco de
+     * meta/competicao saudavel, pedido explicito do usuario. Reaproveita sellerRanking() (mesmo
+     * motor de /painel/desempenho/vendedores), so que escopado a rede do proprio Licenciado dele
+     * (mesmo padrao de downlineIds do dashboard, ver DashboardController) e SEM comissao de
+     * ninguem (inclusive a propria) -- valor individual de comissao entre colegas nao e' pra
+     * ficar visivel de vendedor pra vendedor, só o dado competitivo (vendas/ticket/conversao).
+     */
+    public function myRanking(): void
+    {
+        Auth::requireRole(Roles::SELLER);
+        $user = Auth::user();
+
+        [$from, $to] = DateRange::fromRequest();
+
+        $licenciadoId = User::licenciadoIdFor((int) $user['id']);
+        $sellerIds = $licenciadoId ? User::downlineIds($licenciadoId) : [(int) $user['id']];
+
+        $ranking = array_map(function ($r) {
+            unset($r['commission_total']);
+            return $r;
+        }, Order::sellerRanking($from, $to, $sellerIds));
+
+        View::render('painel/performance/my_ranking', [
+            'user' => $user,
+            'from' => $from,
+            'to' => $to,
+            'ranking' => $ranking,
+        ]);
+    }
+
     public function team(): void
     {
         Auth::requireRole(array_merge(Roles::MANAGEMENT, Roles::NATIONAL_SUPPORT));
