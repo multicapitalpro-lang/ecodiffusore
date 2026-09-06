@@ -51,6 +51,13 @@ $hasMetrics = isset($metrics);
                     <a href="/painel/leads">Ver leads</a>
                 </div>
             <?php endif; ?>
+            <?php if (!empty($followUpsPendentes)): ?>
+                <div class="dash-card dash-card-danger">
+                    <span>Follow-ups combinados hoje</span>
+                    <strong><?= (int) $followUpsPendentes ?></strong>
+                    <a href="/painel/leads">Ver leads</a>
+                </div>
+            <?php endif; ?>
         </div>
     <?php endif; ?>
 

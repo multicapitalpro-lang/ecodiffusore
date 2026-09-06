@@ -245,7 +245,12 @@ class ClientController
             Router::redirect("/painel/clientes/{$id}");
         }
 
-        ClientNote::create($id, (int) Auth::user()['id'], trim($_POST['note']));
+        $followUpDate = trim($_POST['follow_up_date'] ?? '');
+        if ($followUpDate !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $followUpDate)) {
+            $followUpDate = '';
+        }
+
+        ClientNote::create($id, (int) Auth::user()['id'], trim($_POST['note']), $followUpDate !== '' ? $followUpDate : null);
 
         Router::redirect("/painel/clientes/{$id}#notas");
     }

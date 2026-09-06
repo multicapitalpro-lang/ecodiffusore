@@ -71,13 +71,21 @@ $totalComprado = array_sum(array_map(fn ($o) => $o['status'] !== 'cancelado' ? (
         <form action="/painel/clientes/<?= (int) $client['id'] ?>/notas" method="post" class="panel-form">
             <?= Csrf::field() ?>
             <textarea name="note" placeholder="Escreva uma observação sobre este cliente..." required></textarea>
-            <button type="submit" class="btn btn-outline btn-sm">Adicionar observação</button>
+            <label for="follow_up_date" style="margin-top:6px;">Lembrar de retornar em (opcional)</label>
+            <input type="date" id="follow_up_date" name="follow_up_date" style="max-width:180px;">
+            <button type="submit" class="btn btn-outline btn-sm" style="margin-top:8px;">Adicionar observação</button>
         </form>
         <div class="notes-list">
+            <?php $today = date('Y-m-d'); ?>
             <?php foreach ($notes as $n): ?>
                 <div class="note-item">
                     <p><?= nl2br(View::e($n['note'])) ?></p>
                     <small><?= View::e($n['user_name'] ?? 'Sistema') ?> — <?= View::e(date('d/m/Y H:i', strtotime($n['created_at']))) ?></small>
+                    <?php if (!empty($n['follow_up_date'])): ?>
+                        <small class="<?= !$n['follow_up_done'] && $n['follow_up_date'] <= $today ? 'text-red' : 'hint-text' ?>" style="display:block;">
+                            🔔 Retorno <?= $n['follow_up_done'] ? 'concluído' : 'combinado' ?> pra <?= View::e(date('d/m/Y', strtotime($n['follow_up_date']))) ?>
+                        </small>
+                    <?php endif; ?>
                 </div>
             <?php endforeach; ?>
             <?php if (!$notes): ?>

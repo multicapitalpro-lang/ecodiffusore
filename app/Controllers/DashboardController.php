@@ -18,6 +18,7 @@ use App\Models\FinancialAccount;
 use App\Models\FinancialTransaction;
 use App\Models\Goal;
 use App\Models\Lead;
+use App\Models\LeadNote;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Payment;
@@ -128,6 +129,12 @@ class DashboardController
                 $leads = Lead::forScope($leadIds, $includeUnassigned);
             }
             $data['leadsNovos'] = count(array_filter($leads, fn ($l) => $l['status'] === 'novo'));
+
+            // Follow-ups combinados (ver LeadNote) que ja chegaram na data -- mesmo "requer atencao"
+            // que o resto desta secao, so que pra nao esquecer de retornar pro lead como prometido.
+            $todayStr = date('Y-m-d');
+            $pendingFollowUps = LeadNote::pendingFollowUps(array_column($leads, 'id'));
+            $data['followUpsPendentes'] = count(array_filter($pendingFollowUps, fn ($d) => $d <= $todayStr));
 
             // Comissao pendente da propria pessoa (vendedor/gestor/licenciado/supervisor/gerente
             // podem todos ser beneficiario de comissao -- admin normalmente nao, fica 0).

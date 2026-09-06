@@ -11,6 +11,7 @@ use App\Core\Roles;
 use App\Core\Router;
 use App\Core\View;
 use App\Models\Lead;
+use App\Models\LeadNote;
 use App\Models\LeadStage;
 use App\Models\User;
 
@@ -35,6 +36,10 @@ class LeadController
 
         $showLicenciadoBadge = in_array($user['role_slug'], ['supervisor', 'gerente'], true);
         $now = time();
+        $today = date('Y-m-d');
+        $leadIds = array_column($leads, 'id');
+        $pendingFollowUps = LeadNote::pendingFollowUps($leadIds);
+        $notesByLead = LeadNote::forLeads($leadIds);
         foreach ($leads as &$l) {
             if ($showLicenciadoBadge) {
                 $l['licenciado_name'] = User::licenciadoNameFor((int) ($l['assigned_to_user_id'] ?? 0));
@@ -42,6 +47,9 @@ class LeadController
             $l['days_until_expiration'] = $l['expires_at']
                 ? (int) ceil((strtotime($l['expires_at']) - $now) / 86400)
                 : null;
+            $followUpDate = $pendingFollowUps[(int) $l['id']] ?? null;
+            $l['follow_up_due'] = $followUpDate !== null && $followUpDate <= $today ? $followUpDate : null;
+            $l['notes'] = $notesByLead[(int) $l['id']] ?? [];
         }
         unset($l);
 
@@ -146,6 +154,41 @@ class LeadController
             Response::json(['ok' => true]);
         }
         Router::redirect('/painel/leads');
+    }
+
+    /** Timeline de observacoes (ligacoes, retorno combinado etc.) + lembrete de follow-up
+     *  opcional -- pedido do usuario pra nao perder o fio da meada com muitos leads ao mesmo
+     *  tempo. Uma nota nova fecha automaticamente qualquer lembrete pendente anterior desse
+     *  mesmo lead (ver LeadNote::create()). */
+    public function storeNote(string $id): void
+    {
+        Auth::requireRole(Roles::STAFF);
+        $user = Auth::user();
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            Response::json(['ok' => false, 'error' => 'Sessão expirada, recarregue a página.']);
+        }
+
+        if (!in_array((int) $id, array_column($this->scopedLeads($user), 'id'), true)) {
+            http_response_code(403);
+            require BASE_PATH . '/app/Views/errors/403.php';
+            exit;
+        }
+
+        $note = trim($_POST['note'] ?? '');
+        if ($note === '') {
+            Response::json(['ok' => false, 'error' => 'Escreva a observação.']);
+        }
+
+        $followUpDate = trim($_POST['follow_up_date'] ?? '');
+        if ($followUpDate !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $followUpDate)) {
+            $followUpDate = '';
+        }
+
+        LeadNote::create((int) $id, (int) $user['id'], $note, $followUpDate !== '' ? $followUpDate : null);
+
+        $notes = LeadNote::forLead((int) $id);
+        Response::json(['ok' => true, 'notes' => $notes]);
     }
 
     /** Exclusao liberada pra qualquer STAFF (inclusive Gerente/Supervisor, que sao view-only pro

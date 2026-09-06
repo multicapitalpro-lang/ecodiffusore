@@ -105,6 +105,7 @@ $router->post('/painel/leads/{id}/atribuir', [App\Controllers\LeadController::cl
 $router->post('/painel/leads/colunas', [App\Controllers\LeadController::class, 'addStage']);
 $router->post('/painel/leads/{id}/excluir', [App\Controllers\LeadController::class, 'destroy']);
 $router->post('/painel/leads/{id}/estender', [App\Controllers\LeadController::class, 'requestExtension']);
+$router->post('/painel/leads/{id}/notas', [App\Controllers\LeadController::class, 'storeNote']);
 $router->get('/painel/leads/extensoes', [App\Controllers\LeadExtensionController::class, 'index']);
 $router->get('/painel/leads/extensoes/{id}/anexo', [App\Controllers\LeadExtensionController::class, 'downloadAttachment']);
 

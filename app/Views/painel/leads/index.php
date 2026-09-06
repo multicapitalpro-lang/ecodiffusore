@@ -78,7 +78,8 @@ $vehicleFieldLabels = [
                          data-lead-source="<?= View::e($lead['source'] ?: '') ?>"
                          data-lead-assigned="<?= View::e($lead['assigned_name'] ?? '') ?>"
                          data-lead-created="<?= View::e($lead['created_at'] ?? '') ?>"
-                         data-lead-vehicle="<?= View::e(json_encode($vehicleInfo, JSON_UNESCAPED_UNICODE)) ?>">
+                         data-lead-vehicle="<?= View::e(json_encode($vehicleInfo, JSON_UNESCAPED_UNICODE)) ?>"
+                         data-lead-notes="<?= View::e(json_encode($lead['notes'], JSON_UNESCAPED_UNICODE)) ?>">
                         <div class="kanban-card-top">
                             <strong><?= View::e($lead['name']) ?></strong>
                             <button type="button" class="icon-button-danger" data-delete-lead="<?= (int) $lead['id'] ?>" title="Excluir lead">🗑</button>
@@ -125,6 +126,11 @@ $vehicleFieldLabels = [
                                 <?php if (!$isViewOnly): ?>
                                     <button type="button" class="link-button" data-request-extension="<?= (int) $lead['id'] ?>" onclick="event.stopPropagation()">Solicitar extensão</button>
                                 <?php endif; ?>
+                            </div>
+                        <?php endif; ?>
+                        <?php if (!empty($lead['follow_up_due'])): ?>
+                            <div class="lead-expiration-warning lead-expiration-warning-early">
+                                🔔 Retorno combinado pra <?= View::e(date('d/m', strtotime($lead['follow_up_due']))) ?>
                             </div>
                         <?php endif; ?>
                     </div>
@@ -178,6 +184,19 @@ $vehicleFieldLabels = [
         <div id="lead-detail-vehicle"></div>
         <p><strong>Mensagem:</strong></p>
         <p id="lead-detail-message" class="hint-text"></p>
+
+        <div id="notas" style="margin-top:18px; border-top:1px solid var(--border); padding-top:14px;">
+            <h3 class="section-title" style="margin-top:0;">Observações</h3>
+            <?php if (!$isViewOnly): ?>
+                <form id="lead-note-form" class="panel-form">
+                    <textarea name="note" placeholder="Ex: liguei, disse que vai pensar, volto a ligar semana que vem..." required></textarea>
+                    <label for="lead-note-followup" style="margin-top:6px;">Lembrar de retornar em (opcional)</label>
+                    <input type="date" id="lead-note-followup" name="follow_up_date" style="max-width:180px;">
+                    <button type="submit" class="btn btn-outline btn-sm" style="margin-top:8px;">Adicionar observação</button>
+                </form>
+            <?php endif; ?>
+            <div id="lead-detail-notes-list" class="notes-list"></div>
+        </div>
     </div>
 </dialog>
 
@@ -188,6 +207,37 @@ $vehicleFieldLabels = [
     if (!board) return;
 
     let draggedId = null;
+    let currentLeadId = null;
+
+    function renderNotes(notes) {
+        const list = document.getElementById('lead-detail-notes-list');
+        list.innerHTML = '';
+        if (!notes || !notes.length) {
+            list.innerHTML = '<p class="hint-text">Nenhuma observação registrada ainda.</p>';
+            return;
+        }
+        const today = new Date().toISOString().slice(0, 10);
+        notes.forEach((n) => {
+            const item = document.createElement('div');
+            item.className = 'note-item';
+            const p = document.createElement('p');
+            p.textContent = n.note;
+            item.appendChild(p);
+            const small = document.createElement('small');
+            small.textContent = (n.user_name || 'Sistema') + ' — ' + new Date(n.created_at).toLocaleString('pt-BR');
+            item.appendChild(small);
+            if (n.follow_up_date) {
+                const fu = document.createElement('small');
+                fu.style.display = 'block';
+                const late = !parseInt(n.follow_up_done, 10) && n.follow_up_date <= today;
+                fu.className = late ? 'text-red' : 'hint-text';
+                const label = parseInt(n.follow_up_done, 10) ? 'concluído' : 'combinado';
+                fu.textContent = '🔔 Retorno ' + label + ' pra ' + n.follow_up_date.split('-').reverse().join('/');
+                item.appendChild(fu);
+            }
+            list.appendChild(item);
+        });
+    }
 
     function buildWaMessage(card) {
         const name = card.dataset.leadName || '';
@@ -213,6 +263,7 @@ $vehicleFieldLabels = [
         card.addEventListener('click', (e) => {
             if (e.target.closest('select, a, button')) return;
 
+            currentLeadId = card.dataset.leadId;
             document.getElementById('lead-detail-name').textContent = card.dataset.leadName || 'Lead';
             const waLink = document.getElementById('lead-detail-whatsapp-link');
             const phone = (card.dataset.leadWhatsapp || '').replace(/\D/g, '');
@@ -243,9 +294,49 @@ $vehicleFieldLabels = [
                 }
             } catch (err) { /* sem dados de veiculo */ }
 
+            let notes = [];
+            try {
+                notes = JSON.parse(card.dataset.leadNotes || '[]');
+            } catch (err) { /* sem notas */ }
+            renderNotes(notes);
+
             document.getElementById('modal-lead-detail').showModal();
         });
     });
+
+    const leadNoteForm = document.getElementById('lead-note-form');
+    if (leadNoteForm) {
+        leadNoteForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!currentLeadId) return;
+
+            const formData = new FormData(leadNoteForm);
+            formData.set('csrf_token', csrfToken);
+
+            const submitBtn = leadNoteForm.querySelector('button[type=submit]');
+            submitBtn.disabled = true;
+
+            try {
+                const res = await fetch('/painel/leads/' + currentLeadId + '/notas', {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    renderNotes(data.notes);
+                    leadNoteForm.reset();
+                    const card = board.querySelector('.kanban-card[data-lead-id="' + currentLeadId + '"]');
+                    if (card) card.dataset.leadNotes = JSON.stringify(data.notes);
+                } else {
+                    alert(data.error || 'Erro ao salvar. Tente novamente.');
+                }
+            } catch (err) {
+                alert('Erro ao salvar. Tente novamente.');
+            }
+            submitBtn.disabled = false;
+        });
+    }
 
     board.querySelectorAll('[data-delete-lead]').forEach((btn) => {
         btn.addEventListener('click', (e) => {
