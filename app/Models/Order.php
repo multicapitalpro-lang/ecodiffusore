@@ -387,7 +387,7 @@ class Order
             $scopeSql = ' AND u.id IN (' . implode(',', $names) . ')';
         }
 
-        $sql = 'SELECT u.id AS seller_id, u.name, u.city, u.state, u.manager_id, r.slug AS role_slug,
+        $sql = 'SELECT u.id AS seller_id, u.name, u.city, u.state, u.manager_id, u.created_at, r.slug AS role_slug,
                     COUNT(o.id) AS order_count,
                     COALESCE(SUM(o.total_value), 0) AS total_value,
                     COALESCE((SELECT SUM(c.amount) FROM commissions c WHERE c.seller_id = u.id

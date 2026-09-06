@@ -15,6 +15,7 @@ use App\Models\Commission;
 use App\Models\Lead;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\SellerActivity;
 use App\Models\User;
 
 class PerformanceController
@@ -32,12 +33,22 @@ class PerformanceController
             ? User::downlineIds((int) $user['id'])
             : null;
 
+        $ranking = Order::sellerRanking($from, $to, $sellerIds);
+        $lastActivity = SellerActivity::lastActivity(array_column($ranking, 'seller_id'));
+        $now = time();
+        foreach ($ranking as &$r) {
+            $baseline = $lastActivity[(int) $r['seller_id']] ?? $r['created_at'];
+            $r['days_inactive'] = (int) floor(($now - strtotime($baseline)) / 86400);
+        }
+        unset($r);
+
         View::render('painel/performance/sellers', [
             'user' => $user,
             'from' => $from,
             'to' => $to,
-            'ranking' => Order::sellerRanking($from, $to, $sellerIds),
+            'ranking' => $ranking,
             'topProducts' => OrderItem::topProducts($from, $to, null, $sellerIds),
+            'inactivityThreshold' => SellerActivity::INACTIVITY_DAYS,
         ]);
     }
 

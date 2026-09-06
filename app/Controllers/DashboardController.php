@@ -23,6 +23,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Payment;
 use App\Models\Quote;
+use App\Models\SellerActivity;
 use App\Models\User;
 
 class DashboardController
@@ -111,6 +112,17 @@ class DashboardController
                     Order::sellerRanking($from, $to, $sellerIds)
                 );
                 $data['chartByVendedor'] = Chart::bar($vendedorItems, 10);
+            }
+
+            // Vendedor inativo (sem pedido/orcamento/nota de lead ha X dias): sinal pro
+            // Gestor/Licenciado dar suporte antes da equipe esfriar de vez -- so pra quem de fato
+            // gerencia um time de Vendedor direto.
+            if (in_array($role, ['gestor', Roles::REGIONAL_OWNER], true)) {
+                $ownVendedores = array_values(array_filter(
+                    User::allByRole('vendedor'),
+                    fn ($v) => in_array((int) $v['id'], $sellerIds ?? [], true)
+                ));
+                $data['vendedoresInativos'] = SellerActivity::inactiveAmong($ownVendedores);
             }
 
             // ---- Visao geral (overview): resumo do resto do painel direto no inicio ----

@@ -58,6 +58,13 @@ $hasMetrics = isset($metrics);
                     <a href="/painel/leads">Ver leads</a>
                 </div>
             <?php endif; ?>
+            <?php if (!empty($vendedoresInativos)): ?>
+                <div class="dash-card dash-card-danger">
+                    <span>Vendedores inativos</span>
+                    <strong><?= count($vendedoresInativos) ?></strong>
+                    <a href="/painel/desempenho/vendedores">Ver equipe</a>
+                </div>
+            <?php endif; ?>
         </div>
     <?php endif; ?>
 

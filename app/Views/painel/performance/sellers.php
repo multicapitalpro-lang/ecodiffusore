@@ -35,9 +35,10 @@ use App\Core\View;
         <h3 class="section-title">Ranking de vendedores</h3>
         <div class="table-scroll">
             <table class="data-table">
-                <thead><tr><th></th><th>Vendedor</th><th>Região</th><th>Licenciado</th><th>Pedidos</th><th>Valor vendido</th><th>Ticket médio</th><th>Comissão</th><th>Leads</th><th>Conversão</th></tr></thead>
+                <thead><tr><th></th><th>Vendedor</th><th>Região</th><th>Licenciado</th><th>Pedidos</th><th>Valor vendido</th><th>Ticket médio</th><th>Comissão</th><th>Leads</th><th>Conversão</th><th>Última atividade</th></tr></thead>
                 <tbody>
                     <?php foreach ($ranking as $i => $r): ?>
+                        <?php $inactive = $r['days_inactive'] >= $inactivityThreshold; ?>
                         <tr>
                             <td><?= $i === 0 && (float) $r['total_value'] > 0 ? '🏆' : ($i === 1 && (float) $r['total_value'] > 0 ? '🥈' : ($i === 2 && (float) $r['total_value'] > 0 ? '🥉' : '')) ?></td>
                             <td><?= View::e($r['name']) ?></td>
@@ -49,10 +50,11 @@ use App\Core\View;
                             <td>R$ <?= number_format((float) $r['commission_total'], 2, ',', '.') ?></td>
                             <td><?= (int) $r['lead_count'] ?> <?php if ((int) $r['lead_open_count'] > 0): ?><span class="hint-text">(<?= (int) $r['lead_open_count'] ?> em aberto)</span><?php endif; ?></td>
                             <td><?= $r['conversion_pct'] !== null ? View::e($r['conversion_pct']) . '%' : '—' ?></td>
+                            <td class="<?= $inactive ? 'text-red' : '' ?>"><?= $inactive ? '⚠️ ' : '' ?><?= (int) $r['days_inactive'] ?> dia<?= (int) $r['days_inactive'] === 1 ? '' : 's' ?></td>
                         </tr>
                     <?php endforeach; ?>
                     <?php if (!$ranking): ?>
-                        <tr><td colspan="10">Nenhum vendedor cadastrado ainda.</td></tr>
+                        <tr><td colspan="11">Nenhum vendedor cadastrado ainda.</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>
