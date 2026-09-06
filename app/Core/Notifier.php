@@ -2,12 +2,16 @@
 
 namespace App\Core;
 
+use App\Models\EmailEventTemplate;
 use App\Models\EmailTemplateSettings;
 use App\Models\User;
 
 /**
- * Central de notificacoes por e-mail. Um metodo por evento -- cada um resolve os destinatarios e
- * monta o corpo (ja envolvido no template padrao, ver template()) e manda via Mailer::send().
+ * Central de notificacoes por e-mail. Um metodo por evento -- cada um resolve os destinatarios,
+ * monta o corpo a partir do template EDITAVEL do evento (App\Models\EmailEventTemplate, ver
+ * eventBody()) e manda via Mailer::send(). Assunto/titulo/texto de introducao/rotulo do botao sao
+ * editaveis pelo admin em /painel/configuracoes/email -- so a tabela de dados (Cliente/Valor etc)
+ * e a URL do botao continuam fixas no codigo (estrutural, nao e' "texto").
  *
  * Dois niveis de destinatario, por pedido explicito do usuario:
  * - leadRoteado / orcamentoRealizado: so Vendedor responsavel + Licenciado da rede dele.
@@ -29,15 +33,11 @@ class Notifier
     /** @param array $lead precisa de name/whatsapp/city */
     public static function leadRoteado(array $lead, int $assigneeId): void
     {
-        $body = '<p>Um novo lead foi direcionado pra você:</p>'
-            . self::infoList([
-                'Nome' => $lead['name'] ?? '—',
-                'WhatsApp' => $lead['whatsapp'] ?? '—',
-                'Cidade' => $lead['city'] ?? '—',
-            ])
-            . self::button(self::BASE_URL . '/painel/leads', 'Acessar Leads no painel');
+        $vars = ['nome' => $lead['name'] ?? '—', 'whatsapp' => $lead['whatsapp'] ?? '—', 'cidade' => $lead['city'] ?? '—'];
+        $details = self::infoList(['Nome' => $vars['nome'], 'WhatsApp' => $vars['whatsapp'], 'Cidade' => $vars['cidade']]);
+        [$subject, $title, $body] = self::eventBody('lead_roteado', $vars, $details, self::BASE_URL . '/painel/leads');
 
-        self::sendToSellerAndLicenciado($assigneeId, 'Novo lead direcionado a você', 'Novo lead direcionado', $body);
+        self::sendToSellerAndLicenciado($assigneeId, $subject, $title, $body);
     }
 
     /** @param array $quote precisa de id/seller_id/total_value/client_name */
@@ -47,11 +47,14 @@ class Notifier
             return;
         }
 
-        $body = '<p>Um orçamento foi registrado:</p>'
-            . self::orderDetails($quote)
-            . self::button(self::BASE_URL . '/painel/orcamentos/' . (int) $quote['id'], 'Ver orçamento no painel');
+        [$subject, $title, $body] = self::eventBody(
+            'orcamento_registrado',
+            self::orderVars($quote),
+            self::orderDetails($quote),
+            self::BASE_URL . '/painel/orcamentos/' . (int) $quote['id']
+        );
 
-        self::sendToSellerAndLicenciado((int) $quote['seller_id'], 'Orçamento registrado', 'Orçamento registrado', $body);
+        self::sendToSellerAndLicenciado((int) $quote['seller_id'], $subject, $title, $body);
     }
 
     /** @param array $order precisa de id/seller_id/total_value/client_name */
@@ -61,11 +64,14 @@ class Notifier
             return;
         }
 
-        $body = '<p>Um pedido foi registrado:</p>'
-            . self::orderDetails($order)
-            . self::button(self::BASE_URL . '/painel/pedidos/' . (int) $order['id'], 'Ver pedido no painel');
+        [$subject, $title, $body] = self::eventBody(
+            'pedido_registrado',
+            self::orderVars($order),
+            self::orderDetails($order),
+            self::BASE_URL . '/painel/pedidos/' . (int) $order['id']
+        );
 
-        self::sendToFullChain((int) $order['seller_id'], 'Pedido registrado', 'Pedido registrado', $body);
+        self::sendToFullChain((int) $order['seller_id'], $subject, $title, $body);
     }
 
     /** @param array $order precisa de id/seller_id/total_value/client_name */
@@ -75,20 +81,66 @@ class Notifier
             return;
         }
 
-        $body = '<p>Um pedido foi aprovado (pagamento confirmado):</p>'
-            . self::orderDetails($order)
-            . self::button(self::BASE_URL . '/painel/pedidos/' . (int) $order['id'], 'Ver pedido no painel');
+        [$subject, $title, $body] = self::eventBody(
+            'pedido_aprovado',
+            self::orderVars($order),
+            self::orderDetails($order),
+            self::BASE_URL . '/painel/pedidos/' . (int) $order['id']
+        );
 
-        self::sendToFullChain((int) $order['seller_id'], 'Pedido aprovado', 'Pedido aprovado', $body);
+        self::sendToFullChain((int) $order['seller_id'], $subject, $title, $body);
     }
 
     /** @param array $licenciado precisa de id/name/email */
     public static function cadastroAprovado(array $licenciado): void
     {
-        $body = '<p>O cadastro de <strong>' . self::esc($licenciado['name'] ?? '—') . '</strong> como Licenciado Ecodiffusore Brasil foi aprovado.</p>'
-            . self::button(self::BASE_URL . '/painel', 'Acessar o painel');
+        [$subject, $title, $body] = self::eventBody(
+            'cadastro_aprovado',
+            ['nome' => $licenciado['name'] ?? '—'],
+            '',
+            self::BASE_URL . '/painel'
+        );
 
-        self::sendToNetworkChain((int) $licenciado['id'], 'Cadastro de Licenciado aprovado', 'Cadastro aprovado', $body);
+        self::sendToNetworkChain((int) $licenciado['id'], $subject, $title, $body);
+    }
+
+    /** @param array $row precisa de client_name/total_value */
+    private static function orderVars(array $row): array
+    {
+        return [
+            'cliente' => $row['client_name'] ?? '—',
+            'valor' => 'R$ ' . number_format((float) ($row['total_value'] ?? 0), 2, ',', '.'),
+        ];
+    }
+
+    /**
+     * Monta [subject, title, bodyHtml] a partir do template editavel do evento (subject/title/
+     * intro_text/button_label, ver App\Models\EmailEventTemplate) + $detailsHtml (tabela de dados,
+     * sempre gerada no codigo) + o botao (URL fixa, rotulo editavel). $vars interpola {placeholder}
+     * dentro de intro_text -- ver interpolate().
+     * @param array<string,string> $vars
+     */
+    private static function eventBody(string $eventKey, array $vars, string $detailsHtml, string $buttonUrl): array
+    {
+        $tpl = EmailEventTemplate::find($eventKey);
+
+        $body = '<p>' . self::interpolate($tpl['intro_text'], $vars) . '</p>'
+            . $detailsHtml
+            . self::button($buttonUrl, $tpl['button_label']);
+
+        return [$tpl['subject'], $tpl['title'], $body];
+    }
+
+    /** Substitui {chave} pelo valor correspondente em $vars -- template e valores sao escapados
+     *  ANTES da substituicao (nao depois), pra nao arriscar um {placeholder} virar HTML por
+     *  coincidencia de caracteres. Chave de $vars nao encontrada no texto e' simplesmente ignorada. */
+    private static function interpolate(string $template, array $vars): string
+    {
+        $escaped = self::esc($template);
+        foreach ($vars as $key => $value) {
+            $escaped = str_replace('{' . $key . '}', self::esc((string) $value), $escaped);
+        }
+        return $escaped;
     }
 
     /** @param array $row precisa de client_name/total_value */
@@ -218,17 +270,33 @@ class Notifier
     }
 
     /**
-     * Preview do template pra tela de configuracoes (App\Controllers\EmailTemplateSettingsController) --
-     * usa um evento de exemplo (Pedido registrado) so pra ilustrar como o layout fica com as
-     * configuracoes atuais, sem mandar e-mail nenhum de verdade.
+     * Preview do template pra tela de configuracoes (App\Controllers\EmailTemplateSettingsController)
+     * -- monta um evento com dados de exemplo, usando o template ATUAL (editado ou padrao) desse
+     * evento, sem mandar e-mail nenhum de verdade. $eventKey precisa ser uma das
+     * EmailEventTemplate::KEYS -- cai em 'pedido_registrado' se vier vazio/invalido.
      */
-    public static function previewHtml(): string
+    public static function previewHtml(string $eventKey = 'pedido_registrado'): string
     {
-        $body = '<p>Um pedido foi registrado:</p>'
-            . self::infoList(['Cliente' => 'Cliente Exemplo', 'Valor' => 'R$ 2.836,00'])
-            . self::button(self::BASE_URL . '/painel/pedidos/1', 'Ver pedido no painel');
+        if (!in_array($eventKey, EmailEventTemplate::KEYS, true)) {
+            $eventKey = 'pedido_registrado';
+        }
 
-        return self::template('Pedido registrado', $body);
+        $sampleOrder = ['id' => 1, 'client_name' => 'Cliente Exemplo', 'total_value' => 2836.0];
+
+        [$subject, $title, $body] = match ($eventKey) {
+            'lead_roteado' => self::eventBody(
+                'lead_roteado',
+                ['nome' => 'Cliente Exemplo', 'whatsapp' => '(45) 99999-0000', 'cidade' => 'Toledo/PR'],
+                self::infoList(['Nome' => 'Cliente Exemplo', 'WhatsApp' => '(45) 99999-0000', 'Cidade' => 'Toledo/PR']),
+                self::BASE_URL . '/painel/leads'
+            ),
+            'orcamento_registrado' => self::eventBody('orcamento_registrado', self::orderVars($sampleOrder), self::orderDetails($sampleOrder), self::BASE_URL . '/painel/orcamentos/1'),
+            'pedido_aprovado' => self::eventBody('pedido_aprovado', self::orderVars($sampleOrder), self::orderDetails($sampleOrder), self::BASE_URL . '/painel/pedidos/1'),
+            'cadastro_aprovado' => self::eventBody('cadastro_aprovado', ['nome' => 'Licenciado Exemplo'], '', self::BASE_URL . '/painel'),
+            default => self::eventBody('pedido_registrado', self::orderVars($sampleOrder), self::orderDetails($sampleOrder), self::BASE_URL . '/painel/pedidos/1'),
+        };
+
+        return self::template($title, $body);
     }
 
     /**

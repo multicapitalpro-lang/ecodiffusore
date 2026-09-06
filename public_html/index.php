@@ -150,6 +150,7 @@ $router->get('/painel/configuracoes/nfe/buscar-servico', [App\Controllers\NfeSet
 
 $router->get('/painel/configuracoes/email', [App\Controllers\EmailTemplateSettingsController::class, 'index']);
 $router->post('/painel/configuracoes/email', [App\Controllers\EmailTemplateSettingsController::class, 'update']);
+$router->post('/painel/configuracoes/email/evento/{eventKey}', [App\Controllers\EmailTemplateSettingsController::class, 'updateEvent']);
 
 $router->get('/painel/configuracoes/roteamento', [App\Controllers\LeadRoutingSettingsController::class, 'index']);
 $router->post('/painel/configuracoes/roteamento', [App\Controllers\LeadRoutingSettingsController::class, 'update']);
