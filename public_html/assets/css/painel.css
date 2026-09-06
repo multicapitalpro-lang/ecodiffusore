@@ -252,15 +252,19 @@ a { text-decoration: none; color: inherit; }
 
 /* Página / cards */
 .page-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 22px; }
-.cards-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); margin-bottom: 8px; }
+/* auto-fill (nao auto-fit) + track com teto (max 220px) -- antes cada card virava 1fr e esticava
+   pra preencher toda a largura da tela quando havia poucos cards na fileira (ficavam enormes, com
+   o numero perdido no meio de muito espaco vazio). Com auto-fill + teto, sobra espaco vazio no
+   fim da fileira em vez do card esticar, e cabem mais cards por linha em telas largas. */
+.cards-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(180px, 220px)); margin-bottom: 8px; }
 .dash-card {
-    background: #fff; border-radius: 14px; padding: 20px 22px; box-shadow: var(--shadow-md);
+    background: #fff; border-radius: 14px; padding: 16px 18px; box-shadow: var(--shadow-md);
     border: 1px solid var(--border); border-top: 3px solid var(--green);
-    display: flex; flex-direction: column; gap: 6px; transition: box-shadow .18s ease, transform .18s ease;
+    display: flex; flex-direction: column; gap: 5px; transition: box-shadow .18s ease, transform .18s ease;
 }
 .dash-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); }
 .dash-card span { font-size: .74rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--gray-text); }
-.dash-card strong { font-size: 1.7rem; font-family: 'Poppins', sans-serif; color: var(--navy); line-height: 1.15; }
+.dash-card strong { font-size: 1.45rem; font-family: 'Poppins', sans-serif; color: var(--navy); line-height: 1.15; }
 .dash-card a { color: var(--green-dark); font-weight: 700; font-size: .86rem; }
 .dash-card-soon { opacity: .55; border-top-color: var(--border); }
 .dash-card-danger { border-top-color: #c53030; }
