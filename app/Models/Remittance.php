@@ -6,19 +6,27 @@ use App\Core\Database;
 
 class Remittance
 {
-    public static function all(): array
+    /** $createdBy: quando informado, mostra so as remessas criadas por essa pessoa (Gestor/
+     *  Licenciado nao devem ver/gerenciar remessa de outra rede) -- null = todas (Admin). */
+    public static function all(?int $createdBy = null): array
     {
-        $stmt = Database::connection()->query(
-            'SELECT r.*, fa.name AS account_name, u.name AS created_by_name,
+        $sql = 'SELECT r.*, fa.name AS account_name, u.name AS created_by_name,
                     (SELECT COUNT(*) FROM remittance_items ri WHERE ri.remittance_id = r.id) AS items_count,
                     (SELECT COALESCE(SUM(ft.amount), 0) FROM remittance_items ri
                         JOIN financial_transactions ft ON ft.id = ri.transaction_id
                         WHERE ri.remittance_id = r.id) AS total_amount
              FROM remittances r
              JOIN financial_accounts fa ON fa.id = r.account_id
-             LEFT JOIN users u ON u.id = r.created_by
-             ORDER BY r.created_at DESC'
-        );
+             LEFT JOIN users u ON u.id = r.created_by';
+        $params = [];
+        if ($createdBy !== null) {
+            $sql .= ' WHERE r.created_by = :created_by';
+            $params['created_by'] = $createdBy;
+        }
+        $sql .= ' ORDER BY r.created_at DESC';
+
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
         return $stmt->fetchAll();
     }
 
@@ -47,18 +55,41 @@ class Remittance
         return $stmt->fetchAll();
     }
 
-    /** Titulos pendentes elegiveis pra entrar numa remessa nova (ainda nao vinculados a nenhuma) */
-    public static function eligibleTransactions(string $type, int $accountId): array
+    /** Titulos pendentes elegiveis pra entrar numa remessa nova (ainda nao vinculados a nenhuma).
+     *  $sellerIds: escopo por rede (mesma condicao EXISTS de FinancialTransaction::all()) -- null =
+     *  sem escopo (Admin/Gestor global). */
+    public static function eligibleTransactions(string $type, int $accountId, ?array $sellerIds = null): array
     {
+        $params = ['type' => $type, 'account_id' => $accountId];
+        $scopeSql = '';
+        if ($sellerIds !== null) {
+            $orderNames = [];
+            $clientNames = [];
+            foreach (array_values($sellerIds) as $i => $sid) {
+                $orderKey = "eosid{$i}";
+                $clientKey = "ecsid{$i}";
+                $orderNames[] = ":{$orderKey}";
+                $clientNames[] = ":{$clientKey}";
+                $params[$orderKey] = $sid;
+                $params[$clientKey] = $sid;
+            }
+            $orderIn = implode(',', $orderNames);
+            $clientIn = implode(',', $clientNames);
+            $scopeSql = " AND (
+                EXISTS (SELECT 1 FROM orders o2 WHERE o2.id = ft.order_id AND o2.seller_id IN ({$orderIn}))
+                OR EXISTS (SELECT 1 FROM clients c2 WHERE c2.id = ft.client_id AND c2.seller_id IN ({$clientIn}))
+            )";
+        }
+
         $stmt = Database::connection()->prepare(
             "SELECT ft.*, cl.name AS client_name
              FROM financial_transactions ft
              LEFT JOIN clients cl ON cl.id = ft.client_id
              WHERE ft.type = :type AND ft.account_id = :account_id AND ft.status = 'pendente'
-                AND ft.id NOT IN (SELECT transaction_id FROM remittance_items)
+                AND ft.id NOT IN (SELECT transaction_id FROM remittance_items) {$scopeSql}
              ORDER BY ft.due_date"
         );
-        $stmt->execute(['type' => $type, 'account_id' => $accountId]);
+        $stmt->execute($params);
         return $stmt->fetchAll();
     }
 

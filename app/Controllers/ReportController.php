@@ -49,28 +49,30 @@ class ReportController
     public function show(string $type): void
     {
         Auth::requireRole([...self::ALLOWED_ROLES, ...self::NATIONAL_ONLY_ROLES]);
-        $this->assertTypeAllowed($type, Auth::user());
+        $user = Auth::user();
+        $this->assertTypeAllowed($type, $user);
 
         [$from, $to] = DateRange::fromRequest();
 
         View::render('painel/reports/show', [
-            'user' => Auth::user(),
+            'user' => $user,
             'type' => $type,
             'title' => FinancialReports::title($type),
             'from' => $from,
             'to' => $to,
-            'report' => FinancialReports::generate($type, $from, $to),
+            'report' => FinancialReports::generate($type, $from, $to, $this->scopeFor($user)),
         ]);
     }
 
     public function pdf(string $type): void
     {
         Auth::requireRole([...self::ALLOWED_ROLES, ...self::NATIONAL_ONLY_ROLES]);
-        $this->assertTypeAllowed($type, Auth::user());
+        $user = Auth::user();
+        $this->assertTypeAllowed($type, $user);
 
         [$from, $to] = DateRange::fromRequest();
         $title = FinancialReports::title($type);
-        $report = FinancialReports::generate($type, $from, $to);
+        $report = FinancialReports::generate($type, $from, $to, $this->scopeFor($user));
 
         ob_start();
         View::render('painel/reports/pdf', compact('title', 'from', 'to', 'report'), null);
@@ -103,22 +105,49 @@ class ReportController
         exit;
     }
 
+    /** null = sem escopo (Admin, e Gerente nos relatorios nacionais de Fiscal/Antecipacoes --
+     *  dado sensivel da operacao inteira, nao da regiao de um Licenciado, ver assertTypeAllowed).
+     *  Gestor/Licenciado veem so a propria rede -- mesma correcao de FinanceController. */
+    private function scopeFor(array $user): ?array
+    {
+        if (in_array($user['role_slug'], [Roles::REGIONAL_OWNER, 'gestor'], true)) {
+            return User::downlineIds((int) $user['id']);
+        }
+
+        return null;
+    }
+
     public function schedules(): void
     {
         Auth::requireRole(self::ALLOWED_ROLES);
+        $user = Auth::user();
 
         View::render('painel/reports/schedules', [
-            'user' => Auth::user(),
-            'schedules' => ReportSchedule::all(),
+            'user' => $user,
+            'schedules' => ReportSchedule::all($user['role_slug'] === 'admin' ? null : (int) $user['id']),
             'catalog' => FinancialReports::catalog(),
-            'recipients' => User::all(),
+            'recipients' => $this->recipientOptions($user),
             'errors' => [],
         ]);
+    }
+
+    /** Destinatarios possiveis pro agendamento: Admin escolhe qualquer um; Gestor/Licenciado so a
+     *  propria rede (senao poderia mandar o relatorio -- com dado da propria rede -- pra alguem
+     *  de fora dela). */
+    private function recipientOptions(array $user): array
+    {
+        if ($user['role_slug'] === 'admin') {
+            return User::all();
+        }
+
+        $scope = $this->scopeFor($user) ?? [(int) $user['id']];
+        return array_values(array_filter(User::all(), fn ($u) => in_array((int) $u['id'], $scope, true)));
     }
 
     public function storeSchedule(): void
     {
         Auth::requireRole(self::ALLOWED_ROLES);
+        $user = Auth::user();
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
             Router::redirect('/painel/financeiro/relatorios/agendamentos?erro=1');
@@ -128,11 +157,17 @@ class ReportController
             Router::redirect('/painel/financeiro/relatorios/agendamentos?erro=1');
         }
 
+        $recipientId = (int) $_POST['recipient_user_id'];
+        $allowedIds = array_map(fn ($u) => (int) $u['id'], $this->recipientOptions($user));
+        if (!in_array($recipientId, $allowedIds, true)) {
+            Router::redirect('/painel/financeiro/relatorios/agendamentos?erro=1');
+        }
+
         ReportSchedule::create([
             'report_type' => $_POST['report_type'],
-            'recipient_user_id' => (int) $_POST['recipient_user_id'],
+            'recipient_user_id' => $recipientId,
             'frequency' => $_POST['frequency'] ?? 'mensal',
-            'created_by' => Auth::user()['id'],
+            'created_by' => $user['id'],
         ]);
 
         Router::redirect('/painel/financeiro/relatorios/agendamentos?sucesso=1');
@@ -141,6 +176,12 @@ class ReportController
     public function deleteSchedule(string $id): void
     {
         Auth::requireRole(self::ALLOWED_ROLES);
+        $user = Auth::user();
+
+        $schedule = ReportSchedule::find((int) $id);
+        if ($schedule && $user['role_slug'] !== 'admin' && (int) $schedule['created_by'] !== (int) $user['id']) {
+            $this->deny();
+        }
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
             Router::redirect('/painel/financeiro/relatorios/agendamentos');

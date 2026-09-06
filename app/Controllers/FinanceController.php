@@ -16,14 +16,17 @@ use App\Models\FinancialAccount;
 use App\Models\FinancialAttachment;
 use App\Models\FinancialCategory;
 use App\Models\FinancialTransaction;
+use App\Models\Order;
 use App\Models\User;
 
 class FinanceController
 {
-    /** Licenciado ve so a propria regiao; Admin/Gestor mantem o comportamento que ja tinham */
+    /** Licenciado e Gestor veem so a propria rede (downline); Admin ve tudo. Antes Gestor caia no
+     *  fallback "sem filtro" igual o Admin -- vazamento real (Gestor e' subordinado de UM
+     *  licenciado especifico, nao deveria ver o financeiro de outras redes). */
     private function scopeFilters(array $user): array
     {
-        if ($user['role_slug'] === Roles::REGIONAL_OWNER) {
+        if (in_array($user['role_slug'], [Roles::REGIONAL_OWNER, 'gestor'], true)) {
             return ['seller_ids' => User::downlineIds((int) $user['id'])];
         }
 
@@ -62,7 +65,7 @@ class FinanceController
             'transactions' => $transactions,
             'attachmentsByTransaction' => FinancialAttachment::forTransactions(array_column($transactions, 'id')),
             'categoryGroups' => FinancialCategory::grouped(),
-            'clients' => Client::all(),
+            'clients' => Client::all($this->scopeFilters(Auth::user())),
             'filters' => $filters,
             'errors' => [],
             'values' => [],
@@ -230,7 +233,7 @@ class FinanceController
             'attachmentsByTransaction' => FinancialAttachment::forTransactions(array_column($transactions, 'id')),
             'accounts' => FinancialAccount::all(),
             'categoryGroups' => FinancialCategory::grouped($type),
-            'clients' => Client::all(),
+            'clients' => Client::all($this->scopeFilters(Auth::user())),
             'filters' => $filters,
             'errors' => $errors,
             'values' => $values,
@@ -371,11 +374,10 @@ class FinanceController
      *  (sem os campos de recorrencia, que so fazem sentido na criacao da serie). */
     public function editTransaction(string $id): void
     {
-        Auth::requireRole(Roles::MANAGEMENT);
+        $transaction = $this->authorizeTransaction((int) $id);
         $id = (int) $id;
 
-        $transaction = FinancialTransaction::find($id);
-        if (!$transaction || !empty($transaction['is_transfer'])) {
+        if (!empty($transaction['is_transfer'])) {
             // Transferencia tem duas pernas que precisam ficar sempre em espelho -- editar so
             // uma desbalancearia a outra conta. Pra corrigir, exclui (as duas juntas) e refaz.
             Router::redirect('/painel/financeiro/caixas-bancos');
@@ -388,7 +390,7 @@ class FinanceController
             'transaction' => $transaction,
             'accounts' => FinancialAccount::all(),
             'categoryGroups' => FinancialCategory::grouped($transaction['type']),
-            'clients' => Client::all(),
+            'clients' => Client::all($this->scopeFilters(Auth::user())),
             'errors' => [],
             'isModal' => $isFragment,
         ], $isFragment ? null : 'painel');
@@ -396,11 +398,10 @@ class FinanceController
 
     public function updateTransaction(string $id): void
     {
-        Auth::requireRole(Roles::MANAGEMENT);
+        $transaction = $this->authorizeTransaction((int) $id);
         $id = (int) $id;
 
-        $transaction = FinancialTransaction::find($id);
-        if (!$transaction || !empty($transaction['is_transfer'])) {
+        if (!empty($transaction['is_transfer'])) {
             Router::redirect('/painel/financeiro/caixas-bancos');
         }
 
@@ -421,7 +422,7 @@ class FinanceController
                 'transaction' => array_merge($transaction, $_POST),
                 'accounts' => FinancialAccount::all(),
                 'categoryGroups' => FinancialCategory::grouped($transaction['type']),
-                'clients' => Client::all(),
+                'clients' => Client::all($this->scopeFilters(Auth::user())),
                 'errors' => $errors,
                 'isModal' => false,
             ]);
@@ -456,14 +457,13 @@ class FinanceController
      *  sem desfazer o pedido/comissao de origem. */
     public function destroyTransaction(string $id): void
     {
-        Auth::requireRole(Roles::MANAGEMENT);
+        $transaction = $this->authorizeTransaction((int) $id);
         $id = (int) $id;
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
             Router::redirect($_SERVER['HTTP_REFERER'] ?? '/painel/financeiro/caixas-bancos');
         }
 
-        $transaction = FinancialTransaction::find($id);
         if ($transaction && empty($transaction['order_id'])) {
             // Transferencia tem duas pernas (uma por conta) -- excluir uma sem a outra deixaria
             // a movimentacao desbalanceada (dinheiro "aparecendo" ou "sumindo" de uma conta so).
@@ -479,11 +479,20 @@ class FinanceController
     public function downloadAttachment(string $id): void
     {
         Auth::requireRole(Roles::MANAGEMENT);
+        $user = Auth::user();
 
         $attachment = FinancialAttachment::find((int) $id);
         if (!$attachment) {
             http_response_code(404);
             exit('Anexo não encontrado.');
+        }
+
+        $transaction = FinancialTransaction::find((int) $attachment['transaction_id']);
+        $scope = $this->scopeFilters($user);
+        if ($transaction && !empty($scope['seller_ids']) && !$this->transactionInScope($transaction, $scope['seller_ids'])) {
+            http_response_code(403);
+            require BASE_PATH . '/app/Views/errors/403.php';
+            exit;
         }
 
         $path = FileUpload::path('financial', $attachment['stored_name']);
@@ -501,15 +510,15 @@ class FinanceController
 
     /**
      * Vendedor/Gerente/Supervisor veem so as proprias comissoes (sao beneficiarios individuais,
-     * nao gestores de pool). Licenciado ve a propria regiao. Admin/Gestor mantem o comportamento
-     * que ja tinham (sem filtro) -- mesmo escopo combinado usado em scopeFilters().
+     * nao gestores de pool). Licenciado/Gestor veem a propria rede (downline) -- mesma correcao de
+     * scopeFilters() acima: Gestor tambem NAO deve ver comissao de outra rede. Admin sem filtro.
      */
     private function commissionFilters(array $user): array
     {
         if (in_array($user['role_slug'], [Roles::SELLER, 'gerente', 'supervisor'], true)) {
             return ['beneficiary_id' => $user['id']];
         }
-        if ($user['role_slug'] === Roles::REGIONAL_OWNER) {
+        if (in_array($user['role_slug'], [Roles::REGIONAL_OWNER, 'gestor'], true)) {
             return ['beneficiary_ids' => User::downlineIds((int) $user['id'])];
         }
 
@@ -588,6 +597,7 @@ class FinanceController
     public function markCommissionPaid(string $id): void
     {
         Auth::requireRole(Roles::MANAGEMENT);
+        $user = Auth::user();
         $id = (int) $id;
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
@@ -595,6 +605,14 @@ class FinanceController
         }
 
         $commission = Commission::find($id);
+
+        // Nao deixa dar baixa numa comissao de outra rede (Gestor/Licenciado so a propria).
+        $commissionScope = $this->commissionFilters($user);
+        if ($commission && !empty($commissionScope['beneficiary_ids'])
+            && !in_array((int) $commission['beneficiary_id'], $commissionScope['beneficiary_ids'], true)) {
+            Router::redirect('/painel/financeiro/comissoes?erro=1');
+        }
+
         if ($commission && $commission['status'] === 'pendente') {
             $transactionId = null;
             $accountId = FinancialAccount::defaultAccountId();
@@ -659,10 +677,64 @@ class FinanceController
             'transactions' => $transactions,
             'attachmentsByTransaction' => FinancialAttachment::forTransactions(array_column($transactions, 'id')),
             'categoryGroups' => FinancialCategory::grouped(),
-            'clients' => Client::all(),
+            'clients' => Client::all($this->scopeFilters(Auth::user())),
             'errors' => $errors,
             'values' => $values,
         ]);
+    }
+
+    /** Busca uma transacao por id e bloqueia acesso se ela pertence, de forma identificavel
+     *  (cliente ou pedido vinculado), a uma rede fora do escopo de quem esta agindo. */
+    private function authorizeTransaction(int $id): array
+    {
+        Auth::requireRole(Roles::MANAGEMENT);
+        $user = Auth::user();
+
+        $transaction = FinancialTransaction::find($id);
+        if (!$transaction) {
+            Router::redirect('/painel/financeiro/caixas-bancos');
+        }
+
+        $scope = $this->scopeFilters($user);
+        if (!empty($scope['seller_ids']) && !$this->transactionInScope($transaction, $scope['seller_ids'])) {
+            http_response_code(403);
+            require BASE_PATH . '/app/Views/errors/403.php';
+            exit;
+        }
+
+        return $transaction;
+    }
+
+    /** Um lancamento sem cliente/pedido vinculado (avulso, direto em Caixas e Bancos) nao tem
+     *  "dono" identificavel no schema hoje -- fica visivel/editavel por qualquer MANAGEMENT, igual
+     *  ja acontecia antes desta correcao (a conta em si e' compartilhada, ver scopeFilters()). So
+     *  bloqueia quando da pra saber de qual rede o lancamento e' (via cliente ou pedido vinculado)
+     *  e essa rede nao bate com quem esta tentando agir. */
+    private function transactionInScope(array $transaction, array $sellerIds): bool
+    {
+        $hasIdentifiableOwner = false;
+
+        if (!empty($transaction['client_id'])) {
+            $client = Client::find((int) $transaction['client_id']);
+            if ($client && $client['seller_id']) {
+                $hasIdentifiableOwner = true;
+                if (in_array((int) $client['seller_id'], $sellerIds, true)) {
+                    return true;
+                }
+            }
+        }
+
+        if (!empty($transaction['order_id'])) {
+            $order = Order::find((int) $transaction['order_id']);
+            if ($order && $order['seller_id']) {
+                $hasIdentifiableOwner = true;
+                if (in_array((int) $order['seller_id'], $sellerIds, true)) {
+                    return true;
+                }
+            }
+        }
+
+        return !$hasIdentifiableOwner;
     }
 
     private function validateTransaction(array $input): array

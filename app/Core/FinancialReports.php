@@ -46,26 +46,64 @@ class FinancialReports
         return 'Relatório';
     }
 
-    public static function generate(string $type, string $from, string $to): array
+    /** $sellerIds: escopo por rede (downline de Licenciado/Gestor) -- null = sem escopo (Admin, e
+     *  os 2 tipos de "Fiscal e Antecipacoes" que ja sao restritos a admin/gerente nacional em
+     *  ReportController, dado sensivel da operacao inteira, nao da regiao de um Licenciado). Cada
+     *  metodo de relatorio que le financial_transactions aplica o mesmo filtro EXISTS por
+     *  cliente/pedido ja usado em FinancialTransaction::all() -- ver scopeCondition() abaixo.
+     *  O "saldo inicial" (soma de financial_accounts.initial_balance) continua global mesmo com
+     *  escopo: as contas sao um caixa real compartilhado (uma conta bancaria/Asaas so pra empresa
+     *  inteira), so as MOVIMENTACOES sao escopadas por rede -- mesma limitacao ja aceita em
+     *  FinanceController::scopeFilters(). */
+    public static function generate(string $type, string $from, string $to, ?array $sellerIds = null): array
     {
         return match ($type) {
-            'balancete' => self::balancete($from, $to),
-            'dre' => self::dre($from, $to),
-            'fluxo_caixa' => self::fluxoCaixa($from, $to),
-            'por_categoria' => self::porCategoria($from, $to),
-            'por_cliente' => self::porCliente($from, $to),
-            'pagamentos' => self::movimentos($from, $to, 'saida'),
-            'recebimentos' => self::movimentos($from, $to, 'entrada'),
-            'controle_caixa' => self::controleCaixa($from, $to),
-            'comissoes' => self::comissoes($from, $to),
-            'impostos' => self::impostos($from, $to),
+            'balancete' => self::balancete($from, $to, $sellerIds),
+            'dre' => self::dre($from, $to, $sellerIds),
+            'fluxo_caixa' => self::fluxoCaixa($from, $to, $sellerIds),
+            'por_categoria' => self::porCategoria($from, $to, $sellerIds),
+            'por_cliente' => self::porCliente($from, $to, $sellerIds),
+            'pagamentos' => self::movimentos($from, $to, 'saida', $sellerIds),
+            'recebimentos' => self::movimentos($from, $to, 'entrada', $sellerIds),
+            'controle_caixa' => self::controleCaixa($from, $to, $sellerIds),
+            'comissoes' => self::comissoes($from, $to, $sellerIds),
+            'impostos' => self::impostos($from, $to, $sellerIds),
             'antecipacoes' => self::antecipacoes($from, $to),
             default => ['kind' => 'simple', 'columns' => [], 'rows' => [], 'totals' => []],
         };
     }
 
+    /** Clausula EXISTS que escopa financial_transactions por rede (mesmo padrao de
+     *  FinancialTransaction::all() -- entra se o pedido OU o cliente vinculado pertence a alguem
+     *  do escopo). $alias e' o alias da tabela financial_transactions na query (normalmente 'ft').
+     *  Devolve string vazia (sem clausula) quando $sellerIds e' null -- caller so concatena. */
+    private static function scopeCondition(string $alias, ?array $sellerIds, array &$params): string
+    {
+        if ($sellerIds === null) {
+            return '';
+        }
+
+        $orderNames = [];
+        $clientNames = [];
+        foreach (array_values($sellerIds) as $i => $sid) {
+            $orderKey = "rsid_o{$i}";
+            $clientKey = "rsid_c{$i}";
+            $orderNames[] = ":{$orderKey}";
+            $clientNames[] = ":{$clientKey}";
+            $params[$orderKey] = $sid;
+            $params[$clientKey] = $sid;
+        }
+        $orderIn = implode(',', $orderNames);
+        $clientIn = implode(',', $clientNames);
+
+        return " AND (
+            EXISTS (SELECT 1 FROM orders o2 WHERE o2.id = {$alias}.order_id AND o2.seller_id IN ({$orderIn}))
+            OR EXISTS (SELECT 1 FROM clients c2 WHERE c2.id = {$alias}.client_id AND c2.seller_id IN ({$clientIn}))
+        )";
+    }
+
     // ---- Balancete: linhas por categoria (Despesas/Receitas) em colunas semanais + Resultado ----
-    private static function balancete(string $from, string $to): array
+    private static function balancete(string $from, string $to, ?array $sellerIds): array
     {
         $buckets = self::weeklyBuckets($from, $to);
         $saldoInicial = self::balanceBefore($from);
@@ -76,7 +114,7 @@ class FinancialReports
         $totaisSaida = array_fill(0, count($buckets), 0.0);
 
         foreach ($buckets as $i => $bucket) {
-            $rows = self::sumByCategory($bucket['from'], $bucket['to']);
+            $rows = self::sumByCategory($bucket['from'], $bucket['to'], $sellerIds);
             foreach ($rows as $r) {
                 $label = $r['categoria'];
                 $target = $r['type'] === 'entrada' ? 'receitasPorCategoria' : 'despesasPorCategoria';
@@ -136,14 +174,14 @@ class FinancialReports
     }
 
     // ---- DRE: estrutura contabil padrao, colunas = meses do ano de $from ----
-    private static function dre(string $from, string $to): array
+    private static function dre(string $from, string $to, ?array $sellerIds): array
     {
         $year = (int) date('Y', strtotime($from));
         $months = self::monthlyBucketsForYear($year);
 
         $byMonthCategory = [];
         foreach ($months as $i => $m) {
-            $byMonthCategory[$i] = self::sumByCategory($m['from'], $m['to']);
+            $byMonthCategory[$i] = self::sumByCategory($m['from'], $m['to'], $sellerIds);
         }
 
         $lines = [
@@ -230,7 +268,7 @@ class FinancialReports
         ];
     }
 
-    private static function fluxoCaixa(string $from, string $to): array
+    private static function fluxoCaixa(string $from, string $to, ?array $sellerIds): array
     {
         $buckets = self::weeklyBuckets($from, $to);
         $saldoInicial = self::balanceBefore($from);
@@ -238,12 +276,14 @@ class FinancialReports
         $entradas = [];
         $saidas = [];
         foreach ($buckets as $i => $b) {
+            $params = ['from' => $b['from'], 'to' => $b['to']];
+            $scopeSql = self::scopeCondition('financial_transactions', $sellerIds, $params);
             $stmt = Database::connection()->prepare(
                 "SELECT type, COALESCE(SUM(amount), 0) AS total FROM financial_transactions
                  WHERE status IN ('pago','conciliado') AND is_transfer = 0
-                    AND paid_date BETWEEN :from AND :to GROUP BY type"
+                    AND paid_date BETWEEN :from AND :to {$scopeSql} GROUP BY type"
             );
-            $stmt->execute(['from' => $b['from'], 'to' => $b['to']]);
+            $stmt->execute($params);
             $entradas[$i] = 0.0;
             $saidas[$i] = 0.0;
             foreach ($stmt->fetchAll() as $r) {
@@ -272,9 +312,9 @@ class FinancialReports
         return ['kind' => 'matrix', 'periods' => array_column($buckets, 'label'), 'rows' => $rows];
     }
 
-    private static function porCategoria(string $from, string $to): array
+    private static function porCategoria(string $from, string $to, ?array $sellerIds): array
     {
-        $rows = self::sumByCategory($from, $to);
+        $rows = self::sumByCategory($from, $to, $sellerIds);
 
         $entradas = array_values(array_filter($rows, fn ($r) => $r['type'] === 'entrada'));
         $saidas = array_values(array_filter($rows, fn ($r) => $r['type'] === 'saida'));
@@ -297,17 +337,19 @@ class FinancialReports
         ];
     }
 
-    private static function porCliente(string $from, string $to): array
+    private static function porCliente(string $from, string $to, ?array $sellerIds): array
     {
+        $params = ['from' => $from, 'to' => $to];
+        $scopeSql = self::scopeCondition('ft', $sellerIds, $params);
         $stmt = Database::connection()->prepare(
             "SELECT COALESCE(cl.name, 'Sem cliente/fornecedor') AS nome, ft.type, COALESCE(SUM(ft.amount), 0) AS total
              FROM financial_transactions ft
              LEFT JOIN clients cl ON cl.id = ft.client_id
              WHERE ft.status IN ('pago','conciliado') AND ft.is_transfer = 0
-                AND ft.paid_date BETWEEN :from AND :to
+                AND ft.paid_date BETWEEN :from AND :to {$scopeSql}
              GROUP BY nome, ft.type ORDER BY total DESC"
         );
-        $stmt->execute(['from' => $from, 'to' => $to]);
+        $stmt->execute($params);
 
         $rows = array_map(
             fn ($r) => [$r['nome'], $r['type'] === 'entrada' ? 'Entrada' : 'Saída', self::money((float) $r['total'])],
@@ -317,16 +359,18 @@ class FinancialReports
         return ['kind' => 'simple', 'columns' => ['Cliente/Fornecedor', 'Tipo', 'Valor'], 'rows' => $rows, 'totals' => []];
     }
 
-    private static function movimentos(string $from, string $to, string $type): array
+    private static function movimentos(string $from, string $to, string $type, ?array $sellerIds): array
     {
+        $params = ['type' => $type, 'from' => $from, 'to' => $to];
+        $scopeSql = self::scopeCondition('ft', $sellerIds, $params);
         $stmt = Database::connection()->prepare(
             "SELECT ft.*, cl.name AS client_name FROM financial_transactions ft
              LEFT JOIN clients cl ON cl.id = ft.client_id
              WHERE ft.type = :type AND ft.status IN ('pago','conciliado') AND ft.is_transfer = 0
-                AND ft.paid_date BETWEEN :from AND :to
+                AND ft.paid_date BETWEEN :from AND :to {$scopeSql}
              ORDER BY ft.paid_date"
         );
-        $stmt->execute(['type' => $type, 'from' => $from, 'to' => $to]);
+        $stmt->execute($params);
 
         $total = 0.0;
         $rows = [];
@@ -348,15 +392,17 @@ class FinancialReports
         ];
     }
 
-    private static function controleCaixa(string $from, string $to): array
+    private static function controleCaixa(string $from, string $to, ?array $sellerIds): array
     {
+        $params = ['from' => $from, 'to' => $to];
+        $scopeSql = self::scopeCondition('ft', $sellerIds, $params);
         $stmt = Database::connection()->prepare(
             "SELECT ft.*, fa.name AS account_name FROM financial_transactions ft
              JOIN financial_accounts fa ON fa.id = ft.account_id
-             WHERE ft.status IN ('pago','conciliado') AND ft.paid_date BETWEEN :from AND :to
+             WHERE ft.status IN ('pago','conciliado') AND ft.paid_date BETWEEN :from AND :to {$scopeSql}
              ORDER BY ft.paid_date, ft.id"
         );
-        $stmt->execute(['from' => $from, 'to' => $to]);
+        $stmt->execute($params);
 
         $saldo = self::balanceBefore($from);
         $rows = [];
@@ -374,17 +420,31 @@ class FinancialReports
         return ['kind' => 'simple', 'columns' => ['Data', 'Conta', 'Histórico', 'Valor', 'Saldo'], 'rows' => $rows, 'totals' => []];
     }
 
-    private static function comissoes(string $from, string $to): array
+    private static function comissoes(string $from, string $to, ?array $sellerIds): array
     {
+        $params = ['from' => $from, 'to' => $to];
+        $scopeSql = '';
+        if ($sellerIds !== null) {
+            $names = [];
+            foreach (array_values($sellerIds) as $i => $sid) {
+                $key = "csid{$i}";
+                $names[] = ":{$key}";
+                $params[$key] = $sid;
+            }
+            // Escopo pelo BENEFICIARIO da comissao (nao pelo vendedor do pedido) -- um Gestor
+            // precisa ver a comissao do Licenciado dele nesse relatorio, mesmo que o pedido em si
+            // tenha sido vendido por um Vendedor de outro braço da mesma rede.
+            $scopeSql = ' AND c.beneficiary_id IN (' . implode(',', $names) . ')';
+        }
         $stmt = Database::connection()->prepare(
             "SELECT c.*, b.name AS beneficiary_name, o.order_date
              FROM commissions c
              JOIN users b ON b.id = c.beneficiary_id
              JOIN orders o ON o.id = c.order_id
-             WHERE o.order_date BETWEEN :from AND :to
+             WHERE o.order_date BETWEEN :from AND :to {$scopeSql}
              ORDER BY o.order_date, c.beneficiary_id"
         );
-        $stmt->execute(['from' => $from, 'to' => $to]);
+        $stmt->execute($params);
 
         $roleLabels = ['licenciado' => 'Licenciado', 'gestor' => 'Gestor', 'vendedor' => 'Vendedor', 'gerente' => 'Gerente', 'supervisor' => 'Supervisor'];
         $total = 0.0;
@@ -419,9 +479,13 @@ class FinancialReports
 
     /** Imposto e custo real por pedido verificado no periodo (Fase 25) -- mesma tabela de precos
      *  por quantidade que ja define a comissao do Licenciado (ver App\Core\TaxReport). */
-    private static function impostos(string $from, string $to): array
+    private static function impostos(string $from, string $to, ?array $sellerIds): array
     {
-        $orders = Order::all(['status' => 'verificado', 'from' => $from, 'to' => $to]);
+        $filters = ['status' => 'verificado', 'from' => $from, 'to' => $to];
+        if ($sellerIds !== null) {
+            $filters['seller_ids'] = $sellerIds;
+        }
+        $orders = Order::all($filters);
         $report = TaxReport::forOrders($orders);
 
         $rows = array_map(fn ($r) => [
@@ -478,8 +542,10 @@ class FinancialReports
 
     // ---- Helpers ----
 
-    private static function sumByCategory(string $from, string $to): array
+    private static function sumByCategory(string $from, string $to, ?array $sellerIds): array
     {
+        $params = ['from' => $from, 'to' => $to];
+        $scopeSql = self::scopeCondition('ft', $sellerIds, $params);
         $stmt = Database::connection()->prepare(
             "SELECT COALESCE(fc.name, 'Sem categoria') AS categoria,
                     COALESCE(p.name, fc.name, 'Sem categoria') AS grupo,
@@ -488,11 +554,11 @@ class FinancialReports
              LEFT JOIN financial_categories fc ON fc.id = ft.category_id
              LEFT JOIN financial_categories p ON p.id = fc.parent_id
              WHERE ft.status IN ('pago','conciliado') AND ft.is_transfer = 0
-                AND ft.paid_date BETWEEN :from AND :to
+                AND ft.paid_date BETWEEN :from AND :to {$scopeSql}
              GROUP BY categoria, grupo, ft.type
              HAVING total != 0"
         );
-        $stmt->execute(['from' => $from, 'to' => $to]);
+        $stmt->execute($params);
         return $stmt->fetchAll();
     }
 

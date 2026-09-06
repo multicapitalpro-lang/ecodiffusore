@@ -22,15 +22,22 @@ class PerformanceController
     public function sellers(): void
     {
         Auth::requireRole(Roles::MANAGEMENT);
+        $user = Auth::user();
 
         [$from, $to] = DateRange::fromRequest();
 
+        // Licenciado/Gestor veem so o ranking da propria rede -- antes via a empresa inteira,
+        // mesmo vazamento ja corrigido em Financeiro/Relatorios.
+        $sellerIds = in_array($user['role_slug'], ['licenciado', 'gestor'], true)
+            ? User::downlineIds((int) $user['id'])
+            : null;
+
         View::render('painel/performance/sellers', [
-            'user' => Auth::user(),
+            'user' => $user,
             'from' => $from,
             'to' => $to,
-            'ranking' => Order::sellerRanking($from, $to),
-            'topProducts' => OrderItem::topProducts($from, $to),
+            'ranking' => Order::sellerRanking($from, $to, $sellerIds),
+            'topProducts' => OrderItem::topProducts($from, $to, null, $sellerIds),
         ]);
     }
 

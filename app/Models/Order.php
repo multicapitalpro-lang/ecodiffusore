@@ -369,8 +369,21 @@ class Order
         return $byId;
     }
 
-    public static function sellerRanking(string $from, string $to): array
+    /** $sellerIds: escopo por rede (downline de Gestor/Licenciado) -- null = sem escopo (Admin). */
+    public static function sellerRanking(string $from, string $to, ?array $sellerIds = null): array
     {
+        $params = ['from' => $from, 'to' => $to, 'from2' => $from, 'to2' => $to];
+        $scopeSql = '';
+        if ($sellerIds !== null) {
+            $names = [];
+            foreach (array_values($sellerIds) as $i => $sid) {
+                $key = "rksid{$i}";
+                $names[] = ":{$key}";
+                $params[$key] = $sid;
+            }
+            $scopeSql = ' AND u.id IN (' . implode(',', $names) . ')';
+        }
+
         $sql = 'SELECT u.id AS seller_id, u.name, u.city, u.state, u.manager_id, r.slug AS role_slug,
                     COUNT(o.id) AS order_count,
                     COALESCE(SUM(o.total_value), 0) AS total_value,
@@ -381,11 +394,12 @@ class Order
                 FROM users u
                 JOIN roles r ON r.id = u.role_id AND r.slug = \'vendedor\'
                 LEFT JOIN orders o ON o.seller_id = u.id AND o.order_date BETWEEN :from AND :to AND o.status != \'cancelado\'
+                WHERE 1=1' . $scopeSql . '
                 GROUP BY u.id
                 ORDER BY total_value DESC';
 
         $stmt = Database::connection()->prepare($sql);
-        $stmt->execute(['from' => $from, 'to' => $to, 'from2' => $from, 'to2' => $to]);
+        $stmt->execute($params);
         $rows = $stmt->fetchAll();
 
         foreach ($rows as &$row) {

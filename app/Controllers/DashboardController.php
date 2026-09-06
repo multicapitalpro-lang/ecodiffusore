@@ -125,9 +125,9 @@ class DashboardController
         }
 
         if (in_array($role, Roles::MANAGEMENT, true)) {
-            // Financeiro: mesmo escopo que FinanceController::scopeFilters() ja usa (so licenciado
-            // e' escopado por regiao; admin/gestor veem tudo, igual ja veem em Caixas e Bancos).
-            $financeScope = $role === Roles::REGIONAL_OWNER
+            // Financeiro: mesmo escopo que FinanceController::scopeFilters() ja usa -- Licenciado
+            // e Gestor veem so a propria rede, admin ve tudo.
+            $financeScope = in_array($role, [Roles::REGIONAL_OWNER, 'gestor'], true)
                 ? ['seller_ids' => User::downlineIds((int) $user['id'])]
                 : [];
 

@@ -6,14 +6,30 @@ use App\Core\Database;
 
 class ReportSchedule
 {
-    public static function all(): array
+    /** $createdBy: quando informado, mostra so os agendamentos criados por essa pessoa (Gestor/
+     *  Licenciado nao devem ver/gerenciar o agendamento de outra rede) -- null = todos (Admin). */
+    public static function all(?int $createdBy = null): array
     {
-        $stmt = Database::connection()->query(
-            'SELECT rs.*, u.name AS recipient_name, u.email AS recipient_email
-             FROM report_schedules rs JOIN users u ON u.id = rs.recipient_user_id
-             ORDER BY rs.created_at DESC'
-        );
+        $sql = 'SELECT rs.*, u.name AS recipient_name, u.email AS recipient_email
+                FROM report_schedules rs JOIN users u ON u.id = rs.recipient_user_id';
+        $params = [];
+        if ($createdBy !== null) {
+            $sql .= ' WHERE rs.created_by = :created_by';
+            $params['created_by'] = $createdBy;
+        }
+        $sql .= ' ORDER BY rs.created_at DESC';
+
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
         return $stmt->fetchAll();
+    }
+
+    public static function find(int $id): ?array
+    {
+        $stmt = Database::connection()->prepare('SELECT * FROM report_schedules WHERE id = :id');
+        $stmt->execute(['id' => $id]);
+        $row = $stmt->fetch();
+        return $row ?: null;
     }
 
     public static function activeDue(): array
