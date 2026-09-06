@@ -5,12 +5,14 @@ namespace App\Controllers;
 use App\Core\Auth;
 use App\Core\BrazilStates;
 use App\Core\Chart;
+use App\Core\Csrf;
 use App\Core\DateRange;
 use App\Core\ReportScheduler;
 use App\Core\Roles;
 use App\Core\Router;
 use App\Core\TaxReport;
 use App\Core\View;
+use App\Core\WeeklyDigest;
 use App\Models\AsaasAnticipation;
 use App\Models\Client;
 use App\Models\Commission;
@@ -55,6 +57,7 @@ class DashboardController
             // Sem cron nesse plano Hostinger -- "lazy check" no dashboard, a pagina mais visitada
             // por quem tem acesso a Relatorios, pra nao deixar agendamento parado sem nunca disparar.
             ReportScheduler::processDue();
+            WeeklyDigest::processDue();
         }
 
         if (in_array($role, Roles::STAFF, true)) {
@@ -123,6 +126,7 @@ class DashboardController
                     fn ($v) => in_array((int) $v['id'], $sellerIds ?? [], true)
                 ));
                 $data['vendedoresInativos'] = SellerActivity::inactiveAmong($ownVendedores);
+                $data['weeklyDigestEnabled'] = !empty($user['weekly_digest_enabled']);
             }
 
             // ---- Visao geral (overview): resumo do resto do painel direto no inicio ----
@@ -268,5 +272,19 @@ class DashboardController
         }
 
         View::render('painel/dashboard', $data);
+    }
+
+    public function toggleWeeklyDigest(): void
+    {
+        Auth::requireRole(['gestor', Roles::REGIONAL_OWNER]);
+        $user = Auth::user();
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            Router::redirect('/painel');
+        }
+
+        WeeklyDigest::setEnabled((int) $user['id'], !empty($_POST['enabled']));
+
+        Router::redirect('/painel');
     }
 }

@@ -94,6 +94,31 @@ class Notifier
         self::sendToFullChain((int) $order['seller_id'], $subject, $title, $body);
     }
 
+    /**
+     * Resumo semanal de desempenho da equipe -- pro Licenciado/Gestor que ativou (ver
+     * App\Core\WeeklyDigest, chamado do Dashboard). Nao e' um dos 5 eventos transacionais (nao
+     * passa por EmailEventTemplate/eventBody()), so reaproveita o mesmo envelope visual.
+     * @param array $recipient precisa de name/email
+     * @param array $sellerRows linhas de Order::sellerRanking() (name/order_count/total_value)
+     */
+    public static function weeklyDigest(array $recipient, array $sellerRows, string $periodLabel): void
+    {
+        if (empty($recipient['email'])) {
+            return;
+        }
+
+        $rows = [];
+        foreach ($sellerRows as $r) {
+            $rows[$r['name']] = (int) $r['order_count'] . ' pedido(s) — R$ ' . number_format((float) $r['total_value'], 2, ',', '.');
+        }
+
+        $body = '<p>Resumo da equipe de ' . self::esc($periodLabel) . ':</p>'
+            . self::infoList($rows ?: ['Sem vendas' => 'Nenhum pedido no período'])
+            . self::button(self::BASE_URL . '/painel/desempenho/vendedores', 'Ver ranking completo');
+
+        Mailer::send($recipient['email'], 'Resumo semanal da equipe - Ecodiffusore Brasil', self::template('Resumo semanal da equipe', $body));
+    }
+
     /** @param array $licenciado precisa de id/name/email */
     public static function cadastroAprovado(array $licenciado): void
     {

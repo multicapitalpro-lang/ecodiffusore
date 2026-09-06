@@ -72,6 +72,7 @@ $router->post('/painel/verificar-email/reenviar', [App\Controllers\AuthControlle
 
 // Painel
 $router->get('/painel', [App\Controllers\DashboardController::class, 'index']);
+$router->post('/painel/resumo-semanal', [App\Controllers\DashboardController::class, 'toggleWeeklyDigest']);
 $router->get('/painel/meus-pedidos/{id}', [App\Controllers\ClientPortalController::class, 'showOrder']);
 
 $router->get('/painel/usuarios', [App\Controllers\UserController::class, 'index']);

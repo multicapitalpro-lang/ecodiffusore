@@ -1,4 +1,5 @@
 <?php
+use App\Core\Csrf;
 use App\Core\Roles;
 use App\Core\View;
 $role = $user['role_slug'] ?? '';
@@ -219,6 +220,19 @@ $hasMetrics = isset($metrics);
         <h3 class="section-title">Vendas por vendedor (período filtrado)</h3>
         <div class="chart-box">
             <div class="chart-bar-wrap"><?= $chartByVendedor ?></div>
+        </div>
+    <?php endif; ?>
+
+    <?php if (isset($weeklyDigestEnabled)): ?>
+        <div class="dash-card" style="max-width:480px; margin-top:20px;">
+            <span>Resumo semanal por e-mail</span>
+            <p class="hint-text" style="margin:4px 0 8px;">Toda semana, um resumo do desempenho da equipe (vendas por vendedor dos últimos 7 dias) direto no seu e-mail.</p>
+            <form action="/painel/resumo-semanal" method="post">
+                <?= Csrf::field() ?>
+                <input type="hidden" name="enabled" value="<?= $weeklyDigestEnabled ? '0' : '1' ?>">
+                <button type="submit" class="btn <?= $weeklyDigestEnabled ? 'btn-outline' : 'btn-primary' ?> btn-sm"><?= $weeklyDigestEnabled ? 'Desativar' : 'Ativar' ?></button>
+                <?php if ($weeklyDigestEnabled): ?><span class="hint-inline" style="margin-left:8px;">✅ Ativado</span><?php endif; ?>
+            </form>
         </div>
     <?php endif; ?>
 
