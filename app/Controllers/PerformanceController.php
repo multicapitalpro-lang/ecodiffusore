@@ -51,7 +51,7 @@ class PerformanceController
      */
     public function myRanking(): void
     {
-        Auth::requireRole(Roles::SELLER);
+        Auth::requireRole([Roles::SELLER]);
         $user = Auth::user();
 
         [$from, $to] = DateRange::fromRequest();
