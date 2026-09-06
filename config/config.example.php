@@ -33,4 +33,18 @@ return [
         'webhook_secret' => 'TROQUE_AQUI', // segredo por-webhook gerado no cadastro do webhook no ClickSign (HMAC-SHA256)
         'template_key' => 'TROQUE_AQUI', // chave do Modelo "Contrato Assinatura Diferencial" (Automação > Modelos no ClickSign)
     ],
+
+    // SMTP autenticado (App\Core\Mailer) -- PHP mail() puro nao entregava (confirmado com
+    // mail-tester.com: nem chegava no destino). host/port/encryption vem da tela "Configurar
+    // cliente de e-mail" da caixa no hPanel (Hostinger) -- normalmente smtp.hostinger.com,
+    // porta 465 com encryption 'ssl', ou porta 587 com 'tls'.
+    'smtp' => [
+        'host' => 'smtp.hostinger.com',
+        'port' => 465,
+        'encryption' => 'ssl', // 'ssl' (porta 465) ou 'tls' (porta 587)
+        'user' => 'atendimento@ecodiffusorebrasil.com.br',
+        'pass' => 'TROQUE_AQUI',
+        'from_name' => 'Ecodiffusore Brasil',
+        'reply_to' => 'contato@ecodiffusorebrasil.com.br',
+    ],
 ];
