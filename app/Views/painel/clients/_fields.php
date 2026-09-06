@@ -22,6 +22,7 @@ $isSeller = ($user['role_slug'] ?? '') === 'vendedor';
     <div>
         <label for="document">CPF/CNPJ</label>
         <input type="text" id="document" name="document" value="<?= View::e($values['document'] ?? '') ?>">
+        <p class="field-error" data-error-for="document"><?= View::e($errors['document'] ?? '') ?></p>
     </div>
 </div>
 
@@ -34,6 +35,7 @@ $isSeller = ($user['role_slug'] ?? '') === 'vendedor';
 
 <label for="whatsapp">WhatsApp</label>
 <input type="text" id="whatsapp" name="whatsapp" value="<?= View::e($values['whatsapp'] ?? '') ?>">
+<p class="field-error" data-error-for="whatsapp"><?= View::e($errors['whatsapp'] ?? '') ?></p>
 
 <div style="position:relative;">
     <label for="city">Cidade</label>
