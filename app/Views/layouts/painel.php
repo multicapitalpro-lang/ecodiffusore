@@ -38,7 +38,8 @@ $staffRoles = Roles::STAFF;
 $userManagementRoles = Roles::USER_MANAGEMENT;
 $supervisorAssignmentRoles = Roles::SUPERVISOR_ASSIGNMENT;
 $pendingApprovals = in_array($role, Roles::SUPERVISOR_ASSIGNMENT, true) ? \App\Models\User::pendingApprovalCount($user) : 0;
-$vendasOpen = $anyActive(['/painel/leads', '/painel/pedidos', '/painel/orcamentos', '/painel/clientes', '/painel/produtos']);
+$vendasOpen = $anyActive(['/painel/pedidos', '/painel/orcamentos', '/painel/produtos', '/painel/tabela-precos', '/painel/configuracoes/pagamento']);
+$leadsOpen = $anyActive(['/painel/leads', '/painel/clientes', '/painel/configuracoes/roteamento']);
 $financeiroOpen = $anyActive(['/painel/financeiro']);
 $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/metas']);
 ?><!doctype html>
@@ -60,21 +61,29 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/metas'])
             <a href="/painel" class="<?= $isActive('/painel') && $path === '/painel' ? 'is-active' : '' ?>"><?= $icon('home') ?> Início</a>
 
             <?php if (in_array($role, $staffRoles, true)): ?>
-                <details class="nav-group" <?= $vendasOpen ? 'open' : '' ?>>
-                    <summary><?= $icon('cart') ?> Vendas (CRM)</summary>
+                <details class="nav-group" <?= $leadsOpen ? 'open' : '' ?>>
+                    <summary><?= $icon('pin') ?> Leads</summary>
                     <div class="nav-subitems">
                         <a href="/painel/leads" class="<?= $isActive('/painel/leads') ? 'is-active' : '' ?>">Leads</a>
                         <?php if (in_array($role, array_merge($managerRoles, Roles::NATIONAL_SUPPORT), true)): ?>
                             <a href="/painel/leads/extensoes" class="<?= $isActive('/painel/leads/extensoes') ? 'is-active' : '' ?>">Extensões de Prazo</a>
                         <?php endif; ?>
+                        <a href="/painel/clientes" class="<?= $isActive('/painel/clientes') ? 'is-active' : '' ?>">Clientes</a>
+                        <?php if ($role === 'admin'): ?>
+                            <a href="/painel/configuracoes/roteamento" class="<?= $isActive('/painel/configuracoes/roteamento') ? 'is-active' : '' ?>">Roteamento de Leads</a>
+                        <?php endif; ?>
+                    </div>
+                </details>
+
+                <details class="nav-group" <?= $vendasOpen ? 'open' : '' ?>>
+                    <summary><?= $icon('cart') ?> Vendas (CRM)</summary>
+                    <div class="nav-subitems">
                         <a href="/painel/pedidos" class="<?= $isActive('/painel/pedidos') ? 'is-active' : '' ?>">Pedidos</a>
                         <a href="/painel/orcamentos" class="<?= $isActive('/painel/orcamentos') ? 'is-active' : '' ?>">Orçamentos</a>
-                        <a href="/painel/clientes" class="<?= $isActive('/painel/clientes') ? 'is-active' : '' ?>">Clientes</a>
                         <?php if ($role === 'admin'): ?>
                             <a href="/painel/produtos" class="<?= $isActive('/painel/produtos') ? 'is-active' : '' ?>">Produtos</a>
                             <a href="/painel/tabela-precos" class="<?= $isActive('/painel/tabela-precos') ? 'is-active' : '' ?>">Tabela de preços</a>
                             <a href="/painel/configuracoes/pagamento" class="<?= $isActive('/painel/configuracoes/pagamento') ? 'is-active' : '' ?>">Config. de Pagamento</a>
-                            <a href="/painel/configuracoes/roteamento" class="<?= $isActive('/painel/configuracoes/roteamento') ? 'is-active' : '' ?>">Roteamento de Leads</a>
                         <?php endif; ?>
                     </div>
                 </details>
