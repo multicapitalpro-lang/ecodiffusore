@@ -13,8 +13,8 @@ $erro = isset($_GET['erro']);
 $eventMeta = [
     'lead_roteado' => ['label' => 'Lead roteado', 'placeholders' => ['nome', 'whatsapp', 'cidade']],
     'orcamento_registrado' => ['label' => 'Orçamento registrado', 'placeholders' => ['cliente', 'valor']],
-    'pedido_registrado' => ['label' => 'Pedido registrado', 'placeholders' => ['cliente', 'valor']],
-    'pedido_aprovado' => ['label' => 'Pedido aprovado', 'placeholders' => ['cliente', 'valor']],
+    'pedido_registrado' => ['label' => 'Pedido registrado', 'placeholders' => ['cliente', 'valor', 'produto', 'veiculo_placa', 'veiculo_tipo', 'comprador_documento', 'comprador_email', 'comprador_whatsapp', 'comprador_cidade', 'pagamento_forma', 'pagamento_status', 'licenciado', 'vendedor']],
+    'pedido_aprovado' => ['label' => 'Pedido aprovado', 'placeholders' => ['cliente', 'valor', 'produto', 'veiculo_placa', 'veiculo_tipo', 'comprador_documento', 'comprador_email', 'comprador_whatsapp', 'comprador_cidade', 'pagamento_forma', 'pagamento_status', 'licenciado', 'vendedor']],
     'cadastro_aprovado' => ['label' => 'Cadastro de Licenciado aprovado', 'placeholders' => ['nome']],
 ];
 ?>

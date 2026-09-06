@@ -2,8 +2,11 @@
 
 namespace App\Core;
 
+use App\Models\Client;
 use App\Models\EmailEventTemplate;
 use App\Models\EmailTemplateSettings;
+use App\Models\OrderItem;
+use App\Models\Payment;
 use App\Models\User;
 
 /**
@@ -66,7 +69,7 @@ class Notifier
 
         [$subject, $title, $body] = self::eventBody(
             'pedido_registrado',
-            self::orderVars($order),
+            self::pedidoVars($order),
             self::orderDetails($order),
             self::BASE_URL . '/painel/pedidos/' . (int) $order['id']
         );
@@ -83,7 +86,7 @@ class Notifier
 
         [$subject, $title, $body] = self::eventBody(
             'pedido_aprovado',
-            self::orderVars($order),
+            self::pedidoVars($order),
             self::orderDetails($order),
             self::BASE_URL . '/painel/pedidos/' . (int) $order['id']
         );
@@ -110,6 +113,73 @@ class Notifier
         return [
             'cliente' => $row['client_name'] ?? '—',
             'valor' => 'R$ ' . number_format((float) ($row['total_value'] ?? 0), 2, ',', '.'),
+        ];
+    }
+
+    private const PAYMENT_METHOD_LABELS = ['PIX' => 'Pix', 'BOLETO' => 'Boleto', 'CREDIT_CARD' => 'Cartão'];
+    private const PAYMENT_STATUS_LABELS = ['pendente' => 'Pendente', 'pago' => 'Pago', 'vencido' => 'Vencido', 'cancelado' => 'Cancelado', 'reembolsado' => 'Reembolsado'];
+
+    /**
+     * Variaveis completas pros e-mails de Pedido (registrado/aprovado) -- pedido explicito do
+     * usuario de ter dados de produto/veiculo/comprador/pagamento/licenciado, nao so cliente/
+     * valor. Order::find() ja traz client_name/client_whatsapp/client_city/client_state/
+     * seller_name via JOIN, mas produto (order_items), pagamento (payments) e documento/e-mail do
+     * comprador (clients) precisam de consulta a parte -- so acontece pra quem realmente vai
+     * receber e-mail (nao no preview, que usa dados de exemplo fixos, ver previewHtml()).
+     * @param array $order precisa de id/client_id/seller_id/client_name/client_whatsapp/
+     *                      client_city/client_state/vehicle_type/vehicle_plate/total_value
+     */
+    private static function pedidoVars(array $order): array
+    {
+        $client = !empty($order['client_id']) ? Client::find((int) $order['client_id']) : null;
+
+        $items = OrderItem::forOrder((int) $order['id']);
+        $produtos = $items
+            ? implode(', ', array_map(fn ($i) => $i['product_name'] . ' (x' . (int) $i['quantity'] . ')', $items))
+            : '—';
+
+        $lastPayment = Payment::forPayable('order', (int) $order['id'])[0] ?? null;
+
+        $licenciado = !empty($order['seller_id']) ? User::licenciadoFor((int) $order['seller_id']) : null;
+
+        $cidade = trim(($order['client_city'] ?? '') . (!empty($order['client_state']) ? '/' . $order['client_state'] : ''));
+
+        return [
+            'cliente' => $order['client_name'] ?? '—',
+            'valor' => 'R$ ' . number_format((float) ($order['total_value'] ?? 0), 2, ',', '.'),
+            'comprador_documento' => $client['document'] ?? '—',
+            'comprador_email' => $client['email'] ?? '—',
+            'comprador_whatsapp' => $order['client_whatsapp'] ?? $client['whatsapp'] ?? '—',
+            'comprador_cidade' => $cidade !== '' ? $cidade : '—',
+            'produto' => $produtos,
+            'veiculo_placa' => $order['vehicle_plate'] ?? '—',
+            'veiculo_tipo' => $order['vehicle_type'] ?? '—',
+            'pagamento_forma' => $lastPayment ? (self::PAYMENT_METHOD_LABELS[$lastPayment['method']] ?? $lastPayment['method']) : '—',
+            'pagamento_status' => $lastPayment ? (self::PAYMENT_STATUS_LABELS[$lastPayment['status']] ?? $lastPayment['status']) : '—',
+            'licenciado' => $licenciado['name'] ?? '—',
+            'vendedor' => $order['seller_name'] ?? '—',
+        ];
+    }
+
+    /** Mesmas chaves de pedidoVars(), com dados de mentirinha -- usado so no preview
+     *  (App\Controllers\EmailTemplateSettingsController), pra nunca expor dado de comprador real
+     *  numa tela de configuracao. */
+    private static function samplePedidoVars(): array
+    {
+        return [
+            'cliente' => 'Cliente Exemplo',
+            'valor' => 'R$ 2.836,00',
+            'comprador_documento' => '123.456.789-00',
+            'comprador_email' => 'cliente@exemplo.com',
+            'comprador_whatsapp' => '(45) 99999-0000',
+            'comprador_cidade' => 'Toledo/PR',
+            'produto' => 'Linha Scania (até 2018) (x1)',
+            'veiculo_placa' => 'ABC-1234',
+            'veiculo_tipo' => 'Caminhão',
+            'pagamento_forma' => 'Pix',
+            'pagamento_status' => 'Pago',
+            'licenciado' => 'Licenciado Exemplo',
+            'vendedor' => 'Vendedor Exemplo',
         ];
     }
 
@@ -291,9 +361,9 @@ class Notifier
                 self::BASE_URL . '/painel/leads'
             ),
             'orcamento_registrado' => self::eventBody('orcamento_registrado', self::orderVars($sampleOrder), self::orderDetails($sampleOrder), self::BASE_URL . '/painel/orcamentos/1'),
-            'pedido_aprovado' => self::eventBody('pedido_aprovado', self::orderVars($sampleOrder), self::orderDetails($sampleOrder), self::BASE_URL . '/painel/pedidos/1'),
+            'pedido_aprovado' => self::eventBody('pedido_aprovado', self::samplePedidoVars(), self::orderDetails($sampleOrder), self::BASE_URL . '/painel/pedidos/1'),
             'cadastro_aprovado' => self::eventBody('cadastro_aprovado', ['nome' => 'Licenciado Exemplo'], '', self::BASE_URL . '/painel'),
-            default => self::eventBody('pedido_registrado', self::orderVars($sampleOrder), self::orderDetails($sampleOrder), self::BASE_URL . '/painel/pedidos/1'),
+            default => self::eventBody('pedido_registrado', self::samplePedidoVars(), self::orderDetails($sampleOrder), self::BASE_URL . '/painel/pedidos/1'),
         };
 
         return self::template($title, $body);
