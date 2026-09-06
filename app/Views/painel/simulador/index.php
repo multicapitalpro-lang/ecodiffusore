@@ -75,6 +75,12 @@ $v = fn (string $k, string $default = '') => View::e((string) ($values[$k] ?? $d
         <p class="hint-text" style="margin-top:-8px;">Produto: <?= View::e($productName) ?> — R$ <?= number_format($productPrice, 2, ',', '.') ?></p>
     <?php endif; ?>
 
+    <?php if (!empty($chartSvg)): ?>
+        <div class="chart-box" style="max-width:640px; margin-bottom:20px;">
+            <div class="chart-bar-wrap"><?= $chartSvg ?></div>
+        </div>
+    <?php endif; ?>
+
     <div class="cards-grid">
         <div class="dash-card">
             <span>5% — Mínimo garantido</span>

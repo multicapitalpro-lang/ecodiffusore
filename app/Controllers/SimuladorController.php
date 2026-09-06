@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Core\Auth;
+use App\Core\Chart;
 use App\Core\Csrf;
 use App\Core\EconomyCalculator;
 use App\Core\Pdf;
@@ -38,6 +39,7 @@ class SimuladorController
         [$values, $errors, $productPrice, $productName] = $this->parseAndValidate($_POST);
 
         $result = null;
+        $chartSvg = null;
         if (!$errors) {
             $result = EconomyCalculator::estimate(
                 (float) $values['km_mensal'],
@@ -45,12 +47,21 @@ class SimuladorController
                 (float) $values['preco_diesel'],
                 $productPrice
             );
+
+            // Comparativo visual das 3 faixas -- so numero em tabela e' menos convincente na hora
+            // de mostrar pro cliente do que uma barra que ele bate o olho e ja entende a diferenca.
+            $chartSvg = Chart::bar([
+                ['label' => '5% — Mínimo garantido', 'value' => $result['tiers']['min']['monthly']],
+                ['label' => '8% — Média real', 'value' => $result['tiers']['avg']['monthly']],
+                ['label' => '12% — Potencial máximo', 'value' => $result['tiers']['max']['monthly']],
+            ]);
         }
 
         View::render('painel/simulador/index', [
             'user' => Auth::user(),
             'products' => Product::all(true),
             'result' => $result,
+            'chartSvg' => $chartSvg,
             'productPrice' => $productPrice,
             'productName' => $productName,
             'values' => $values,
