@@ -3,6 +3,7 @@ use App\Core\Csrf;
 use App\Core\View;
 $csrfToken = Csrf::token();
 $isViewOnly = $isViewOnly ?? false;
+$showLicenciadoBadge = $showLicenciadoBadge ?? false;
 $sucesso = $_GET['sucesso'] ?? null;
 $erro = $_GET['erro'] ?? null;
 
@@ -91,6 +92,9 @@ $vehicleFieldLabels = [
                             </select>
                         <?php elseif (!empty($lead['assigned_name'])): ?>
                             <span class="kanban-card-meta">Com: <?= View::e($lead['assigned_name']) ?></span>
+                        <?php endif; ?>
+                        <?php if ($showLicenciadoBadge && !empty($lead['licenciado_name'])): ?>
+                            <span class="kanban-card-meta">Licenciado: <?= View::e($lead['licenciado_name']) ?></span>
                         <?php endif; ?>
                     </div>
                 <?php endforeach; ?>

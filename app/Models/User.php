@@ -39,6 +39,30 @@ class User
      * (topo da cadeia nacional, sem ninguem acima). Cliente/Admin nao tem "responsavel" nesse
      * sentido comercial.
      */
+    /** Nome do Licenciado dono da rede de um vendedor/gestor (sobe a cadeia de manager_id) -- ou o
+     *  proprio nome, se $sellerId ja for um Licenciado. Usado nas telas de CRM (Leads/Pedidos/
+     *  Orcamentos/Clientes) pra Supervisor/Gerente verem de qual rede cada registro e', sem
+     *  precisar entrar no CRM de cada Licenciado individualmente (a funcao do Supervisor e'
+     *  supervisionar Licenciados, nao Vendedores diretamente). */
+    public static function licenciadoNameFor(?int $sellerId): ?string
+    {
+        if (!$sellerId) {
+            return null;
+        }
+
+        $current = self::find($sellerId);
+        for ($i = 0; $i < 10 && $current; $i++) {
+            if ($current['role_slug'] === 'licenciado') {
+                return $current['name'];
+            }
+            if (empty($current['manager_id'])) {
+                return null;
+            }
+            $current = self::find((int) $current['manager_id']);
+        }
+        return null;
+    }
+
     public static function responsibleFor(array $target): ?array
     {
         switch ($target['role_slug'] ?? null) {

@@ -39,6 +39,14 @@ class OrderController
         $orders = Order::all($filters);
         [$orders, $stats] = $this->attachPaymentSituation($orders);
 
+        $showLicenciadoColumn = in_array($user['role_slug'], ['supervisor', 'gerente'], true);
+        if ($showLicenciadoColumn) {
+            foreach ($orders as &$o) {
+                $o['licenciado_name'] = User::licenciadoNameFor((int) ($o['seller_id'] ?? 0));
+            }
+            unset($o);
+        }
+
         View::render('painel/orders/index', [
             'user' => $user,
             'orders' => $orders,
@@ -48,6 +56,7 @@ class OrderController
             'products' => Product::all(true),
             'pricingTiers' => PricingTier::all(),
             'sellers' => $this->sellerOptions($user),
+            'showLicenciadoColumn' => $showLicenciadoColumn,
         ]);
     }
 

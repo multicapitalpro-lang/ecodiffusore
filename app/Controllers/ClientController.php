@@ -34,6 +34,14 @@ class ClientController
 
         [$clients, $stats] = $this->attachPurchaseStatus($clients);
 
+        $showLicenciadoColumn = in_array($user['role_slug'], ['supervisor', 'gerente'], true);
+        if ($showLicenciadoColumn) {
+            foreach ($clients as &$c) {
+                $c['licenciado_name'] = User::licenciadoNameFor((int) ($c['seller_id'] ?? 0));
+            }
+            unset($c);
+        }
+
         $filtered = array_values(array_filter($clients, function ($c) use ($filters) {
             if ($filters['q'] !== '' && stripos($c['name'] . ' ' . $c['email'] . ' ' . $c['document'], $filters['q']) === false) {
                 return false;
@@ -56,6 +64,7 @@ class ClientController
             'stats' => $stats,
             'filters' => $filters,
             'sellers' => $this->sellerOptions($user),
+            'showLicenciadoColumn' => $showLicenciadoColumn,
         ]);
     }
 

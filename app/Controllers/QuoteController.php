@@ -43,6 +43,14 @@ class QuoteController
         $quotes = Quote::all($filters);
         [$quotes, $stats] = $this->attachPaymentSituation($quotes);
 
+        $showLicenciadoColumn = in_array($user['role_slug'], ['supervisor', 'gerente'], true);
+        if ($showLicenciadoColumn) {
+            foreach ($quotes as &$q) {
+                $q['licenciado_name'] = User::licenciadoNameFor((int) ($q['seller_id'] ?? 0));
+            }
+            unset($q);
+        }
+
         View::render('painel/quotes/index', [
             'user' => $user,
             'quotes' => $quotes,
@@ -56,6 +64,7 @@ class QuoteController
             'pricingTiers' => PricingTier::all(),
             'sellers' => $this->sellerOptions($user),
             'licenciados' => $this->licenciadoOptions($user),
+            'showLicenciadoColumn' => $showLicenciadoColumn,
         ]);
     }
 

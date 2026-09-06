@@ -11,6 +11,7 @@ $filters = $filters ?? [];
 $stats = $stats ?? ['total' => 0, 'pagos' => 0, 'abertos' => 0, 'nunca_compraram' => 0];
 $openModal = isset($_GET['novo']) || $errors;
 $canAssignSeller = in_array($user['role_slug'] ?? '', Roles::MANAGEMENT, true);
+$showLicenciadoColumn = $showLicenciadoColumn ?? false;
 $erroLabels = [
     'csrf' => 'Sessão expirada, tente novamente.',
     'vinculo' => 'Não é possível excluir: este cliente tem pedidos ou outros registros vinculados.',
@@ -90,7 +91,7 @@ $erroLabels = [
             <thead>
                 <tr>
                     <th><input type="checkbox" id="select-all-clients"></th>
-                    <th>Nome</th><th>Documento</th><th>Cidade/UF</th><th>WhatsApp</th><th>Vendedor</th><th>Pedidos</th><th>Status</th><th></th>
+                    <th>Nome</th><th>Documento</th><th>Cidade/UF</th><th>WhatsApp</th><th>Vendedor</th><?php if ($showLicenciadoColumn): ?><th>Licenciado</th><?php endif; ?><th>Pedidos</th><th>Status</th><th></th>
                 </tr>
             </thead>
             <tbody>
@@ -107,6 +108,7 @@ $erroLabels = [
                             <?php else: ?>—<?php endif; ?>
                         </td>
                         <td><?= View::e($c['seller_name'] ?: '—') ?></td>
+                        <?php if ($showLicenciadoColumn): ?><td><?= View::e($c['licenciado_name'] ?? '—') ?></td><?php endif; ?>
                         <td>
                             <span class="status-badge status-<?= View::e($purchase['badge']) ?>"><?= View::e($purchase['label']) ?></span>
                             <?php if ($c['order_count'] > 0): ?><br><small class="hint-text"><?= (int) $c['order_count'] ?> pedido(s)</small><?php endif; ?>
@@ -119,7 +121,7 @@ $erroLabels = [
                     </tr>
                 <?php endforeach; ?>
                 <?php if (!$clients): ?>
-                    <tr><td colspan="9">Nenhum cliente encontrado.</td></tr>
+                    <tr><td colspan="<?= $showLicenciadoColumn ? 10 : 9 ?>">Nenhum cliente encontrado.</td></tr>
                 <?php endif; ?>
             </tbody>
         </table>

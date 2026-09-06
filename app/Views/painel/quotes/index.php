@@ -9,6 +9,7 @@ $items = $items ?? [];
 $stats = $stats ?? ['total' => 0, 'pendentes' => 0, 'pagos' => 0, 'cancelados' => 0];
 $filters = $filters ?? [];
 $licenciados = $licenciados ?? [];
+$showLicenciadoColumn = $showLicenciadoColumn ?? false;
 $isVendedor = ($user['role_slug'] ?? '') === 'vendedor';
 $isViewOnly = in_array($user['role_slug'] ?? '', Roles::NATIONAL_SUPPORT, true);
 $preselectClientId = (int) ($_GET['cliente_id'] ?? 0);
@@ -73,7 +74,7 @@ $csrfToken = Csrf::token();
 
 <div class="table-scroll">
     <table class="data-table">
-        <thead><tr><th>#</th><th>Cliente</th><th>Telefone</th><th>Origem</th><th>Vendedor</th><th>Cidade</th><th>Gerado em</th><th>Válido até</th><th>Total</th><th>Pagamento</th><th>Situação</th><th></th></tr></thead>
+        <thead><tr><th>#</th><th>Cliente</th><th>Telefone</th><th>Origem</th><th>Vendedor</th><?php if ($showLicenciadoColumn): ?><th>Licenciado</th><?php endif; ?><th>Cidade</th><th>Gerado em</th><th>Válido até</th><th>Total</th><th>Pagamento</th><th>Situação</th><th></th></tr></thead>
         <tbody>
             <?php foreach ($quotes as $q): ?>
                 <?php $situation = $q['payment_situation'] ?? ['label' => '—', 'badge' => 'novo']; ?>
@@ -88,6 +89,7 @@ $csrfToken = Csrf::token();
                     </td>
                     <td><?= !empty($q['lead_id']) ? '🌐 Site' : 'Interno' ?></td>
                     <td><?= View::e($q['seller_name'] ?: '—') ?></td>
+                    <?php if ($showLicenciadoColumn): ?><td><?= View::e($q['licenciado_name'] ?? '—') ?></td><?php endif; ?>
                     <td><?= View::e($q['client_city'] ?: $q['lead_city'] ?: '—') ?></td>
                     <td><?= View::e(date('d/m/Y H:i', strtotime($q['created_at']))) ?></td>
                     <td><?= $q['valid_until'] ? View::e(date('d/m/Y', strtotime($q['valid_until']))) : '—' ?></td>
@@ -114,7 +116,7 @@ $csrfToken = Csrf::token();
                 </tr>
             <?php endforeach; ?>
             <?php if (!$quotes): ?>
-                <tr><td colspan="12">Nenhum orçamento encontrado.</td></tr>
+                <tr><td colspan="<?= $showLicenciadoColumn ? 13 : 12 ?>">Nenhum orçamento encontrado.</td></tr>
             <?php endif; ?>
         </tbody>
     </table>

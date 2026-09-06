@@ -22,6 +22,14 @@ class LeadController
         $leads = $this->scopedLeads($user);
         $stages = LeadStage::all();
 
+        $showLicenciadoBadge = in_array($user['role_slug'], ['supervisor', 'gerente'], true);
+        if ($showLicenciadoBadge) {
+            foreach ($leads as &$l) {
+                $l['licenciado_name'] = User::licenciadoNameFor((int) ($l['assigned_to_user_id'] ?? 0));
+            }
+            unset($l);
+        }
+
         $columns = [];
         foreach ($stages as $stage) {
             $columns[$stage['slug']] = array_values(array_filter($leads, fn ($l) => $l['status'] === $stage['slug']));
@@ -36,6 +44,7 @@ class LeadController
             'canAssign' => !$isViewOnly,
             'isViewOnly' => $isViewOnly,
             'sellers' => !$isViewOnly ? $this->sellerOptions($user) : [],
+            'showLicenciadoBadge' => $showLicenciadoBadge,
         ]);
     }
 

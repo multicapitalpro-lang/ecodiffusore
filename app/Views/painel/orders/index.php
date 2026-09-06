@@ -13,6 +13,7 @@ $values = $values ?? [];
 $items = $items ?? [];
 $stats = $stats ?? ['concluidos' => 0, 'pendentes' => 0, 'pagos' => 0, 'cancelados' => 0];
 $isVendedor = ($user['role_slug'] ?? '') === 'vendedor';
+$showLicenciadoColumn = $showLicenciadoColumn ?? false;
 $isViewOnly = in_array($user['role_slug'] ?? '', Roles::NATIONAL_SUPPORT, true);
 $preselectClientId = (int) ($_GET['cliente_id'] ?? 0);
 $openModal = (isset($_GET['novo']) || $errors) && !$isViewOnly;
@@ -62,7 +63,7 @@ $openModal = (isset($_GET['novo']) || $errors) && !$isViewOnly;
 <div class="table-scroll">
     <table class="data-table">
         <thead>
-            <tr><th>#</th><th>Cliente</th><th>Telefone</th><th>Produto</th><th>Veículo</th><th>Cidade</th><th>Vendedor</th><th>Data</th><th>Total</th><th>Pagamento</th><th>Situação</th><th></th></tr>
+            <tr><th>#</th><th>Cliente</th><th>Telefone</th><th>Produto</th><th>Veículo</th><th>Cidade</th><th>Vendedor</th><?php if ($showLicenciadoColumn): ?><th>Licenciado</th><?php endif; ?><th>Data</th><th>Total</th><th>Pagamento</th><th>Situação</th><th></th></tr>
         </thead>
         <tbody>
             <?php foreach ($orders as $o): ?>
@@ -79,6 +80,7 @@ $openModal = (isset($_GET['novo']) || $errors) && !$isViewOnly;
                     <td><?= View::e($o['vehicle_type'] ?: '—') ?><?= $o['vehicle_plate'] ? ' (' . View::e($o['vehicle_plate']) . ')' : '' ?></td>
                     <td><?= View::e($o['client_city'] ?: '—') ?></td>
                     <td><?= View::e($o['seller_name'] ?: '—') ?></td>
+                    <?php if ($showLicenciadoColumn): ?><td><?= View::e($o['licenciado_name'] ?? '—') ?></td><?php endif; ?>
                     <td><?= View::e(date('d/m/Y', strtotime($o['order_date']))) ?></td>
                     <td>R$ <?= number_format((float) $o['total_value'], 2, ',', '.') ?></td>
                     <td><?= View::e($o['payment_method'] ?: '—') ?></td>
@@ -92,7 +94,7 @@ $openModal = (isset($_GET['novo']) || $errors) && !$isViewOnly;
                 </tr>
             <?php endforeach; ?>
             <?php if (!$orders): ?>
-                <tr><td colspan="12">Nenhum pedido encontrado.</td></tr>
+                <tr><td colspan="<?= $showLicenciadoColumn ? 13 : 12 ?>">Nenhum pedido encontrado.</td></tr>
             <?php endif; ?>
         </tbody>
     </table>
