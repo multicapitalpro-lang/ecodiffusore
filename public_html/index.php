@@ -139,6 +139,9 @@ $router->get('/painel/configuracoes/nfe', [App\Controllers\NfeSettingsController
 $router->post('/painel/configuracoes/nfe', [App\Controllers\NfeSettingsController::class, 'update']);
 $router->get('/painel/configuracoes/nfe/buscar-servico', [App\Controllers\NfeSettingsController::class, 'searchService']);
 
+$router->get('/painel/configuracoes/roteamento', [App\Controllers\LeadRoutingSettingsController::class, 'index']);
+$router->post('/painel/configuracoes/roteamento', [App\Controllers\LeadRoutingSettingsController::class, 'update']);
+
 // Pedidos
 $router->get('/painel/pedidos', [App\Controllers\OrderController::class, 'index']);
 $router->get('/painel/pedidos/novo', [App\Controllers\OrderController::class, 'create']);

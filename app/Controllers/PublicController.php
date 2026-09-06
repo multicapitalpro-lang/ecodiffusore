@@ -15,6 +15,7 @@ use App\Core\View;
 use App\Models\BrCity;
 use App\Models\Client;
 use App\Models\Lead;
+use App\Models\LeadRoutingSettings;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\Product;
@@ -155,13 +156,20 @@ class PublicController
         $productPrice = (float) ($product['price_cash'] ?? 0);
         $payback = EconomyCalculator::estimate($kmMensal, $kmLitro, $precoDiesel, $productPrice);
 
+        // Sem Vendedor no raio de 100km, o dono do Lead/Cliente/Orcamento cai pro Licenciado
+        // Central (configuravel em /painel/configuracoes/roteamento) -- antes ficava sem
+        // responsavel e aparecia pra QUALQUER Licenciado do pais poder pegar (vazamento entre
+        // redes). O cliente continua vendo o WhatsApp central na tela ($seller fica null pra
+        // isso -- ver orcamento_result abaixo), essa fila e' so pro dono interno no CRM.
+        $ownerId = $seller['id'] ?? LeadRoutingSettings::centralLicenciadoId();
+
         // Mesmo que o cliente nao chame o vendedor pelo WhatsApp, o orcamento ja foi gerado --
-        // atribui o Lead ao Licenciado mais proximo pra ele aparecer no CRM/hierarquia dele (ate o
-        // admin) e ser cobrado por um atendimento. So atribui se ainda nao tinha dono (ex: indicacao
-        // por ?ref= de outro licenciado, que tem prioridade sobre o palpite geografico).
+        // atribui o Lead ao Vendedor/Licenciado Central pra ele aparecer no CRM/hierarquia
+        // certa (ate o admin). So atribui se ainda nao tinha dono (ex: indicacao por ?ref= de
+        // outro licenciado, que tem prioridade sobre o palpite geografico).
         $currentLead = Lead::find((int) $_SESSION['checkout_lead_id']);
-        if ($seller && empty($currentLead['assigned_to_user_id'])) {
-            Lead::assignTo((int) $_SESSION['checkout_lead_id'], (int) $seller['id']);
+        if ($ownerId && empty($currentLead['assigned_to_user_id'])) {
+            Lead::assignTo((int) $_SESSION['checkout_lead_id'], $ownerId);
         }
 
         // O orcamento por placa ja e um orcamento de verdade, mesmo que o cliente nunca chame o
@@ -178,13 +186,13 @@ class PublicController
                 'email' => '',
                 'document' => '',
                 'person_type' => 'fisica',
-                'seller_id' => $seller['id'] ?? null,
+                'seller_id' => $ownerId,
             ]);
 
             $quoteId = Quote::create([
                 'client_id' => $clientId,
                 'lead_id' => (int) $_SESSION['checkout_lead_id'],
-                'seller_id' => $seller['id'] ?? null,
+                'seller_id' => $ownerId,
                 'status' => 'aberto',
                 'quote_date' => date('Y-m-d'),
                 'valid_until' => date('Y-m-d', strtotime('+7 days')),
