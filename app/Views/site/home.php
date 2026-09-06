@@ -340,13 +340,16 @@ $erro = isset($_GET['erro']);
             <?php if ($sucesso): ?>
                 <p class="form-msg form-msg-ok">Recebemos seu contato! Em breve falaremos com você.</p>
             <?php elseif ($erro): ?>
-                <p class="form-msg form-msg-erro">Preencha ao menos nome e WhatsApp para enviar.</p>
+                <p class="form-msg form-msg-erro"><?= ($_GET['erro'] ?? '') === 'cidade' ? 'Selecione uma cidade válida da lista.' : 'Preencha ao menos nome e WhatsApp para enviar.' ?></p>
             <?php endif; ?>
             <form action="/contato" method="post" class="contato-form">
                 <?= Csrf::field() ?>
                 <input type="text" name="name" placeholder="Seu nome" required>
                 <input type="text" name="whatsapp" placeholder="Seu WhatsApp" required>
-                <input type="text" name="city" placeholder="Cidade">
+                <div class="city-autocomplete-wrap">
+                    <input type="text" name="city" placeholder="Cidade" autocomplete="off" data-city-autocomplete>
+                    <div class="autocomplete-results" hidden></div>
+                </div>
                 <input type="text" name="truck_brand" placeholder="Marca do caminhão">
                 <textarea name="message" placeholder="Mensagem (opcional)"></textarea>
                 <button type="submit" class="btn btn-primary">Quero Economizar Agora</button>

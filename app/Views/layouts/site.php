@@ -39,11 +39,17 @@ $showPopup = $showPopup ?? false;
     </div>
     <div class="modal-body">
         <p class="modal-lead-text">Deixe seu contato pra gente não perder você — em seguida você vê todos os detalhes técnicos e as formas de pagamento.</p>
+        <?php if (!empty($_GET['erro'])): ?>
+            <p class="form-msg form-msg-erro"><?= $_GET['erro'] === 'cidade' ? 'Selecione uma cidade válida da lista.' : 'Preencha nome e WhatsApp.' ?></p>
+        <?php endif; ?>
         <form action="/comprar/iniciar" method="post" class="contato-form">
             <?= Csrf::field() ?>
             <input type="text" name="name" placeholder="Seu nome" required>
             <input type="text" name="whatsapp" placeholder="WhatsApp com DDD" required>
-            <input type="text" name="city" placeholder="Cidade">
+            <div class="city-autocomplete-wrap">
+                <input type="text" name="city" placeholder="Cidade" autocomplete="off" data-city-autocomplete>
+                <div class="autocomplete-results" hidden></div>
+            </div>
             <button type="submit" class="btn btn-primary">Continuar</button>
         </form>
         <a href="/" class="modal-lead-back">← Voltar pro site</a>

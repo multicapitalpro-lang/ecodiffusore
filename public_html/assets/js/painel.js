@@ -266,6 +266,7 @@ document.addEventListener('DOMContentLoaded', function () {
         bindPropostaFacil(document);
         bindUserRoleFields(document);
         bindChargeForms(document);
+        bindCityAutocomplete(document);
 
         // Criacao/edicao de usuario/pedido num modal: carrega o form via fetch (fragmento sem
         // layout) em vez de navegar pra outra pagina -- reaproveitado por Usuarios e Pedidos,
@@ -298,6 +299,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     bindPropostaFacil(content);
                     bindUserRoleFields(content);
                     bindChargeForms(content);
+                    bindCityAutocomplete(content);
                 })
                 .catch(function () {
                     var body = content.querySelector('.modal-body');
@@ -320,6 +322,70 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 billingSelect.addEventListener('change', update);
                 update();
+            });
+        }
+
+        // Autocomplete de cidade (br_cities, mesma base que o GeoMatch usa pro roteamento por
+        // proximidade em /comprar) -- usado nos formularios de Usuario e Cliente (campo Cidade),
+        // pra so aceitar municipio brasileiro real em vez de texto livre. Se o input tiver
+        // data-city-uf-target, preenche tambem o campo de UF ao selecionar (esses formularios,
+        // diferente do popup publico, ja tem um campo UF separado pra desambiguar). Bindavel
+        // (nao <script> inline) porque esses forms sao carregados via fetch no modal de
+        // Novo/Editar usuario/cliente -- innerHTML nao executa <script>.
+        function bindCityAutocomplete(root) {
+            root.querySelectorAll('[data-city-autocomplete]').forEach(function (input) {
+                var results = input.parentElement.querySelector('.autocomplete-results');
+                if (!results || input.dataset.cityBound) return;
+                input.dataset.cityBound = '1';
+
+                var ufTarget = input.dataset.cityUfTarget
+                    ? root.querySelector('#' + input.dataset.cityUfTarget) || document.getElementById(input.dataset.cityUfTarget)
+                    : null;
+
+                var timer = null;
+                input.addEventListener('input', function () {
+                    clearTimeout(timer);
+                    var q = input.value.trim();
+                    if (q.length < 2) {
+                        results.hidden = true;
+                        results.innerHTML = '';
+                        return;
+                    }
+                    timer = setTimeout(function () {
+                        fetch('/cidades/buscar?q=' + encodeURIComponent(q))
+                            .then(function (r) { return r.json(); })
+                            .then(function (res) {
+                                results.innerHTML = '';
+                                var cities = (res && res.data) || [];
+                                if (!cities.length) {
+                                    results.innerHTML = '<div class="autocomplete-empty">Nenhuma cidade encontrada.</div>';
+                                    results.hidden = false;
+                                    return;
+                                }
+                                cities.forEach(function (city) {
+                                    var item = document.createElement('div');
+                                    item.className = 'autocomplete-item';
+                                    item.textContent = city.name + ' - ' + city.uf;
+                                    item.addEventListener('click', function () {
+                                        input.value = city.name;
+                                        if (ufTarget) ufTarget.value = city.uf;
+                                        results.hidden = true;
+                                    });
+                                    results.appendChild(item);
+                                });
+                                results.hidden = false;
+                            })
+                            .catch(function () {
+                                results.hidden = true;
+                            });
+                    }, 300);
+                });
+
+                document.addEventListener('click', function (e) {
+                    if (e.target !== input && !results.contains(e.target)) {
+                        results.hidden = true;
+                    }
+                });
             });
         }
 

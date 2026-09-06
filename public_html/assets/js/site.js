@@ -286,6 +286,61 @@
     updateFinalSubmit();
 })();
 
+// Autocomplete de cidade (br_cities, mesma base que o GeoMatch usa pro roteamento por
+// proximidade) -- roda em qualquer pagina que tenha um campo marcado [data-city-autocomplete],
+// sem depender de nenhum elemento especifico existir (diferente das IIFEs acima, que so fazem
+// sentido dentro do wizard/calculadora). Sem isso o cliente podia digitar qualquer texto
+// (bairro, cidade de outro pais, erro de digitacao) e o roteamento pro Vendedor mais proximo
+// nunca encontrava ninguem no raio.
+document.querySelectorAll('[data-city-autocomplete]').forEach(function (input) {
+    var results = input.parentElement.querySelector('.autocomplete-results');
+    if (!results) return;
+
+    var timer = null;
+    input.addEventListener('input', function () {
+        clearTimeout(timer);
+        var q = input.value.trim();
+        if (q.length < 2) {
+            results.hidden = true;
+            results.innerHTML = '';
+            return;
+        }
+        timer = setTimeout(function () {
+            fetch('/cidades/buscar?q=' + encodeURIComponent(q))
+                .then(function (r) { return r.json(); })
+                .then(function (res) {
+                    results.innerHTML = '';
+                    var cities = (res && res.data) || [];
+                    if (!cities.length) {
+                        results.innerHTML = '<div class="autocomplete-empty">Nenhuma cidade encontrada.</div>';
+                        results.hidden = false;
+                        return;
+                    }
+                    cities.forEach(function (city) {
+                        var item = document.createElement('div');
+                        item.className = 'autocomplete-item';
+                        item.textContent = city.name + ' - ' + city.uf;
+                        item.addEventListener('click', function () {
+                            input.value = city.name;
+                            results.hidden = true;
+                        });
+                        results.appendChild(item);
+                    });
+                    results.hidden = false;
+                })
+                .catch(function () {
+                    results.hidden = true;
+                });
+        }, 300);
+    });
+
+    document.addEventListener('click', function (e) {
+        if (e.target !== input && !results.contains(e.target)) {
+            results.hidden = true;
+        }
+    });
+});
+
 function initCarousel(carouselId, trackSelector, slideSelector, options) {
     var carousel = document.getElementById(carouselId);
     if (!carousel) return;

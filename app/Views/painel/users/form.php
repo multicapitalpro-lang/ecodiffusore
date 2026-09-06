@@ -31,9 +31,10 @@ $values = $editing ?? ($old ?? []);
     <input type="text" id="whatsapp" name="whatsapp" value="<?= View::e($values['whatsapp'] ?? '') ?>">
 
     <div class="form-grid-2">
-        <div>
+        <div style="position:relative;">
             <label for="city">Cidade</label>
-            <input type="text" id="city" name="city" value="<?= View::e($values['city'] ?? '') ?>">
+            <input type="text" id="city" name="city" value="<?= View::e($values['city'] ?? '') ?>" autocomplete="off" data-city-autocomplete data-city-uf-target="state">
+            <div class="autocomplete-results" hidden></div>
         </div>
         <div>
             <label for="state">UF</label>

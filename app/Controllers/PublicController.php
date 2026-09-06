@@ -12,6 +12,7 @@ use App\Core\Pdf;
 use App\Core\Router;
 use App\Core\VehicleCatalog;
 use App\Core\View;
+use App\Models\BrCity;
 use App\Models\Client;
 use App\Models\Lead;
 use App\Models\Order;
@@ -44,6 +45,13 @@ class PublicController
 
         if ($name === '' || $whatsapp === '') {
             Router::redirect('/?erro=1#contato');
+        }
+
+        // Cidade precisa ser um municipio brasileiro real (selecionado do autocomplete) -- texto
+        // livre (bairro, cidade de outro pais, erro de digitacao) quebra o roteamento por
+        // proximidade que depende dela mais adiante no funil (GeoMatch).
+        if ($city !== '' && !BrCity::exists($city)) {
+            Router::redirect('/?erro=cidade#contato');
         }
 
         $leadId = Lead::create([
@@ -261,6 +269,13 @@ class PublicController
 
         if ($name === '' || $whatsapp === '') {
             Router::redirect('/comprar?erro=1');
+        }
+
+        // Cidade precisa ser um municipio brasileiro real (selecionado do autocomplete) -- e' o
+        // dado que GeoMatch usa pra achar o Vendedor mais proximo; texto livre (bairro, cidade de
+        // outro pais, erro de digitacao) faz o roteamento nunca encontrar ninguem no raio.
+        if ($city !== '' && !BrCity::exists($city)) {
+            Router::redirect('/comprar?erro=cidade');
         }
 
         $ref = $this->trackReferral();

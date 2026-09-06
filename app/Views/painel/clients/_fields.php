@@ -35,8 +35,11 @@ $isSeller = ($user['role_slug'] ?? '') === 'vendedor';
 <label for="whatsapp">WhatsApp</label>
 <input type="text" id="whatsapp" name="whatsapp" value="<?= View::e($values['whatsapp'] ?? '') ?>">
 
-<label for="city">Cidade</label>
-<input type="text" id="city" name="city" value="<?= View::e($values['city'] ?? '') ?>">
+<div style="position:relative;">
+    <label for="city">Cidade</label>
+    <input type="text" id="city" name="city" value="<?= View::e($values['city'] ?? '') ?>" autocomplete="off" data-city-autocomplete data-city-uf-target="state">
+    <div class="autocomplete-results" hidden></div>
+</div>
 
 <label for="state">UF</label>
 <input type="text" id="state" name="state" maxlength="2" style="text-transform:uppercase" value="<?= View::e($values['state'] ?? '') ?>">
