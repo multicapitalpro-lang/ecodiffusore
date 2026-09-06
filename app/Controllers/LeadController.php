@@ -59,6 +59,10 @@ class LeadController
         }
 
         $isViewOnly = in_array($user['role_slug'], array_merge([Roles::SELLER], Roles::NATIONAL_SUPPORT), true);
+        // Diferente de canAssign: Vendedor NAO pode reatribuir lead (por isso entra em
+        // $isViewOnly acima), mas precisa poder anotar os proprios leads -- so Gerente/Supervisor
+        // (visao nacional, view-only de verdade) ficam de fora daqui.
+        $canAddNotes = !in_array($user['role_slug'], Roles::NATIONAL_SUPPORT, true);
 
         View::render('painel/leads/index', [
             'user' => $user,
@@ -66,6 +70,7 @@ class LeadController
             'columns' => $columns,
             'canAssign' => !$isViewOnly,
             'isViewOnly' => $isViewOnly,
+            'canAddNotes' => $canAddNotes,
             'sellers' => !$isViewOnly ? $this->sellerOptions($user) : [],
             'showLicenciadoBadge' => $showLicenciadoBadge,
             'expirationWarningDays' => self::EXPIRATION_WARNING_DAYS,
@@ -162,7 +167,9 @@ class LeadController
      *  mesmo lead (ver LeadNote::create()). */
     public function storeNote(string $id): void
     {
-        Auth::requireRole(Roles::STAFF);
+        // So nao pode quem e' view-only de verdade (Gerente/Supervisor, visao nacional) -- ver
+        // mesmo criterio de $canAddNotes em index().
+        Auth::requireRole(array_values(array_diff(Roles::STAFF, Roles::NATIONAL_SUPPORT)));
         $user = Auth::user();
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {

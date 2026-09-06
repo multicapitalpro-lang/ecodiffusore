@@ -187,7 +187,7 @@ $vehicleFieldLabels = [
 
         <div id="notas" style="margin-top:18px; border-top:1px solid var(--border); padding-top:14px;">
             <h3 class="section-title" style="margin-top:0;">Observações</h3>
-            <?php if (!$isViewOnly): ?>
+            <?php if ($canAddNotes ?? true): ?>
                 <form id="lead-note-form" class="panel-form">
                     <textarea name="note" placeholder="Ex: liguei, disse que vai pensar, volto a ligar semana que vem..." required></textarea>
                     <label for="lead-note-followup" style="margin-top:6px;">Lembrar de retornar em (opcional)</label>
