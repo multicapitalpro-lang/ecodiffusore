@@ -54,6 +54,15 @@ $situation = $order['payment_situation'] ?? ['label' => '—', 'badge' => 'novo'
     <?php if ($order['notes']): ?><p><strong>Obs.:</strong> <?= nl2br(View::e($order['notes'])) ?></p><?php endif; ?>
 </div>
 
+<?php if (!$isViewOnly): ?>
+<form action="/painel/pedidos/<?= (int) $order['id'] ?>/rastreio" method="post" class="inline-form" style="margin-bottom:16px">
+    <?= Csrf::field() ?>
+    <label>Transportadora <input type="text" name="tracking_carrier" value="<?= View::e($order['tracking_carrier'] ?? '') ?>" placeholder="Ex: Correios, Jadlog"></label>
+    <label>Código de rastreio <input type="text" name="tracking_code" value="<?= View::e($order['tracking_code'] ?? '') ?>"></label>
+    <button type="submit" class="btn btn-outline">Salvar rastreio</button>
+</form>
+<?php endif; ?>
+
 <?php include __DIR__ . '/../_approval_banner.php'; ?>
 
 <div class="table-scroll">

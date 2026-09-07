@@ -349,6 +349,24 @@ class OrderController
         Router::redirect("/painel/pedidos/{$id}?sucesso=1");
     }
 
+    /** Rastreio (transportadora + codigo) -- metadado livre sem efeito colateral (sem comissao/
+     *  financeiro/Notifier), por isso e' um metodo separado de markStatus() em vez de uma branch
+     *  nova dele, mesmo raciocinio que ja separou refundPayment(). */
+    public function updateTracking(string $id): void
+    {
+        $order = $this->authorizeOrder((int) $id);
+        $id = (int) $id;
+        $this->assertNotViewOnly(Auth::user());
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            Router::redirect("/painel/pedidos/{$id}?erro=1");
+        }
+
+        Order::updateTracking($id, trim($_POST['tracking_code'] ?? ''), trim($_POST['tracking_carrier'] ?? ''));
+
+        Router::redirect("/painel/pedidos/{$id}?sucesso=1");
+    }
+
     /** Marca o pagamento mais recente do pedido como reembolsado -- so muda a "situacao" exibida
      * (ver Payment::situationFor), nao mexe no status do pedido nem desfaz comissao/lancamento
      * ja gerados (isso e uma decisao financeira separada, fora do escopo deste botao). */

@@ -38,7 +38,7 @@ $staffRoles = Roles::STAFF;
 $userManagementRoles = Roles::USER_MANAGEMENT;
 $supervisorAssignmentRoles = Roles::SUPERVISOR_ASSIGNMENT;
 $pendingApprovals = in_array($role, Roles::SUPERVISOR_ASSIGNMENT, true) ? \App\Models\User::pendingApprovalCount($user) : 0;
-$vendasOpen = $anyActive(['/painel/pedidos', '/painel/orcamentos', '/painel/produtos', '/painel/tabela-precos', '/painel/configuracoes/pagamento', '/painel/simulador', '/painel/materiais']);
+$vendasOpen = $anyActive(['/painel/pedidos', '/painel/orcamentos', '/painel/produtos', '/painel/tabela-precos', '/painel/configuracoes/pagamento', '/painel/simulador', '/painel/materiais', '/painel/garantias']);
 $leadsOpen = $anyActive(['/painel/leads', '/painel/clientes', '/painel/configuracoes/roteamento']);
 $financeiroOpen = $anyActive(['/painel/financeiro']);
 $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/meu-ranking', '/painel/metas']);
@@ -59,6 +59,11 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/meu-rank
         </div>
         <nav>
             <a href="/painel" class="<?= $isActive('/painel') && $path === '/painel' ? 'is-active' : '' ?>"><?= $icon('home') ?> Início</a>
+
+            <?php if ($role === 'cliente'): ?>
+                <a href="/painel/meus-dados" class="<?= $isActive('/painel/meus-dados') ? 'is-active' : '' ?>"><?= $icon('gear') ?> Meus Dados</a>
+                <a href="/painel/minhas-garantias" class="<?= $isActive('/painel/minhas-garantias') ? 'is-active' : '' ?>"><?= $icon('box') ?> Minhas Garantias</a>
+            <?php endif; ?>
 
             <?php if (in_array($role, $staffRoles, true)): ?>
                 <details class="nav-group" <?= $leadsOpen ? 'open' : '' ?>>
@@ -82,6 +87,7 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/meu-rank
                         <a href="/painel/materiais" class="<?= $isActive('/painel/materiais') ? 'is-active' : '' ?>">Materiais de Venda</a>
                         <a href="/painel/pedidos" class="<?= $isActive('/painel/pedidos') ? 'is-active' : '' ?>">Pedidos</a>
                         <a href="/painel/orcamentos" class="<?= $isActive('/painel/orcamentos') ? 'is-active' : '' ?>">Orçamentos</a>
+                        <a href="/painel/garantias" class="<?= $isActive('/painel/garantias') ? 'is-active' : '' ?>">Garantias</a>
                         <?php if ($role === 'admin'): ?>
                             <a href="/painel/produtos" class="<?= $isActive('/painel/produtos') ? 'is-active' : '' ?>">Produtos</a>
                             <a href="/painel/tabela-precos" class="<?= $isActive('/painel/tabela-precos') ? 'is-active' : '' ?>">Tabela de preços</a>

@@ -249,6 +249,35 @@ class Notifier
         self::sendToNetworkChain((int) $licenciado['id'], $subject, $title, $body, $waSelf, $waNetwork);
     }
 
+    /** @param array $warranty precisa de id/order_id/seller_id/client_name (retorno de
+     *  WarrantyRequest::find()). So WhatsApp, sem e-mail -- notifica quem vendeu o pedido, nao o
+     *  cliente (mensagens pro cliente ficam pra fase seguinte). */
+    public static function garantiaSolicitada(array $warranty): void
+    {
+        if (empty($warranty['seller_id'])) {
+            return;
+        }
+
+        $sellerId = (int) $warranty['seller_id'];
+        $vars = [
+            'cliente' => $warranty['client_name'] ?? '—',
+            'id' => (string) $warranty['order_id'],
+            'vendedor' => User::find($sellerId)['name'] ?? '—',
+            'url' => self::BASE_URL . '/painel/garantias/' . (int) $warranty['id'],
+        ];
+        [$waSelf, $waNetwork] = self::waTexts('garantia_solicitada', $vars);
+
+        $seller = User::find($sellerId);
+        if ($seller && !empty($seller['whatsapp']) && $waSelf) {
+            self::sendWhatsApp($seller['whatsapp'], $waSelf);
+        }
+
+        $licenciado = User::licenciadoFor($sellerId);
+        if ($licenciado && !empty($licenciado['whatsapp']) && (int) $licenciado['id'] !== $sellerId && $waNetwork) {
+            self::sendWhatsApp($licenciado['whatsapp'], $waNetwork);
+        }
+    }
+
     /** @param array $seller precisa de whatsapp. @param array<int,string> $leadNames. So WhatsApp. */
     public static function followUpLembrete(array $seller, array $leadNames): void
     {

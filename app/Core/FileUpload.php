@@ -86,6 +86,11 @@ class FileUpload
         return self::store($file, 'client_notes');
     }
 
+    public static function storeWarrantyAttachment(array $file): ?array
+    {
+        return self::store($file, 'warranties');
+    }
+
     public static function path(string $subdir, string $storedName): string
     {
         return BASE_PATH . '/storage/uploads/' . $subdir . '/' . basename($storedName);

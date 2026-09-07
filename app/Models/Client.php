@@ -91,6 +91,27 @@ class Client
         $stmt->execute(['document' => $document, 'id' => $clientId]);
     }
 
+    /** Cliente edita os proprios dados de contato/endereco (Meus Dados) -- nao mexe em name/email
+     *  (login) nem em seller_id, status, limite de credito ou condicao de pagamento (so staff mexe nisso). */
+    public static function updateOwnProfile(int $id, array $data): void
+    {
+        $stmt = Database::connection()->prepare(
+            'UPDATE clients SET document = :document, person_type = :person_type, state_registration = :state_registration,
+                whatsapp = :whatsapp, city = :city, state = :state, address = :address
+             WHERE id = :id'
+        );
+        $stmt->execute([
+            'id' => $id,
+            'document' => ($data['document'] ?? '') ?: null,
+            'person_type' => ($data['person_type'] ?? '') === 'juridica' ? 'juridica' : 'fisica',
+            'state_registration' => ($data['state_registration'] ?? '') ?: null,
+            'whatsapp' => ($data['whatsapp'] ?? '') ?: null,
+            'city' => ($data['city'] ?? '') ?: null,
+            'state' => ($data['state'] ?? '') ?: null,
+            'address' => ($data['address'] ?? '') ?: null,
+        ]);
+    }
+
     public static function bulkAssignSeller(array $clientIds, ?int $sellerId): void
     {
         $clientIds = array_filter(array_map('intval', $clientIds));

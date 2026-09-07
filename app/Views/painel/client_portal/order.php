@@ -11,6 +11,9 @@ $methodLabels = ['PIX' => 'Pix', 'BOLETO' => 'Boleto', 'CREDIT_CARD' => 'Cartão
 <div class="order-summary">
     <p><strong>Data:</strong> <?= View::e(date('d/m/Y', strtotime($order['order_date']))) ?></p>
     <p><strong>Situação:</strong> <span class="status-badge status-<?= $order['status'] === 'verificado' ? 'active' : ($order['status'] === 'cancelado' ? 'inactive' : 'novo') ?>"><?= $statusLabels[$order['status']] ?? $order['status'] ?></span></p>
+    <?php if (!empty($order['tracking_code']) || !empty($order['tracking_carrier'])): ?>
+        <p><strong>Rastreio:</strong> <?= View::e($order['tracking_carrier'] ?: '—') ?><?php if (!empty($order['tracking_code'])): ?> — código <code><?= View::e($order['tracking_code']) ?></code><?php endif; ?></p>
+    <?php endif; ?>
 </div>
 
 <div class="table-scroll">
@@ -53,3 +56,7 @@ $methodLabels = ['PIX' => 'Pix', 'BOLETO' => 'Boleto', 'CREDIT_CARD' => 'Cartão
         <?php endif; ?>
     </div>
 <?php endforeach; ?>
+
+<?php if ($order['status'] === 'verificado'): ?>
+    <a href="/painel/minhas-garantias/nova?order_id=<?= (int) $order['id'] ?>" class="btn btn-outline" style="margin-top:16px">Abrir solicitação de garantia</a>
+<?php endif; ?>

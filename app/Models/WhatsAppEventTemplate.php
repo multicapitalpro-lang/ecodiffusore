@@ -21,6 +21,7 @@ class WhatsAppEventTemplate
         'vendedor_inativo',
         'licenciado_pendente_aprovacao',
         'follow_up_lembrete',
+        'garantia_solicitada',
     ];
 
     public const LABELS = [
@@ -32,6 +33,7 @@ class WhatsAppEventTemplate
         'vendedor_inativo' => 'Alerta de vendedor inativo',
         'licenciado_pendente_aprovacao' => 'Novo Licenciado pendente de aprovação',
         'follow_up_lembrete' => 'Lembrete de follow-up',
+        'garantia_solicitada' => 'Solicitação de garantia aberta',
     ];
 
     /** Quais placeholders {chave} cada evento aceita -- so pra exibir dica na tela, nao valida nada. */
@@ -44,6 +46,7 @@ class WhatsAppEventTemplate
         'vendedor_inativo' => ['vendedor', 'dias', 'url'],
         'licenciado_pendente_aprovacao' => ['nome', 'cidade', 'url'],
         'follow_up_lembrete' => ['leads', 'url'],
+        'garantia_solicitada' => ['cliente', 'id', 'vendedor', 'url'],
     ];
 
     /** Eventos que so usam UM dos dois textos (o outro fica sempre null/nao editavel). */
@@ -60,6 +63,7 @@ class WhatsAppEventTemplate
         'cadastro_aprovado' => 'Licenciado (quem teve o cadastro aprovado)',
         'pedido_cancelado' => 'Vendedor (dono do pedido)',
         'follow_up_lembrete' => 'Vendedor',
+        'garantia_solicitada' => 'Vendedor (dono do pedido)',
     ];
 
     public const NETWORK_LABELS = [
@@ -70,6 +74,7 @@ class WhatsAppEventTemplate
         'pedido_cancelado' => 'Licenciado da rede',
         'vendedor_inativo' => 'Rede responsável (licenciado/supervisor/gerente/admin)',
         'licenciado_pendente_aprovacao' => 'Admin e Gerente Geral',
+        'garantia_solicitada' => 'Licenciado da rede',
     ];
 
     public static function all(): array

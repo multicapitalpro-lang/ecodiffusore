@@ -216,6 +216,16 @@ class Order
         $stmt->execute(['status' => $status, 'id' => $id]);
     }
 
+    public static function updateTracking(int $id, ?string $trackingCode, ?string $trackingCarrier): void
+    {
+        $stmt = Database::connection()->prepare('UPDATE orders SET tracking_code = :code, tracking_carrier = :carrier WHERE id = :id');
+        $stmt->execute([
+            'code' => $trackingCode !== '' ? $trackingCode : null,
+            'carrier' => $trackingCarrier !== '' ? $trackingCarrier : null,
+            'id' => $id,
+        ]);
+    }
+
     /**
      * Marca o pedido como verificado e roda a mesma rotina de sempre: comissao em cascata
      * (Commission::createCascadeForOrder) + lancamento em Contas a Receber. Usado tanto pelo

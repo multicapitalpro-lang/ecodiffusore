@@ -75,6 +75,19 @@ $router->get('/painel', [App\Controllers\DashboardController::class, 'index']);
 $router->post('/painel/resumo-semanal', [App\Controllers\DashboardController::class, 'toggleWeeklyDigest']);
 $router->get('/painel/meus-pedidos/{id}', [App\Controllers\ClientPortalController::class, 'showOrder']);
 
+$router->get('/painel/meus-dados', [App\Controllers\ClientProfileController::class, 'edit']);
+$router->post('/painel/meus-dados', [App\Controllers\ClientProfileController::class, 'update']);
+$router->get('/painel/minhas-garantias', [App\Controllers\ClientPortalController::class, 'warranties']);
+$router->get('/painel/minhas-garantias/nova', [App\Controllers\ClientPortalController::class, 'newWarranty']);
+$router->post('/painel/minhas-garantias', [App\Controllers\ClientPortalController::class, 'storeWarranty']);
+$router->get('/painel/minhas-garantias/{id}', [App\Controllers\ClientPortalController::class, 'showWarranty']);
+$router->get('/painel/minhas-garantias/{id}/anexo', [App\Controllers\ClientPortalController::class, 'downloadWarrantyAttachment']);
+
+$router->get('/painel/garantias', [App\Controllers\WarrantyController::class, 'index']);
+$router->get('/painel/garantias/{id}', [App\Controllers\WarrantyController::class, 'show']);
+$router->post('/painel/garantias/{id}/status', [App\Controllers\WarrantyController::class, 'updateStatus']);
+$router->get('/painel/garantias/{id}/anexo', [App\Controllers\WarrantyController::class, 'downloadAttachment']);
+
 $router->get('/painel/usuarios', [App\Controllers\UserController::class, 'index']);
 $router->get('/painel/usuarios/novo', [App\Controllers\UserController::class, 'create']);
 $router->post('/painel/usuarios', [App\Controllers\UserController::class, 'store']);
@@ -174,6 +187,7 @@ $router->get('/painel/pedidos/{id}/editar', [App\Controllers\OrderController::cl
 $router->post('/painel/pedidos/{id}', [App\Controllers\OrderController::class, 'update']);
 $router->post('/painel/pedidos/{id}/status', [App\Controllers\OrderController::class, 'markStatus']);
 $router->post('/painel/pedidos/{id}/reembolsar', [App\Controllers\OrderController::class, 'refundPayment']);
+$router->post('/painel/pedidos/{id}/rastreio', [App\Controllers\OrderController::class, 'updateTracking']);
 $router->get('/painel/pedidos/{id}/documento-veiculo', [App\Controllers\OrderController::class, 'downloadVehicleDocument']);
 $router->post('/painel/pedidos/{id}/cobranca', [App\Controllers\PaymentController::class, 'generateForOrder']);
 
