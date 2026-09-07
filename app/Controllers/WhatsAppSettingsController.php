@@ -5,21 +5,66 @@ namespace App\Controllers;
 use App\Core\Auth;
 use App\Core\Csrf;
 use App\Core\EvolutionApiClient;
+use App\Core\Roles;
 use App\Core\Router;
 use App\Core\View;
+use App\Models\WhatsAppEventTemplate;
 
-/** Tela pro admin conectar/desconectar o aparelho do Evolution API direto pelo painel, sem
- *  precisar escanear QR Code por fora. */
+/** Tela de WhatsApp: conexao do aparelho (so Admin, e' infra sensivel) + textos das mensagens
+ *  automaticas (Admin e Gerente, ver Roles::SUPERVISOR_ASSIGNMENT). */
 class WhatsAppSettingsController
 {
     public function index(): void
     {
-        Auth::requireRole(['admin']);
+        Auth::requireRole(Roles::SUPERVISOR_ASSIGNMENT);
 
         View::render('painel/settings/whatsapp', [
             'user' => Auth::user(),
             'csrfToken' => Csrf::token(),
+            'templates' => WhatsAppEventTemplate::all(),
+            'errors' => [],
         ]);
+    }
+
+    public function updateTemplate(string $eventKey): void
+    {
+        Auth::requireRole(Roles::SUPERVISOR_ASSIGNMENT);
+
+        if (!in_array($eventKey, WhatsAppEventTemplate::KEYS, true)) {
+            Router::redirect('/painel/configuracoes/whatsapp?erro=1');
+        }
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            Router::redirect('/painel/configuracoes/whatsapp?erro=1');
+        }
+
+        $textSelf = in_array($eventKey, WhatsAppEventTemplate::NETWORK_ONLY, true) ? null : trim($_POST['text_self'] ?? '');
+        $textNetwork = in_array($eventKey, WhatsAppEventTemplate::SELF_ONLY, true) ? null : trim($_POST['text_network'] ?? '');
+
+        $errors = [];
+        if ($textSelf !== null && $textSelf === '') {
+            $errors['text_self'] = 'Preencha o texto.';
+        }
+        if ($textNetwork !== null && $textNetwork === '') {
+            $errors['text_network'] = 'Preencha o texto.';
+        }
+
+        if ($errors) {
+            $templates = WhatsAppEventTemplate::all();
+            $templates[$eventKey] = array_merge($templates[$eventKey] ?? [], ['text_self' => $textSelf, 'text_network' => $textNetwork]);
+
+            View::render('painel/settings/whatsapp', [
+                'user' => Auth::user(),
+                'csrfToken' => Csrf::token(),
+                'templates' => $templates,
+                'errors' => [$eventKey => $errors],
+            ]);
+            return;
+        }
+
+        WhatsAppEventTemplate::update($eventKey, $textSelf, $textNetwork);
+
+        Router::redirect('/painel/configuracoes/whatsapp?sucesso=1');
     }
 
     /** JSON pro JS da tela: estado atual da conexao e, se ainda nao conectado, um QR Code novo. */

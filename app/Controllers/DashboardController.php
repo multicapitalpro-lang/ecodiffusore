@@ -7,6 +7,8 @@ use App\Core\BrazilStates;
 use App\Core\Chart;
 use App\Core\Csrf;
 use App\Core\DateRange;
+use App\Core\FollowUpReminder;
+use App\Core\InactivityAlert;
 use App\Core\ReportScheduler;
 use App\Core\Roles;
 use App\Core\Router;
@@ -58,6 +60,8 @@ class DashboardController
             // por quem tem acesso a Relatorios, pra nao deixar agendamento parado sem nunca disparar.
             ReportScheduler::processDue();
             WeeklyDigest::processDue();
+            FollowUpReminder::processDue();
+            InactivityAlert::processDue();
         }
 
         if (in_array($role, Roles::STAFF, true)) {

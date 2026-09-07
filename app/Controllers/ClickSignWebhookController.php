@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Core\ClickSignClient;
 use App\Core\Config;
+use App\Core\Notifier;
 use App\Models\LicenciadoEnvelope;
 use App\Models\User;
 
@@ -62,6 +63,11 @@ class ClickSignWebhookController
             // Nao aprova sozinho -- fica esperando Admin/Gerente revisar os dados + documentos na
             // tela de aprovacao de cadastros antes de liberar o painel completo.
             User::setOnboardingStatus((int) $envelope['user_id'], 'aguardando_aprovacao');
+
+            $licenciado = User::find((int) $envelope['user_id']);
+            if ($licenciado) {
+                Notifier::licenciadoPendenteAprovacao($licenciado);
+            }
         } elseif (in_array($event, self::REFUSAL_EVENTS, true)) {
             LicenciadoEnvelope::updateStatus((int) $envelope['id'], 'refused');
             User::setOnboardingStatus((int) $envelope['user_id'], 'assinatura_recusada');

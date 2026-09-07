@@ -341,6 +341,11 @@ class OrderController
         }
 
         Order::updateStatus($id, $status);
+
+        if ($status === 'cancelado') {
+            Notifier::pedidoCancelado($order);
+        }
+
         Router::redirect("/painel/pedidos/{$id}?sucesso=1");
     }
 

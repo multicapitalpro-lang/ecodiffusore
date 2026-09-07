@@ -8,6 +8,7 @@ use App\Models\EmailTemplateSettings;
 use App\Models\OrderItem;
 use App\Models\Payment;
 use App\Models\User;
+use App\Models\WhatsAppEventTemplate;
 
 /**
  * Central de notificacoes por e-mail. Um metodo por evento -- cada um resolve os destinatarios,
@@ -24,10 +25,13 @@ use App\Models\User;
  * Em ambos os casos, sem duplicar e-mail se a mesma pessoa aparecer em mais de um papel (ex: lead
  * caido direto no Licenciado Central, sem Vendedor no raio).
  *
- * So e-mail por enquanto -- estrutura pensada pra, no futuro, cada metodo tambem despachar
- * WhatsApp (Evolution API) pros mesmos destinatarios, sem mudar os pontos de chamada no resto do
- * app. mail() (usado por Mailer::send) nunca lanca excecao, entao chamar estes metodos nunca
- * interrompe o fluxo principal (pedido/orcamento/lead ja foi salvo antes de notificar).
+ * Alem do e-mail, os principais eventos tambem disparam WhatsApp (App\Core\EvolutionApiClient) --
+ * texto diferente pro destinatario direto do evento ("self", ex: o vendedor) e pro resto da rede
+ * ("network", ex: licenciado/supervisor/gerente/admin), editavel em /painel/configuracoes/whatsapp
+ * (App\Models\WhatsAppEventTemplate, ver waTexts()). Alguns eventos (cancelamento, vendedor
+ * inativo, licenciado pendente, lembrete de follow-up) sao WhatsApp-only, sem e-mail. Nem
+ * Mailer::send nem sendWhatsApp() lancam excecao pro chamador, entao notificar nunca interrompe o
+ * fluxo principal (pedido/orcamento/lead ja foi salvo antes de notificar).
  */
 class Notifier
 {
@@ -38,9 +42,11 @@ class Notifier
     {
         $vars = ['nome' => $lead['name'] ?? '—', 'whatsapp' => $lead['whatsapp'] ?? '—', 'cidade' => $lead['city'] ?? '—'];
         $details = self::infoList(['Nome' => $vars['nome'], 'WhatsApp' => $vars['whatsapp'], 'Cidade' => $vars['cidade']]);
-        [$subject, $title, $body] = self::eventBody('lead_roteado', $vars, $details, self::BASE_URL . '/painel/leads');
+        $url = self::BASE_URL . '/painel/leads';
+        [$subject, $title, $body] = self::eventBody('lead_roteado', $vars, $details, $url);
 
-        self::sendToSellerAndLicenciado($assigneeId, $subject, $title, $body);
+        [$waSelf, $waNetwork] = self::waTexts('lead_roteado', $vars + ['url' => $url]);
+        self::sendToSellerAndLicenciado($assigneeId, $subject, $title, $body, $waSelf, $waNetwork);
     }
 
     /** @param array $quote precisa de id/seller_id/total_value/client_name */
@@ -68,14 +74,11 @@ class Notifier
         }
 
         $vars = self::pedidoVars($order);
-        [$subject, $title, $body] = self::eventBody(
-            'pedido_registrado',
-            $vars,
-            self::pedidoDetails($vars),
-            self::BASE_URL . '/painel/pedidos/' . (int) $order['id']
-        );
+        $url = self::BASE_URL . '/painel/pedidos/' . (int) $order['id'];
+        [$subject, $title, $body] = self::eventBody('pedido_registrado', $vars, self::pedidoDetails($vars), $url);
 
-        self::sendToFullChain((int) $order['seller_id'], $subject, $title, $body);
+        [$waSelf, $waNetwork] = self::waTexts('pedido_registrado', $vars + ['url' => $url]);
+        self::sendToFullChain((int) $order['seller_id'], $subject, $title, $body, $waSelf, $waNetwork);
     }
 
     /** @param array $order precisa de id/seller_id/total_value/client_name */
@@ -86,14 +89,98 @@ class Notifier
         }
 
         $vars = self::pedidoVars($order);
-        [$subject, $title, $body] = self::eventBody(
-            'pedido_aprovado',
-            $vars,
-            self::pedidoDetails($vars),
-            self::BASE_URL . '/painel/pedidos/' . (int) $order['id']
-        );
+        $url = self::BASE_URL . '/painel/pedidos/' . (int) $order['id'];
+        [$subject, $title, $body] = self::eventBody('pedido_aprovado', $vars, self::pedidoDetails($vars), $url);
 
-        self::sendToFullChain((int) $order['seller_id'], $subject, $title, $body);
+        [$waSelf, $waNetwork] = self::waTexts('pedido_aprovado', $vars + ['url' => $url]);
+        self::sendToFullChain((int) $order['seller_id'], $subject, $title, $body, $waSelf, $waNetwork);
+    }
+
+    /** @param array $order precisa de id/seller_id/client_name (mesmas chaves de pedidoVars) --
+     *  so WhatsApp, sem e-mail (nao pedido pelo usuario pra esse evento). */
+    public static function pedidoCancelado(array $order): void
+    {
+        if (empty($order['seller_id'])) {
+            return;
+        }
+
+        $orderId = (int) $order['id'];
+        $vars = self::pedidoVars($order) + ['id' => (string) $orderId, 'url' => self::BASE_URL . '/painel/pedidos/' . $orderId];
+        [$waSelf, $waNetwork] = self::waTexts('pedido_cancelado', $vars);
+
+        $sellerId = (int) $order['seller_id'];
+        $seller = User::find($sellerId);
+        if ($seller && !empty($seller['whatsapp']) && $waSelf) {
+            self::sendWhatsApp($seller['whatsapp'], $waSelf);
+        }
+
+        $licenciado = User::licenciadoFor($sellerId);
+        if ($licenciado && !empty($licenciado['whatsapp']) && (int) $licenciado['id'] !== $sellerId && $waNetwork) {
+            self::sendWhatsApp($licenciado['whatsapp'], $waNetwork);
+        }
+    }
+
+    /** @param array $seller precisa de id/name. So WhatsApp, sem e-mail. */
+    public static function vendedorInativo(array $seller, int $diasInativo): void
+    {
+        $vars = ['vendedor' => $seller['name'] ?? '—', 'dias' => (string) $diasInativo, 'url' => self::BASE_URL . '/painel/desempenho/vendedores'];
+        [, $text] = self::waTexts('vendedor_inativo', $vars);
+        if (!$text) {
+            return;
+        }
+
+        $recipients = [];
+        $current = User::find((int) $seller['id']);
+        $licenciado = null;
+        $first = true;
+
+        for ($i = 0; $i < 10 && $current; $i++) {
+            if (!$first) {
+                self::addRecipient($recipients, $current, 'network');
+            }
+            $first = false;
+            if ($current['role_slug'] === 'licenciado') {
+                $licenciado = $current;
+                break;
+            }
+            if (empty($current['manager_id'])) {
+                break;
+            }
+            $current = User::find((int) $current['manager_id']);
+        }
+
+        self::addNetworkChain($recipients, $licenciado);
+
+        foreach ($recipients as $r) {
+            if (!empty($r['whatsapp'])) {
+                self::sendWhatsApp($r['whatsapp'], $text);
+            }
+        }
+    }
+
+    /** @param array $licenciado precisa de id/name/city/state. So WhatsApp, sem e-mail. */
+    public static function licenciadoPendenteAprovacao(array $licenciado): void
+    {
+        $cidade = trim(($licenciado['city'] ?? '') . (!empty($licenciado['state']) ? '/' . $licenciado['state'] : ''));
+        $vars = ['nome' => $licenciado['name'] ?? '—', 'cidade' => $cidade !== '' ? $cidade : '—', 'url' => self::BASE_URL . '/painel/licenciados/aprovacoes'];
+        [, $text] = self::waTexts('licenciado_pendente_aprovacao', $vars);
+        if (!$text) {
+            return;
+        }
+
+        $recipients = [];
+        foreach (User::allByRole('admin') as $admin) {
+            self::addRecipient($recipients, $admin, 'network');
+        }
+        foreach (User::allByRole('gerente') as $gerente) {
+            self::addRecipient($recipients, $gerente, 'network');
+        }
+
+        foreach ($recipients as $r) {
+            if (!empty($r['whatsapp'])) {
+                self::sendWhatsApp($r['whatsapp'], $text);
+            }
+        }
     }
 
     private const PEDIDO_DETAIL_LABELS = [
@@ -154,14 +241,26 @@ class Notifier
     /** @param array $licenciado precisa de id/name/email */
     public static function cadastroAprovado(array $licenciado): void
     {
-        [$subject, $title, $body] = self::eventBody(
-            'cadastro_aprovado',
-            ['nome' => $licenciado['name'] ?? '—'],
-            '',
-            self::BASE_URL . '/painel'
-        );
+        $vars = ['nome' => $licenciado['name'] ?? '—'];
+        $url = self::BASE_URL . '/painel';
+        [$subject, $title, $body] = self::eventBody('cadastro_aprovado', $vars, '', $url);
 
-        self::sendToNetworkChain((int) $licenciado['id'], $subject, $title, $body);
+        [$waSelf, $waNetwork] = self::waTexts('cadastro_aprovado', $vars + ['url' => $url]);
+        self::sendToNetworkChain((int) $licenciado['id'], $subject, $title, $body, $waSelf, $waNetwork);
+    }
+
+    /** @param array $seller precisa de whatsapp. @param array<int,string> $leadNames. So WhatsApp. */
+    public static function followUpLembrete(array $seller, array $leadNames): void
+    {
+        if (empty($seller['whatsapp'])) {
+            return;
+        }
+
+        $vars = ['leads' => implode(', ', $leadNames), 'url' => self::BASE_URL . '/painel/leads'];
+        [$text] = self::waTexts('follow_up_lembrete', $vars);
+        if ($text) {
+            self::sendWhatsApp($seller['whatsapp'], $text);
+        }
     }
 
     /** @param array $row precisa de client_name/total_value */
@@ -270,6 +369,43 @@ class Notifier
         return $escaped;
     }
 
+    /** Busca os textos editaveis (WhatsAppEventTemplate, /painel/configuracoes/whatsapp) do
+     *  evento e interpola {vars} -- sem escapar HTML, mensagem de WhatsApp e texto puro. Qualquer
+     *  um dos dois pode vir null se o evento nao usa aquela variante (ver SELF_ONLY/NETWORK_ONLY)
+     *  ou se o template ainda nao tiver linha (defensivo, a migracao ja semeia todas).
+     *  @return array{0:?string,1:?string} [textoSelf, textoNetwork] */
+    private static function waTexts(string $eventKey, array $vars): array
+    {
+        $tpl = WhatsAppEventTemplate::find($eventKey);
+        $textSelf = $tpl['text_self'] ?? null;
+        $textNetwork = $tpl['text_network'] ?? null;
+
+        return [
+            $textSelf !== null && $textSelf !== '' ? self::waInterpolate($textSelf, $vars) : null,
+            $textNetwork !== null && $textNetwork !== '' ? self::waInterpolate($textNetwork, $vars) : null,
+        ];
+    }
+
+    /** Substitui {chave} pelo valor em $vars, sem escapar (texto puro de WhatsApp, nao HTML). */
+    private static function waInterpolate(string $template, array $vars): string
+    {
+        foreach ($vars as $key => $value) {
+            $template = str_replace('{' . $key . '}', (string) $value, $template);
+        }
+        return $template;
+    }
+
+    /** Dispara uma mensagem de WhatsApp via Evolution API -- nunca lanca excecao pro chamador
+     *  (mesmo espirito do Mailer::send, ver docblock da classe), so loga se falhar. */
+    private static function sendWhatsApp(string $number, string $text): void
+    {
+        try {
+            (new EvolutionApiClient())->sendText($number, $text);
+        } catch (\Throwable $e) {
+            error_log('WhatsApp dispatch falhou: ' . $e->getMessage());
+        }
+    }
+
     /** @param array $row precisa de client_name/total_value */
     private static function orderDetails(array $row): string
     {
@@ -279,8 +415,9 @@ class Notifier
         ]);
     }
 
-    /** Vendedor responsavel + Licenciado da rede dele -- ver docblock da classe. */
-    private static function sendToSellerAndLicenciado(int $sellerId, string $subject, string $title, string $body): void
+    /** Vendedor responsavel + Licenciado da rede dele -- ver docblock da classe. $waSelf vai pro
+     *  vendedor, $waNetwork pro licenciado (null = nao manda WhatsApp pra aquele papel). */
+    private static function sendToSellerAndLicenciado(int $sellerId, string $subject, string $title, string $body, ?string $waSelf = null, ?string $waNetwork = null): void
     {
         $seller = User::find($sellerId);
         if (!$seller) {
@@ -288,32 +425,32 @@ class Notifier
         }
 
         $recipients = [];
-        if (!empty($seller['email'])) {
-            $recipients[(int) $seller['id']] = $seller['email'];
-        }
+        self::addRecipient($recipients, $seller, 'self');
 
         $licenciado = User::licenciadoFor($sellerId);
-        if ($licenciado && !empty($licenciado['email'])) {
-            $recipients[(int) $licenciado['id']] = $licenciado['email'];
+        if ($licenciado) {
+            self::addRecipient($recipients, $licenciado, 'network');
         }
 
-        self::dispatch($recipients, $subject, $title, $body);
+        self::dispatch($recipients, $subject, $title, $body, $waSelf, $waNetwork);
     }
 
     /** Vendedor, Gestor (se houver), Licenciado, Supervisor, Gerente e todo Admin -- ver docblock
      *  da classe. Caminha a cadeia de manager_id a partir do vendedor ate achar o Licenciado
      *  (mesmo criterio de parada de User::licenciadoFor(), so que aqui tambem guarda cada nivel
-     *  intermediario -- licenciadoFor() so devolve o Licenciado final). */
-    private static function sendToFullChain(int $sellerId, string $subject, string $title, string $body): void
+     *  intermediario -- licenciadoFor() so devolve o Licenciado final). $waSelf vai so pro
+     *  vendedor (primeiro da cadeia), $waNetwork pro resto (gestor/licenciado/supervisor/gerente/
+     *  admin). */
+    private static function sendToFullChain(int $sellerId, string $subject, string $title, string $body, ?string $waSelf = null, ?string $waNetwork = null): void
     {
         $recipients = [];
         $current = User::find($sellerId);
         $licenciado = null;
+        $first = true;
 
         for ($i = 0; $i < 10 && $current; $i++) {
-            if (!empty($current['email'])) {
-                $recipients[(int) $current['id']] = $current['email'];
-            }
+            self::addRecipient($recipients, $current, $first ? 'self' : 'network');
+            $first = false;
             if ($current['role_slug'] === 'licenciado') {
                 $licenciado = $current;
                 break;
@@ -325,21 +462,22 @@ class Notifier
         }
 
         self::addNetworkChain($recipients, $licenciado);
-        self::dispatch($recipients, $subject, $title, $body);
+        self::dispatch($recipients, $subject, $title, $body, $waSelf, $waNetwork);
     }
 
     /** Licenciado + Supervisor dele + Gerente do Supervisor + todo Admin -- usado tanto por
-     *  sendToFullChain() (a partir de um Vendedor) quanto direto por cadastroAprovado(). */
-    private static function sendToNetworkChain(int $licenciadoId, string $subject, string $title, string $body): void
+     *  sendToFullChain() (a partir de um Vendedor) quanto direto por cadastroAprovado(). $waSelf
+     *  vai pro licenciado, $waNetwork pro resto (supervisor/gerente/admin). */
+    private static function sendToNetworkChain(int $licenciadoId, string $subject, string $title, string $body, ?string $waSelf = null, ?string $waNetwork = null): void
     {
         $recipients = [];
         $licenciado = User::find($licenciadoId);
-        if ($licenciado && !empty($licenciado['email'])) {
-            $recipients[(int) $licenciado['id']] = $licenciado['email'];
+        if ($licenciado) {
+            self::addRecipient($recipients, $licenciado, 'self');
         }
 
         self::addNetworkChain($recipients, $licenciado);
-        self::dispatch($recipients, $subject, $title, $body);
+        self::dispatch($recipients, $subject, $title, $body, $waSelf, $waNetwork);
     }
 
     private static function addNetworkChain(array &$recipients, ?array $licenciado): void
@@ -347,31 +485,42 @@ class Notifier
         if ($licenciado && !empty($licenciado['supervisor_id'])) {
             $supervisor = User::find((int) $licenciado['supervisor_id']);
             if ($supervisor) {
-                if (!empty($supervisor['email'])) {
-                    $recipients[(int) $supervisor['id']] = $supervisor['email'];
-                }
+                self::addRecipient($recipients, $supervisor, 'network');
                 if (!empty($supervisor['manager_id'])) {
                     $gerente = User::find((int) $supervisor['manager_id']);
-                    if ($gerente && !empty($gerente['email'])) {
-                        $recipients[(int) $gerente['id']] = $gerente['email'];
+                    if ($gerente) {
+                        self::addRecipient($recipients, $gerente, 'network');
                     }
                 }
             }
         }
 
         foreach (User::allByRole('admin') as $admin) {
-            if (!empty($admin['email'])) {
-                $recipients[(int) $admin['id']] = $admin['email'];
-            }
+            self::addRecipient($recipients, $admin, 'network');
         }
     }
 
-    /** @param array<int,string> $recipients id => email, ja sem duplicata */
-    private static function dispatch(array $recipients, string $subject, string $title, string $body): void
+    /** @param array<int,array{email:?string,whatsapp:?string,bucket:string}> $recipients */
+    private static function addRecipient(array &$recipients, array $user, string $bucket): void
+    {
+        $id = (int) $user['id'];
+        if (!isset($recipients[$id])) {
+            $recipients[$id] = ['email' => $user['email'] ?? null, 'whatsapp' => $user['whatsapp'] ?? null, 'bucket' => $bucket];
+        }
+    }
+
+    /** @param array<int,array{email:?string,whatsapp:?string,bucket:string}> $recipients ja sem duplicata */
+    private static function dispatch(array $recipients, string $subject, string $title, string $body, ?string $waSelf = null, ?string $waNetwork = null): void
     {
         $html = self::template($title, $body);
-        foreach ($recipients as $email) {
-            Mailer::send($email, $subject . ' - Ecodiffusore Brasil', $html);
+        foreach ($recipients as $r) {
+            if (!empty($r['email'])) {
+                Mailer::send($r['email'], $subject . ' - Ecodiffusore Brasil', $html);
+            }
+            $waText = $r['bucket'] === 'self' ? $waSelf : $waNetwork;
+            if ($waText && !empty($r['whatsapp'])) {
+                self::sendWhatsApp($r['whatsapp'], $waText);
+            }
         }
     }
 

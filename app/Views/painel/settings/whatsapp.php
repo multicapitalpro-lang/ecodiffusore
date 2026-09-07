@@ -1,7 +1,10 @@
 <?php
 use App\Core\Csrf;
 use App\Core\View;
+use App\Models\WhatsAppEventTemplate;
 $desconectado = isset($_GET['desconectado']);
+$sucesso = isset($_GET['sucesso']);
+$errors = $errors ?? [];
 ?>
 <div class="page-header">
     <h1>WhatsApp</h1>
@@ -10,8 +13,13 @@ $desconectado = isset($_GET['desconectado']);
 <?php if ($desconectado): ?>
     <p class="form-msg form-msg-ok">Aparelho desconectado.</p>
 <?php endif; ?>
+<?php if ($sucesso): ?>
+    <p class="form-msg form-msg-ok">Atualizado com sucesso.</p>
+<?php endif; ?>
 
+<?php if ($user['role_slug'] === 'admin'): ?>
 <div class="settings-card" style="max-width:480px">
+    <h3 class="section-title">Conexão do aparelho</h3>
     <p>Status: <strong id="wa-status">Verificando...</strong></p>
 
     <div id="wa-qr-wrap" hidden style="text-align:center;margin:16px 0">
@@ -69,3 +77,38 @@ $desconectado = isset($_GET['desconectado']);
     setInterval(poll, 5000);
 })();
 </script>
+<?php endif; ?>
+
+<h3 class="section-title" style="margin-top:32px">Textos das mensagens automáticas</h3>
+<p class="hint-text">Use os placeholders indicados entre chaves — eles são substituídos pelos dados reais na hora do envio.</p>
+
+<?php foreach (WhatsAppEventTemplate::KEYS as $key): ?>
+    <?php
+    $tpl = $templates[$key] ?? ['text_self' => '', 'text_network' => ''];
+    $vars = WhatsAppEventTemplate::VARIABLES[$key];
+    $selfOnly = in_array($key, WhatsAppEventTemplate::SELF_ONLY, true);
+    $networkOnly = in_array($key, WhatsAppEventTemplate::NETWORK_ONLY, true);
+    $err = $errors[$key] ?? [];
+    ?>
+    <details class="settings-card" style="max-width:640px;margin-bottom:12px">
+        <summary style="cursor:pointer;font-weight:600"><?= View::e(WhatsAppEventTemplate::LABELS[$key]) ?></summary>
+        <form method="post" action="/painel/configuracoes/whatsapp/evento/<?= $key ?>" style="margin-top:16px">
+            <?= Csrf::field() ?>
+            <p class="hint-text">Variáveis disponíveis: <?php foreach ($vars as $v): ?><code>{<?= $v ?>}</code> <?php endforeach; ?></p>
+
+            <?php if (!$networkOnly): ?>
+                <label>Mensagem pro destinatário direto (vendedor/licenciado do evento)</label>
+                <textarea name="text_self" rows="4" style="width:100%"><?= View::e($tpl['text_self'] ?? '') ?></textarea>
+                <?php if (!empty($err['text_self'])): ?><p class="form-msg form-msg-error"><?= View::e($err['text_self']) ?></p><?php endif; ?>
+            <?php endif; ?>
+
+            <?php if (!$selfOnly): ?>
+                <label style="margin-top:12px;display:block">Mensagem pro resto da rede (gestor/licenciado/supervisor/gerente/admin)</label>
+                <textarea name="text_network" rows="4" style="width:100%"><?= View::e($tpl['text_network'] ?? '') ?></textarea>
+                <?php if (!empty($err['text_network'])): ?><p class="form-msg form-msg-error"><?= View::e($err['text_network']) ?></p><?php endif; ?>
+            <?php endif; ?>
+
+            <button type="submit" class="btn btn-primary" style="margin-top:12px">Salvar</button>
+        </form>
+    </details>
+<?php endforeach; ?>

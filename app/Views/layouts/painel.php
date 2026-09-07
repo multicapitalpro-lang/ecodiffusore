@@ -156,6 +156,8 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/meu-rank
             <?php if ($role === 'admin'): ?>
                 <a href="/painel/configuracoes/nfe" class="<?= $isActive('/painel/configuracoes/nfe') ? 'is-active' : '' ?>"><?= $icon('wallet') ?> Config. de NF-e</a>
                 <a href="/painel/configuracoes/email" class="<?= $isActive('/painel/configuracoes/email') ? 'is-active' : '' ?>"><?= $icon('gear') ?> Config. de E-mail</a>
+            <?php endif; ?>
+            <?php if (in_array($role, ['admin', 'gerente'], true)): ?>
                 <a href="/painel/configuracoes/whatsapp" class="<?= $isActive('/painel/configuracoes/whatsapp') ? 'is-active' : '' ?>"><?= $icon('gear') ?> Config. de WhatsApp</a>
             <?php endif; ?>
         </nav>
