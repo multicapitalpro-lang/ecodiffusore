@@ -97,13 +97,13 @@ $errors = $errors ?? [];
             <p class="hint-text">Variáveis disponíveis: <?php foreach ($vars as $v): ?><code>{<?= $v ?>}</code> <?php endforeach; ?></p>
 
             <?php if (!$networkOnly): ?>
-                <label>Mensagem pro destinatário direto (vendedor/licenciado do evento)</label>
+                <label>Mensagem pro: <?= View::e(WhatsAppEventTemplate::SELF_LABELS[$key] ?? 'Destinatário direto') ?></label>
                 <textarea name="text_self" rows="4" style="width:100%"><?= View::e($tpl['text_self'] ?? '') ?></textarea>
                 <?php if (!empty($err['text_self'])): ?><p class="form-msg form-msg-error"><?= View::e($err['text_self']) ?></p><?php endif; ?>
             <?php endif; ?>
 
             <?php if (!$selfOnly): ?>
-                <label style="margin-top:12px;display:block">Mensagem pro resto da rede (gestor/licenciado/supervisor/gerente/admin)</label>
+                <label style="margin-top:12px;display:block">Mensagem pro: <?= View::e(WhatsAppEventTemplate::NETWORK_LABELS[$key] ?? 'Resto da rede') ?></label>
                 <textarea name="text_network" rows="4" style="width:100%"><?= View::e($tpl['text_network'] ?? '') ?></textarea>
                 <?php if (!empty($err['text_network'])): ?><p class="form-msg form-msg-error"><?= View::e($err['text_network']) ?></p><?php endif; ?>
             <?php endif; ?>

@@ -50,6 +50,28 @@ class WhatsAppEventTemplate
     public const SELF_ONLY = ['follow_up_lembrete'];
     public const NETWORK_ONLY = ['vendedor_inativo', 'licenciado_pendente_aprovacao'];
 
+    /** Quem de fato recebe cada variante, POR EVENTO -- o alcance da "rede" varia bastante entre
+     *  eventos (lead roteado so tem o Licenciado; pedido tem a cadeia inteira), entao um rotulo
+     *  generico enganava na tela. So texto de exibicao, nao afeta o despacho. */
+    public const SELF_LABELS = [
+        'lead_roteado' => 'Vendedor (destinatário do lead)',
+        'pedido_registrado' => 'Vendedor (dono do pedido)',
+        'pedido_aprovado' => 'Vendedor (dono da venda)',
+        'cadastro_aprovado' => 'Licenciado (quem teve o cadastro aprovado)',
+        'pedido_cancelado' => 'Vendedor (dono do pedido)',
+        'follow_up_lembrete' => 'Vendedor',
+    ];
+
+    public const NETWORK_LABELS = [
+        'lead_roteado' => 'Licenciado da rede',
+        'pedido_registrado' => 'Resto da rede (gestor/licenciado/supervisor/gerente/admin)',
+        'pedido_aprovado' => 'Resto da rede (gestor/licenciado/supervisor/gerente/admin)',
+        'cadastro_aprovado' => 'Rede de suporte (supervisor/gerente/admin)',
+        'pedido_cancelado' => 'Licenciado da rede',
+        'vendedor_inativo' => 'Rede responsável (licenciado/supervisor/gerente/admin)',
+        'licenciado_pendente_aprovacao' => 'Admin e Gerente Geral',
+    ];
+
     public static function all(): array
     {
         $rows = Database::connection()->query('SELECT * FROM whatsapp_event_templates')->fetchAll();
