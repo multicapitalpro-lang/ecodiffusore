@@ -46,6 +46,7 @@ class EvolutionApiClient
         return $this->request('POST', "/message/sendText/{$this->instance}", [
             'number' => $digits,
             'text' => $text,
+            'linkPreview' => false,
         ]);
     }
 
