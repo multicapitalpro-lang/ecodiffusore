@@ -159,6 +159,10 @@ $router->post('/painel/configuracoes/email/evento/{eventKey}', [App\Controllers\
 $router->get('/painel/configuracoes/roteamento', [App\Controllers\LeadRoutingSettingsController::class, 'index']);
 $router->post('/painel/configuracoes/roteamento', [App\Controllers\LeadRoutingSettingsController::class, 'update']);
 
+$router->get('/painel/configuracoes/whatsapp', [App\Controllers\WhatsAppSettingsController::class, 'index']);
+$router->get('/painel/configuracoes/whatsapp/status', [App\Controllers\WhatsAppSettingsController::class, 'status']);
+$router->post('/painel/configuracoes/whatsapp/desconectar', [App\Controllers\WhatsAppSettingsController::class, 'disconnect']);
+
 // Pedidos
 $router->get('/painel/pedidos', [App\Controllers\OrderController::class, 'index']);
 $router->get('/painel/pedidos/novo', [App\Controllers\OrderController::class, 'create']);

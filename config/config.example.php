@@ -57,4 +57,12 @@ return [
         'waba_id' => 'TROQUE_AQUI', // WhatsApp Business account ID
         'access_token' => 'TROQUE_AQUI',
     ],
+
+    // Evolution API (self-hosted, VPS separado) -- App\Core\EvolutionApiClient. Fallback nao-oficial
+    // enquanto a WhatsApp Cloud API oficial (bloco 'whatsapp' acima) esta em analise pela Meta.
+    'evolution' => [
+        'base_url' => 'http://TROQUE_AQUI:8080',
+        'api_key' => 'TROQUE_AQUI',
+        'instance' => 'ecodiffusore',
+    ],
 ];
