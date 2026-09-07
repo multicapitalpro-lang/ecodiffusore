@@ -47,4 +47,14 @@ return [
         'from_name' => 'Ecodiffusore Brasil',
         'reply_to' => 'contato@ecodiffusorebrasil.com.br',
     ],
+
+    // WhatsApp Cloud API (Meta) -- App\Core\WhatsAppClient. Token permanente gerado via
+    // Usuario do Sistema (Configuracoes da Empresa > Usuarios > Usuarios do sistema), com as
+    // permissoes whatsapp_business_messaging + whatsapp_business_management, "Nunca expira".
+    'whatsapp' => [
+        'api_version' => 'v25.0',
+        'phone_number_id' => 'TROQUE_AQUI', // Identificacao do numero de telefone no Gerenciador do WhatsApp
+        'waba_id' => 'TROQUE_AQUI', // WhatsApp Business account ID
+        'access_token' => 'TROQUE_AQUI',
+    ],
 ];
