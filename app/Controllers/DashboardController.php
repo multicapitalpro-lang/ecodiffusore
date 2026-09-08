@@ -9,6 +9,7 @@ use App\Core\Csrf;
 use App\Core\DateRange;
 use App\Core\FollowUpReminder;
 use App\Core\InactivityAlert;
+use App\Core\QuoteLeadReminder;
 use App\Core\ReportScheduler;
 use App\Core\Roles;
 use App\Core\Router;
@@ -66,6 +67,7 @@ class DashboardController
             WeeklyDigest::processDue();
             FollowUpReminder::processDue();
             InactivityAlert::processDue();
+            QuoteLeadReminder::processDue();
         }
 
         if (in_array($role, Roles::STAFF, true)) {

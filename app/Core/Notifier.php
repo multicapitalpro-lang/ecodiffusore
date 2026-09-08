@@ -7,6 +7,7 @@ use App\Models\EmailEventTemplate;
 use App\Models\EmailTemplateSettings;
 use App\Models\OrderItem;
 use App\Models\Payment;
+use App\Models\QuoteItem;
 use App\Models\User;
 use App\Models\WhatsAppEventTemplate;
 
@@ -352,6 +353,43 @@ class Notifier
         [$text] = self::waTexts('pedido_atualizacao_entrega', $vars);
         if ($text) {
             self::sendWhatsApp($order['client_whatsapp'], $text);
+        }
+    }
+
+    /** @param array $quote precisa de id/client_name/client_whatsapp/lead_whatsapp/seller_id/
+     *  total_value (retorno de Quote::find()). So WhatsApp, pro PROPRIO lead/cliente -- lembrete
+     *  calmo de orcamento parado sem resposta (App\Core\QuoteLeadReminder, no maximo 2 disparos por
+     *  orcamento, pra nao virar spam). Prefere client_whatsapp; cai pro lead_whatsapp se o cliente
+     *  nao tiver telefone cadastrado (ex: cliente criado so com nome+documento). */
+    public static function orcamentoLembreteLead(array $quote): void
+    {
+        $whatsapp = $quote['client_whatsapp'] ?? $quote['lead_whatsapp'] ?? null;
+        if (empty($whatsapp)) {
+            return;
+        }
+
+        $items = QuoteItem::forQuote((int) $quote['id']);
+        $produtos = $items
+            ? implode(', ', array_map(fn ($i) => $i['product_name'], $items))
+            : 'Ecodiffusore';
+
+        $seller = !empty($quote['seller_id']) ? User::find((int) $quote['seller_id']) : null;
+        $sellerName = $seller['name'] ?? 'a Ecodiffusore';
+        $sellerWhatsapp = $seller['whatsapp'] ?? null;
+        $sellerDigits = $sellerWhatsapp ? preg_replace('/\D/', '', $sellerWhatsapp) : null;
+        $url = $sellerDigits ? 'https://wa.me/55' . $sellerDigits : self::BASE_URL;
+
+        $vars = [
+            'nome' => $quote['client_name'] ?? '—',
+            'produto' => $produtos,
+            'valor' => number_format((float) $quote['total_value'], 2, ',', '.'),
+            'vendedor' => $sellerName,
+            'url' => $url,
+        ];
+
+        [$text] = self::waTexts('orcamento_lembrete_lead', $vars);
+        if ($text) {
+            self::sendWhatsApp($whatsapp, $text);
         }
     }
 

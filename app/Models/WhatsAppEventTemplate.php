@@ -25,6 +25,7 @@ class WhatsAppEventTemplate
         'acesso_portal_criado',
         'pedido_atualizacao_entrega',
         'cobranca_gerada',
+        'orcamento_lembrete_lead',
     ];
 
     public const LABELS = [
@@ -40,6 +41,7 @@ class WhatsAppEventTemplate
         'acesso_portal_criado' => 'Acesso ao portal criado (cliente)',
         'pedido_atualizacao_entrega' => 'Atualização de entrega (cliente)',
         'cobranca_gerada' => 'Cobrança gerada (cliente)',
+        'orcamento_lembrete_lead' => 'Lembrete de orçamento parado (lead/cliente)',
     ];
 
     /** Quais placeholders {chave} cada evento aceita -- so pra exibir dica na tela, nao valida nada. */
@@ -56,10 +58,11 @@ class WhatsAppEventTemplate
         'acesso_portal_criado' => ['nome', 'email', 'senha', 'url'],
         'pedido_atualizacao_entrega' => ['transportadora', 'codigo', 'prazo', 'url'],
         'cobranca_gerada' => ['pedido', 'produto', 'valor', 'forma', 'vencimento', 'url'],
+        'orcamento_lembrete_lead' => ['nome', 'produto', 'valor', 'vendedor', 'url'],
     ];
 
     /** Eventos que so usam UM dos dois textos (o outro fica sempre null/nao editavel). */
-    public const SELF_ONLY = ['follow_up_lembrete', 'acesso_portal_criado', 'pedido_atualizacao_entrega', 'cobranca_gerada'];
+    public const SELF_ONLY = ['follow_up_lembrete', 'acesso_portal_criado', 'pedido_atualizacao_entrega', 'cobranca_gerada', 'orcamento_lembrete_lead'];
     public const NETWORK_ONLY = ['vendedor_inativo', 'licenciado_pendente_aprovacao'];
 
     /** Quem de fato recebe cada variante, POR EVENTO -- o alcance da "rede" varia bastante entre
@@ -76,6 +79,7 @@ class WhatsAppEventTemplate
         'acesso_portal_criado' => 'Cliente (dono da conta criada)',
         'pedido_atualizacao_entrega' => 'Cliente (dono do pedido)',
         'cobranca_gerada' => 'Cliente (dono do pedido)',
+        'orcamento_lembrete_lead' => 'Lead/cliente (dono do orçamento)',
     ];
 
     public const NETWORK_LABELS = [
