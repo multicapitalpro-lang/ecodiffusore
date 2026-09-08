@@ -17,7 +17,11 @@ class FactoryController
     public function index(): void
     {
         Auth::requireRole([Roles::FACTORY]);
-        View::render('painel/factory/index', ['user' => Auth::user(), 'orders' => Order::forFactory()]);
+        View::render('painel/factory/index', [
+            'user' => Auth::user(),
+            'orders' => Order::forFactory(),
+            'stats' => Order::factoryStats(),
+        ]);
     }
 
     public function updateDelivery(string $id): void
@@ -39,6 +43,24 @@ class FactoryController
         if ($updated) {
             Notifier::pedidoAtualizacaoEntrega($updated);
         }
+
+        Router::redirect('/painel/fabrica?sucesso=1');
+    }
+
+    public function markDelivered(string $id): void
+    {
+        Auth::requireRole([Roles::FACTORY]);
+        $id = (int) $id;
+
+        $order = Order::find($id);
+        if (!$order || $order['status'] !== 'verificado') {
+            Router::redirect('/painel/fabrica?erro=1');
+        }
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            Router::redirect('/painel/fabrica?erro=1');
+        }
+
+        Order::markDelivered($id);
 
         Router::redirect('/painel/fabrica?sucesso=1');
     }

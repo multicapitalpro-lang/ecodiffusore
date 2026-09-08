@@ -229,9 +229,8 @@ class Order
         ]);
     }
 
-    /** So pedidos PAGOS (verificado) -- a fabrica nunca ve cancelado/em_andamento/atendido. So os
-     *  dados necessarios pra despachar (etiqueta de transportadora): nada de valor/comissao/
-     *  vendedor (Fase 28, pedido explicito do usuario). */
+    /** So pedidos PAGOS (verificado) e ainda NAO entregues -- a fila de acao da fabrica. Nunca
+     *  mostra cancelado/em_andamento/atendido, nem dado financeiro (valor/comissao/vendedor). */
     public static function forFactory(): array
     {
         return Database::connection()->query(
@@ -241,8 +240,35 @@ class Order
                     (SELECT GROUP_CONCAT(p.name, ' (x', oi.quantity, ')' SEPARATOR ', ')
                      FROM order_items oi JOIN products p ON p.id = oi.product_id WHERE oi.order_id = o.id) AS produtos
              FROM orders o JOIN clients c ON c.id = o.client_id
-             WHERE o.status = 'verificado' ORDER BY o.order_date DESC"
+             WHERE o.status = 'verificado' AND o.delivered_at IS NULL ORDER BY o.order_date DESC"
         )->fetchAll();
+    }
+
+    /** Contadores pro cabecalho da tela da fabrica -- entre os pagos: sem codigo ainda (pendente),
+     *  com codigo mas nao entregue (em rota) e ja entregue. */
+    public static function factoryStats(): array
+    {
+        $row = Database::connection()->query(
+            "SELECT
+                COUNT(*) AS total,
+                SUM(CASE WHEN delivered_at IS NULL AND (tracking_code IS NULL OR tracking_code = '') THEN 1 ELSE 0 END) AS pendente_codigo,
+                SUM(CASE WHEN delivered_at IS NULL AND tracking_code IS NOT NULL AND tracking_code != '' THEN 1 ELSE 0 END) AS em_rota,
+                SUM(CASE WHEN delivered_at IS NOT NULL THEN 1 ELSE 0 END) AS entregues
+             FROM orders WHERE status = 'verificado'"
+        )->fetch();
+
+        return [
+            'total' => (int) $row['total'],
+            'pendente_codigo' => (int) $row['pendente_codigo'],
+            'em_rota' => (int) $row['em_rota'],
+            'entregues' => (int) $row['entregues'],
+        ];
+    }
+
+    public static function markDelivered(int $id): void
+    {
+        $stmt = Database::connection()->prepare('UPDATE orders SET delivered_at = NOW() WHERE id = :id');
+        $stmt->execute(['id' => $id]);
     }
 
     /**

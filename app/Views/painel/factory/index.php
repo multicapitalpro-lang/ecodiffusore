@@ -14,6 +14,26 @@ $erro = isset($_GET['erro']);
     <p class="form-msg form-msg-error">Não foi possível atualizar.</p>
 <?php endif; ?>
 
+<div class="cards-grid">
+    <div class="dash-card">
+        <span>Total pago</span>
+        <strong><?= $stats['total'] ?></strong>
+    </div>
+    <div class="dash-card">
+        <span>Pendentes de código</span>
+        <strong><?= $stats['pendente_codigo'] ?></strong>
+    </div>
+    <div class="dash-card">
+        <span>Em rota de entrega</span>
+        <strong><?= $stats['em_rota'] ?></strong>
+    </div>
+    <div class="dash-card">
+        <span>Entregues</span>
+        <strong><?= $stats['entregues'] ?></strong>
+    </div>
+</div>
+
+<h3 class="section-title">Aguardando ação</h3>
 <div class="table-scroll">
     <table class="data-table">
         <thead>
@@ -45,7 +65,13 @@ $erro = isset($_GET['erro']);
                     <td><input form="<?= $formId ?>" type="text" name="tracking_carrier" value="<?= View::e($o['tracking_carrier'] ?? '') ?>" placeholder="Correios, Jadlog..." style="width:120px"></td>
                     <td><input form="<?= $formId ?>" type="text" name="tracking_code" value="<?= View::e($o['tracking_code'] ?? '') ?>" style="width:120px"></td>
                     <td><input form="<?= $formId ?>" type="date" name="prazo_entrega" value="<?= View::e($o['prazo_entrega'] ?? '') ?>" style="width:140px"></td>
-                    <td><button form="<?= $formId ?>" type="submit" class="btn btn-outline">Salvar</button></td>
+                    <td>
+                        <button form="<?= $formId ?>" type="submit" class="btn btn-outline">Salvar</button>
+                        <form method="post" action="/painel/fabrica/<?= (int) $o['id'] ?>/entregue" class="inline-form" onsubmit="return confirm('Marcar este pedido como entregue?');">
+                            <?= Csrf::field() ?>
+                            <button type="submit" class="link-button">Marcar entregue</button>
+                        </form>
+                    </td>
                 </tr>
             <?php endforeach; ?>
             <?php if (!$orders): ?>
