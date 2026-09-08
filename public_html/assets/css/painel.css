@@ -263,6 +263,12 @@ a { text-decoration: none; color: inherit; }
         display: block; position: fixed; inset: 0; background: rgba(13,27,61,.45); z-index: 35;
     }
     .painel-content { padding: 18px; }
+
+    /* Header sem espaco pra "Ola, Nome — Cargo" + Proposta Facil + Sair lado a lado -- sem isso
+       o "Sair" (e o botao) empurram pra fora do viewport e a pagina inteira ganha scroll
+       horizontal (achado ao auditar as telas mobile desta sessao). */
+    .painel-header { flex-wrap: wrap; row-gap: 8px; padding: 12px 16px; }
+    .painel-header > span { flex: 1 1 100%; }
 }
 
 /* Página / cards */
