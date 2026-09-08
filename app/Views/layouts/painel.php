@@ -87,7 +87,9 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/meu-rank
                         <a href="/painel/materiais" class="<?= $isActive('/painel/materiais') ? 'is-active' : '' ?>">Materiais de Venda</a>
                         <a href="/painel/pedidos" class="<?= $isActive('/painel/pedidos') ? 'is-active' : '' ?>">Pedidos</a>
                         <a href="/painel/orcamentos" class="<?= $isActive('/painel/orcamentos') ? 'is-active' : '' ?>">Orçamentos</a>
-                        <a href="/painel/garantias" class="<?= $isActive('/painel/garantias') ? 'is-active' : '' ?>">Garantias</a>
+                        <?php if (in_array($role, ['admin', 'gerente'], true)): ?>
+                            <a href="/painel/garantias" class="<?= $isActive('/painel/garantias') ? 'is-active' : '' ?>">Garantias</a>
+                        <?php endif; ?>
                         <?php if ($role === 'admin'): ?>
                             <a href="/painel/produtos" class="<?= $isActive('/painel/produtos') ? 'is-active' : '' ?>">Produtos</a>
                             <a href="/painel/tabela-precos" class="<?= $isActive('/painel/tabela-precos') ? 'is-active' : '' ?>">Tabela de preços</a>

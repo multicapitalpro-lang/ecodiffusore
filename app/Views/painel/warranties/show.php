@@ -20,8 +20,10 @@ $sucesso = isset($_GET['sucesso']);
     <p><strong>Aberta em:</strong> <?= View::e(date('d/m/Y', strtotime($warranty['created_at']))) ?></p>
     <p><strong>Status:</strong> <span class="status-badge status-<?= $statusBadge[$warranty['status']] ?? 'novo' ?>"><?= $statusLabels[$warranty['status']] ?? $warranty['status'] ?></span></p>
     <p><a href="/painel/pedidos/<?= (int) $warranty['order_id'] ?>" class="link-small">Ver pedido</a></p>
-    <p><strong>Descrição:</strong></p>
-    <p><?= nl2br(View::e($warranty['description'])) ?></p>
+    <?php if (!empty($warranty['description'])): ?>
+        <p><strong>Descrição:</strong></p>
+        <p><?= nl2br(View::e($warranty['description'])) ?></p>
+    <?php endif; ?>
     <?php if ($attachments): ?>
         <p><strong>Documentos enviados:</strong></p>
         <ul>
@@ -35,11 +37,13 @@ $sucesso = isset($_GET['sucesso']);
         <p><?= nl2br(View::e($warranty['resolution_note'])) ?></p>
         <p class="hint-text">Por <?= View::e($warranty['resolved_by_name'] ?? '—') ?> em <?= $warranty['resolved_at'] ? View::e(date('d/m/Y H:i', strtotime($warranty['resolved_at']))) : '—' ?></p>
     <?php endif; ?>
+    <?php if (in_array($warranty['status'], ['aprovada', 'concluida'], true)): ?>
+        <p><a href="/painel/garantias/<?= (int) $warranty['id'] ?>/termo" target="_blank" rel="noopener" class="btn btn-outline">📄 Baixar Termo de Garantia</a></p>
+    <?php endif; ?>
 </div>
 
-<?php if (!$isViewOnly): ?>
 <h3 class="section-title">Atualizar status</h3>
-<form method="post" action="/painel/garantias/<?= (int) $warranty['id'] ?>/status">
+<form method="post" action="/painel/garantias/<?= (int) $warranty['id'] ?>/status" class="panel-form">
     <?= Csrf::field() ?>
     <label for="status">Novo status</label>
     <select id="status" name="status">
@@ -50,8 +54,7 @@ $sucesso = isset($_GET['sucesso']);
     </select>
 
     <label for="resolution_note">Nota de resolução (visível pro cliente)</label>
-    <textarea id="resolution_note" name="resolution_note" rows="4"></textarea>
+    <textarea id="resolution_note" name="resolution_note" rows="4" style="width:100%"></textarea>
 
     <button type="submit" class="btn btn-primary" style="margin-top:16px">Salvar</button>
 </form>
-<?php endif; ?>

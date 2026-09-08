@@ -82,11 +82,13 @@ $router->get('/painel/minhas-garantias/nova', [App\Controllers\ClientPortalContr
 $router->post('/painel/minhas-garantias', [App\Controllers\ClientPortalController::class, 'storeWarranty']);
 $router->get('/painel/minhas-garantias/{id}', [App\Controllers\ClientPortalController::class, 'showWarranty']);
 $router->get('/painel/minhas-garantias/{id}/anexo/{attachmentId}', [App\Controllers\ClientPortalController::class, 'downloadWarrantyAttachment']);
+$router->get('/painel/minhas-garantias/{id}/termo', [App\Controllers\ClientPortalController::class, 'downloadWarrantyTerm']);
 
 $router->get('/painel/garantias', [App\Controllers\WarrantyController::class, 'index']);
 $router->get('/painel/garantias/{id}', [App\Controllers\WarrantyController::class, 'show']);
 $router->post('/painel/garantias/{id}/status', [App\Controllers\WarrantyController::class, 'updateStatus']);
 $router->get('/painel/garantias/{id}/anexo/{attachmentId}', [App\Controllers\WarrantyController::class, 'downloadAttachment']);
+$router->get('/painel/garantias/{id}/termo', [App\Controllers\WarrantyController::class, 'downloadTerm']);
 
 $router->get('/painel/usuarios', [App\Controllers\UserController::class, 'index']);
 $router->get('/painel/usuarios/novo', [App\Controllers\UserController::class, 'create']);

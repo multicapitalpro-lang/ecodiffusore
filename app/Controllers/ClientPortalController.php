@@ -6,6 +6,7 @@ use App\Core\Auth;
 use App\Core\Csrf;
 use App\Core\FileUpload;
 use App\Core\Notifier;
+use App\Core\Pdf;
 use App\Core\Router;
 use App\Core\View;
 use App\Models\Client;
@@ -73,7 +74,7 @@ class ClientPortalController
             Router::redirect('/painel/minhas-garantias');
         }
 
-        if (!Csrf::verify($_POST['csrf_token'] ?? null) || trim($_POST['description'] ?? '') === '') {
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
             Router::redirect("/painel/minhas-garantias/nova?order_id={$orderId}&erro=1");
         }
 
@@ -96,7 +97,7 @@ class ClientPortalController
             return;
         }
 
-        $warrantyId = WarrantyRequest::create($orderId, (int) $client['id'], trim($_POST['description']));
+        $warrantyId = WarrantyRequest::create($orderId, (int) $client['id'], trim($_POST['description'] ?? ''));
         foreach ($stored as $item) {
             WarrantyRequest::addAttachment($warrantyId, $item['type'], $item['file']['stored_name'], $item['file']['original_name']);
         }
@@ -155,5 +156,30 @@ class ClientPortalController
         header('Content-Length: ' . filesize($path));
         readfile($path);
         exit;
+    }
+
+    /** Termo de Garantia em PDF -- so disponivel depois de aprovada. Mesmo conteudo que
+     *  WarrantyController::downloadTerm() gera pro staff. */
+    public function downloadWarrantyTerm(string $id): void
+    {
+        Auth::requireRole(['cliente']);
+        $client = Client::findByUserId((int) Auth::user()['id']);
+        $warranty = WarrantyRequest::find((int) $id);
+
+        if (!$client || !$warranty || (int) $warranty['client_id'] !== (int) $client['id']) {
+            Router::redirect('/painel/minhas-garantias');
+        }
+        if (!in_array($warranty['status'], ['aprovada', 'concluida'], true)) {
+            Router::redirect("/painel/minhas-garantias/{$id}");
+        }
+
+        ob_start();
+        View::render('painel/warranties/term_pdf', [
+            'warranty' => $warranty,
+            'items' => OrderItem::forOrder((int) $warranty['order_id']),
+        ], null);
+        $html = ob_get_clean();
+
+        Pdf::download($html, 'termo-garantia-pedido-' . (int) $warranty['order_id'] . '.pdf', 'portrait');
     }
 }

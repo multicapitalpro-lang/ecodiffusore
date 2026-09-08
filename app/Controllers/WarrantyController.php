@@ -5,18 +5,23 @@ namespace App\Controllers;
 use App\Core\Auth;
 use App\Core\Csrf;
 use App\Core\FileUpload;
+use App\Core\Pdf;
 use App\Core\Roles;
 use App\Core\Router;
 use App\Core\View;
 use App\Models\AuditLog;
+use App\Models\OrderItem;
 use App\Models\User;
 use App\Models\WarrantyRequest;
 
+/** Pagina de controle de Garantias -- so Admin e Gerente Geral decidem (aprovar/reprovar), mesmo
+ *  escopo de acesso da aprovacao de cadastro de Licenciado (Roles::SUPERVISOR_ASSIGNMENT). Nao e'
+ *  uma decisao regional/de comissao como Pedidos -- e' garantia do produto, decisao nacional. */
 class WarrantyController
 {
     public function index(): void
     {
-        Auth::requireRole(Roles::STAFF);
+        Auth::requireRole(Roles::SUPERVISOR_ASSIGNMENT);
         $user = Auth::user();
         $status = $_GET['status'] ?? null;
 
@@ -34,7 +39,6 @@ class WarrantyController
             'user' => Auth::user(),
             'warranty' => $warranty,
             'attachments' => WarrantyRequest::attachmentsFor((int) $warranty['id']),
-            'isViewOnly' => in_array(Auth::user()['role_slug'], Roles::NATIONAL_SUPPORT, true),
         ]);
     }
 
@@ -43,12 +47,6 @@ class WarrantyController
         $warranty = $this->authorizeWarranty((int) $id);
         $id = (int) $id;
         $user = Auth::user();
-
-        if (in_array($user['role_slug'], Roles::NATIONAL_SUPPORT, true)) {
-            http_response_code(403);
-            require BASE_PATH . '/app/Views/errors/403.php';
-            exit;
-        }
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
             Router::redirect("/painel/garantias/{$id}?erro=1");
@@ -88,11 +86,30 @@ class WarrantyController
         exit;
     }
 
+    /** Termo de Garantia em PDF -- so pode ser gerado depois de aprovada (prova formal pro
+     *  comprador). Mesmo cliente tambem consegue baixar, ver ClientPortalController::downloadWarrantyTerm(). */
+    public function downloadTerm(string $id): void
+    {
+        $warranty = $this->authorizeWarranty((int) $id);
+        if ($warranty['status'] !== 'aprovada' && $warranty['status'] !== 'concluida') {
+            Router::redirect("/painel/garantias/{$id}?erro=2");
+        }
+
+        ob_start();
+        View::render('painel/warranties/term_pdf', [
+            'warranty' => $warranty,
+            'items' => OrderItem::forOrder((int) $warranty['order_id']),
+        ], null);
+        $html = ob_get_clean();
+
+        Pdf::download($html, 'termo-garantia-pedido-' . (int) $warranty['order_id'] . '.pdf', 'portrait');
+    }
+
     /** Mesmo padrao de OrderController::authorizeOrder -- barreira contra acesso direto por URL a
      *  garantia fora do escopo (rede) de quem esta logado. */
     private function authorizeWarranty(int $id): array
     {
-        Auth::requireRole(Roles::STAFF);
+        Auth::requireRole(Roles::SUPERVISOR_ASSIGNMENT);
         $user = Auth::user();
 
         $warranty = WarrantyRequest::find($id);
@@ -109,42 +126,18 @@ class WarrantyController
         return $warranty;
     }
 
-    /** Identico a OrderController::scopeFilters, mas sempre devolve uma lista de ids (nunca um
-     *  seller_id unico) porque WarrantyRequest::forScope precisa de um array pro IN(). */
+    /** Admin ve tudo; Gerente ve so a rede nacional dele (mesmo escopo de
+     *  LicenciadoApprovalController). Ninguem mais chega aqui (gate em Roles::SUPERVISOR_ASSIGNMENT). */
     private function scopeSellerIds(array $user): ?array
     {
-        if ($user['role_slug'] === 'admin') {
-            return null;
-        }
-        if ($user['role_slug'] === Roles::SELLER) {
-            return [(int) $user['id']];
-        }
-        if ($user['role_slug'] === 'supervisor') {
-            return User::supervisedIds((int) $user['id']);
-        }
-        if ($user['role_slug'] === 'gerente') {
-            return User::nationalIds((int) $user['id']);
-        }
-
-        return User::downlineIds((int) $user['id']);
+        return $user['role_slug'] === 'admin' ? null : User::nationalIds((int) $user['id']);
     }
 
-    /** Identico a OrderController::canAccessSeller. */
     private function canAccessSeller(array $user, int $sellerId): bool
     {
         if ($user['role_slug'] === 'admin') {
             return true;
         }
-        if ($user['role_slug'] === Roles::SELLER) {
-            return $sellerId === (int) $user['id'];
-        }
-        if ($user['role_slug'] === 'supervisor') {
-            return in_array($sellerId, User::supervisedIds((int) $user['id']), true);
-        }
-        if ($user['role_slug'] === 'gerente') {
-            return in_array($sellerId, User::nationalIds((int) $user['id']), true);
-        }
-
-        return in_array($sellerId, User::downlineIds((int) $user['id']), true);
+        return in_array($sellerId, User::nationalIds((int) $user['id']), true);
     }
 }
