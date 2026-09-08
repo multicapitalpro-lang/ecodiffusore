@@ -282,6 +282,44 @@ class Notifier
         }
     }
 
+    /** @param array $client precisa de name/email/whatsapp. @param array $payment precisa de
+     *  method/amount/due_date/checkout_url/pix_payload (retorno de Payment::create()/find()).
+     *  Dispara e-mail + WhatsApp direto pro cliente com o link/QR de pagamento -- gerado assim que
+     *  a cobranca e' criada (App\Controllers\PaymentController::generateCharge()), tanto pra
+     *  Pedido quanto pra Orcamento. */
+    public static function cobrancaGerada(array $client, array $payment, string $payableType, int $payableId): void
+    {
+        $label = $payableType === 'quote' ? 'Orçamento' : 'Pedido';
+        $vars = [
+            'pedido' => "{$label} #{$payableId}",
+            'valor' => 'R$ ' . number_format((float) $payment['amount'], 2, ',', '.'),
+            'forma' => self::PAYMENT_METHOD_LABELS[$payment['method']] ?? $payment['method'],
+            'vencimento' => date('d/m/Y', strtotime($payment['due_date'])),
+            'url' => $payment['checkout_url'] ?? self::BASE_URL,
+        ];
+
+        if (!empty($client['email'])) {
+            $body = '<p>' . self::esc("Sua cobrança do {$label} #{$payableId} foi gerada.") . '</p>'
+                . self::infoList(['Valor' => $vars['valor'], 'Forma' => $vars['forma'], 'Vencimento' => $vars['vencimento']])
+                . self::button($vars['url'], 'Pagar agora');
+            if (!empty($payment['pix_payload'])) {
+                $body .= '<p>Pix copia-e-cola:</p><p style="word-break:break-all; font-size:12px; color:#666;">' . self::esc($payment['pix_payload']) . '</p>';
+            }
+
+            Mailer::send($client['email'], "Cobrança do {$label} #{$payableId} - Ecodiffusore Brasil", self::template('Sua cobrança foi gerada', $body));
+        }
+
+        if (!empty($client['whatsapp'])) {
+            [$text] = self::waTexts('cobranca_gerada', $vars);
+            if ($text) {
+                if (!empty($payment['pix_payload'])) {
+                    $text .= "\n\nPix copia-e-cola:\n" . $payment['pix_payload'];
+                }
+                self::sendWhatsApp($client['whatsapp'], $text);
+            }
+        }
+    }
+
     /** @param array $order precisa de id/client_whatsapp/tracking_carrier/tracking_code/
      *  prazo_entrega (retorno de Order::find()). So WhatsApp, pro PROPRIO cliente (mesma excecao
      *  de acessoPortalCriado) -- disparado pela fabrica quando atualiza a entrega (Fase 28). */

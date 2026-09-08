@@ -7,6 +7,7 @@ use App\Core\Auth;
 use App\Core\CardPricing;
 use App\Core\Config;
 use App\Core\Csrf;
+use App\Core\Notifier;
 use App\Core\Roles;
 use App\Core\Router;
 use App\Models\Approval;
@@ -208,6 +209,14 @@ class PaymentController
             'pix_payload' => $pixPayload,
             'due_date' => $dueDate,
         ]);
+
+        Notifier::cobrancaGerada($client, [
+            'method' => $billingType,
+            'amount' => $chargeAmount,
+            'due_date' => $dueDate,
+            'checkout_url' => $charge['invoiceUrl'] ?? null,
+            'pix_payload' => $pixPayload,
+        ], $payableType, $payableId);
     }
 
     private function authorizeOwnership(?int $sellerId): void

@@ -24,6 +24,7 @@ class WhatsAppEventTemplate
         'garantia_solicitada',
         'acesso_portal_criado',
         'pedido_atualizacao_entrega',
+        'cobranca_gerada',
     ];
 
     public const LABELS = [
@@ -38,6 +39,7 @@ class WhatsAppEventTemplate
         'garantia_solicitada' => 'Solicitação de garantia aberta',
         'acesso_portal_criado' => 'Acesso ao portal criado (cliente)',
         'pedido_atualizacao_entrega' => 'Atualização de entrega (cliente)',
+        'cobranca_gerada' => 'Cobrança gerada (cliente)',
     ];
 
     /** Quais placeholders {chave} cada evento aceita -- so pra exibir dica na tela, nao valida nada. */
@@ -53,10 +55,11 @@ class WhatsAppEventTemplate
         'garantia_solicitada' => ['cliente', 'id', 'vendedor', 'url'],
         'acesso_portal_criado' => ['nome', 'email', 'senha', 'url'],
         'pedido_atualizacao_entrega' => ['transportadora', 'codigo', 'prazo', 'url'],
+        'cobranca_gerada' => ['pedido', 'valor', 'forma', 'vencimento', 'url'],
     ];
 
     /** Eventos que so usam UM dos dois textos (o outro fica sempre null/nao editavel). */
-    public const SELF_ONLY = ['follow_up_lembrete', 'acesso_portal_criado', 'pedido_atualizacao_entrega'];
+    public const SELF_ONLY = ['follow_up_lembrete', 'acesso_portal_criado', 'pedido_atualizacao_entrega', 'cobranca_gerada'];
     public const NETWORK_ONLY = ['vendedor_inativo', 'licenciado_pendente_aprovacao'];
 
     /** Quem de fato recebe cada variante, POR EVENTO -- o alcance da "rede" varia bastante entre
@@ -72,6 +75,7 @@ class WhatsAppEventTemplate
         'garantia_solicitada' => 'Vendedor (dono do pedido)',
         'acesso_portal_criado' => 'Cliente (dono da conta criada)',
         'pedido_atualizacao_entrega' => 'Cliente (dono do pedido)',
+        'cobranca_gerada' => 'Cliente (dono do pedido)',
     ];
 
     public const NETWORK_LABELS = [
