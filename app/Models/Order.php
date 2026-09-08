@@ -88,8 +88,8 @@ class Order
      *  do painel. $sellerIds null = sem escopo (Admin). */
     public static function search(string $term, ?array $sellerIds = null): array
     {
-        $termCondition = 'c.name LIKE :term OR o.vehicle_plate LIKE :term';
-        $params = ['term' => '%' . $term . '%'];
+        $termCondition = 'c.name LIKE :term1 OR o.vehicle_plate LIKE :term2';
+        $params = ['term1' => '%' . $term . '%', 'term2' => '%' . $term . '%'];
         if (ctype_digit($term)) {
             $termCondition .= ' OR o.id = :order_id';
             $params['order_id'] = (int) $term;

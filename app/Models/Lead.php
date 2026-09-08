@@ -104,8 +104,8 @@ class Lead
     public static function search(string $term, ?array $userIds = null, bool $includeUnassigned = false): array
     {
         $digits = preg_replace('/\D/', '', $term);
-        $termCondition = 'l.name LIKE :term OR l.vehicle_plate LIKE :term';
-        $params = ['term' => '%' . $term . '%'];
+        $termCondition = 'l.name LIKE :term1 OR l.vehicle_plate LIKE :term2';
+        $params = ['term1' => '%' . $term . '%', 'term2' => '%' . $term . '%'];
         if ($digits !== '') {
             $termCondition .= " OR REGEXP_REPLACE(l.whatsapp, '[^0-9]', '') LIKE :digits";
             $params['digits'] = '%' . $digits . '%';
