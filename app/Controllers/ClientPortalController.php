@@ -43,9 +43,18 @@ class ClientPortalController
         Auth::requireRole(['cliente']);
         $client = Client::findByUserId((int) Auth::user()['id']);
 
+        $eligibleOrders = [];
+        if ($client) {
+            $eligibleOrders = array_values(array_filter(
+                Order::all(['client_id' => $client['id']]),
+                fn ($o) => $o['status'] === 'verificado'
+            ));
+        }
+
         View::render('painel/client_portal/warranties', [
             'user' => Auth::user(),
             'warranties' => $client ? WarrantyRequest::forClient((int) $client['id']) : [],
+            'eligibleOrders' => $eligibleOrders,
         ]);
     }
 
@@ -97,7 +106,7 @@ class ClientPortalController
             return;
         }
 
-        $warrantyId = WarrantyRequest::create($orderId, (int) $client['id'], trim($_POST['description'] ?? ''));
+        $warrantyId = WarrantyRequest::create($orderId, (int) $client['id']);
         foreach ($stored as $item) {
             WarrantyRequest::addAttachment($warrantyId, $item['type'], $item['file']['stored_name'], $item['file']['original_name']);
         }

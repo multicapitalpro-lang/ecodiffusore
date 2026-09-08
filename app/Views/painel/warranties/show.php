@@ -20,10 +20,6 @@ $sucesso = isset($_GET['sucesso']);
     <p><strong>Aberta em:</strong> <?= View::e(date('d/m/Y', strtotime($warranty['created_at']))) ?></p>
     <p><strong>Status:</strong> <span class="status-badge status-<?= $statusBadge[$warranty['status']] ?? 'novo' ?>"><?= $statusLabels[$warranty['status']] ?? $warranty['status'] ?></span></p>
     <p><a href="/painel/pedidos/<?= (int) $warranty['order_id'] ?>" class="link-small">Ver pedido</a></p>
-    <?php if (!empty($warranty['description'])): ?>
-        <p><strong>Descrição:</strong></p>
-        <p><?= nl2br(View::e($warranty['description'])) ?></p>
-    <?php endif; ?>
     <?php if ($attachments): ?>
         <p><strong>Documentos enviados:</strong></p>
         <ul>

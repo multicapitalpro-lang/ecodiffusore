@@ -16,16 +16,15 @@ class WarrantyRequest
         'telemetria' => 'Telemetria/Relatório de consumo',
     ];
 
-    public static function create(int $orderId, int $clientId, string $description): int
+    public static function create(int $orderId, int $clientId): int
     {
         $stmt = Database::connection()->prepare(
             "INSERT INTO warranty_requests (order_id, client_id, description, status)
-             VALUES (:order_id, :client_id, :description, 'aberta')"
+             VALUES (:order_id, :client_id, '', 'aberta')"
         );
         $stmt->execute([
             'order_id' => $orderId,
             'client_id' => $clientId,
-            'description' => $description,
         ]);
         return (int) Database::connection()->lastInsertId();
     }

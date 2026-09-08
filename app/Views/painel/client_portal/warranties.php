@@ -6,13 +6,27 @@ $sucesso = isset($_GET['sucesso']);
 ?>
 <div class="page-header">
     <h1>Minhas Garantias</h1>
+    <?php if (count($eligibleOrders) === 1): ?>
+        <a href="/painel/minhas-garantias/nova?order_id=<?= (int) $eligibleOrders[0]['id'] ?>" class="btn btn-primary">Solicitar Garantia</a>
+    <?php endif; ?>
 </div>
 
 <?php if ($sucesso): ?>
     <p class="form-msg form-msg-ok">Solicitação enviada com sucesso.</p>
 <?php endif; ?>
 
-<p class="hint-text">Pra abrir uma nova solicitação, acesse o pedido correspondente em "Meus Pedidos" e clique em "Abrir solicitação de garantia".</p>
+<?php if (count($eligibleOrders) > 1): ?>
+    <form method="get" action="/painel/minhas-garantias/nova" class="inline-form" style="margin-bottom:16px">
+        <select name="order_id">
+            <?php foreach ($eligibleOrders as $o): ?>
+                <option value="<?= (int) $o['id'] ?>">Pedido #<?= (int) $o['id'] ?> — <?= View::e($o['product_names'] ?: 'produto') ?></option>
+            <?php endforeach; ?>
+        </select>
+        <button type="submit" class="btn btn-primary">Solicitar Garantia</button>
+    </form>
+<?php elseif (!$eligibleOrders): ?>
+    <p class="hint-text">Você ainda não tem pedidos confirmados elegíveis pra solicitar garantia.</p>
+<?php endif; ?>
 
 <div class="table-scroll">
     <table class="data-table">

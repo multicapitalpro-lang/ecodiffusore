@@ -19,9 +19,6 @@ $erro = $_GET['erro'] ?? null;
     <?= Csrf::field() ?>
     <input type="hidden" name="order_id" value="<?= (int) $order['id'] ?>">
 
-    <label for="description">Descreva o problema (opcional)</label>
-    <textarea id="description" name="description" rows="5" style="width:100%"></textarea>
-
     <h3 class="section-title">Documentos necessários</h3>
     <p class="hint-text" style="margin-top:0">Todos os arquivos abaixo são obrigatórios — PDF, JPG, PNG ou WEBP, até 5MB cada.</p>
 
