@@ -29,7 +29,9 @@ $situation = $order['payment_situation'] ?? ['label' => '—', 'badge' => 'novo'
     </div>
 <?php endif; ?>
 
-<?php if ($sucesso): ?>
+<?php if (isset($_GET['acesso_criado'])): ?>
+    <p class="form-msg form-msg-ok">Pedido registrado! Conta do portal criada automaticamente pro cliente — já mandamos as credenciais por e-mail/WhatsApp. Senha temporária (caso precise repassar): <strong><?= View::e($_GET['temp'] ?? '') ?></strong></p>
+<?php elseif ($sucesso): ?>
     <p class="form-msg form-msg-ok">Atualizado com sucesso.</p>
 <?php elseif ($erro === '2'): ?>
     <p class="form-msg form-msg-erro">Só é possível editar pedidos em andamento.</p>

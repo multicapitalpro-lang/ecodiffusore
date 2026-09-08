@@ -82,6 +82,42 @@ class Client
         $stmt->execute(['user_id' => $userId, 'id' => $clientId]);
     }
 
+    /** Cria a conta de acesso ao portal do cliente automaticamente (sem passo manual de staff),
+     *  mesma logica de ClientController::createAccess() -- reaproveitada aqui pra tambem disparar
+     *  sozinha quando um Pedido e' registrado (Fase 27b, pedido explicito do usuario: cliente nao
+     *  precisa de cadastro pra comprar, a conta so nasce se ele de fato comprar). Devolve a senha
+     *  temporaria gerada, ou null se o cliente ja tem conta / nao tem e-mail valido / e-mail ja
+     *  usado por outra conta (mesmos criterios de elegibilidade do fluxo manual). */
+    public static function autoCreatePortalAccess(array $client): ?string
+    {
+        if (!empty($client['user_id'])) {
+            return null;
+        }
+        if (empty($client['email']) || !filter_var($client['email'], FILTER_VALIDATE_EMAIL)) {
+            return null;
+        }
+        if (User::emailExists($client['email'])) {
+            return null;
+        }
+
+        $tempPassword = substr(bin2hex(random_bytes(6)), 0, 10);
+
+        $userId = User::create([
+            'role_id' => Role::idBySlug('cliente'),
+            'name' => $client['name'],
+            'email' => $client['email'],
+            'whatsapp' => $client['whatsapp'] ?? '',
+            'password' => $tempPassword,
+            'status' => 'active',
+            'must_change_password' => true,
+            'email_verified' => true,
+        ]);
+
+        self::linkUser((int) $client['id'], $userId);
+
+        return $tempPassword;
+    }
+
     /** Preenche o CPF/CNPJ de um cliente criado sem documento (ex: Proposta Facil, que so pede
      *  Nome/WhatsApp de inicio) -- usado na hora de "Concluir Pedido", quando o documento passa a
      *  ser obrigatorio pra gerar cobranca na Asaas. Nao mexe nos outros campos do cliente. */

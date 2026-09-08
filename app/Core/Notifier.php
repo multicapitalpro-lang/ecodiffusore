@@ -249,6 +249,39 @@ class Notifier
         self::sendToNetworkChain((int) $licenciado['id'], $subject, $title, $body, $waSelf, $waNetwork);
     }
 
+    /** @param array $client precisa de id/name/email/whatsapp. Dispara e-mail (direto, fora do
+     *  EmailEventTemplate -- mensagem transacional presa a uma senha exata, sem sentido ter
+     *  intro editavel) + WhatsApp (editavel, ver WhatsAppEventTemplate) com as credenciais do
+     *  portal recem-criado. Unico metodo desta classe que manda pro PROPRIO cliente (todo o resto
+     *  e' pra staff) -- decisao explicita do usuario: a conta so nasce quando ele de fato compra
+     *  (Pedido registrado pelo vendedor), sem cadastro previo, e ele precisa ficar sabendo. */
+    public static function acessoPortalCriado(array $client, string $tempPassword): void
+    {
+        $url = self::BASE_URL . '/painel/login';
+        $vars = [
+            'nome' => $client['name'] ?? '—',
+            'email' => $client['email'] ?? '—',
+            'senha' => $tempPassword,
+            'url' => $url,
+        ];
+
+        if (!empty($client['email'])) {
+            $body = '<p>' . self::esc('Olá ' . $vars['nome'] . ', sua conta no portal Ecodiffusore Brasil foi criada.') . '</p>'
+                . self::infoList(['Login' => $vars['email'], 'Senha temporária' => $tempPassword])
+                . '<p>Você pode trocar a senha depois do primeiro acesso.</p>'
+                . self::button($url, 'Acessar meu painel');
+
+            Mailer::send($client['email'], 'Acesso ao seu painel - Ecodiffusore Brasil', self::template('Bem-vindo(a) ao seu painel', $body));
+        }
+
+        if (!empty($client['whatsapp'])) {
+            [$text] = self::waTexts('acesso_portal_criado', $vars);
+            if ($text) {
+                self::sendWhatsApp($client['whatsapp'], $text);
+            }
+        }
+    }
+
     /** @param array $warranty precisa de id/order_id/seller_id/client_name (retorno de
      *  WarrantyRequest::find()). So WhatsApp, sem e-mail -- notifica quem vendeu o pedido, nao o
      *  cliente (mensagens pro cliente ficam pra fase seguinte). */

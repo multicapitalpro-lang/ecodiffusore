@@ -193,7 +193,20 @@ class OrderController
             }
         }
 
+        // Cliente nao precisa de cadastro previo pra comprar -- a conta de acesso ao portal so
+        // nasce automaticamente aqui, quando o pedido de fato e' registrado (decisao explicita do
+        // usuario, Fase 27b). Sem efeito se o cliente ja tiver conta, nao tiver e-mail valido, ou
+        // o e-mail ja estar em uso (ver Client::autoCreatePortalAccess).
+        $orderClient = Client::find((int) $_POST['client_id']);
+        $tempPassword = $orderClient ? Client::autoCreatePortalAccess($orderClient) : null;
+        if ($tempPassword) {
+            Notifier::acessoPortalCriado($orderClient, $tempPassword);
+        }
+
         $target = "/painel/pedidos/{$orderId}?sucesso=1";
+        if ($tempPassword) {
+            $target .= '&acesso_criado=1&temp=' . urlencode($tempPassword);
+        }
 
         if (Response::isAjax()) {
             Response::json(['ok' => true, 'redirect' => $target]);

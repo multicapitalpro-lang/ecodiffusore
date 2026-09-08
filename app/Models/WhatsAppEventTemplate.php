@@ -22,6 +22,7 @@ class WhatsAppEventTemplate
         'licenciado_pendente_aprovacao',
         'follow_up_lembrete',
         'garantia_solicitada',
+        'acesso_portal_criado',
     ];
 
     public const LABELS = [
@@ -34,6 +35,7 @@ class WhatsAppEventTemplate
         'licenciado_pendente_aprovacao' => 'Novo Licenciado pendente de aprovação',
         'follow_up_lembrete' => 'Lembrete de follow-up',
         'garantia_solicitada' => 'Solicitação de garantia aberta',
+        'acesso_portal_criado' => 'Acesso ao portal criado (cliente)',
     ];
 
     /** Quais placeholders {chave} cada evento aceita -- so pra exibir dica na tela, nao valida nada. */
@@ -47,10 +49,11 @@ class WhatsAppEventTemplate
         'licenciado_pendente_aprovacao' => ['nome', 'cidade', 'url'],
         'follow_up_lembrete' => ['leads', 'url'],
         'garantia_solicitada' => ['cliente', 'id', 'vendedor', 'url'],
+        'acesso_portal_criado' => ['nome', 'email', 'senha', 'url'],
     ];
 
     /** Eventos que so usam UM dos dois textos (o outro fica sempre null/nao editavel). */
-    public const SELF_ONLY = ['follow_up_lembrete'];
+    public const SELF_ONLY = ['follow_up_lembrete', 'acesso_portal_criado'];
     public const NETWORK_ONLY = ['vendedor_inativo', 'licenciado_pendente_aprovacao'];
 
     /** Quem de fato recebe cada variante, POR EVENTO -- o alcance da "rede" varia bastante entre
@@ -64,6 +67,7 @@ class WhatsAppEventTemplate
         'pedido_cancelado' => 'Vendedor (dono do pedido)',
         'follow_up_lembrete' => 'Vendedor',
         'garantia_solicitada' => 'Vendedor (dono do pedido)',
+        'acesso_portal_criado' => 'Cliente (dono da conta criada)',
     ];
 
     public const NETWORK_LABELS = [
