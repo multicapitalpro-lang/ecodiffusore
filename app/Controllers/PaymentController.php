@@ -219,6 +219,7 @@ class PaymentController
 
         Notifier::cobrancaGerada($client, [
             'method' => $billingType,
+            'installments' => $installments,
             'amount' => $chargeAmount,
             'due_date' => $dueDate,
             'checkout_url' => $charge['invoiceUrl'] ?? null,

@@ -291,11 +291,18 @@ class Notifier
     public static function cobrancaGerada(array $client, array $payment, string $payableType, int $payableId): void
     {
         $label = $payableType === 'quote' ? 'Orçamento' : 'Pedido';
+        $installments = (int) ($payment['installments'] ?? 1);
+        $formaLabel = self::PAYMENT_METHOD_LABELS[$payment['method']] ?? $payment['method'];
+        if ($installments > 1) {
+            $parcelaValue = 'R$ ' . number_format(((float) $payment['amount']) / $installments, 2, ',', '.');
+            $formaLabel .= " — {$installments}x de {$parcelaValue}";
+        }
+
         $vars = [
             'pedido' => "{$label} #{$payableId}",
             'produto' => $payment['produtos'] ?? '—',
             'valor' => 'R$ ' . number_format((float) $payment['amount'], 2, ',', '.'),
-            'forma' => self::PAYMENT_METHOD_LABELS[$payment['method']] ?? $payment['method'],
+            'forma' => $formaLabel,
             'vencimento' => date('d/m/Y', strtotime($payment['due_date'])),
             'url' => $payment['checkout_url'] ?? self::BASE_URL,
         ];
