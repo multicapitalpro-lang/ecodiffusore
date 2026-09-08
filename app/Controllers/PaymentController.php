@@ -13,8 +13,10 @@ use App\Core\Router;
 use App\Models\Approval;
 use App\Models\Client;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Payment;
 use App\Models\Quote;
+use App\Models\QuoteItem;
 use App\Models\User;
 use App\Models\NfeSettings;
 
@@ -210,12 +212,18 @@ class PaymentController
             'due_date' => $dueDate,
         ]);
 
+        $items = $payableType === 'quote' ? QuoteItem::forQuote($payableId) : OrderItem::forOrder($payableId);
+        $produtos = $items
+            ? implode(', ', array_map(fn ($i) => $i['product_name'] . ' (x' . (int) $i['quantity'] . ')', $items))
+            : null;
+
         Notifier::cobrancaGerada($client, [
             'method' => $billingType,
             'amount' => $chargeAmount,
             'due_date' => $dueDate,
             'checkout_url' => $charge['invoiceUrl'] ?? null,
             'pix_payload' => $pixPayload,
+            'produtos' => $produtos,
         ], $payableType, $payableId);
     }
 

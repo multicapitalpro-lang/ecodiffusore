@@ -283,15 +283,17 @@ class Notifier
     }
 
     /** @param array $client precisa de name/email/whatsapp. @param array $payment precisa de
-     *  method/amount/due_date/checkout_url/pix_payload (retorno de Payment::create()/find()).
-     *  Dispara e-mail + WhatsApp direto pro cliente com o link/QR de pagamento -- gerado assim que
-     *  a cobranca e' criada (App\Controllers\PaymentController::generateCharge()), tanto pra
-     *  Pedido quanto pra Orcamento. */
+     *  method/amount/due_date/checkout_url/pix_payload/produtos (retorno de Payment::create()/find()
+     *  + produtos montado pelo chamador via OrderItem::forOrder()/QuoteItem::forQuote()). Dispara
+     *  e-mail + WhatsApp direto pro cliente com o link/QR de pagamento -- gerado assim que a
+     *  cobranca e' criada (App\Controllers\PaymentController::generateCharge()), tanto pra Pedido
+     *  quanto pra Orcamento. */
     public static function cobrancaGerada(array $client, array $payment, string $payableType, int $payableId): void
     {
         $label = $payableType === 'quote' ? 'Orçamento' : 'Pedido';
         $vars = [
             'pedido' => "{$label} #{$payableId}",
+            'produto' => $payment['produtos'] ?? '—',
             'valor' => 'R$ ' . number_format((float) $payment['amount'], 2, ',', '.'),
             'forma' => self::PAYMENT_METHOD_LABELS[$payment['method']] ?? $payment['method'],
             'vencimento' => date('d/m/Y', strtotime($payment['due_date'])),
@@ -300,7 +302,12 @@ class Notifier
 
         if (!empty($client['email'])) {
             $body = '<p>' . self::esc("Sua cobrança do {$label} #{$payableId} foi gerada.") . '</p>'
-                . self::infoList(['Valor' => $vars['valor'], 'Forma' => $vars['forma'], 'Vencimento' => $vars['vencimento']])
+                . self::infoList(array_filter([
+                    'Produto' => $payment['produtos'] ?? null,
+                    'Valor' => $vars['valor'],
+                    'Forma' => $vars['forma'],
+                    'Vencimento' => $vars['vencimento'],
+                ]))
                 . self::button($vars['url'], 'Pagar agora');
             if (!empty($payment['pix_payload'])) {
                 $body .= '<p>Pix copia-e-cola:</p><p style="word-break:break-all; font-size:12px; color:#666;">' . self::esc($payment['pix_payload']) . '</p>';

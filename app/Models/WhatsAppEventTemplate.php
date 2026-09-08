@@ -55,7 +55,7 @@ class WhatsAppEventTemplate
         'garantia_solicitada' => ['cliente', 'id', 'vendedor', 'url'],
         'acesso_portal_criado' => ['nome', 'email', 'senha', 'url'],
         'pedido_atualizacao_entrega' => ['transportadora', 'codigo', 'prazo', 'url'],
-        'cobranca_gerada' => ['pedido', 'valor', 'forma', 'vencimento', 'url'],
+        'cobranca_gerada' => ['pedido', 'produto', 'valor', 'forma', 'vencimento', 'url'],
     ];
 
     /** Eventos que so usam UM dos dois textos (o outro fica sempre null/nao editavel). */
