@@ -32,7 +32,7 @@ $errors = $errors ?? [];
         </div>
         <div>
             <label for="document">CPF/CNPJ</label>
-            <input type="text" id="document" name="document" value="<?= View::e($client['document'] ?? '') ?>">
+            <input type="text" id="document" name="document" value="<?= View::e($client['document'] ?? '') ?>" required>
             <p class="field-error" data-error-for="document"><?= View::e($errors['document'] ?? '') ?></p>
         </div>
     </div>
@@ -41,17 +41,53 @@ $errors = $errors ?? [];
     <input type="text" id="state_registration" name="state_registration" value="<?= View::e($client['state_registration'] ?? '') ?>" placeholder="Isento, se não houver">
 
     <label for="whatsapp">WhatsApp</label>
-    <input type="text" id="whatsapp" name="whatsapp" value="<?= View::e($client['whatsapp'] ?? '') ?>">
+    <input type="text" id="whatsapp" name="whatsapp" value="<?= View::e($client['whatsapp'] ?? '') ?>" required>
     <p class="field-error" data-error-for="whatsapp"><?= View::e($errors['whatsapp'] ?? '') ?></p>
 
-    <label for="city">Cidade</label>
-    <input type="text" id="city" name="city" value="<?= View::e($client['city'] ?? '') ?>">
+    <h3 class="section-title">Endereço de entrega</h3>
+    <p class="hint-text" style="margin-top:0">Preencha completo — é a partir daqui que o rastreio da sua entrega é enviado.</p>
 
-    <label for="state">UF</label>
-    <input type="text" id="state" name="state" maxlength="2" style="text-transform:uppercase" value="<?= View::e($client['state'] ?? '') ?>">
+    <div class="form-grid-2">
+        <div>
+            <label for="zip_code">CEP</label>
+            <input type="text" id="zip_code" name="zip_code" value="<?= View::e($client['zip_code'] ?? '') ?>" required>
+            <p class="field-error" data-error-for="zip_code"><?= View::e($errors['zip_code'] ?? '') ?></p>
+        </div>
+        <div>
+            <label for="city">Cidade</label>
+            <input type="text" id="city" name="city" value="<?= View::e($client['city'] ?? '') ?>" required>
+            <p class="field-error" data-error-for="city"><?= View::e($errors['city'] ?? '') ?></p>
+        </div>
+    </div>
 
-    <label for="address">Endereço</label>
-    <input type="text" id="address" name="address" value="<?= View::e($client['address'] ?? '') ?>" placeholder="Rua, número, bairro, CEP">
+    <div class="form-grid-2">
+        <div>
+            <label for="street">Rua</label>
+            <input type="text" id="street" name="street" value="<?= View::e($client['street'] ?? '') ?>" required>
+            <p class="field-error" data-error-for="street"><?= View::e($errors['street'] ?? '') ?></p>
+        </div>
+        <div>
+            <label for="number">Número</label>
+            <input type="text" id="number" name="number" value="<?= View::e($client['number'] ?? '') ?>" required>
+            <p class="field-error" data-error-for="number"><?= View::e($errors['number'] ?? '') ?></p>
+        </div>
+    </div>
+
+    <div class="form-grid-2">
+        <div>
+            <label for="neighborhood">Bairro</label>
+            <input type="text" id="neighborhood" name="neighborhood" value="<?= View::e($client['neighborhood'] ?? '') ?>" required>
+            <p class="field-error" data-error-for="neighborhood"><?= View::e($errors['neighborhood'] ?? '') ?></p>
+        </div>
+        <div>
+            <label for="state">UF</label>
+            <input type="text" id="state" name="state" maxlength="2" style="text-transform:uppercase" value="<?= View::e($client['state'] ?? '') ?>" required>
+            <p class="field-error" data-error-for="state"><?= View::e($errors['state'] ?? '') ?></p>
+        </div>
+    </div>
+
+    <label for="complement">Complemento</label>
+    <input type="text" id="complement" name="complement" value="<?= View::e($client['complement'] ?? '') ?>" placeholder="Apto, bloco, referência (opcional)">
 
     <button type="submit" class="btn btn-primary" style="margin-top:16px">Salvar</button>
 </form>

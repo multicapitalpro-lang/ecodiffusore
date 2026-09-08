@@ -6,20 +6,50 @@ use App\Core\Database;
 
 class WarrantyRequest
 {
-    public static function create(int $orderId, int $clientId, string $description, ?array $attachment): int
+    /** Tipos de documento exigidos pra abrir uma garantia (Fase 27c) -- 'foto' pode repetir ate 3x. */
+    public const ATTACHMENT_TYPES = ['cnh', 'documento_veiculo', 'foto'];
+
+    public const ATTACHMENT_LABELS = [
+        'cnh' => 'CNH',
+        'documento_veiculo' => 'Documento do veículo',
+        'foto' => 'Foto do veículo',
+    ];
+
+    public static function create(int $orderId, int $clientId, string $description): int
     {
         $stmt = Database::connection()->prepare(
-            "INSERT INTO warranty_requests (order_id, client_id, description, attachment_path, attachment_original_name, status)
-             VALUES (:order_id, :client_id, :description, :attachment_path, :attachment_original_name, 'aberta')"
+            "INSERT INTO warranty_requests (order_id, client_id, description, status)
+             VALUES (:order_id, :client_id, :description, 'aberta')"
         );
         $stmt->execute([
             'order_id' => $orderId,
             'client_id' => $clientId,
             'description' => $description,
-            'attachment_path' => $attachment['stored_name'] ?? null,
-            'attachment_original_name' => $attachment['original_name'] ?? null,
         ]);
         return (int) Database::connection()->lastInsertId();
+    }
+
+    public static function addAttachment(int $warrantyId, string $type, string $storedPath, ?string $originalName): void
+    {
+        $stmt = Database::connection()->prepare(
+            'INSERT INTO warranty_attachments (warranty_request_id, type, stored_path, original_name) VALUES (:id, :type, :path, :name)'
+        );
+        $stmt->execute(['id' => $warrantyId, 'type' => $type, 'path' => $storedPath, 'name' => $originalName]);
+    }
+
+    public static function attachmentsFor(int $warrantyId): array
+    {
+        $stmt = Database::connection()->prepare('SELECT * FROM warranty_attachments WHERE warranty_request_id = :id ORDER BY id');
+        $stmt->execute(['id' => $warrantyId]);
+        return $stmt->fetchAll();
+    }
+
+    public static function findAttachment(int $attachmentId): ?array
+    {
+        $stmt = Database::connection()->prepare('SELECT * FROM warranty_attachments WHERE id = :id');
+        $stmt->execute(['id' => $attachmentId]);
+        $row = $stmt->fetch();
+        return $row ?: null;
     }
 
     public static function find(int $id): ?array

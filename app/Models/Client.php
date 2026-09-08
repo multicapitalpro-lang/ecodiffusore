@@ -129,11 +129,22 @@ class Client
 
     /** Cliente edita os proprios dados de contato/endereco (Meus Dados) -- nao mexe em name/email
      *  (login) nem em seller_id, status, limite de credito ou condicao de pagamento (so staff mexe nisso). */
+    /** Endereco estruturado (zip_code/street/number/complement/neighborhood + city/state ja
+     *  existentes) -- necessario pro cliente conseguir rastrear a entrega (Fase 27c). O campo
+     *  legado `address` (texto livre, usado em telas antigas de staff) continua sendo preenchido
+     *  automaticamente como um resumo dos campos estruturados, pra nao quebrar nada que ja le' ele. */
     public static function updateOwnProfile(int $id, array $data): void
     {
+        $addressSummary = trim(
+            ($data['street'] ?? '') . ($data['number'] ? ', ' . $data['number'] : '')
+            . (($data['complement'] ?? '') !== '' ? ' - ' . $data['complement'] : '')
+            . (($data['neighborhood'] ?? '') !== '' ? ' - ' . $data['neighborhood'] : '')
+        );
+
         $stmt = Database::connection()->prepare(
             'UPDATE clients SET document = :document, person_type = :person_type, state_registration = :state_registration,
-                whatsapp = :whatsapp, city = :city, state = :state, address = :address
+                whatsapp = :whatsapp, city = :city, state = :state, address = :address,
+                zip_code = :zip_code, street = :street, number = :number, complement = :complement, neighborhood = :neighborhood
              WHERE id = :id'
         );
         $stmt->execute([
@@ -144,7 +155,12 @@ class Client
             'whatsapp' => ($data['whatsapp'] ?? '') ?: null,
             'city' => ($data['city'] ?? '') ?: null,
             'state' => ($data['state'] ?? '') ?: null,
-            'address' => ($data['address'] ?? '') ?: null,
+            'address' => $addressSummary ?: null,
+            'zip_code' => ($data['zip_code'] ?? '') ?: null,
+            'street' => ($data['street'] ?? '') ?: null,
+            'number' => ($data['number'] ?? '') ?: null,
+            'complement' => ($data['complement'] ?? '') ?: null,
+            'neighborhood' => ($data['neighborhood'] ?? '') ?: null,
         ]);
     }
 

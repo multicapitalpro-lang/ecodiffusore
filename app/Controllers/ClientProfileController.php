@@ -40,6 +40,21 @@ class ClientProfileController
         $whatsapp = trim($_POST['whatsapp'] ?? '');
 
         $errors = [];
+
+        // Endereco completo e' obrigatorio -- necessario pro cliente conseguir rastrear a entrega
+        // do produto (pedido explicito do usuario, Fase 27c).
+        foreach (['zip_code' => 'CEP', 'street' => 'Rua', 'number' => 'Número', 'neighborhood' => 'Bairro', 'city' => 'Cidade', 'state' => 'UF'] as $field => $label) {
+            if (trim($_POST[$field] ?? '') === '') {
+                $errors[$field] = "Preencha o campo {$label}.";
+            }
+        }
+        if ($document === '') {
+            $errors['document'] = 'Preencha o CPF/CNPJ.';
+        }
+        if ($whatsapp === '') {
+            $errors['whatsapp'] = 'Preencha o WhatsApp.';
+        }
+
         $duplicate = Client::findDuplicate($document ?: null, $whatsapp ?: null, (int) $client['id']);
         if ($duplicate) {
             $field = $document && preg_replace('/\D/', '', $document) === preg_replace('/\D/', '', (string) $duplicate['document']) ? 'document' : 'whatsapp';

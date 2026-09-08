@@ -77,14 +77,29 @@ class ClientPortalController
             Router::redirect("/painel/minhas-garantias/nova?order_id={$orderId}&erro=1");
         }
 
+        // CNH + documento do veiculo + 3 fotos, todos obrigatorios (pedido explicito do usuario,
+        // Fase 27c) -- pra dar suporte de verdade a uma solicitacao de garantia.
+        $required = ['cnh' => 'cnh', 'documento_veiculo' => 'documento_veiculo', 'foto1' => 'foto', 'foto2' => 'foto', 'foto3' => 'foto'];
+        foreach (array_keys($required) as $field) {
+            if (empty($_FILES[$field]['name'])) {
+                Router::redirect("/painel/minhas-garantias/nova?order_id={$orderId}&erro=3");
+            }
+        }
+
+        $stored = [];
         try {
-            $attachment = FileUpload::storeWarrantyAttachment($_FILES['attachment'] ?? []);
+            foreach ($required as $field => $type) {
+                $stored[] = ['type' => $type, 'file' => FileUpload::storeWarrantyAttachment($_FILES[$field])];
+            }
         } catch (\RuntimeException $e) {
             Router::redirect("/painel/minhas-garantias/nova?order_id={$orderId}&erro=2");
             return;
         }
 
-        $warrantyId = WarrantyRequest::create($orderId, (int) $client['id'], trim($_POST['description']), $attachment);
+        $warrantyId = WarrantyRequest::create($orderId, (int) $client['id'], trim($_POST['description']));
+        foreach ($stored as $item) {
+            WarrantyRequest::addAttachment($warrantyId, $item['type'], $item['file']['stored_name'], $item['file']['original_name']);
+        }
 
         $warranty = WarrantyRequest::find($warrantyId);
         if ($warranty) {
@@ -104,10 +119,14 @@ class ClientPortalController
             Router::redirect('/painel/minhas-garantias');
         }
 
-        View::render('painel/client_portal/warranty_show', ['user' => Auth::user(), 'warranty' => $warranty]);
+        View::render('painel/client_portal/warranty_show', [
+            'user' => Auth::user(),
+            'warranty' => $warranty,
+            'attachments' => WarrantyRequest::attachmentsFor((int) $warranty['id']),
+        ]);
     }
 
-    public function downloadWarrantyAttachment(string $id): void
+    public function downloadWarrantyAttachment(string $id, string $attachmentId): void
     {
         Auth::requireRole(['cliente']);
         $client = Client::findByUserId((int) Auth::user()['id']);
@@ -118,19 +137,21 @@ class ClientPortalController
             require BASE_PATH . '/app/Views/errors/403.php';
             exit;
         }
-        if (!$warranty['attachment_path']) {
+
+        $attachment = WarrantyRequest::findAttachment((int) $attachmentId);
+        if (!$attachment || (int) $attachment['warranty_request_id'] !== (int) $warranty['id']) {
             http_response_code(404);
             exit('Anexo não encontrado.');
         }
 
-        $path = FileUpload::path('warranties', $warranty['attachment_path']);
+        $path = FileUpload::path('warranties', $attachment['stored_path']);
         if (!file_exists($path)) {
             http_response_code(404);
             exit('Arquivo não encontrado.');
         }
 
         header('Content-Type: ' . (mime_content_type($path) ?: 'application/octet-stream'));
-        header('Content-Disposition: inline; filename="' . basename($warranty['attachment_original_name'] ?: $warranty['attachment_path']) . '"');
+        header('Content-Disposition: inline; filename="' . basename($attachment['original_name'] ?: $attachment['stored_path']) . '"');
         header('Content-Length: ' . filesize($path));
         readfile($path);
         exit;

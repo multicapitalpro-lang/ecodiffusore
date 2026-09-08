@@ -1,6 +1,7 @@
 <?php
 use App\Core\Csrf;
 use App\Core\View;
+use App\Models\WarrantyRequest;
 $statusLabels = ['aberta' => 'Aberta', 'em_analise' => 'Em análise', 'aprovada' => 'Aprovada', 'rejeitada' => 'Rejeitada', 'concluida' => 'Concluída'];
 $statusBadge = ['aberta' => 'novo', 'em_analise' => 'contatado', 'aprovada' => 'active', 'rejeitada' => 'inactive', 'concluida' => 'active'];
 $sucesso = isset($_GET['sucesso']);
@@ -21,8 +22,13 @@ $sucesso = isset($_GET['sucesso']);
     <p><a href="/painel/pedidos/<?= (int) $warranty['order_id'] ?>" class="link-small">Ver pedido</a></p>
     <p><strong>Descrição:</strong></p>
     <p><?= nl2br(View::e($warranty['description'])) ?></p>
-    <?php if (!empty($warranty['attachment_path'])): ?>
-        <p><a href="/painel/garantias/<?= (int) $warranty['id'] ?>/anexo" target="_blank" rel="noopener" class="link-small">📎 Ver anexo enviado</a></p>
+    <?php if ($attachments): ?>
+        <p><strong>Documentos enviados:</strong></p>
+        <ul>
+            <?php foreach ($attachments as $a): ?>
+                <li><a href="/painel/garantias/<?= (int) $warranty['id'] ?>/anexo/<?= (int) $a['id'] ?>" target="_blank" rel="noopener">📎 <?= View::e(WarrantyRequest::ATTACHMENT_LABELS[$a['type']] ?? $a['type']) ?></a></li>
+            <?php endforeach; ?>
+        </ul>
     <?php endif; ?>
     <?php if (!empty($warranty['resolution_note'])): ?>
         <p><strong>Última nota de resolução:</strong></p>

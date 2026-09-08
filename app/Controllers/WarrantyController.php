@@ -33,6 +33,7 @@ class WarrantyController
         View::render('painel/warranties/show', [
             'user' => Auth::user(),
             'warranty' => $warranty,
+            'attachments' => WarrantyRequest::attachmentsFor((int) $warranty['id']),
             'isViewOnly' => in_array(Auth::user()['role_slug'], Roles::NATIONAL_SUPPORT, true),
         ]);
     }
@@ -64,22 +65,24 @@ class WarrantyController
         Router::redirect("/painel/garantias/{$id}?sucesso=1");
     }
 
-    public function downloadAttachment(string $id): void
+    public function downloadAttachment(string $id, string $attachmentId): void
     {
         $warranty = $this->authorizeWarranty((int) $id);
-        if (!$warranty['attachment_path']) {
+
+        $attachment = WarrantyRequest::findAttachment((int) $attachmentId);
+        if (!$attachment || (int) $attachment['warranty_request_id'] !== (int) $warranty['id']) {
             http_response_code(404);
             exit('Anexo não encontrado.');
         }
 
-        $path = FileUpload::path('warranties', $warranty['attachment_path']);
+        $path = FileUpload::path('warranties', $attachment['stored_path']);
         if (!file_exists($path)) {
             http_response_code(404);
             exit('Arquivo não encontrado.');
         }
 
         header('Content-Type: ' . (mime_content_type($path) ?: 'application/octet-stream'));
-        header('Content-Disposition: inline; filename="' . basename($warranty['attachment_original_name'] ?: $warranty['attachment_path']) . '"');
+        header('Content-Disposition: inline; filename="' . basename($attachment['original_name'] ?: $attachment['stored_path']) . '"');
         header('Content-Length: ' . filesize($path));
         readfile($path);
         exit;

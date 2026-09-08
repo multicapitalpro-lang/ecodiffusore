@@ -10,7 +10,9 @@ $erro = $_GET['erro'] ?? null;
 <?php if ($erro === '1'): ?>
     <p class="form-msg form-msg-error">Descreva o problema antes de enviar.</p>
 <?php elseif ($erro === '2'): ?>
-    <p class="form-msg form-msg-error">Não foi possível enviar o anexo (verifique o tipo e o tamanho — máximo 5MB, PDF/JPG/PNG/WEBP).</p>
+    <p class="form-msg form-msg-error">Não foi possível enviar um dos anexos (verifique o tipo e o tamanho — máximo 5MB, PDF/JPG/PNG/WEBP).</p>
+<?php elseif ($erro === '3'): ?>
+    <p class="form-msg form-msg-error">Envie todos os documentos pedidos: CNH, documento do veículo e as 3 fotos.</p>
 <?php endif; ?>
 
 <form method="post" action="/painel/minhas-garantias" enctype="multipart/form-data">
@@ -20,8 +22,23 @@ $erro = $_GET['erro'] ?? null;
     <label for="description">Descreva o problema</label>
     <textarea id="description" name="description" rows="5" required></textarea>
 
-    <label for="attachment">Anexo (foto ou documento, opcional)</label>
-    <input type="file" id="attachment" name="attachment" accept="application/pdf,image/jpeg,image/png,image/webp">
+    <h3 class="section-title">Documentos necessários</h3>
+    <p class="hint-text" style="margin-top:0">Todos os arquivos abaixo são obrigatórios — PDF, JPG, PNG ou WEBP, até 5MB cada.</p>
+
+    <label for="cnh">CNH</label>
+    <input type="file" id="cnh" name="cnh" accept="application/pdf,image/jpeg,image/png,image/webp" required>
+
+    <label for="documento_veiculo">Documento do veículo</label>
+    <input type="file" id="documento_veiculo" name="documento_veiculo" accept="application/pdf,image/jpeg,image/png,image/webp" required>
+
+    <label for="foto1">Foto do veículo (1)</label>
+    <input type="file" id="foto1" name="foto1" accept="image/jpeg,image/png,image/webp" required>
+
+    <label for="foto2">Foto do veículo (2)</label>
+    <input type="file" id="foto2" name="foto2" accept="image/jpeg,image/png,image/webp" required>
+
+    <label for="foto3">Foto do veículo (3)</label>
+    <input type="file" id="foto3" name="foto3" accept="image/jpeg,image/png,image/webp" required>
 
     <button type="submit" class="btn btn-primary" style="margin-top:16px">Enviar solicitação</button>
 </form>
