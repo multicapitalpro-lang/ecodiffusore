@@ -375,9 +375,20 @@ class OrderController
             Router::redirect("/painel/pedidos/{$id}?erro=1");
         }
 
-        Order::updateTracking($id, trim($_POST['tracking_code'] ?? ''), trim($_POST['tracking_carrier'] ?? ''));
+        Order::updateTracking($id, trim($_POST['tracking_code'] ?? ''), trim($_POST['tracking_carrier'] ?? ''), trim($_POST['prazo_entrega'] ?? ''));
 
         Router::redirect("/painel/pedidos/{$id}?sucesso=1");
+    }
+
+    /** Lista de pedidos pagos pra toda a cadeia comercial acompanhar entrega (Fase 28) -- reaproveita
+     *  o mesmo escopo por hierarquia de scopeFilters(), so leitura, sem os dados financeiros. */
+    public function deliveries(): void
+    {
+        Auth::requireRole(Roles::STAFF);
+        $user = Auth::user();
+        $filters = array_merge(['status' => 'verificado'], $this->scopeFilters($user));
+
+        View::render('painel/orders/deliveries', ['user' => $user, 'orders' => Order::all($filters)]);
     }
 
     /** Marca o pagamento mais recente do pedido como reembolsado -- so muda a "situacao" exibida

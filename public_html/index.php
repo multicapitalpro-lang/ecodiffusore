@@ -87,6 +87,10 @@ $router->get('/painel/minhas-garantias/{id}/termo', [App\Controllers\ClientPorta
 $router->get('/painel/garantias', [App\Controllers\WarrantyController::class, 'index']);
 $router->get('/painel/garantias/{id}', [App\Controllers\WarrantyController::class, 'show']);
 $router->post('/painel/garantias/{id}/status', [App\Controllers\WarrantyController::class, 'updateStatus']);
+
+$router->get('/painel/fabrica', [App\Controllers\FactoryController::class, 'index']);
+$router->post('/painel/fabrica/{id}/entrega', [App\Controllers\FactoryController::class, 'updateDelivery']);
+$router->get('/painel/entregas', [App\Controllers\OrderController::class, 'deliveries']);
 $router->get('/painel/garantias/{id}/anexo/{attachmentId}', [App\Controllers\WarrantyController::class, 'downloadAttachment']);
 $router->get('/painel/garantias/{id}/termo', [App\Controllers\WarrantyController::class, 'downloadTerm']);
 

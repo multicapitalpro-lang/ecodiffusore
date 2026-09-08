@@ -282,6 +282,27 @@ class Notifier
         }
     }
 
+    /** @param array $order precisa de id/client_whatsapp/tracking_carrier/tracking_code/
+     *  prazo_entrega (retorno de Order::find()). So WhatsApp, pro PROPRIO cliente (mesma excecao
+     *  de acessoPortalCriado) -- disparado pela fabrica quando atualiza a entrega (Fase 28). */
+    public static function pedidoAtualizacaoEntrega(array $order): void
+    {
+        if (empty($order['client_whatsapp'])) {
+            return;
+        }
+
+        $vars = [
+            'transportadora' => $order['tracking_carrier'] ?: '—',
+            'codigo' => $order['tracking_code'] ?: '—',
+            'prazo' => !empty($order['prazo_entrega']) ? date('d/m/Y', strtotime($order['prazo_entrega'])) : 'a definir',
+            'url' => self::BASE_URL . '/painel/meus-pedidos/' . (int) $order['id'],
+        ];
+        [$text] = self::waTexts('pedido_atualizacao_entrega', $vars);
+        if ($text) {
+            self::sendWhatsApp($order['client_whatsapp'], $text);
+        }
+    }
+
     /** @param array $warranty precisa de id/order_id/seller_id/client_name (retorno de
      *  WarrantyRequest::find()). So WhatsApp, sem e-mail -- notifica quem vendeu o pedido, nao o
      *  cliente (mensagens pro cliente ficam pra fase seguinte). */

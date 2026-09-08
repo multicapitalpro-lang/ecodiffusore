@@ -38,4 +38,9 @@ class Roles
 
     /** Dono do contrato/regiao, topo da hierarquia comercial regional (abaixo do admin) */
     public const REGIONAL_OWNER = 'licenciado';
+
+    /** Fabrica terceirizada -- despacha os pedidos pagos. Ator completamente separado da
+     *  hierarquia comercial (sem manager_id/comissao/downline), de proposito fora de STAFF/
+     *  MANAGEMENT -- so ve/atualiza rastreio dos proprios pedidos verificados. */
+    public const FACTORY = 'fabrica';
 }

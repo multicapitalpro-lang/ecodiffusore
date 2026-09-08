@@ -12,6 +12,7 @@ $roleLabels = [
     'gerente' => 'Gerente',
     'supervisor' => 'Supervisor',
     'cliente' => 'Cliente',
+    'fabrica' => 'Fábrica',
 ];
 $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
 $isActive = fn (string $prefix) => $path === $prefix || str_starts_with($path, $prefix . '/');
@@ -41,7 +42,7 @@ $pendingApprovals = in_array($role, Roles::SUPERVISOR_ASSIGNMENT, true) ? \App\M
 $pendingWarranties = in_array($role, Roles::SUPERVISOR_ASSIGNMENT, true)
     ? \App\Models\WarrantyRequest::countPending($role === 'admin' ? null : \App\Models\User::nationalIds((int) $user['id']))
     : 0;
-$vendasOpen = $anyActive(['/painel/pedidos', '/painel/orcamentos', '/painel/produtos', '/painel/tabela-precos', '/painel/configuracoes/pagamento', '/painel/simulador', '/painel/materiais', '/painel/garantias']);
+$vendasOpen = $anyActive(['/painel/pedidos', '/painel/orcamentos', '/painel/produtos', '/painel/tabela-precos', '/painel/configuracoes/pagamento', '/painel/simulador', '/painel/materiais', '/painel/garantias', '/painel/entregas']);
 $leadsOpen = $anyActive(['/painel/leads', '/painel/clientes', '/painel/configuracoes/roteamento']);
 $financeiroOpen = $anyActive(['/painel/financeiro']);
 $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/meu-ranking', '/painel/metas']);
@@ -68,6 +69,10 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/meu-rank
                 <a href="/painel/minhas-garantias" class="<?= $isActive('/painel/minhas-garantias') ? 'is-active' : '' ?>"><?= $icon('box') ?> Minhas Garantias</a>
             <?php endif; ?>
 
+            <?php if ($role === Roles::FACTORY): ?>
+                <a href="/painel/fabrica" class="<?= $isActive('/painel/fabrica') ? 'is-active' : '' ?>"><?= $icon('box') ?> Pedidos pra Despachar</a>
+            <?php endif; ?>
+
             <?php if (in_array($role, $staffRoles, true)): ?>
                 <details class="nav-group" <?= $leadsOpen ? 'open' : '' ?>>
                     <summary><?= $icon('pin') ?> Leads</summary>
@@ -90,6 +95,7 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/meu-rank
                         <a href="/painel/materiais" class="<?= $isActive('/painel/materiais') ? 'is-active' : '' ?>">Materiais de Venda</a>
                         <a href="/painel/pedidos" class="<?= $isActive('/painel/pedidos') ? 'is-active' : '' ?>">Pedidos</a>
                         <a href="/painel/orcamentos" class="<?= $isActive('/painel/orcamentos') ? 'is-active' : '' ?>">Orçamentos</a>
+                        <a href="/painel/entregas" class="<?= $isActive('/painel/entregas') ? 'is-active' : '' ?>">Acompanhar Entregas</a>
                         <?php if (in_array($role, ['admin', 'gerente'], true)): ?>
                             <a href="/painel/garantias" class="<?= $isActive('/painel/garantias') ? 'is-active' : '' ?>">
                                 Garantias

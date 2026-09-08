@@ -61,6 +61,7 @@ $situation = $order['payment_situation'] ?? ['label' => '—', 'badge' => 'novo'
     <?= Csrf::field() ?>
     <label>Transportadora <input type="text" name="tracking_carrier" value="<?= View::e($order['tracking_carrier'] ?? '') ?>" placeholder="Ex: Correios, Jadlog"></label>
     <label>Código de rastreio <input type="text" name="tracking_code" value="<?= View::e($order['tracking_code'] ?? '') ?>"></label>
+    <label>Previsão de entrega <input type="date" name="prazo_entrega" value="<?= View::e($order['prazo_entrega'] ?? '') ?>"></label>
     <button type="submit" class="btn btn-outline">Salvar rastreio</button>
 </form>
 <?php endif; ?>

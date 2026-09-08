@@ -14,6 +14,9 @@ $methodLabels = ['PIX' => 'Pix', 'BOLETO' => 'Boleto', 'CREDIT_CARD' => 'Cartão
     <?php if (!empty($order['tracking_code']) || !empty($order['tracking_carrier'])): ?>
         <p><strong>Rastreio:</strong> <?= View::e($order['tracking_carrier'] ?: '—') ?><?php if (!empty($order['tracking_code'])): ?> — código <code><?= View::e($order['tracking_code']) ?></code><?php endif; ?></p>
     <?php endif; ?>
+    <?php if (!empty($order['prazo_entrega'])): ?>
+        <p><strong>Previsão de entrega:</strong> <?= View::e(date('d/m/Y', strtotime($order['prazo_entrega']))) ?></p>
+    <?php endif; ?>
     <?php if (!empty($order['vehicle_type']) || !empty($order['vehicle_plate'])): ?>
         <p><strong>Veículo:</strong> <?= View::e($order['vehicle_type'] ?: '—') ?><?= $order['vehicle_plate'] ? ' · Placa ' . View::e($order['vehicle_plate']) : '' ?></p>
     <?php endif; ?>

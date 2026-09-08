@@ -309,7 +309,7 @@ $hasMetrics = isset($metrics);
         <h3 class="section-title">Meus pedidos</h3>
         <div class="table-scroll">
             <table class="data-table">
-                <thead><tr><th>#</th><th>Data</th><th>Total</th><th>Situação</th><th>Pagamento</th><th></th></tr></thead>
+                <thead><tr><th>#</th><th>Data</th><th>Total</th><th>Situação</th><th>Pagamento</th><th>Rastreio</th><th></th></tr></thead>
                 <tbody>
                     <?php foreach ($myOrders as $o): ?>
                         <?php $pendingPayment = current(array_filter($o['payments'], fn ($p) => $p['status'] === 'pendente')) ?: null; ?>
@@ -327,11 +327,12 @@ $hasMetrics = isset($metrics);
                                     —
                                 <?php endif; ?>
                             </td>
+                            <td><?= !empty($o['tracking_code']) ? View::e($o['tracking_carrier'] ?: 'Rastreio') : '—' ?></td>
                             <td><a href="/painel/meus-pedidos/<?= (int) $o['id'] ?>">Ver detalhes</a></td>
                         </tr>
                     <?php endforeach; ?>
                     <?php if (!$myOrders): ?>
-                        <tr><td colspan="6">Nenhum pedido ainda.</td></tr>
+                        <tr><td colspan="7">Nenhum pedido ainda.</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>

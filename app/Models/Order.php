@@ -216,14 +216,33 @@ class Order
         $stmt->execute(['status' => $status, 'id' => $id]);
     }
 
-    public static function updateTracking(int $id, ?string $trackingCode, ?string $trackingCarrier): void
+    public static function updateTracking(int $id, ?string $trackingCode, ?string $trackingCarrier, ?string $prazoEntrega = null): void
     {
-        $stmt = Database::connection()->prepare('UPDATE orders SET tracking_code = :code, tracking_carrier = :carrier WHERE id = :id');
+        $stmt = Database::connection()->prepare(
+            'UPDATE orders SET tracking_code = :code, tracking_carrier = :carrier, prazo_entrega = :prazo WHERE id = :id'
+        );
         $stmt->execute([
             'code' => $trackingCode !== '' ? $trackingCode : null,
             'carrier' => $trackingCarrier !== '' ? $trackingCarrier : null,
+            'prazo' => $prazoEntrega !== '' ? $prazoEntrega : null,
             'id' => $id,
         ]);
+    }
+
+    /** So pedidos PAGOS (verificado) -- a fabrica nunca ve cancelado/em_andamento/atendido. So os
+     *  dados necessarios pra despachar (etiqueta de transportadora): nada de valor/comissao/
+     *  vendedor (Fase 28, pedido explicito do usuario). */
+    public static function forFactory(): array
+    {
+        return Database::connection()->query(
+            "SELECT o.id, o.order_date, o.tracking_carrier, o.tracking_code, o.prazo_entrega,
+                    c.name AS client_name, c.whatsapp AS client_whatsapp, c.document AS client_document,
+                    c.zip_code, c.street, c.number, c.complement, c.neighborhood, c.city, c.state,
+                    (SELECT GROUP_CONCAT(p.name, ' (x', oi.quantity, ')' SEPARATOR ', ')
+                     FROM order_items oi JOIN products p ON p.id = oi.product_id WHERE oi.order_id = o.id) AS produtos
+             FROM orders o JOIN clients c ON c.id = o.client_id
+             WHERE o.status = 'verificado' ORDER BY o.order_date DESC"
+        )->fetchAll();
     }
 
     /**
