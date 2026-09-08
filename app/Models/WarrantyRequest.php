@@ -122,6 +122,32 @@ class WarrantyRequest
         return $stmt->fetchAll();
     }
 
+    /** Quantidade de garantias aguardando analise (aberta/em_analise) no escopo -- usado pro
+     *  badge de pendencia no menu (Admin/Gerente), mesmo espirito de User::pendingApprovalCount(). */
+    public static function countPending(?array $sellerIds): int
+    {
+        $sql = "SELECT COUNT(*) FROM warranty_requests w JOIN orders o ON o.id = w.order_id
+                WHERE w.status IN ('aberta', 'em_analise')";
+        $params = [];
+
+        if ($sellerIds !== null) {
+            if (!$sellerIds) {
+                return 0;
+            }
+            $names = [];
+            foreach (array_values($sellerIds) as $i => $sid) {
+                $key = "sid{$i}";
+                $names[] = ":{$key}";
+                $params[$key] = $sid;
+            }
+            $sql .= ' AND o.seller_id IN (' . implode(',', $names) . ')';
+        }
+
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
+        return (int) $stmt->fetchColumn();
+    }
+
     public static function updateStatus(int $id, string $status, ?string $resolutionNote, int $resolvedByUserId): void
     {
         $stmt = Database::connection()->prepare(

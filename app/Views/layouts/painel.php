@@ -38,6 +38,9 @@ $staffRoles = Roles::STAFF;
 $userManagementRoles = Roles::USER_MANAGEMENT;
 $supervisorAssignmentRoles = Roles::SUPERVISOR_ASSIGNMENT;
 $pendingApprovals = in_array($role, Roles::SUPERVISOR_ASSIGNMENT, true) ? \App\Models\User::pendingApprovalCount($user) : 0;
+$pendingWarranties = in_array($role, Roles::SUPERVISOR_ASSIGNMENT, true)
+    ? \App\Models\WarrantyRequest::countPending($role === 'admin' ? null : \App\Models\User::nationalIds((int) $user['id']))
+    : 0;
 $vendasOpen = $anyActive(['/painel/pedidos', '/painel/orcamentos', '/painel/produtos', '/painel/tabela-precos', '/painel/configuracoes/pagamento', '/painel/simulador', '/painel/materiais', '/painel/garantias']);
 $leadsOpen = $anyActive(['/painel/leads', '/painel/clientes', '/painel/configuracoes/roteamento']);
 $financeiroOpen = $anyActive(['/painel/financeiro']);
@@ -88,7 +91,10 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/meu-rank
                         <a href="/painel/pedidos" class="<?= $isActive('/painel/pedidos') ? 'is-active' : '' ?>">Pedidos</a>
                         <a href="/painel/orcamentos" class="<?= $isActive('/painel/orcamentos') ? 'is-active' : '' ?>">Orçamentos</a>
                         <?php if (in_array($role, ['admin', 'gerente'], true)): ?>
-                            <a href="/painel/garantias" class="<?= $isActive('/painel/garantias') ? 'is-active' : '' ?>">Garantias</a>
+                            <a href="/painel/garantias" class="<?= $isActive('/painel/garantias') ? 'is-active' : '' ?>">
+                                Garantias
+                                <?php if ($pendingWarranties > 0): ?><span class="nav-badge"><?= (int) $pendingWarranties ?></span><?php endif; ?>
+                            </a>
                         <?php endif; ?>
                         <?php if ($role === 'admin'): ?>
                             <a href="/painel/produtos" class="<?= $isActive('/painel/produtos') ? 'is-active' : '' ?>">Produtos</a>
