@@ -49,6 +49,68 @@ class Quote
         return $stmt->fetchAll();
     }
 
+    /** Contagem + valor total de orcamentos criados no periodo -- espelha Order::metrics(),
+     *  usado no funil de conversao (Lead -> Orcamento -> Pedido). */
+    public static function metrics(string $from, string $to, ?int $sellerId = null, ?array $sellerIds = null): array
+    {
+        $sql = 'SELECT COUNT(*) AS quote_count, COALESCE(SUM(total_value), 0) AS total_value
+                FROM quotes WHERE quote_date BETWEEN :from AND :to';
+        $params = ['from' => $from, 'to' => $to];
+
+        if ($sellerId !== null) {
+            $sql .= ' AND seller_id = :seller_id';
+            $params['seller_id'] = $sellerId;
+        } elseif ($sellerIds !== null) {
+            if (!$sellerIds) {
+                return ['quote_count' => 0, 'total_value' => 0.0];
+            }
+            $names = [];
+            foreach (array_values($sellerIds) as $i => $sid) {
+                $key = "sid{$i}";
+                $names[] = ":{$key}";
+                $params[$key] = $sid;
+            }
+            $sql .= ' AND seller_id IN (' . implode(',', $names) . ')';
+        }
+
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
+        $row = $stmt->fetch();
+
+        return ['quote_count' => (int) $row['quote_count'], 'total_value' => (float) $row['total_value']];
+    }
+
+    /** Orcamentos criados no periodo, agrupados por vendedor -- quebra do funil de conversao. */
+    public static function funnelBySeller(string $from, string $to, ?array $sellerIds = null): array
+    {
+        $sql = 'SELECT seller_id, COUNT(*) AS quote_count FROM quotes
+                WHERE quote_date BETWEEN :from AND :to AND seller_id IS NOT NULL';
+        $params = ['from' => $from, 'to' => $to];
+
+        if ($sellerIds !== null) {
+            if (!$sellerIds) {
+                return [];
+            }
+            $names = [];
+            foreach (array_values($sellerIds) as $i => $sid) {
+                $key = "sid{$i}";
+                $names[] = ":{$key}";
+                $params[$key] = $sid;
+            }
+            $sql .= ' AND seller_id IN (' . implode(',', $names) . ')';
+        }
+        $sql .= ' GROUP BY seller_id';
+
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
+
+        $result = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $result[(int) $row['seller_id']] = (int) $row['quote_count'];
+        }
+        return $result;
+    }
+
     /** Mesma ideia de Order::countPendingPayment() -- usado no card de alerta do Dashboard. */
     public static function countPendingPayment(array $filters = []): int
     {

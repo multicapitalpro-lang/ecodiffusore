@@ -367,6 +367,37 @@ class Order
         return (float) $stmt->fetchColumn();
     }
 
+    /** Pedidos (nao cancelados) no periodo, agrupados por vendedor -- quebra do funil de conversao. */
+    public static function funnelBySeller(string $from, string $to, ?array $sellerIds = null): array
+    {
+        $sql = "SELECT seller_id, COUNT(*) AS order_count FROM orders
+                WHERE order_date BETWEEN :from AND :to AND status != 'cancelado' AND seller_id IS NOT NULL";
+        $params = ['from' => $from, 'to' => $to];
+
+        if ($sellerIds !== null) {
+            if (!$sellerIds) {
+                return [];
+            }
+            $names = [];
+            foreach (array_values($sellerIds) as $i => $sid) {
+                $key = "sid{$i}";
+                $names[] = ":{$key}";
+                $params[$key] = $sid;
+            }
+            $sql .= ' AND seller_id IN (' . implode(',', $names) . ')';
+        }
+        $sql .= ' GROUP BY seller_id';
+
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
+
+        $result = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $result[(int) $row['seller_id']] = (int) $row['order_count'];
+        }
+        return $result;
+    }
+
     public static function dailySeries(string $from, string $to, ?int $sellerId = null, ?array $sellerIds = null): array
     {
         $sql = 'SELECT order_date, SUM(total_value) AS total

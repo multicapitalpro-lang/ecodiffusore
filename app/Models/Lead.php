@@ -235,4 +235,63 @@ class Lead
     {
         return (int) Database::connection()->query('SELECT COUNT(*) FROM leads')->fetchColumn();
     }
+
+    /** Total de leads criados no periodo -- usado no funil de conversao. $userIds null = sem
+     *  escopo (Admin, conta tudo inclusive sem atribuicao); array = so leads atribuidos a alguem
+     *  do escopo (nao entra "sem atribuicao", que nao pertence a rede de ninguem especifico). */
+    public static function countInRange(string $from, string $to, ?array $userIds = null): int
+    {
+        $sql = 'SELECT COUNT(*) FROM leads WHERE created_at BETWEEN :from AND :to';
+        $params = ['from' => $from . ' 00:00:00', 'to' => $to . ' 23:59:59'];
+
+        if ($userIds !== null) {
+            if (!$userIds) {
+                return 0;
+            }
+            $names = [];
+            foreach (array_values($userIds) as $i => $uid) {
+                $key = "uid{$i}";
+                $names[] = ":{$key}";
+                $params[$key] = $uid;
+            }
+            $sql .= ' AND assigned_to_user_id IN (' . implode(',', $names) . ')';
+        }
+
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
+        return (int) $stmt->fetchColumn();
+    }
+
+    /** Leads criados no periodo, agrupados por quem esta atribuido -- usado na quebra por
+     *  vendedor/licenciado do funil de conversao. Ignora leads sem atribuicao (nao pertencem a
+     *  ninguem especifico da tabela). */
+    public static function funnelBySeller(string $from, string $to, ?array $userIds = null): array
+    {
+        $sql = 'SELECT assigned_to_user_id AS user_id, COUNT(*) AS lead_count
+                FROM leads WHERE created_at BETWEEN :from AND :to AND assigned_to_user_id IS NOT NULL';
+        $params = ['from' => $from . ' 00:00:00', 'to' => $to . ' 23:59:59'];
+
+        if ($userIds !== null) {
+            if (!$userIds) {
+                return [];
+            }
+            $names = [];
+            foreach (array_values($userIds) as $i => $uid) {
+                $key = "uid{$i}";
+                $names[] = ":{$key}";
+                $params[$key] = $uid;
+            }
+            $sql .= ' AND assigned_to_user_id IN (' . implode(',', $names) . ')';
+        }
+        $sql .= ' GROUP BY assigned_to_user_id';
+
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
+
+        $result = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $result[(int) $row['user_id']] = (int) $row['lead_count'];
+        }
+        return $result;
+    }
 }

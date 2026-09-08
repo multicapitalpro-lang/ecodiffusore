@@ -15,11 +15,80 @@ use App\Models\Commission;
 use App\Models\Lead;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Quote;
 use App\Models\SellerActivity;
 use App\Models\User;
 
 class PerformanceController
 {
+    /**
+     * Funil Lead -> Orcamento -> Pedido com taxa de perda em cada etapa, por vendedor/licenciado
+     * -- pedido do usuario pra enxergar onde a rede esta perdendo venda (esfriando no lead ou no
+     * orcamento). Contagem por ETAPA no periodo (nao rastreia o mesmo registro individual pelas 3
+     * tabelas -- simplificacao aceita, mesmo espirito de qualquer funil agregado de CRM).
+     */
+    public function funnel(): void
+    {
+        Auth::requireRole(array_merge(Roles::MANAGEMENT, Roles::NATIONAL_SUPPORT));
+        $user = Auth::user();
+
+        [$from, $to] = DateRange::fromRequest();
+
+        $sellerIds = match ($user['role_slug']) {
+            'admin' => null,
+            'gerente' => User::nationalIds((int) $user['id']),
+            'supervisor' => User::supervisedIds((int) $user['id']),
+            default => User::downlineIds((int) $user['id']), // gestor/licenciado
+        };
+
+        $leadCount = Lead::countInRange($from, $to, $sellerIds);
+        $quoteMetrics = Quote::metrics($from, $to, null, $sellerIds);
+        $orderMetrics = Order::metrics($from, $to, null, $sellerIds);
+
+        $leadBySeller = Lead::funnelBySeller($from, $to, $sellerIds);
+        $quoteBySeller = Quote::funnelBySeller($from, $to, $sellerIds);
+        $orderBySeller = Order::funnelBySeller($from, $to, $sellerIds);
+
+        $allSellerIds = array_unique(array_merge(
+            array_keys($leadBySeller),
+            array_keys($quoteBySeller),
+            array_keys($orderBySeller)
+        ));
+
+        $breakdown = [];
+        foreach ($allSellerIds as $sid) {
+            $u = User::find($sid);
+            if (!$u) {
+                continue;
+            }
+            $l = $leadBySeller[$sid] ?? 0;
+            $q = $quoteBySeller[$sid] ?? 0;
+            $o = $orderBySeller[$sid] ?? 0;
+            $breakdown[] = [
+                'name' => $u['name'],
+                'role_slug' => $u['role_slug'],
+                'lead_count' => $l,
+                'quote_count' => $q,
+                'order_count' => $o,
+                'lead_to_quote_pct' => $l > 0 ? round($q / $l * 100, 1) : null,
+                'quote_to_order_pct' => $q > 0 ? round($o / $q * 100, 1) : null,
+            ];
+        }
+        usort($breakdown, fn ($a, $b) => $b['lead_count'] <=> $a['lead_count']);
+
+        View::render('painel/performance/funnel', [
+            'user' => $user,
+            'from' => $from,
+            'to' => $to,
+            'leadCount' => $leadCount,
+            'quoteCount' => (int) $quoteMetrics['quote_count'],
+            'quoteValue' => (float) $quoteMetrics['total_value'],
+            'orderCount' => (int) $orderMetrics['order_count'],
+            'orderValue' => (float) $orderMetrics['total_value'],
+            'breakdown' => $breakdown,
+        ]);
+    }
+
     public function sellers(): void
     {
         Auth::requireRole(Roles::MANAGEMENT);

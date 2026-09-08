@@ -382,6 +382,22 @@ a { text-decoration: none; color: inherit; }
 /* Barras horizontais (rankings de vendas): sem altura fixa -- o SVG tem sua propria proporcao
    (viewBox varia com a quantidade de itens), o wrapper so deixa a largura ocupar o card. */
 .chart-bar-wrap { width: 100%; }
+
+/* Funil de conversao (Lead -> Orcamento -> Pedido) */
+.funnel-stages { display: flex; align-items: stretch; gap: 10px; flex-wrap: wrap; margin: 18px 0 22px; }
+.funnel-stage {
+    background: #fff; border-radius: 14px; padding: 18px 22px; box-shadow: var(--shadow-md);
+    border: 1px solid var(--border); border-top: 3px solid var(--green);
+    display: flex; flex-direction: column; gap: 4px; min-width: 150px; flex: 1;
+}
+.funnel-stage-label { font-size: .74rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--gray-text); }
+.funnel-stage-value { font-size: 1.7rem; font-family: 'Poppins', sans-serif; color: var(--navy); line-height: 1.1; }
+.funnel-stage-arrow { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: var(--gray-text); font-size: 1.1rem; min-width: 48px; }
+.funnel-stage-pct { font-size: .78rem; font-weight: 700; color: var(--green-dark); }
+@media (max-width: 760px) {
+    .funnel-stages { flex-direction: column; }
+    .funnel-stage-arrow { flex-direction: row; }
+}
 .chart-bar-wrap .chart-bar-svg { width: 100%; height: auto; display: block; }
 .charts-grid-3 { display: grid; gap: 22px; grid-template-columns: 1fr; margin-top: 28px; }
 @media (min-width: 720px) { .charts-grid-3 { grid-template-columns: 1fr 1fr; } }
