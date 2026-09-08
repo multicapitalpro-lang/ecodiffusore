@@ -136,6 +136,10 @@ $router->post('/painel/simulador', [App\Controllers\SimuladorController::class, 
 $router->post('/painel/simulador/pdf', [App\Controllers\SimuladorController::class, 'downloadPdf']);
 
 $router->get('/painel/materiais', [App\Controllers\MaterialController::class, 'index']);
+$router->post('/painel/materiais/scripts', [App\Controllers\MaterialController::class, 'storeScript']);
+$router->post('/painel/materiais/scripts/{id}/excluir', [App\Controllers\MaterialController::class, 'deleteScript']);
+$router->post('/painel/materiais/depoimentos', [App\Controllers\MaterialController::class, 'storeTestimonial']);
+$router->post('/painel/materiais/depoimentos/{id}/excluir', [App\Controllers\MaterialController::class, 'deleteTestimonial']);
 
 // Clientes
 $router->get('/painel/clientes', [App\Controllers\ClientController::class, 'index']);

@@ -13,6 +13,7 @@ use App\Core\View;
 use App\Models\Lead;
 use App\Models\LeadNote;
 use App\Models\LeadStage;
+use App\Models\Quote;
 use App\Models\User;
 
 class LeadController
@@ -40,6 +41,9 @@ class LeadController
         $leadIds = array_column($leads, 'id');
         $pendingFollowUps = LeadNote::pendingFollowUps($leadIds);
         $notesByLead = LeadNote::forLeads($leadIds);
+        $expiringQuotes = Quote::expiringSoonForLeads($leadIds);
+        $terminalStages = ['convertido', 'descartado'];
+
         foreach ($leads as &$l) {
             if ($showLicenciadoBadge) {
                 $l['licenciado_name'] = User::licenciadoNameFor((int) ($l['assigned_to_user_id'] ?? 0));
@@ -50,6 +54,15 @@ class LeadController
             $followUpDate = $pendingFollowUps[(int) $l['id']] ?? null;
             $l['follow_up_due'] = $followUpDate !== null && $followUpDate <= $today ? $followUpDate : null;
             $l['notes'] = $notesByLead[(int) $l['id']] ?? [];
+            $l['quote_expiring'] = $expiringQuotes[(int) $l['id']] ?? null;
+
+            // "Quente": precisa de atencao ja -- retorno combinado vencido/hoje, orcamento
+            // esfriando, ou lead nunca contatado ha 3+ dias. Nunca em estagio terminal (ja
+            // convertido/descartado nao precisa mais de empurrao).
+            $neverContactedStale = empty($l['notes']) && !empty($l['created_at'])
+                && (time() - strtotime($l['created_at'])) >= 3 * 86400;
+            $l['is_urgent'] = !in_array($l['status'], $terminalStages, true)
+                && (!empty($l['follow_up_due']) || !empty($l['quote_expiring']) || $neverContactedStale);
         }
         unset($l);
 

@@ -3,20 +3,29 @@
 namespace App\Controllers;
 
 use App\Core\Auth;
+use App\Core\Csrf;
 use App\Core\Roles;
+use App\Core\Router;
 use App\Core\View;
+use App\Models\SalesScript;
+use App\Models\Testimonial;
 
 /**
  * Central de materiais de venda -- os PDFs (patente/marca/laudo/manual) ja estao publicados no
  * site publico desde a Fase 14 (usados na secao tecnica de /comprar), so nao existiam num lugar
  * facil de achar DENTRO do painel pro Vendedor mandar na hora certa sem sair procurando no site.
  * Lista fixa (nao vem de banco) -- sao sempre os mesmos 4 documentos institucionais.
+ *
+ * Ganhou tambem 2 secoes editaveis (Admin/Gerente mantem, todo STAFF usa): scripts de resposta
+ * pra objecoes comuns e depoimentos reais de clientes -- ferramentas pro vendedor ter argumento
+ * na hora certa sem precisar improvisar.
  */
 class MaterialController
 {
     public function index(): void
     {
         Auth::requireRole(Roles::STAFF);
+        $user = Auth::user();
 
         $materials = [
             [
@@ -46,8 +55,72 @@ class MaterialController
         ];
 
         View::render('painel/materials/index', [
-            'user' => Auth::user(),
+            'user' => $user,
             'materials' => $materials,
+            'scripts' => SalesScript::all(),
+            'testimonials' => Testimonial::all(),
+            'canManage' => in_array($user['role_slug'], Roles::SUPERVISOR_ASSIGNMENT, true),
         ]);
+    }
+
+    public function storeScript(): void
+    {
+        Auth::requireRole(Roles::SUPERVISOR_ASSIGNMENT);
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            Router::redirect('/painel/materiais?erro=1');
+        }
+
+        $title = trim($_POST['title'] ?? '');
+        $text = trim($_POST['response_text'] ?? '');
+        if ($title === '' || $text === '') {
+            Router::redirect('/painel/materiais?erro=1');
+        }
+
+        SalesScript::create($title, $text);
+        Router::redirect('/painel/materiais?sucesso=1');
+    }
+
+    public function deleteScript(string $id): void
+    {
+        Auth::requireRole(Roles::SUPERVISOR_ASSIGNMENT);
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            Router::redirect('/painel/materiais?erro=1');
+        }
+
+        SalesScript::delete((int) $id);
+        Router::redirect('/painel/materiais?sucesso=1');
+    }
+
+    public function storeTestimonial(): void
+    {
+        Auth::requireRole(Roles::SUPERVISOR_ASSIGNMENT);
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            Router::redirect('/painel/materiais?erro=1');
+        }
+
+        $name = trim($_POST['client_name'] ?? '');
+        $text = trim($_POST['testimonial_text'] ?? '');
+        if ($name === '' || $text === '') {
+            Router::redirect('/painel/materiais?erro=1');
+        }
+
+        Testimonial::create([
+            'client_name' => $name,
+            'city' => trim($_POST['city'] ?? ''),
+            'vehicle' => trim($_POST['vehicle'] ?? ''),
+            'testimonial_text' => $text,
+        ]);
+        Router::redirect('/painel/materiais?sucesso=1');
+    }
+
+    public function deleteTestimonial(string $id): void
+    {
+        Auth::requireRole(Roles::SUPERVISOR_ASSIGNMENT);
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            Router::redirect('/painel/materiais?erro=1');
+        }
+
+        Testimonial::delete((int) $id);
+        Router::redirect('/painel/materiais?sucesso=1');
     }
 }

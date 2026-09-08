@@ -81,7 +81,7 @@ $vehicleFieldLabels = [
                          data-lead-vehicle="<?= View::e(json_encode($vehicleInfo, JSON_UNESCAPED_UNICODE)) ?>"
                          data-lead-notes="<?= View::e(json_encode($lead['notes'], JSON_UNESCAPED_UNICODE)) ?>">
                         <div class="kanban-card-top">
-                            <strong><?= View::e($lead['name']) ?></strong>
+                            <strong><?= !empty($lead['is_urgent']) ? '🔥 ' : '' ?><?= View::e($lead['name']) ?></strong>
                             <button type="button" class="icon-button-danger" data-delete-lead="<?= (int) $lead['id'] ?>" title="Excluir lead">🗑</button>
                         </div>
                         <?php
@@ -135,6 +135,11 @@ $vehicleFieldLabels = [
                         <?php if (!empty($lead['follow_up_due'])): ?>
                             <div class="lead-expiration-warning lead-expiration-warning-early">
                                 🔔 Retorno combinado pra <?= View::e(date('d/m', strtotime($lead['follow_up_due']))) ?>
+                            </div>
+                        <?php endif; ?>
+                        <?php if (!empty($lead['quote_expiring'])): ?>
+                            <div class="lead-expiration-warning">
+                                💰 Orçamento vence em <?= View::e(date('d/m', strtotime($lead['quote_expiring']))) ?>
                             </div>
                         <?php endif; ?>
                     </div>

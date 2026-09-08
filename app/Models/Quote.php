@@ -70,6 +70,31 @@ class Quote
         return $count;
     }
 
+    /** Orcamentos em aberto vencendo em ate $days dias, pra cada lead -- usado no Kanban de Leads
+     *  pra destacar quem tem orcamento esfriando (Fase: priorizacao de leads). */
+    public static function expiringSoonForLeads(array $leadIds, int $days = 2): array
+    {
+        $leadIds = array_values(array_unique(array_map('intval', $leadIds)));
+        if (!$leadIds) {
+            return [];
+        }
+
+        $placeholders = implode(',', array_fill(0, count($leadIds), '?'));
+        $stmt = Database::connection()->prepare(
+            "SELECT lead_id, MIN(valid_until) AS valid_until FROM quotes
+             WHERE lead_id IN ({$placeholders}) AND status = 'aberto' AND valid_until IS NOT NULL
+               AND valid_until >= CURDATE() AND valid_until <= DATE_ADD(CURDATE(), INTERVAL ? DAY)
+             GROUP BY lead_id"
+        );
+        $stmt->execute([...$leadIds, $days]);
+
+        $result = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $result[(int) $row['lead_id']] = $row['valid_until'];
+        }
+        return $result;
+    }
+
     public static function find(int $id): ?array
     {
         $stmt = Database::connection()->prepare(
