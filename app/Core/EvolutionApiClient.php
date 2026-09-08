@@ -36,6 +36,10 @@ class EvolutionApiClient
         return $this->request('DELETE', "/instance/logout/{$this->instance}");
     }
 
+    /** Lanca RuntimeException se o envio falhar (numero invalido/nao existe no WhatsApp, instancia
+     *  desconectada, etc) -- antes essa falha passava batido (a API devolve HTTP 400 mas o corpo
+     *  json ainda decodifica normal, sem excecao). Quem chama (Notifier::sendWhatsApp) ja captura
+     *  e loga, entao isso so melhora a visibilidade do problema, nao muda o comportamento de fora. */
     public function sendText(string $to, string $text): array
     {
         $digits = preg_replace('/\D/', '', $to);
@@ -43,11 +47,17 @@ class EvolutionApiClient
             $digits = '55' . $digits;
         }
 
-        return $this->request('POST', "/message/sendText/{$this->instance}", [
+        $result = $this->request('POST', "/message/sendText/{$this->instance}", [
             'number' => $digits,
             'text' => $text,
             'linkPreview' => false,
         ]);
+
+        if (empty($result['key']['id'])) {
+            throw new \RuntimeException('Falha ao enviar WhatsApp pra ' . $digits . ': ' . json_encode($result));
+        }
+
+        return $result;
     }
 
     private function request(string $method, string $path, array $payload = []): array
