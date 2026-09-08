@@ -91,6 +91,7 @@ $situation = $order['payment_situation'] ?? ['label' => '—', 'badge' => 'novo'
 $allowGenerateCharge = $order['status'] !== 'cancelado' && $order['status'] !== 'verificado' && !$isViewOnly;
 if ($payments || $allowGenerateCharge):
     $chargeAction = "/painel/pedidos/{$order['id']}/cobranca";
+    $basePrice = (float) $order['total_value'];
     include __DIR__ . '/../_payments_section.php';
 endif;
 ?>

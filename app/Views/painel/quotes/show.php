@@ -93,6 +93,7 @@ $situation = $quote['payment_situation'] ?? ['label' => '—', 'badge' => 'novo'
 $allowGenerateCharge = in_array($quote['status'], ['aberto', 'aprovado'], true) && !$isViewOnly;
 if ($payments || $allowGenerateCharge):
     $chargeAction = "/painel/orcamentos/{$quote['id']}/cobranca";
+    $basePrice = (float) $quote['total_value'];
     include __DIR__ . '/../_payments_section.php';
 endif;
 ?>

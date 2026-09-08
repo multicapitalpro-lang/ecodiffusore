@@ -402,18 +402,53 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Form de "Gerar cobranca" (Pedido/Orcamento): so mostra o seletor de parcelas quando o
         // meio escolhido e' Cartao de credito -- Pix/Boleto sao sempre a vista, sem parcela.
-        // Bindavel pelo mesmo motivo das outras (form carrega via fetch no modal de detalhe).
+        // Tambem calcula ao vivo (so pra EXIBICAO, o valor real sempre e' recalculado no servidor
+        // por App\Core\CardPricing) quanto fica o total/parcela em cada opcao -- pro vendedor
+        // mostrar pro cliente antes de gerar a cobranca de verdade. Bindavel pelo mesmo motivo das
+        // outras (form carrega via fetch no modal de detalhe).
+        function round2(v) { return Math.round((v + Number.EPSILON) * 100) / 100; }
+        function fmtBRL(v) { return v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
         function bindChargeForms(root) {
             root.querySelectorAll('.charge-form').forEach(function (form) {
                 var billingSelect = form.querySelector('.charge-billing-type');
                 var installmentsSelect = form.querySelector('.charge-installments');
+                var preview = form.querySelector('.charge-preview');
                 if (!billingSelect || !installmentsSelect) return;
+
+                function updatePreview() {
+                    if (!preview) return;
+                    var base = parseFloat(form.dataset.basePrice || '0');
+
+                    if (billingSelect.value !== 'CREDIT_CARD') {
+                        preview.textContent = 'Valor cobrado: R$ ' + fmtBRL(base);
+                        return;
+                    }
+
+                    var n = parseInt(installmentsSelect.value || '1', 10);
+                    var feeAvista = parseFloat(form.dataset.feeAvista) / 100;
+                    var feeParcelado = parseFloat(form.dataset.feeParcelado) / 100;
+                    var fixedFee = parseFloat(form.dataset.fixedFee);
+                    var antecipAvista = parseFloat(form.dataset.antecipAvista) / 100;
+                    var antecipParcelado = parseFloat(form.dataset.antecipParcelado) / 100;
+
+                    var feePct = n <= 1
+                        ? (feeAvista + antecipAvista)
+                        : (feeParcelado + antecipParcelado * ((n + 1) / 2));
+
+                    var charge = round2((base + fixedFee) / (1 - feePct));
+                    var installmentValue = round2(charge / n);
+
+                    preview.textContent = n + 'x de R$ ' + fmtBRL(installmentValue) + ' — total R$ ' + fmtBRL(charge);
+                }
 
                 function update() {
                     installmentsSelect.style.display = billingSelect.value === 'CREDIT_CARD' ? '' : 'none';
+                    updatePreview();
                 }
 
                 billingSelect.addEventListener('change', update);
+                installmentsSelect.addEventListener('change', updatePreview);
                 update();
             });
         }

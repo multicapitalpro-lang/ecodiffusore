@@ -2,10 +2,14 @@
 use App\Core\CardPricing;
 use App\Core\Csrf;
 use App\Core\View;
+use App\Models\PaymentSettings;
 /** @var array $payments */
 /** @var string $chargeAction */
+/** @var float $basePrice */
 $allowGenerateCharge = $allowGenerateCharge ?? true;
 $maxInstallments = CardPricing::maxInstallments();
+$paymentSettings = PaymentSettings::current();
+$basePrice = $basePrice ?? 0.0;
 $methodLabels = ['PIX' => 'Pix', 'BOLETO' => 'Boleto', 'CREDIT_CARD' => 'Cartão'];
 $statusLabels = ['pendente' => 'Pendente', 'pago' => 'Pago', 'vencido' => 'Vencido', 'cancelado' => 'Cancelado', 'reembolsado' => 'Reembolsado'];
 ?>
@@ -47,7 +51,13 @@ $statusLabels = ['pendente' => 'Pendente', 'pago' => 'Pago', 'vencido' => 'Venci
 <?php endif; ?>
 
 <?php if ($allowGenerateCharge): ?>
-    <form action="<?= View::e($chargeAction) ?>" method="post" class="inline-form charge-form" style="margin-top:12px;">
+    <form action="<?= View::e($chargeAction) ?>" method="post" class="inline-form charge-form" style="margin-top:12px;"
+        data-base-price="<?= $basePrice ?>"
+        data-fee-avista="<?= $paymentSettings['card_fee_avista_pct'] ?>"
+        data-fee-parcelado="<?= $paymentSettings['card_fee_parcelado_pct'] ?>"
+        data-fixed-fee="<?= $paymentSettings['card_fixed_fee'] ?>"
+        data-antecip-avista="<?= $paymentSettings['antecipacao_avista_mensal_pct'] ?>"
+        data-antecip-parcelado="<?= $paymentSettings['antecipacao_parcelado_mensal_pct'] ?>">
         <?= Csrf::field() ?>
         <select name="billing_type" class="charge-billing-type">
             <option value="PIX">Pix</option>
@@ -59,7 +69,8 @@ $statusLabels = ['pendente' => 'Pendente', 'pago' => 'Pago', 'vencido' => 'Venci
                 <option value="<?= $n ?>"><?= $n ?>x<?= $n === 1 ? ' (à vista)' : '' ?></option>
             <?php endfor; ?>
         </select>
+        <span class="charge-preview hint-text" style="font-weight:600"></span>
         <button type="submit" class="btn btn-outline">Gerar cobrança</button>
     </form>
-    <p class="hint-text">O cliente precisa ter CPF/CNPJ cadastrado para gerar a cobrança. No cartão, a taxa de processamento e de antecipação já entram no valor cobrado — o cliente só vê o total/parcela final.</p>
+    <p class="hint-text">O cliente precisa ter CPF/CNPJ cadastrado para gerar a cobrança. No cartão, a taxa de processamento e de antecipação já entram no valor cobrado — o cliente só vê o total/parcela final. Use a prévia acima pra mostrar pro cliente antes de gerar.</p>
 <?php endif; ?>
