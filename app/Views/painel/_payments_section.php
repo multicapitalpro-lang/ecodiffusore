@@ -2,16 +2,28 @@
 use App\Core\CardPricing;
 use App\Core\Csrf;
 use App\Core\View;
-use App\Models\PaymentSettings;
 /** @var array $payments */
 /** @var string $chargeAction */
 /** @var float $basePrice */
 $allowGenerateCharge = $allowGenerateCharge ?? true;
 $maxInstallments = CardPricing::maxInstallments();
-$paymentSettings = PaymentSettings::current();
 $basePrice = $basePrice ?? 0.0;
 $methodLabels = ['PIX' => 'Pix', 'BOLETO' => 'Boleto', 'CREDIT_CARD' => 'Cartão'];
 $statusLabels = ['pendente' => 'Pendente', 'pago' => 'Pago', 'vencido' => 'Vencido', 'cancelado' => 'Cancelado', 'reembolsado' => 'Reembolsado'];
+
+// Mesma tabela ja usada em Proposta Facil (proposta/resultado.php) -- computada no servidor via
+// App\Core\CardPricing, nunca duplicada em JS. Sem correlacao de economia de diesel aqui (so
+// Proposta Facil tem os dados de km/litro/preco do diesel informados pelo cliente).
+$installmentsTable = [];
+if ($basePrice > 0) {
+    for ($n = 1; $n <= $maxInstallments; $n++) {
+        $installmentsTable[] = [
+            'n' => $n,
+            'total' => CardPricing::chargeAmount($basePrice, $n),
+            'parcela' => CardPricing::installmentValue($basePrice, $n),
+        ];
+    }
+}
 ?>
 <h3 class="section-title">Cobrança</h3>
 
@@ -51,13 +63,7 @@ $statusLabels = ['pendente' => 'Pendente', 'pago' => 'Pago', 'vencido' => 'Venci
 <?php endif; ?>
 
 <?php if ($allowGenerateCharge): ?>
-    <form action="<?= View::e($chargeAction) ?>" method="post" class="inline-form charge-form" style="margin-top:12px;"
-        data-base-price="<?= $basePrice ?>"
-        data-fee-avista="<?= $paymentSettings['card_fee_avista_pct'] ?>"
-        data-fee-parcelado="<?= $paymentSettings['card_fee_parcelado_pct'] ?>"
-        data-fixed-fee="<?= $paymentSettings['card_fixed_fee'] ?>"
-        data-antecip-avista="<?= $paymentSettings['antecipacao_avista_mensal_pct'] ?>"
-        data-antecip-parcelado="<?= $paymentSettings['antecipacao_parcelado_mensal_pct'] ?>">
+    <form action="<?= View::e($chargeAction) ?>" method="post" class="inline-form charge-form" style="margin-top:12px;">
         <?= Csrf::field() ?>
         <select name="billing_type" class="charge-billing-type">
             <option value="PIX">Pix</option>
@@ -69,8 +75,22 @@ $statusLabels = ['pendente' => 'Pendente', 'pago' => 'Pago', 'vencido' => 'Venci
                 <option value="<?= $n ?>"><?= $n ?>x<?= $n === 1 ? ' (à vista)' : '' ?></option>
             <?php endfor; ?>
         </select>
-        <span class="charge-preview hint-text" style="font-weight:600"></span>
         <button type="submit" class="btn btn-outline">Gerar cobrança</button>
     </form>
-    <p class="hint-text">O cliente precisa ter CPF/CNPJ cadastrado para gerar a cobrança. No cartão, a taxa de processamento e de antecipação já entram no valor cobrado — o cliente só vê o total/parcela final. Use a prévia acima pra mostrar pro cliente antes de gerar.</p>
+
+    <?php if ($installmentsTable): ?>
+        <div class="proposta-list charge-preview-table" hidden style="margin-top:12px">
+            <?php foreach ($installmentsTable as $row): ?>
+                <div class="proposta-list-row">
+                    <span class="proposta-list-n"><?= $row['n'] ?>x</span>
+                    <span class="proposta-list-main">
+                        <strong>R$ <?= number_format($row['parcela'], 2, ',', '.') ?></strong>
+                        <small>Total R$ <?= number_format($row['total'], 2, ',', '.') ?></small>
+                    </span>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
+
+    <p class="hint-text">O cliente precisa ter CPF/CNPJ cadastrado para gerar a cobrança. No cartão, a taxa de processamento e de antecipação já entram no valor cobrado — o cliente só vê o total/parcela final. Escolha "Cartão de crédito" pra ver a tabela de parcelas antes de gerar.</p>
 <?php endif; ?>
