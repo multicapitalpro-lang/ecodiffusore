@@ -84,6 +84,40 @@ class Order
         return $count;
     }
 
+    /** Busca por numero do pedido, nome do cliente ou placa do veiculo -- usado na busca global
+     *  do painel. $sellerIds null = sem escopo (Admin). */
+    public static function search(string $term, ?array $sellerIds = null): array
+    {
+        $termCondition = 'c.name LIKE :term OR o.vehicle_plate LIKE :term';
+        $params = ['term' => '%' . $term . '%'];
+        if (ctype_digit($term)) {
+            $termCondition .= ' OR o.id = :order_id';
+            $params['order_id'] = (int) $term;
+        }
+        $conditions = ["({$termCondition})"];
+
+        if ($sellerIds !== null) {
+            if (!$sellerIds) {
+                return [];
+            }
+            $names = [];
+            foreach (array_values($sellerIds) as $i => $sid) {
+                $key = "sid{$i}";
+                $names[] = ":{$key}";
+                $params[$key] = $sid;
+            }
+            $conditions[] = 'o.seller_id IN (' . implode(',', $names) . ')';
+        }
+
+        $sql = 'SELECT o.*, c.name AS client_name, u.name AS seller_name
+                FROM orders o JOIN clients c ON c.id = o.client_id LEFT JOIN users u ON u.id = o.seller_id
+                WHERE ' . implode(' AND ', $conditions) . ' ORDER BY o.order_date DESC LIMIT 20';
+
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
     public static function find(int $id): ?array
     {
         $stmt = Database::connection()->prepare(

@@ -157,6 +157,21 @@ a { text-decoration: none; color: inherit; }
 .painel-logout:hover { background: rgba(255,255,255,.1); }
 
 /* Botao de destaque no header, so pro Vendedor/Licenciado -- "chamar atencao" pedido pelo usuario */
+.painel-search { display: flex; align-items: center; }
+.painel-search input {
+    background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.25); color: #fff;
+    border-radius: 999px 0 0 999px; padding: 7px 14px; font-size: .82rem; width: 210px;
+}
+.painel-search input::placeholder { color: rgba(255,255,255,.6); }
+.painel-search input:focus { outline: none; background: rgba(255,255,255,.2); }
+.painel-search button {
+    background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.25); border-left: none;
+    color: #fff; border-radius: 0 999px 999px 0; padding: 7px 12px; cursor: pointer; font-size: .9rem;
+}
+.painel-search button:hover { background: rgba(255,255,255,.22); }
+@media (max-width: 900px) { .painel-search input { width: 130px; } }
+@media (max-width: 640px) { .painel-search { display: none; } }
+
 .btn-proposta-facil {
     background: var(--green); color: var(--navy); font-weight: 800; font-size: .84rem;
     padding: 9px 18px; border-radius: 999px; white-space: nowrap;

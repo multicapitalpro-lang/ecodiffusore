@@ -29,6 +29,7 @@ $icons = [
     'percent' => '<circle cx="6" cy="6" r="2"/><circle cx="14" cy="14" r="2"/><path d="M15 5 5 15"/>',
     'gear' => '<circle cx="10" cy="10" r="2.6"/><path d="M10 3.5v2M10 14.5v2M16.5 10h-2M5.5 10h-2M14.6 5.4l-1.4 1.4M6.8 13.2l-1.4 1.4M14.6 14.6l-1.4-1.4M6.8 6.8 5.4 5.4"/>',
     'pin' => '<path d="M10 2.2c-3 0-5.3 2.3-5.3 5.2 0 3.9 5.3 10.4 5.3 10.4s5.3-6.5 5.3-10.4c0-2.9-2.3-5.2-5.3-5.2Z"/><circle cx="10" cy="7.4" r="1.9"/>',
+    'search' => '<circle cx="8.5" cy="8.5" r="5"/><path d="m16 16-3.6-3.6"/>',
 ];
 $icon = function (string $name) use ($icons) {
     return '<svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' . ($icons[$name] ?? '') . '</svg>';
@@ -74,6 +75,7 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/desempen
             <?php endif; ?>
 
             <?php if (in_array($role, $staffRoles, true)): ?>
+                <a href="/painel/busca" class="painel-search-navlink <?= $isActive('/painel/busca') ? 'is-active' : '' ?>"><?= $icon('search') ?> Busca</a>
                 <details class="nav-group" <?= $leadsOpen ? 'open' : '' ?>>
                     <summary><?= $icon('pin') ?> Leads</summary>
                     <div class="nav-subitems">
@@ -196,6 +198,10 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/desempen
                 <span>Olá, <strong><?= View::e($user['name'] ?? '') ?></strong> — <?= View::e($roleLabels[$role] ?? $role) ?></span>
             </span>
             <?php if (in_array($role, $staffRoles, true)): ?>
+                <form method="get" action="/painel/busca" class="painel-search">
+                    <input type="text" name="q" placeholder="Buscar lead, cliente, pedido..." aria-label="Busca" value="<?= $isActive('/painel/busca') ? View::e($_GET['q'] ?? '') : '' ?>">
+                    <button type="submit" aria-label="Buscar">🔍</button>
+                </form>
                 <button type="button" id="btn-proposta-facil" class="btn-proposta-facil">⚡ Proposta Fácil</button>
             <?php endif; ?>
             <a class="painel-logout" href="/painel/logout">Sair</a>

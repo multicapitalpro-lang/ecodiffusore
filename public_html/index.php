@@ -232,6 +232,9 @@ $router->post('/webhooks/asaas', [App\Controllers\PaymentController::class, 'web
 // Webhook ClickSign (publico)
 $router->post('/webhooks/clicksign', [App\Controllers\ClickSignWebhookController::class, 'clicksign']);
 
+// Busca global
+$router->get('/painel/busca', [App\Controllers\SearchController::class, 'index']);
+
 // Desempenho
 $router->get('/painel/desempenho/vendedores', [App\Controllers\PerformanceController::class, 'sellers']);
 $router->get('/painel/desempenho/funil', [App\Controllers\PerformanceController::class, 'funnel']);

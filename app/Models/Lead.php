@@ -99,6 +99,47 @@ class Lead
         ]);
     }
 
+    /** Busca por nome, WhatsApp ou placa do veiculo -- usado na busca global do painel. Mesmo
+     *  formato de escopo de forScope() ($userIds null = sem escopo/Admin). */
+    public static function search(string $term, ?array $userIds = null, bool $includeUnassigned = false): array
+    {
+        $digits = preg_replace('/\D/', '', $term);
+        $termCondition = 'l.name LIKE :term OR l.vehicle_plate LIKE :term';
+        $params = ['term' => '%' . $term . '%'];
+        if ($digits !== '') {
+            $termCondition .= " OR REGEXP_REPLACE(l.whatsapp, '[^0-9]', '') LIKE :digits";
+            $params['digits'] = '%' . $digits . '%';
+        }
+        $conditions = ["({$termCondition})"];
+
+        if ($userIds !== null) {
+            $scopeParts = [];
+            if ($userIds) {
+                $names = [];
+                foreach (array_values($userIds) as $i => $uid) {
+                    $key = "uid{$i}";
+                    $names[] = ":{$key}";
+                    $params[$key] = $uid;
+                }
+                $scopeParts[] = 'l.assigned_to_user_id IN (' . implode(',', $names) . ')';
+            }
+            if ($includeUnassigned) {
+                $scopeParts[] = 'l.assigned_to_user_id IS NULL';
+            }
+            if (!$scopeParts) {
+                return [];
+            }
+            $conditions[] = '(' . implode(' OR ', $scopeParts) . ')';
+        }
+
+        $sql = 'SELECT l.*, u.name AS assigned_name FROM leads l LEFT JOIN users u ON u.id = l.assigned_to_user_id
+                WHERE ' . implode(' AND ', $conditions) . ' ORDER BY l.created_at DESC LIMIT 20';
+
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
     public static function find(int $id): ?array
     {
         $stmt = Database::connection()->prepare('SELECT * FROM leads WHERE id = :id');

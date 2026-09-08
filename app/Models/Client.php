@@ -40,6 +40,41 @@ class Client
         return $stmt->fetchAll();
     }
 
+    /** Busca por nome, WhatsApp ou documento (CPF/CNPJ, so digitos em ambos os lados da
+     *  comparacao) -- usado na busca global do painel. Mesmo escopo de seller_id/seller_ids de
+     *  all(), sem include_unassigned (busca global nao precisa disso). */
+    public static function search(string $term, array $filters = []): array
+    {
+        $digits = preg_replace('/\D/', '', $term);
+        $termCondition = 'c.name LIKE :term';
+        $params = ['term' => '%' . $term . '%'];
+        if ($digits !== '') {
+            $termCondition .= " OR REGEXP_REPLACE(c.whatsapp, '[^0-9]', '') LIKE :digits OR REGEXP_REPLACE(c.document, '[^0-9]', '') LIKE :digits";
+            $params['digits'] = '%' . $digits . '%';
+        }
+        $conditions = ["({$termCondition})"];
+
+        if (!empty($filters['seller_id'])) {
+            $conditions[] = 'c.seller_id = :seller_id';
+            $params['seller_id'] = $filters['seller_id'];
+        } elseif (!empty($filters['seller_ids'])) {
+            $names = [];
+            foreach (array_values($filters['seller_ids']) as $i => $sid) {
+                $key = "sid{$i}";
+                $names[] = ":{$key}";
+                $params[$key] = $sid;
+            }
+            $conditions[] = 'c.seller_id IN (' . implode(',', $names) . ')';
+        }
+
+        $sql = 'SELECT c.*, u.name AS seller_name FROM clients c LEFT JOIN users u ON u.id = c.seller_id
+                WHERE ' . implode(' AND ', $conditions) . ' ORDER BY c.name LIMIT 20';
+
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
     public static function find(int $id): ?array
     {
         $stmt = Database::connection()->prepare(
