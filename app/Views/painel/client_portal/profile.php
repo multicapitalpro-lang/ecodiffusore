@@ -12,15 +12,20 @@ $errors = $errors ?? [];
     <p class="form-msg form-msg-ok">Dados atualizados com sucesso.</p>
 <?php endif; ?>
 
-<label>Nome</label>
-<input type="text" value="<?= View::e($client['name']) ?>" disabled>
-
-<label>E-mail</label>
-<input type="email" value="<?= View::e($client['email'] ?? '') ?>" disabled>
-<p class="hint-text" style="margin-top:0">Pra alterar nome ou e-mail, fale com quem te vendeu o produto.</p>
-
-<form method="post" action="/painel/meus-dados">
+<form method="post" action="/painel/meus-dados" class="panel-form panel-form-wide">
     <?= Csrf::field() ?>
+
+    <div class="form-grid-2">
+        <div>
+            <label>Nome</label>
+            <input type="text" value="<?= View::e($client['name']) ?>" disabled>
+        </div>
+        <div>
+            <label>E-mail</label>
+            <input type="email" value="<?= View::e($client['email'] ?? '') ?>" disabled>
+        </div>
+    </div>
+    <p class="hint-text" style="margin-top:0">Pra alterar nome ou e-mail, fale com quem te vendeu o produto.</p>
 
     <div class="form-grid-2">
         <div>
@@ -37,12 +42,17 @@ $errors = $errors ?? [];
         </div>
     </div>
 
-    <label for="state_registration">Inscrição Estadual</label>
-    <input type="text" id="state_registration" name="state_registration" value="<?= View::e($client['state_registration'] ?? '') ?>" placeholder="Isento, se não houver">
-
-    <label for="whatsapp">WhatsApp</label>
-    <input type="text" id="whatsapp" name="whatsapp" value="<?= View::e($client['whatsapp'] ?? '') ?>" required>
-    <p class="field-error" data-error-for="whatsapp"><?= View::e($errors['whatsapp'] ?? '') ?></p>
+    <div class="form-grid-2">
+        <div>
+            <label for="state_registration">Inscrição Estadual</label>
+            <input type="text" id="state_registration" name="state_registration" value="<?= View::e($client['state_registration'] ?? '') ?>" placeholder="Isento, se não houver">
+        </div>
+        <div>
+            <label for="whatsapp">WhatsApp</label>
+            <input type="text" id="whatsapp" name="whatsapp" value="<?= View::e($client['whatsapp'] ?? '') ?>" required>
+            <p class="field-error" data-error-for="whatsapp"><?= View::e($errors['whatsapp'] ?? '') ?></p>
+        </div>
+    </div>
 
     <h3 class="section-title">Endereço de entrega</h3>
     <p class="hint-text" style="margin-top:0">Preencha completo — é a partir daqui que o rastreio da sua entrega é enviado.</p>

@@ -79,7 +79,7 @@ class ClientPortalController
 
         // CNH + documento do veiculo + 3 fotos, todos obrigatorios (pedido explicito do usuario,
         // Fase 27c) -- pra dar suporte de verdade a uma solicitacao de garantia.
-        $required = ['cnh' => 'cnh', 'documento_veiculo' => 'documento_veiculo', 'foto1' => 'foto', 'foto2' => 'foto', 'foto3' => 'foto'];
+        $required = ['cnh' => 'cnh', 'documento_veiculo' => 'documento_veiculo', 'foto1' => 'foto', 'foto2' => 'foto', 'foto3' => 'foto', 'telemetria' => 'telemetria'];
         foreach (array_keys($required) as $field) {
             if (empty($_FILES[$field]['name'])) {
                 Router::redirect("/painel/minhas-garantias/nova?order_id={$orderId}&erro=3");

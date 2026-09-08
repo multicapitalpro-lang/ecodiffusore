@@ -7,12 +7,13 @@ use App\Core\Database;
 class WarrantyRequest
 {
     /** Tipos de documento exigidos pra abrir uma garantia (Fase 27c) -- 'foto' pode repetir ate 3x. */
-    public const ATTACHMENT_TYPES = ['cnh', 'documento_veiculo', 'foto'];
+    public const ATTACHMENT_TYPES = ['cnh', 'documento_veiculo', 'foto', 'telemetria'];
 
     public const ATTACHMENT_LABELS = [
         'cnh' => 'CNH',
         'documento_veiculo' => 'Documento do veículo',
         'foto' => 'Foto do veículo',
+        'telemetria' => 'Telemetria/Relatório de consumo',
     ];
 
     public static function create(int $orderId, int $clientId, string $description): int
