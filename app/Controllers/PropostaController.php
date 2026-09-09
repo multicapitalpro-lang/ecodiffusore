@@ -24,8 +24,9 @@ use App\Models\Quote;
  * CardPricing) já usado no orçamento por placa público (PublicController::submitOrcamento).
  * Diferença chave: aqui o vendedor logado É o seller_id (nunca GeoMatch -- é o prospect dele, não um
  * palpite geográfico), e o resultado fica disponível também em PDF/WhatsApp pro vendedor compartilhar.
- * Preço (Fase 24): vem da tabela de preco por quantidade (PricingTier::forQuantity), nao mais de
- * 2 opcoes fixas por produto -- o Produto so entra pra identificar nome/id pro item do Orcamento.
+ * Preço (Fase 31): negociado livremente pelo Vendedor/Licenciado (piso minimo validado contra
+ * PricingTier::forPrice(), que tambem define a % de comissao do Licenciado pra essa venda) -- nao
+ * depende mais da quantidade. O Produto so entra pra identificar nome/id pro item do Orcamento.
  * Acesso: todo STAFF ve o botao no header, mas Gerente/Supervisor sao papel de suporte nacional
  * (Roles::NATIONAL_SUPPORT) e so visualizam -- mesmo tratamento view-only ja usado em
  * OrderController/QuoteController, nunca criam Pedido/Orcamento de verdade.
@@ -98,8 +99,11 @@ class PropostaController
         $kmLitro = self::parseBrNumber($_POST['km_litro']);
         $precoDiesel = self::parseBrNumber($_POST['preco_diesel']);
 
-        $tier = PricingTier::forQuantity($qty);
-        $unitPrice = $tier ? (float) $tier['unit_price'] : 0.0;
+        // Fase 31: preco unitario nao vem mais de tabela automatica por quantidade -- e' negociado
+        // livremente pelo Vendedor/Licenciado (validate() ja bloqueou abaixo do piso da faixa mais
+        // baixa). A faixa que cobre esse preco so define a % de comissao do Licenciado (ver
+        // Commission::createCascadeForOrder), nao mexe no preco em si.
+        $unitPrice = self::parseBrNumber($_POST['unit_price']);
         $totalPrice = $unitPrice * $qty;
 
         $product = Product::findByBrandKeyword($brand) ?? Product::cheapest();
@@ -134,8 +138,9 @@ class PropostaController
 
         $sellerId = (int) $user['id'];
         $quoteId = null;
+        $band = PricingTier::forPrice($unitPrice);
 
-        if ($product && $tier) {
+        if ($product && $unitPrice > 0) {
             $leadId = Lead::create([
                 'name' => $name,
                 'whatsapp' => $whatsapp,
@@ -203,6 +208,7 @@ class PropostaController
             'preco_diesel' => $precoDiesel,
             'quantidade' => $qty,
             'unit_price' => $unitPrice ?: null,
+            'licenciado_commission_pct' => $band['licenciado_commission_pct'] ?? null,
             'product_name' => $product['name'] ?? null,
             'product_price' => $totalPrice ?: null,
             'payback' => $payback,
@@ -345,6 +351,16 @@ class PropostaController
         if (!is_numeric($post['quantidade'] ?? '') || (int) $post['quantidade'] < 1) {
             $errors['quantidade'] = 'Informe pelo menos 1 placa.';
         }
+
+        $unitPrice = self::parseBrNumber($post['unit_price'] ?? '');
+        if ($unitPrice <= 0) {
+            $errors['unit_price'] = 'Informe o preço negociado por unidade.';
+        } elseif (!PricingTier::forPrice($unitPrice)) {
+            $floorTier = PricingTier::all()[0] ?? null;
+            $floor = $floorTier ? number_format((float) $floorTier['min_price'], 2, ',', '.') : '0,00';
+            $errors['unit_price'] = "Preço abaixo do mínimo negociável (R$ {$floor}).";
+        }
+
         if (self::parseBrNumber($post['km_mensal'] ?? '') <= 0) {
             $errors['km_mensal'] = 'Informe um valor válido.';
         }

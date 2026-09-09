@@ -3,13 +3,18 @@ use App\Core\View;
 /** @var array $values */
 /** @var array $errors */
 ?>
-<label for="min_qty">A partir de quantas placas (no mesmo pedido)</label>
-<input type="number" id="min_qty" name="min_qty" min="1" step="1" value="<?= View::e((string) ($values['min_qty'] ?? '')) ?>" required>
-<p class="field-error" data-error-for="min_qty"><?= View::e($errors['min_qty'] ?? '') ?></p>
-
-<label for="unit_price">Preço unitário (R$)</label>
-<input type="number" id="unit_price" name="unit_price" step="0.01" value="<?= View::e((string) ($values['unit_price'] ?? '')) ?>" required>
-<p class="field-error" data-error-for="unit_price"><?= View::e($errors['unit_price'] ?? '') ?></p>
+<div class="form-grid-2">
+    <div>
+        <label for="min_price">Preço mínimo da faixa (R$)</label>
+        <input type="number" id="min_price" name="min_price" step="0.01" min="0" value="<?= View::e((string) ($values['min_price'] ?? '')) ?>" required>
+        <p class="field-error" data-error-for="min_price"><?= View::e($errors['min_price'] ?? '') ?></p>
+    </div>
+    <div>
+        <label for="max_price">Preço máximo da faixa (R$)</label>
+        <input type="number" id="max_price" name="max_price" step="0.01" min="0" value="<?= View::e((string) ($values['max_price'] ?? '')) ?>" placeholder="Deixe em branco = sem limite superior">
+        <p class="field-error" data-error-for="max_price"><?= View::e($errors['max_price'] ?? '') ?></p>
+    </div>
+</div>
 
 <label for="licenciado_commission_pct">Comissão do Licenciado (%)</label>
 <input type="number" id="licenciado_commission_pct" name="licenciado_commission_pct" step="0.01" min="0" max="100" value="<?= View::e((string) ($values['licenciado_commission_pct'] ?? '')) ?>" required>

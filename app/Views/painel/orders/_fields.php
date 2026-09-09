@@ -75,8 +75,11 @@ use App\Core\View;
 <p class="field-error" data-error-for="vehicle_document"><?= View::e($errors['vehicle_document'] ?? '') ?></p>
 
 <h3 class="section-title">Produtos</h3>
+<?php if ($pricingTiers): ?>
+    <p class="hint-text" style="margin-top:0;">Preço negociado livremente (piso R$ <?= number_format((float) $pricingTiers[0]['min_price'], 2, ',', '.') ?>) — a faixa de preço define a % de comissão do Licenciado: <?php foreach ($pricingTiers as $i => $t): ?><?= $i > 0 ? ' · ' : '' ?>R$ <?= number_format((float) $t['min_price'], 2, ',', '.') ?><?= $t['max_price'] !== null ? '–' . number_format((float) $t['max_price'], 2, ',', '.') : ' acima' ?> = <?= number_format((float) $t['licenciado_commission_pct'], 2, ',', '.') ?>%<?php endforeach; ?>.</p>
+<?php endif; ?>
 <div class="table-scroll">
-    <table class="data-table" id="items-table" data-tiers="<?= View::e(json_encode(array_map(fn ($t) => ['min_qty' => (int) $t['min_qty'], 'unit_price' => (float) $t['unit_price']], $pricingTiers))) ?>">
+    <table class="data-table" id="items-table">
         <thead>
             <tr><th>Produto</th><th>Qtd.</th><th>Preço unit.</th><th>Subtotal</th><th></th></tr>
         </thead>

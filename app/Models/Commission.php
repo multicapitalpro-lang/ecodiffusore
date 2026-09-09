@@ -9,21 +9,24 @@ class Commission
     /**
      * Duas cascatas independentes disparam a partir do mesmo Licenciado:
      *
-     * 1) Pool regional: a quantidade total de placas do pedido define a faixa de preco (Fase 24,
-     *    PricingTier::forQuantity) -- a % de comissao do Licenciado (o "pool") vem SEMPRE dessa
-     *    faixa, nao e mais um commission_pct negociado por licenciado (esse campo continua
-     *    existindo em users, mas so vale pra Gestor/Supervisor/Gerente agora). A partir do pool,
-     *    Gestor recebe o % que o Licenciado configurou pra ele (commission_pct dele = % do pool,
-     *    nao % do pedido). Vendedor tem DOIS esquemas possiveis, escolhidos pelo Licenciado no
-     *    cadastro:
-     *      a) Tabela por faixa de quantidade (commission_type + user_commission_tiers): sai
-     *         direto do valor da venda -- % da venda ou R$ fixo por unidade, conforme a MESMA
-     *         faixa de quantidade que definiu o pool. Ver vendorTierAmount(). Vem DO POOL
-     *         (subtrai de $distribuido igual aos outros).
+     * 1) Pool regional: o PRECO UNITARIO MEDIO negociado no pedido (orderTotal / totalQty) define
+     *    a faixa de preco (Fase 31, PricingTier::forPrice -- substituiu por completo a faixa por
+     *    QUANTIDADE da Fase 24: preco nao cai mais automaticamente com a quantidade, e' negociado
+     *    livremente dentro de um piso minimo validado na criacao do pedido/proposta) -- a % de
+     *    comissao do Licenciado (o "pool") vem SEMPRE dessa faixa, nao e mais um commission_pct
+     *    negociado por licenciado (esse campo continua existindo em users, mas so vale pra
+     *    Gestor/Supervisor/Gerente agora). A partir do pool, Gestor recebe o % que o Licenciado
+     *    configurou pra ele (commission_pct dele = % do pool, nao % do pedido). Vendedor tem DOIS
+     *    esquemas possiveis, escolhidos pelo Licenciado no cadastro:
+     *      a) Tabela por faixa (commission_type + user_commission_tiers): sai direto do valor da
+     *         venda -- % da venda ou R$ fixo por unidade, conforme a MESMA faixa de preco que
+     *         definiu o pool. Ver vendorTierAmount(). Vem DO POOL (subtrai de $distribuido igual
+     *         aos outros).
      *      b) Sem commission_type configurado, ou sem valor pra essa faixa especifica: cai no
      *         esquema antigo, commission_pct do Vendedor = % do pool, igual Gestor.
-     *    O que sobra do pool fica com o Licenciado. Pedido sem itens (quantidade zero) nao gera
-     *    pool nenhum.
+     *    O que sobra do pool fica com o Licenciado. Pedido sem itens (quantidade zero) ou com preco
+     *    unitario medio abaixo do piso da faixa mais baixa (forPrice devolve null) nao gera pool
+     *    nenhum -- na pratica isso so aconteceria se algum preco escapasse da validacao de piso.
      *
      * 2) Comissao nacional: se o Licenciado tiver um Supervisor atribuido (supervisor_id, definido
      *    pelo Gerente em /painel/licenciados), Supervisor e Gerente recebem um % do TOTAL do
@@ -51,7 +54,8 @@ class Commission
         foreach (OrderItem::forOrder($orderId) as $item) {
             $totalQty += (int) $item['quantity'];
         }
-        $tier = $totalQty > 0 ? PricingTier::forQuantity($totalQty) : null;
+        $avgUnitPrice = $totalQty > 0 ? $orderTotal / $totalQty : 0;
+        $tier = $totalQty > 0 ? PricingTier::forPrice($avgUnitPrice) : null;
 
         if ($licenciado && $tier) {
             $pool = round($orderTotal * (float) $tier['licenciado_commission_pct'] / 100, 2);
@@ -108,11 +112,11 @@ class Commission
     }
 
     /**
-     * Comissao do Vendedor pela tabela de faixa de quantidade (Fase 24) -- null se o Vendedor nao
-     * tem commission_type configurado (ainda no esquema antigo de % do pool) OU se nao ha valor
-     * cadastrado especificamente pra essa faixa. Nesse caso o chamador cai de volta pro % do pool,
-     * igual Gestor. "percentual" e sobre o TOTAL do pedido (nao o pool); "fixo" e por unidade
-     * vendida (valor x quantidade total do pedido).
+     * Comissao do Vendedor pela tabela de faixa de PRECO (Fase 31, antes era faixa de quantidade
+     * na Fase 24) -- null se o Vendedor nao tem commission_type configurado (ainda no esquema
+     * antigo de % do pool) OU se nao ha valor cadastrado especificamente pra essa faixa. Nesse
+     * caso o chamador cai de volta pro % do pool, igual Gestor. "percentual" e sobre o TOTAL do
+     * pedido (nao o pool); "fixo" e por unidade vendida (valor x quantidade total do pedido).
      */
     private static function vendorTierAmount(array $vendedor, array $tier, float $orderTotal, int $totalQty): ?float
     {
@@ -132,7 +136,7 @@ class Commission
 
     /**
      * `percentage` guardado aqui significa coisas diferentes por papel: pro Licenciado e o % da
-     * faixa de quantidade (PricingTier) sobre o total do pedido; pro Gestor/Vendedor (esquema
+     * faixa de preco negociado (PricingTier) sobre o total do pedido; pro Gestor/Vendedor (esquema
      * antigo) e o % do pool do Licenciado; pro Vendedor na tabela por faixa e o % EFETIVO sobre o
      * pedido (calculado a partir do valor, so pra exibicao/relatorio); pro Supervisor/Gerente e o
      * % do total do pedido pago direto pela Ecodiffusore (fora do pool).

@@ -9,7 +9,7 @@ use App\Core\Router;
 use App\Core\View;
 use App\Models\PricingTier;
 
-/** Tabela de precos por atacado (Fase 24) -- admin-only, mesmo padrao do ProductController. */
+/** Faixas de preco negociavel (Fase 31) -- admin-only, mesmo padrao do ProductController. */
 class PricingTierController
 {
     public function index(): void
@@ -28,7 +28,7 @@ class PricingTierController
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
             if (Response::isAjax()) {
-                Response::json(['ok' => false, 'errors' => ['min_qty' => 'Sessão expirada, recarregue a página.']]);
+                Response::json(['ok' => false, 'errors' => ['min_price' => 'Sessão expirada, recarregue a página.']]);
             }
             Router::redirect('/painel/tabela-precos?erro=1');
         }
@@ -120,11 +120,11 @@ class PricingTierController
     {
         $errors = [];
 
-        if (!is_numeric($input['min_qty'] ?? null) || (int) $input['min_qty'] < 1) {
-            $errors['min_qty'] = 'Informe uma quantidade mínima válida (a partir de 1).';
+        if (!is_numeric($input['min_price'] ?? null) || (float) $input['min_price'] <= 0) {
+            $errors['min_price'] = 'Informe um preço mínimo válido.';
         }
-        if (!is_numeric($input['unit_price'] ?? null) || (float) $input['unit_price'] <= 0) {
-            $errors['unit_price'] = 'Informe um preço unitário válido.';
+        if (($input['max_price'] ?? '') !== '' && (!is_numeric($input['max_price']) || (float) $input['max_price'] <= (float) ($input['min_price'] ?? 0))) {
+            $errors['max_price'] = 'O preço máximo deve ser maior que o mínimo (ou deixe em branco pra "sem limite superior").';
         }
         if (!is_numeric($input['licenciado_commission_pct'] ?? null) || (float) $input['licenciado_commission_pct'] < 0 || (float) $input['licenciado_commission_pct'] > 100) {
             $errors['licenciado_commission_pct'] = 'Informe uma % entre 0 e 100.';

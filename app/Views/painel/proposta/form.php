@@ -23,7 +23,7 @@ $pricingTiers = $pricingTiers ?? [];
     <p class="form-msg form-msg-erro" id="proposta-form-error" hidden></p>
 
     <form id="proposta-form" action="/painel/proposta-facil" method="post" class="panel-form panel-form-wide" data-modal="<?= $isModal ? '1' : '' ?>"
-          data-tiers="<?= View::e(json_encode(array_map(fn ($t) => ['min_qty' => (int) $t['min_qty'], 'unit_price' => (float) $t['unit_price']], $pricingTiers))) ?>">
+          data-tiers="<?= View::e(json_encode(array_map(fn ($t) => ['min_price' => (float) $t['min_price'], 'max_price' => $t['max_price'] !== null ? (float) $t['max_price'] : null, 'licenciado_commission_pct' => (float) $t['licenciado_commission_pct']], $pricingTiers))) ?>">
         <?= Csrf::field() ?>
 
         <h3 style="margin-top:0;">Comprador</h3>
@@ -121,10 +121,20 @@ $pricingTiers = $pricingTiers ?? [];
             <input type="text" id="preco_diesel" name="preco_diesel" placeholder="Ex: 6,10" required>
             <p class="field-error" data-error-for="preco_diesel"></p>
 
-            <h3>Quantidade</h3>
-            <label for="quantidade">Quantas placas nessa venda?</label>
-            <input type="number" id="quantidade" name="quantidade" min="1" step="1" value="1" required>
-            <p class="field-error" data-error-for="quantidade"></p>
+            <h3>Preço e quantidade</h3>
+            <div class="form-grid-2">
+                <div>
+                    <label for="unit_price">Preço negociado por unidade (R$)</label>
+                    <input type="text" id="unit_price" name="unit_price" placeholder="Ex: 4250,00" required>
+                    <p class="field-error" data-error-for="unit_price"></p>
+                </div>
+                <div>
+                    <label for="quantidade">Quantas placas nessa venda?</label>
+                    <input type="number" id="quantidade" name="quantidade" min="1" step="1" value="1" required>
+                    <p class="field-error" data-error-for="quantidade"></p>
+                </div>
+            </div>
+            <p class="hint-text" id="proposta-price-bands" style="margin-top:0;"></p>
             <p class="hint-text" id="proposta-price-preview"></p>
 
             <button type="submit" class="btn btn-primary">Gerar proposta</button>

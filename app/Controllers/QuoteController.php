@@ -456,6 +456,17 @@ class QuoteController
             $errors['items'] = 'Adicione pelo menos um produto.';
         }
 
+        // Fase 31: preco unitario negociado livremente, mas com piso bloqueado -- mesma regra da
+        // Proposta Facil (ver PropostaController::validate()), agora tambem pro Orcamento manual.
+        foreach ($items as $item) {
+            if ($item['unit_price'] > 0 && !PricingTier::forPrice($item['unit_price'])) {
+                $floorTier = PricingTier::all()[0] ?? null;
+                $floor = $floorTier ? number_format((float) $floorTier['min_price'], 2, ',', '.') : '0,00';
+                $errors['items'] = "Preço unitário abaixo do mínimo negociável (R$ {$floor}).";
+                break;
+            }
+        }
+
         return $errors;
     }
 }

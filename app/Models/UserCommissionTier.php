@@ -5,9 +5,10 @@ namespace App\Models;
 use App\Core\Database;
 
 /**
- * Comissao do Vendedor por faixa de quantidade (pricing_tiers), definida pelo Licenciado no
- * cadastro do proprio Vendedor (Fase 24). Uma linha por faixa configurada -- faixa sem linha
- * fica sem valor definido pra ela (Commission::createCascadeForOrder cai no fallback antigo).
+ * Comissao do Vendedor por faixa de preco negociado (pricing_tiers, Fase 31 -- faixa de
+ * quantidade ate a Fase 24), definida pelo Licenciado no cadastro do proprio Vendedor. Uma linha
+ * por faixa configurada -- faixa sem linha fica sem valor definido pra ela
+ * (Commission::createCascadeForOrder cai no fallback antigo).
  */
 class UserCommissionTier
 {

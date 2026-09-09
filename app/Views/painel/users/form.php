@@ -93,7 +93,7 @@ $values = $editing ?? ($old ?? []);
         </div>
 
         <div id="licenciado-commission-note" style="display:none;">
-            <p class="hint-text" style="margin-top:0;">A comissão do Licenciado agora vem sempre da <a href="/painel/tabela-precos" target="_blank">tabela de preços por quantidade</a> — não é mais definida aqui.</p>
+            <p class="hint-text" style="margin-top:0;">A comissão do Licenciado agora vem sempre da <a href="/painel/tabela-precos" target="_blank">faixa de preço negociado</a> — não é mais definida aqui.</p>
         </div>
 
         <div id="vendedor-commission-wrap" style="display:none;">
@@ -106,12 +106,11 @@ $values = $editing ?? ($old ?? []);
             </label>
 
             <table class="data-table" style="margin-top:10px;">
-                <thead><tr><th>A partir de</th><th>Preço unitário</th><th>Comissão do vendedor</th></tr></thead>
+                <thead><tr><th>Faixa de preço negociado</th><th>Comissão do vendedor</th></tr></thead>
                 <tbody>
                     <?php foreach ($pricingTiers as $tier): ?>
                         <tr>
-                            <td><?= (int) $tier['min_qty'] ?> placa<?= (int) $tier['min_qty'] > 1 ? 's' : '' ?></td>
-                            <td>R$ <?= number_format((float) $tier['unit_price'], 2, ',', '.') ?></td>
+                            <td>R$ <?= number_format((float) $tier['min_price'], 2, ',', '.') ?><?= $tier['max_price'] !== null ? ' a R$ ' . number_format((float) $tier['max_price'], 2, ',', '.') : ' acima' ?></td>
                             <td>
                                 <input type="number" name="commission_tier_<?= (int) $tier['id'] ?>" step="0.01" min="0"
                                        value="<?= View::e((string) ($vendorTierValues[$tier['id']] ?? '')) ?>" style="width:100px;">

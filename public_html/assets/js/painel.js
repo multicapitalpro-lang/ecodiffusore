@@ -5,24 +5,6 @@ function bindItemsTable(root) {
 
     var addBtn = root.querySelector('#add-item-row');
     var totalEl = root.querySelector('#order-total');
-    var table = body.closest('table');
-    var tiers = [];
-    try {
-        tiers = table && table.dataset.tiers ? JSON.parse(table.dataset.tiers) : [];
-    } catch (e) {
-        tiers = [];
-    }
-
-    // Preco unitario nao depende mais do produto escolhido, so da quantidade total do item (Fase
-    // 24 -- tabela de precos por atacado): a faixa aplicada e a de maior min_qty que ainda seja <=
-    // a quantidade. So preenche automaticamente -- o campo continua editavel pra excecoes.
-    function priceForQty(qty) {
-        var match = null;
-        tiers.forEach(function (t) {
-            if (t.min_qty <= qty && (!match || t.min_qty > match.min_qty)) match = t;
-        });
-        return match ? match.unit_price : null;
-    }
 
     function fmt(n) {
         return 'R$ ' + n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -44,27 +26,13 @@ function bindItemsTable(root) {
         if (totalEl) totalEl.textContent = fmt(total);
     }
 
-    function applyTierPrice(row) {
-        if (!tiers.length) return;
-        var qty = parseInt(row.querySelector('.item-qty').value, 10) || 1;
-        var price = priceForQty(qty);
-        if (price !== null) {
-            row.querySelector('.item-price').value = price.toFixed(2);
-        }
-    }
-
     body.addEventListener('change', function (e) {
         if (e.target.classList.contains('item-product')) {
-            var row = e.target.closest('.item-row');
-            if (row) applyTierPrice(row);
+            recalcAll();
         }
-        recalcAll();
     });
 
     body.addEventListener('input', function (e) {
-        if (e.target.classList.contains('item-qty')) {
-            applyTierPrice(e.target.closest('.item-row'));
-        }
         if (e.target.classList.contains('item-qty') || e.target.classList.contains('item-price')) {
             recalcAll();
         }
@@ -94,7 +62,6 @@ function bindItemsTable(root) {
                 }
             });
             clone.querySelector('.item-subtotal').textContent = fmt(0);
-            applyTierPrice(clone);
             body.appendChild(clone);
         });
     }
@@ -558,11 +525,15 @@ document.addEventListener('DOMContentLoaded', function () {
             var form = root.querySelector('#proposta-form');
             var novaBtn = root.querySelector('#btn-proposta-nova');
 
-            // Previa do preco (Fase 24: tabela por quantidade) -- atualiza conforme a pessoa digita
-            // a quantidade, so pra dar uma nocao antes de gerar a proposta de verdade.
+            // Previa do preco (Fase 31: preco negociado livremente, faixa so define a % de
+            // comissao do Licenciado) -- atualiza conforme a pessoa digita preco/quantidade, so pra
+            // dar uma nocao antes de gerar a proposta de verdade. Validacao de piso de verdade e'
+            // sempre no servidor (PropostaController::validate()).
             var qtyInput = root.querySelector('#quantidade');
+            var priceInput = root.querySelector('#unit_price');
             var pricePreview = root.querySelector('#proposta-price-preview');
-            if (form && qtyInput && pricePreview) {
+            var bandsHint = root.querySelector('#proposta-price-bands');
+            if (form && qtyInput && priceInput && pricePreview) {
                 var tiers = [];
                 try {
                     tiers = form.dataset.tiers ? JSON.parse(form.dataset.tiers) : [];
@@ -570,22 +541,40 @@ document.addEventListener('DOMContentLoaded', function () {
                     tiers = [];
                 }
 
-                var updatePreview = function () {
-                    var qty = parseInt(qtyInput.value, 10) || 1;
+                var fmt = function (n) { return 'R$ ' + n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+
+                if (bandsHint && tiers.length) {
+                    var floor = tiers.reduce(function (min, t) { return t.min_price < min ? t.min_price : min; }, tiers[0].min_price);
+                    var parts = tiers.map(function (t) {
+                        var range = t.max_price !== null ? fmt(t.min_price) + '–' + fmt(t.max_price) : fmt(t.min_price) + ' acima';
+                        return range + ' = ' + t.licenciado_commission_pct + '%';
+                    });
+                    bandsHint.textContent = 'Preço mínimo negociável: ' + fmt(floor) + '. Faixas de comissão do Licenciado: ' + parts.join(' · ') + '.';
+                }
+
+                var findBand = function (price) {
                     var match = null;
                     tiers.forEach(function (t) {
-                        if (t.min_qty <= qty && (!match || t.min_qty > match.min_qty)) match = t;
+                        if (t.min_price <= price && (t.max_price === null || price <= t.max_price) && (!match || t.min_price > match.min_price)) match = t;
                     });
-                    if (!match) {
+                    return match;
+                };
+
+                var updatePreview = function () {
+                    var qty = parseInt(qtyInput.value, 10) || 1;
+                    var price = parseFloat((priceInput.value || '').replace(/\./g, '').replace(',', '.')) || 0;
+                    if (!price) {
                         pricePreview.textContent = '';
                         return;
                     }
-                    var total = match.unit_price * qty;
-                    var fmt = function (n) { return 'R$ ' + n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
-                    pricePreview.textContent = qty + 'x ' + fmt(match.unit_price) + ' = ' + fmt(total);
+                    var total = price * qty;
+                    var band = findBand(price);
+                    var bandText = band ? ' · comissão do Licenciado: ' + band.licenciado_commission_pct + '%' : ' · abaixo do mínimo negociável';
+                    pricePreview.textContent = qty + 'x ' + fmt(price) + ' = ' + fmt(total) + bandText;
                 };
 
                 qtyInput.addEventListener('input', updatePreview);
+                priceInput.addEventListener('input', updatePreview);
                 updatePreview();
             }
 
