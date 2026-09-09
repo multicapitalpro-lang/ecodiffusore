@@ -10,6 +10,8 @@ use App\Core\Roles;
 use App\Core\Router;
 use App\Core\View;
 use App\Models\AuditLog;
+use App\Models\CompanySettings;
+use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\User;
 use App\Models\WarrantyRequest;
@@ -99,6 +101,8 @@ class WarrantyController
         View::render('painel/warranties/term_pdf', [
             'warranty' => $warranty,
             'items' => OrderItem::forOrder((int) $warranty['order_id']),
+            'company' => CompanySettings::current(),
+            'vehicle' => Order::vehicleInfoFor((int) $warranty['order_id']),
         ], null);
         $html = ob_get_clean();
 

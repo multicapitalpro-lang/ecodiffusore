@@ -155,7 +155,7 @@ class PaymentController
             // pdfUrl normalmente so fica disponivel depois da aprovacao municipal (assincrono) --
             // grava o que tiver agora, o lazy-check NfeStatusChecker::processDue() reconsulta
             // depois ate a nota ficar pronta pra fabrica/staff baixarem no pedido.
-            Order::updateNfe($orderId, $invoice['id'] ?? null, $invoice['status'] ?? null, $invoice['pdfUrl'] ?? null);
+            Order::updateNfe($orderId, $invoice['id'] ?? null, $invoice['status'] ?? null, $invoice['pdfUrl'] ?? null, $invoice['number'] ?? null);
         } catch (\Throwable $e) {
             // Emissao de NF-e e' secundaria ao pagamento em si -- nao interrompe o webhook.
             // Sem error_log acessivel em producao neste plano (ver reference-ecodiffusore-deploy);

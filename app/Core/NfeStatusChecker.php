@@ -29,7 +29,8 @@ class NfeStatusChecker
                     (int) $row['id'],
                     $row['nfe_invoice_id'],
                     $invoice['status'] ?? null,
-                    $invoice['pdfUrl'] ?? null
+                    $invoice['pdfUrl'] ?? null,
+                    $invoice['number'] ?? null
                 );
             } catch (\Throwable $e) {
                 // Best-effort -- uma falha de rede/API nao deve travar as outras notas pendentes

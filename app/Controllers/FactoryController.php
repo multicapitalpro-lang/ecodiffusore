@@ -9,6 +9,7 @@ use App\Core\Pdf;
 use App\Core\Roles;
 use App\Core\Router;
 use App\Core\View;
+use App\Models\CompanySettings;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\WarrantyRequest;
@@ -60,6 +61,8 @@ class FactoryController
         View::render('painel/warranties/term_pdf', [
             'warranty' => $warranty,
             'items' => OrderItem::forOrder($orderId),
+            'company' => CompanySettings::current(),
+            'vehicle' => Order::vehicleInfoFor($orderId),
         ], null);
         $html = ob_get_clean();
 

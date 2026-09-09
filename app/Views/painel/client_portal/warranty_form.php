@@ -13,11 +13,26 @@ $erro = $_GET['erro'] ?? null;
     <p class="form-msg form-msg-error">Não foi possível enviar um dos anexos (verifique o tipo e o tamanho — máximo 5MB, PDF/JPG/PNG/WEBP).</p>
 <?php elseif ($erro === '3'): ?>
     <p class="form-msg form-msg-error">Envie todos os documentos pedidos.</p>
+<?php elseif ($erro === '4'): ?>
+    <p class="form-msg form-msg-error">Informe o nome e o CPF do motorista.</p>
 <?php endif; ?>
 
 <form method="post" action="/painel/minhas-garantias" enctype="multipart/form-data" class="panel-form panel-form-wide">
     <?= Csrf::field() ?>
     <input type="hidden" name="order_id" value="<?= (int) $order['id'] ?>">
+
+    <h3 class="section-title" style="margin-top:0">Dados do motorista</h3>
+    <p class="hint-text" style="margin-top:0">Necessários pro Termo de Garantia — pode ser você mesmo ou o motorista responsável pelo veículo.</p>
+    <div class="form-grid-2">
+        <div>
+            <label for="driver_name">Nome completo do motorista</label>
+            <input type="text" id="driver_name" name="driver_name" required>
+        </div>
+        <div>
+            <label for="driver_document">CPF do motorista</label>
+            <input type="text" id="driver_document" name="driver_document" required>
+        </div>
+    </div>
 
     <h3 class="section-title">Documentos necessários</h3>
     <p class="hint-text" style="margin-top:0">Todos os arquivos abaixo são obrigatórios — PDF, JPG, PNG ou WEBP, até 5MB cada.</p>

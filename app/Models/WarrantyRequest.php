@@ -16,15 +16,20 @@ class WarrantyRequest
         'telemetria' => 'Telemetria/Relatório de consumo',
     ];
 
-    public static function create(int $orderId, int $clientId): int
+    /** $driverName/$driverDocument: motorista do veiculo no momento da compra -- pedido do
+     *  usuario, precisa constar no Termo de Garantia final (ver term_pdf.php). Pode ser o proprio
+     *  cliente (PJ com motorista terceiro tambem e' comum nesse negocio). */
+    public static function create(int $orderId, int $clientId, string $driverName = '', string $driverDocument = ''): int
     {
         $stmt = Database::connection()->prepare(
-            "INSERT INTO warranty_requests (order_id, client_id, description, status)
-             VALUES (:order_id, :client_id, '', 'aberta')"
+            "INSERT INTO warranty_requests (order_id, client_id, description, driver_name, driver_document, status)
+             VALUES (:order_id, :client_id, '', :driver_name, :driver_document, 'aberta')"
         );
         $stmt->execute([
             'order_id' => $orderId,
             'client_id' => $clientId,
+            'driver_name' => $driverName ?: null,
+            'driver_document' => $driverDocument ?: null,
         ]);
         return (int) Database::connection()->lastInsertId();
     }
@@ -55,7 +60,10 @@ class WarrantyRequest
     public static function find(int $id): ?array
     {
         $stmt = Database::connection()->prepare(
-            'SELECT w.*, o.order_date, o.total_value, o.seller_id, c.name AS client_name, u.name AS resolved_by_name
+            'SELECT w.*, o.order_date, o.total_value, o.seller_id, o.nfe_number,
+                    c.name AS client_name, c.document AS client_document, c.address AS client_address,
+                    c.city AS client_city, c.state AS client_state,
+                    u.name AS resolved_by_name
              FROM warranty_requests w
              JOIN orders o ON o.id = w.order_id
              JOIN clients c ON c.id = w.client_id

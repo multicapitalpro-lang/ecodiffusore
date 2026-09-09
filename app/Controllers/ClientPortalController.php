@@ -10,6 +10,7 @@ use App\Core\Pdf;
 use App\Core\Router;
 use App\Core\View;
 use App\Models\Client;
+use App\Models\CompanySettings;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Payment;
@@ -87,6 +88,12 @@ class ClientPortalController
             Router::redirect("/painel/minhas-garantias/nova?order_id={$orderId}&erro=1");
         }
 
+        $driverName = trim($_POST['driver_name'] ?? '');
+        $driverDocument = trim($_POST['driver_document'] ?? '');
+        if ($driverName === '' || $driverDocument === '') {
+            Router::redirect("/painel/minhas-garantias/nova?order_id={$orderId}&erro=4");
+        }
+
         // CNH + documento do veiculo + 3 fotos, todos obrigatorios (pedido explicito do usuario,
         // Fase 27c) -- pra dar suporte de verdade a uma solicitacao de garantia.
         $required = ['cnh' => 'cnh', 'documento_veiculo' => 'documento_veiculo', 'foto1' => 'foto', 'foto2' => 'foto', 'foto3' => 'foto', 'telemetria' => 'telemetria'];
@@ -106,7 +113,7 @@ class ClientPortalController
             return;
         }
 
-        $warrantyId = WarrantyRequest::create($orderId, (int) $client['id']);
+        $warrantyId = WarrantyRequest::create($orderId, (int) $client['id'], $driverName, $driverDocument);
         foreach ($stored as $item) {
             WarrantyRequest::addAttachment($warrantyId, $item['type'], $item['file']['stored_name'], $item['file']['original_name']);
         }
@@ -186,6 +193,8 @@ class ClientPortalController
         View::render('painel/warranties/term_pdf', [
             'warranty' => $warranty,
             'items' => OrderItem::forOrder((int) $warranty['order_id']),
+            'company' => CompanySettings::current(),
+            'vehicle' => Order::vehicleInfoFor((int) $warranty['order_id']),
         ], null);
         $html = ob_get_clean();
 
