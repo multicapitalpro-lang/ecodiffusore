@@ -68,6 +68,7 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/desempen
             <?php if ($role === 'cliente'): ?>
                 <a href="/painel/meus-dados" class="<?= $isActive('/painel/meus-dados') ? 'is-active' : '' ?>"><?= $icon('gear') ?> Meus Dados</a>
                 <a href="/painel/minhas-garantias" class="<?= $isActive('/painel/minhas-garantias') ? 'is-active' : '' ?>"><?= $icon('box') ?> Minhas Garantias</a>
+                <a href="/painel/tutoriais" class="<?= $isActive('/painel/tutoriais') ? 'is-active' : '' ?>"><?= $icon('megaphone') ?> Vídeos Tutoriais</a>
             <?php endif; ?>
 
             <?php if ($role === Roles::FACTORY): ?>
@@ -184,6 +185,7 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/desempen
             <?php endif; ?>
             <?php if (in_array($role, ['admin', 'gerente'], true)): ?>
                 <a href="/painel/configuracoes/whatsapp" class="<?= $isActive('/painel/configuracoes/whatsapp') ? 'is-active' : '' ?>"><?= $icon('gear') ?> Config. de WhatsApp</a>
+                <a href="/painel/configuracoes/tutoriais" class="<?= $isActive('/painel/configuracoes/tutoriais') ? 'is-active' : '' ?>"><?= $icon('gear') ?> Vídeos Tutoriais</a>
             <?php endif; ?>
         </nav>
     </aside>

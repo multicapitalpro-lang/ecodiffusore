@@ -189,6 +189,11 @@ $router->get('/painel/configuracoes/whatsapp/status', [App\Controllers\WhatsAppS
 $router->post('/painel/configuracoes/whatsapp/desconectar', [App\Controllers\WhatsAppSettingsController::class, 'disconnect']);
 $router->post('/painel/configuracoes/whatsapp/evento/{eventKey}', [App\Controllers\WhatsAppSettingsController::class, 'updateTemplate']);
 
+$router->get('/painel/configuracoes/tutoriais', [App\Controllers\TutorialController::class, 'manage']);
+$router->post('/painel/configuracoes/tutoriais', [App\Controllers\TutorialController::class, 'store']);
+$router->post('/painel/configuracoes/tutoriais/{id}/excluir', [App\Controllers\TutorialController::class, 'destroy']);
+$router->get('/painel/tutoriais', [App\Controllers\TutorialController::class, 'client']);
+
 // Pedidos
 $router->get('/painel/pedidos', [App\Controllers\OrderController::class, 'index']);
 $router->get('/painel/pedidos/novo', [App\Controllers\OrderController::class, 'create']);
