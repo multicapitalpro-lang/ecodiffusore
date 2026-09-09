@@ -448,7 +448,11 @@ class Notifier
 
     /** @param array $warranty precisa de id/order_id/seller_id/client_name (retorno de
      *  WarrantyRequest::find()). So WhatsApp, sem e-mail -- notifica quem vendeu o pedido, nao o
-     *  cliente (mensagens pro cliente ficam pra fase seguinte). */
+     *  cliente (mensagens pro cliente ficam pra fase seguinte). Notifica TAMBEM Admin/Gerente
+     *  (quem realmente aprova, Roles::SUPERVISOR_ASSIGNMENT) -- pedido explicito do usuario:
+     *  quanto antes aprovar, mais chance do Termo de Garantia ja sair junto com o pedido pela
+     *  fabrica, entao quem aprova precisa saber na hora, nao so quando abrir o menu por conta
+     *  propria (ate agora so o vendedor/licenciado da venda eram avisados). */
     public static function garantiaSolicitada(array $warranty): void
     {
         if (empty($warranty['seller_id'])) {
@@ -472,6 +476,13 @@ class Notifier
         $licenciado = User::licenciadoFor($sellerId);
         if ($licenciado && !empty($licenciado['whatsapp']) && (int) $licenciado['id'] !== $sellerId && $waNetwork) {
             self::sendWhatsApp($licenciado['whatsapp'], $waNetwork);
+        }
+
+        $urgentText = "⚠️ Nova solicitação de Garantia Estendida aguardando aprovação -- cliente {$vars['cliente']}, pedido #{$vars['id']}. Quanto antes aprovar, mais rápido a fábrica recebe o Termo pra despachar junto. Analise aqui: {$vars['url']}";
+        foreach (array_merge(User::allByRole('admin'), User::allByRole('gerente')) as $approver) {
+            if (!empty($approver['whatsapp'])) {
+                self::sendWhatsApp($approver['whatsapp'], $urgentText);
+            }
         }
     }
 
