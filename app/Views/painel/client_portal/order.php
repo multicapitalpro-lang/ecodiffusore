@@ -23,6 +23,11 @@ $methodLabels = ['PIX' => 'Pix', 'BOLETO' => 'Boleto', 'CREDIT_CARD' => 'Cartão
     <?php if (!empty($order['vehicle_type']) || !empty($order['vehicle_plate'])): ?>
         <p><strong>Veículo:</strong> <?= View::e($order['vehicle_type'] ?: '—') ?><?= $order['vehicle_plate'] ? ' · Placa ' . View::e($order['vehicle_plate']) : '' ?></p>
     <?php endif; ?>
+    <?php if (!empty($order['nfe_pdf_url'])): ?>
+        <p><strong>Nota Fiscal:</strong> <a href="<?= View::e($order['nfe_pdf_url']) ?>" target="_blank" rel="noopener">📄 Baixar NF-e</a></p>
+    <?php elseif (!empty($order['nfe_status'])): ?>
+        <p><strong>Nota Fiscal:</strong> <span class="hint-text">Em processamento, disponível em breve</span></p>
+    <?php endif; ?>
 </div>
 
 <div class="table-scroll">
@@ -66,6 +71,8 @@ $methodLabels = ['PIX' => 'Pix', 'BOLETO' => 'Boleto', 'CREDIT_CARD' => 'Cartão
     </div>
 <?php endforeach; ?>
 
-<?php if ($order['status'] === 'verificado'): ?>
+<?php if ($approvedWarranty): ?>
+    <a href="/painel/minhas-garantias/<?= (int) $approvedWarranty['id'] ?>/termo" target="_blank" rel="noopener" class="btn btn-outline" style="margin-top:16px">📄 Baixar Termo de Garantia</a>
+<?php elseif ($order['status'] === 'verificado'): ?>
     <a href="/painel/minhas-garantias/nova?order_id=<?= (int) $order['id'] ?>" class="btn btn-outline" style="margin-top:16px">Abrir solicitação de garantia</a>
 <?php endif; ?>

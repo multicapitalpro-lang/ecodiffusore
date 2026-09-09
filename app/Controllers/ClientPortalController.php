@@ -31,11 +31,20 @@ class ClientPortalController
             Router::redirect('/painel');
         }
 
+        $approvedWarranty = null;
+        foreach (WarrantyRequest::forOrder($id) as $w) {
+            if (in_array($w['status'], ['aprovada', 'concluida'], true)) {
+                $approvedWarranty = $w;
+                break;
+            }
+        }
+
         View::render('painel/client_portal/order', [
             'user' => $user,
             'order' => $order,
             'items' => OrderItem::forOrder($id),
             'payments' => Payment::forPayable('order', $id),
+            'approvedWarranty' => $approvedWarranty,
         ]);
     }
 
