@@ -12,6 +12,7 @@ use App\Core\Router;
 use App\Core\View;
 use App\Models\Lead;
 use App\Models\LeadNote;
+use App\Models\LeadRoutingSettings;
 use App\Models\LeadStage;
 use App\Models\Quote;
 use App\Models\User;
@@ -43,6 +44,7 @@ class LeadController
         $notesByLead = LeadNote::forLeads($leadIds);
         $expiringQuotes = Quote::expiringSoonForLeads($leadIds);
         $terminalStages = ['convertido', 'descartado'];
+        $centralLicenciadoId = LeadRoutingSettings::centralLicenciadoId();
 
         foreach ($leads as &$l) {
             if ($showLicenciadoBadge) {
@@ -63,6 +65,16 @@ class LeadController
                 && (time() - strtotime($l['created_at'])) >= 3 * 86400;
             $l['is_urgent'] = !in_array($l['status'], $terminalStages, true)
                 && (!empty($l['follow_up_due']) || !empty($l['quote_expiring']) || $neverContactedStale);
+
+            // Visibilidade pro admin/rede saber se o cliente esta sendo atendido de verdade (pedido
+            // do usuario): sem vendedor atribuido (falha de roteamento) e' mais grave que atribuido
+            // mas sem nenhuma nota ainda (vendedor recebeu e ainda nao fez contato registrado).
+            // "Ecodiffusore Direto" = caiu no Licenciado Central (LeadRoutingSettings) por nao ter
+            // ninguem no raio de 100km -- informativo, nao e' uma falha.
+            $isTerminal = in_array($l['status'], $terminalStages, true);
+            $l['is_unassigned'] = !$isTerminal && empty($l['assigned_to_user_id']);
+            $l['is_unattended'] = !$isTerminal && !empty($l['assigned_to_user_id']) && empty($l['notes']);
+            $l['is_central'] = $centralLicenciadoId !== null && (int) ($l['assigned_to_user_id'] ?? 0) === $centralLicenciadoId;
         }
         unset($l);
 
@@ -70,6 +82,10 @@ class LeadController
         foreach ($stages as $stage) {
             $columns[$stage['slug']] = array_values(array_filter($leads, fn ($l) => $l['status'] === $stage['slug']));
         }
+
+        $unassignedCount = count(array_filter($leads, fn ($l) => $l['is_unassigned']));
+        $unattendedCount = count(array_filter($leads, fn ($l) => $l['is_unattended']));
+        $centralCount = count(array_filter($leads, fn ($l) => $l['is_central']));
 
         $isViewOnly = in_array($user['role_slug'], array_merge([Roles::SELLER], Roles::NATIONAL_SUPPORT), true);
         // Diferente de canAssign: Vendedor NAO pode reatribuir lead (por isso entra em
@@ -88,6 +104,10 @@ class LeadController
             'showLicenciadoBadge' => $showLicenciadoBadge,
             'expirationWarningDays' => self::EXPIRATION_WARNING_DAYS,
             'earlyWarningDays' => self::EARLY_WARNING_DAYS,
+            'unassignedCount' => $unassignedCount,
+            'unattendedCount' => $unattendedCount,
+            'centralCount' => $centralCount,
+            'centralLicenciadoName' => $centralLicenciadoId ? (User::find($centralLicenciadoId)['name'] ?? null) : null,
         ]);
     }
 

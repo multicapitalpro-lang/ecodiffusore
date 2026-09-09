@@ -17,6 +17,7 @@ $vehicleFieldLabels = [
     'vehicle_ecu_status' => 'Situação da ECU',
     'vehicle_reprogrammed_power' => 'Potência reprogramada',
     'vehicle_has_arla' => 'Usa ARLA',
+    'vehicle_has_telemetry' => 'Telemetria',
 ];
 ?>
 <p class="section-sub"><?= $isViewOnly ? 'Visualização somente leitura.' : 'Arraste o card entre as colunas para atualizar o status.' ?></p>
@@ -44,6 +45,24 @@ $vehicleFieldLabels = [
     <?php endforeach; ?>
 </div>
 
+<div class="cards-grid" style="margin-top:6px">
+    <div class="dash-card <?= $unassignedCount > 0 ? 'dash-card-danger' : '' ?>">
+        <span>Sem vendedor atribuído</span>
+        <strong><?= (int) $unassignedCount ?></strong>
+    </div>
+    <div class="dash-card <?= $unattendedCount > 0 ? 'dash-card-warning' : '' ?>">
+        <span>Aguardando 1º atendimento</span>
+        <strong><?= (int) $unattendedCount ?></strong>
+    </div>
+    <?php if ($centralLicenciadoName): ?>
+        <div class="dash-card">
+            <span>Ecodiffusore Direto (sem vendedor no raio)</span>
+            <strong><?= (int) $centralCount ?></strong>
+            <small class="hint-text">Central: <?= View::e($centralLicenciadoName) ?></small>
+        </div>
+    <?php endif; ?>
+</div>
+
 <div class="kanban-board" id="leads-board">
     <?php foreach ($stages as $stage): $status = $stage['slug']; ?>
         <div class="kanban-col" data-status="<?= View::e($status) ?>">
@@ -60,14 +79,14 @@ $vehicleFieldLabels = [
                             $value = $lead[$field];
                             if ($field === 'vehicle_ecu_status') {
                                 $value = $value === 'original' ? 'Original' : 'Reprogramado';
-                            } elseif ($field === 'vehicle_has_arla') {
+                            } elseif ($field === 'vehicle_has_arla' || $field === 'vehicle_has_telemetry') {
                                 $value = $value === 'sim' ? 'Sim' : 'Não';
                             }
                             $vehicleInfo[$label] = $value;
                         }
                     }
                     ?>
-                    <div class="kanban-card"
+                    <div class="kanban-card<?= !empty($lead['is_unassigned']) ? ' kanban-card-unassigned' : (!empty($lead['is_unattended']) ? ' kanban-card-unattended' : '') ?>"
                          draggable="<?= $isViewOnly ? 'false' : 'true' ?>"
                          data-lead-id="<?= (int) $lead['id'] ?>"
                          data-lead-name="<?= View::e($lead['name']) ?>"
@@ -95,6 +114,15 @@ $vehicleFieldLabels = [
                             <a href="https://wa.me/55<?= preg_replace('/\D/', '', $lead['whatsapp']) ?>?text=<?= rawurlencode($waMessage) ?>" target="_blank" rel="noopener" class="link-small" onclick="event.stopPropagation()">💬 <?= View::e($lead['whatsapp']) ?></a>
                         </span>
                         <span class="kanban-card-meta"><?= View::e($lead['city'] ?: '—') ?> · <?= View::e($lead['truck_brand'] ?: '—') ?></span>
+                        <span class="kanban-card-meta">Cadastrado em <?= !empty($lead['created_at']) ? View::e(date('d/m/Y', strtotime($lead['created_at']))) : '—' ?></span>
+                        <?php if (!empty($lead['is_unassigned'])): ?>
+                            <span class="kanban-badge kanban-badge-danger">🚫 Sem vendedor atribuído</span>
+                        <?php elseif (!empty($lead['is_unattended'])): ?>
+                            <span class="kanban-badge kanban-badge-warning">⚠️ Ainda não atendido</span>
+                        <?php endif; ?>
+                        <?php if (!empty($lead['is_central'])): ?>
+                            <span class="kanban-badge kanban-badge-info">🏢 Ecodiffusore Direto</span>
+                        <?php endif; ?>
                         <?php if ($vehicleInfo): ?>
                             <span class="kanban-card-meta">🚚 <?= View::e(implode(' · ', $vehicleInfo)) ?></span>
                         <?php endif; ?>
