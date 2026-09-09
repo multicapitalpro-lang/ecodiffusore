@@ -45,6 +45,8 @@ $erro = isset($_GET['erro']);
                 <th>Transportadora</th>
                 <th>Código</th>
                 <th>Previsão</th>
+                <th>Nota Fiscal</th>
+                <th>Termo de Garantia</th>
                 <th></th>
             </tr>
         </thead>
@@ -66,6 +68,22 @@ $erro = isset($_GET['erro']);
                     <td><input form="<?= $formId ?>" type="text" name="tracking_code" value="<?= View::e($o['tracking_code'] ?? '') ?>" style="width:120px"></td>
                     <td><input form="<?= $formId ?>" type="date" name="prazo_entrega" value="<?= View::e($o['prazo_entrega'] ?? '') ?>" style="width:140px"></td>
                     <td>
+                        <?php if (!empty($o['nfe_pdf_url'])): ?>
+                            <a href="<?= View::e($o['nfe_pdf_url']) ?>" target="_blank" rel="noopener" class="link-small">📄 Baixar</a>
+                        <?php elseif (!empty($o['nfe_status'])): ?>
+                            <span class="hint-text">Em processamento</span>
+                        <?php else: ?>
+                            <span class="hint-text">—</span>
+                        <?php endif; ?>
+                    </td>
+                    <td>
+                        <?php if (!empty($o['warranty_term_id'])): ?>
+                            <a href="/painel/fabrica/<?= (int) $o['id'] ?>/termo-garantia" target="_blank" rel="noopener" class="link-small">📄 Baixar</a>
+                        <?php else: ?>
+                            <span class="hint-text">—</span>
+                        <?php endif; ?>
+                    </td>
+                    <td>
                         <button form="<?= $formId ?>" type="submit" class="btn btn-outline">Salvar</button>
                         <form method="post" action="/painel/fabrica/<?= (int) $o['id'] ?>/entregue" class="inline-form" onsubmit="return confirm('Marcar este pedido como entregue?');">
                             <?= Csrf::field() ?>
@@ -75,7 +93,7 @@ $erro = isset($_GET['erro']);
                 </tr>
             <?php endforeach; ?>
             <?php if (!$orders): ?>
-                <tr><td colspan="8">Nenhum pedido pago aguardando despacho no momento.</td></tr>
+                <tr><td colspan="10">Nenhum pedido pago aguardando despacho no momento.</td></tr>
             <?php endif; ?>
         </tbody>
     </table>

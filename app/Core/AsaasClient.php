@@ -136,6 +136,14 @@ class AsaasClient
         return $result;
     }
 
+    /** Consulta o status atual de uma nota fiscal ja criada -- emissao municipal e' assincrona
+     *  (aprovacao da prefeitura), entao o pdfUrl normalmente so fica disponivel depois da criacao.
+     *  Usado pelo lazy-check (App\Core\NfeStatusChecker) pra atualizar o pedido quando ficar pronta. */
+    public function getInvoice(string $invoiceId): array
+    {
+        return $this->request('GET', "/invoices/{$invoiceId}");
+    }
+
     public function registerWebhook(string $url, string $authToken): array
     {
         return $this->request('POST', '/webhooks', [

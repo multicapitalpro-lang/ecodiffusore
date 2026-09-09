@@ -86,6 +86,30 @@ class WarrantyRequest
         return $stmt->fetchAll();
     }
 
+    /** Garantia aprovada/concluida (unica com Termo de Garantia disponivel pra download, ver
+     *  WarrantyController::downloadTerm()) de cada pedido em $orderIds -- usado pela tela da
+     *  fabrica pra saber, sem N+1, quais pedidos ja tem termo pra oferecer o link de download. */
+    public static function approvedTermByOrderIds(array $orderIds): array
+    {
+        if (!$orderIds) {
+            return [];
+        }
+
+        $placeholders = implode(',', array_fill(0, count($orderIds), '?'));
+        $stmt = Database::connection()->prepare(
+            "SELECT order_id, id FROM warranty_requests
+             WHERE order_id IN ({$placeholders}) AND status IN ('aprovada', 'concluida')
+             ORDER BY resolved_at DESC"
+        );
+        $stmt->execute(array_values($orderIds));
+
+        $result = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $result[(int) $row['order_id']] ??= (int) $row['id'];
+        }
+        return $result;
+    }
+
     /** Fila de garantias no escopo de staff -- $sellerIds: null = sem escopo (Admin), [] = nada no
      *  escopo, senao filtra pelo vendedor do pedido. Mesmo espirito de Order/Client::all(). */
     public static function forScope(?array $sellerIds, ?string $status = null): array

@@ -133,7 +133,7 @@ class PaymentController
         try {
             $description = str_replace('{pedido}', (string) $orderId, (string) ($settings['service_description_template'] ?: 'Pedido #{pedido}'));
 
-            (new AsaasClient())->createInvoice([
+            $invoice = (new AsaasClient())->createInvoice([
                 'payment_id' => $chargeId,
                 'service_description' => $description,
                 'observations' => $settings['observations_template'] ?: null,
@@ -151,6 +151,11 @@ class PaymentController
                     'pis' => (float) $settings['pis_pct'],
                 ],
             ]);
+
+            // pdfUrl normalmente so fica disponivel depois da aprovacao municipal (assincrono) --
+            // grava o que tiver agora, o lazy-check NfeStatusChecker::processDue() reconsulta
+            // depois ate a nota ficar pronta pra fabrica/staff baixarem no pedido.
+            Order::updateNfe($orderId, $invoice['id'] ?? null, $invoice['status'] ?? null, $invoice['pdfUrl'] ?? null);
         } catch (\Throwable $e) {
             // Emissao de NF-e e' secundaria ao pagamento em si -- nao interrompe o webhook.
             // Sem error_log acessivel em producao neste plano (ver reference-ecodiffusore-deploy);

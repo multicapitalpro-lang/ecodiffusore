@@ -269,12 +269,42 @@ class Order
     {
         return Database::connection()->query(
             "SELECT o.id, o.order_date, o.tracking_carrier, o.tracking_code, o.prazo_entrega,
+                    o.nfe_status, o.nfe_pdf_url,
                     c.name AS client_name, c.whatsapp AS client_whatsapp, c.document AS client_document,
                     c.zip_code, c.street, c.number, c.complement, c.neighborhood, c.city, c.state,
                     (SELECT GROUP_CONCAT(p.name, ' (x', oi.quantity, ')' SEPARATOR ', ')
                      FROM order_items oi JOIN products p ON p.id = oi.product_id WHERE oi.order_id = o.id) AS produtos
              FROM orders o JOIN clients c ON c.id = o.client_id
              WHERE o.status = 'verificado' AND o.delivered_at IS NULL ORDER BY o.order_date DESC"
+        )->fetchAll();
+    }
+
+    /** Grava o resultado da emissao de NF-e (App\Core\AsaasClient::createInvoice()/getInvoice())
+     *  -- $status e' o texto cru da Asaas (SCHEDULED/SYNCHRONIZED/AUTHORIZED/PROCESSING/CANCELLED/
+     *  ERROR), $pdfUrl geralmente so vem preenchido depois da aprovacao municipal (ver
+     *  NfeStatusChecker::processDue(), que reconsulta as pendentes). */
+    public static function updateNfe(int $id, ?string $invoiceId, ?string $status, ?string $pdfUrl): void
+    {
+        $stmt = Database::connection()->prepare(
+            'UPDATE orders SET nfe_invoice_id = :invoice_id, nfe_status = :status, nfe_pdf_url = :pdf_url WHERE id = :id'
+        );
+        $stmt->execute([
+            'invoice_id' => $invoiceId,
+            'status' => $status,
+            'pdf_url' => $pdfUrl,
+            'id' => $id,
+        ]);
+    }
+
+    /** Pedidos com NF-e criada na Asaas mas ainda sem pdfUrl confirmado -- fila do lazy-check
+     *  (App\Core\NfeStatusChecker) que reconsulta o status ate ela sair (ou dar erro/ser
+     *  cancelada, que tambem para de reconsultar). */
+    public static function pendingNfeCheck(): array
+    {
+        return Database::connection()->query(
+            "SELECT id, nfe_invoice_id FROM orders
+             WHERE nfe_invoice_id IS NOT NULL AND nfe_pdf_url IS NULL
+               AND (nfe_status IS NULL OR nfe_status NOT IN ('CANCELLED', 'ERROR'))"
         )->fetchAll();
     }
 
