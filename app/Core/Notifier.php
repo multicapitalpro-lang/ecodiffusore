@@ -478,7 +478,7 @@ class Notifier
             self::sendWhatsApp($licenciado['whatsapp'], $waNetwork);
         }
 
-        $urgentText = "⚠️ Nova solicitação de Garantia Estendida aguardando aprovação -- cliente {$vars['cliente']}, pedido #{$vars['id']}. Quanto antes aprovar, mais rápido a fábrica recebe o Termo pra despachar junto. Analise aqui: {$vars['url']}";
+        $urgentText = "⚠️ Nova solicitação de Termo de Garantia aguardando aprovação -- cliente {$vars['cliente']}, pedido #{$vars['id']}. Quanto antes aprovar, mais rápido a fábrica recebe o Termo pra despachar junto. Analise aqui: {$vars['url']}";
         foreach (array_merge(User::allByRole('admin'), User::allByRole('gerente')) as $approver) {
             if (!empty($approver['whatsapp'])) {
                 self::sendWhatsApp($approver['whatsapp'], $urgentText);
