@@ -542,14 +542,22 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
 
                 var fmt = function (n) { return 'R$ ' + n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+                // Vendedor nunca ve a % de comissao do Licenciado (pedido explicito do usuario --
+                // "nao importa pro vendedor, so pro licenciado, pro vendedor nao crescer o olho").
+                // So o piso minimo (precisa pra negociar) fica visivel pra todo mundo.
+                var showCommission = form.dataset.showCommission === '1';
 
                 if (bandsHint && tiers.length) {
                     var floor = tiers.reduce(function (min, t) { return t.min_price < min ? t.min_price : min; }, tiers[0].min_price);
-                    var parts = tiers.map(function (t) {
-                        var range = t.max_price !== null ? fmt(t.min_price) + '–' + fmt(t.max_price) : fmt(t.min_price) + ' acima';
-                        return range + ' = ' + t.licenciado_commission_pct + '%';
-                    });
-                    bandsHint.textContent = 'Preço mínimo negociável: ' + fmt(floor) + '. Faixas de comissão do Licenciado: ' + parts.join(' · ') + '.';
+                    if (showCommission) {
+                        var parts = tiers.map(function (t) {
+                            var range = t.max_price !== null ? fmt(t.min_price) + '–' + fmt(t.max_price) : fmt(t.min_price) + ' acima';
+                            return range + ' = ' + t.licenciado_commission_pct + '%';
+                        });
+                        bandsHint.textContent = 'Preço mínimo negociável: ' + fmt(floor) + '. Faixas de comissão do Licenciado: ' + parts.join(' · ') + '.';
+                    } else {
+                        bandsHint.textContent = 'Preço mínimo negociável: ' + fmt(floor) + '.';
+                    }
                 }
 
                 var findBand = function (price) {
@@ -568,8 +576,11 @@ document.addEventListener('DOMContentLoaded', function () {
                         return;
                     }
                     var total = price * qty;
-                    var band = findBand(price);
-                    var bandText = band ? ' · comissão do Licenciado: ' + band.licenciado_commission_pct + '%' : ' · abaixo do mínimo negociável';
+                    var bandText = '';
+                    if (showCommission) {
+                        var band = findBand(price);
+                        bandText = band ? ' · comissão do Licenciado: ' + band.licenciado_commission_pct + '%' : ' · abaixo do mínimo negociável';
+                    }
                     pricePreview.textContent = qty + 'x ' + fmt(price) + ' = ' + fmt(total) + bandText;
                 };
 

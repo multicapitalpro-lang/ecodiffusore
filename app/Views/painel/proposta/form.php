@@ -23,6 +23,7 @@ $pricingTiers = $pricingTiers ?? [];
     <p class="form-msg form-msg-erro" id="proposta-form-error" hidden></p>
 
     <form id="proposta-form" action="/painel/proposta-facil" method="post" class="panel-form panel-form-wide" data-modal="<?= $isModal ? '1' : '' ?>"
+          data-show-commission="<?= ($user['role_slug'] ?? '') !== 'vendedor' ? '1' : '' ?>"
           data-tiers="<?= View::e(json_encode(array_map(fn ($t) => ['min_price' => (float) $t['min_price'], 'max_price' => $t['max_price'] !== null ? (float) $t['max_price'] : null, 'licenciado_commission_pct' => (float) $t['licenciado_commission_pct']], $pricingTiers))) ?>">
         <?= Csrf::field() ?>
 
