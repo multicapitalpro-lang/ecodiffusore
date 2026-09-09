@@ -437,8 +437,12 @@ class PublicController
     }
 
     /**
-     * Le/grava o cookie de indicacao por Licenciado (?ref=<id>). Nunca confia no valor sem validar
-     * contra User::find() -- o cookie pode ser forjado por qualquer visitante.
+     * Le/grava o cookie de indicacao por Licenciado OU Vendedor (?ref=<id>) -- link pessoal que
+     * qualquer um dos dois pode mandar pro interessado preencher, ficando salvo no CRM daquele
+     * vendedor especifico mesmo que o cliente seja de outro estado/fora do raio do GeoMatch
+     * (pedido explicito do usuario: "todo vendedor precisa de um link ref especifico pra controle
+     * interno do CRM dele"). Nunca confia no valor sem validar contra User::find() -- o cookie
+     * pode ser forjado por qualquer visitante.
      */
     private function trackReferral(): ?int
     {
@@ -448,7 +452,7 @@ class PublicController
         }
 
         $user = User::find((int) $candidate);
-        if (!$user || $user['role_slug'] !== 'licenciado' || $user['status'] !== 'active') {
+        if (!$user || !in_array($user['role_slug'], ['licenciado', 'vendedor'], true) || $user['status'] !== 'active') {
             return null;
         }
 

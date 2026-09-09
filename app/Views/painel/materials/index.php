@@ -11,6 +11,29 @@ $erro = isset($_GET['erro']);
 <div class="page-header">
     <h1>Materiais de venda</h1>
 </div>
+
+<?php if (in_array($user['role_slug'], ['licenciado', 'vendedor'], true)): ?>
+    <?php $refLink = 'https://ecodiffusorebrasil.com.br/comprar?ref=' . (int) $user['id']; ?>
+    <div class="dash-card" style="max-width:640px; margin-bottom:20px;">
+        <span>🔗 Seu link de indicação</span>
+        <p class="hint-text" style="margin:6px 0 12px;">Mande esse link pro interessado preencher os dados dele — mesmo que não compre na hora, fica salvo no seu CRM. Funciona pra qualquer cidade/estado, não só quem está no seu raio de atendimento.</p>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+            <input type="text" id="ref-link-input" readonly value="<?= View::e($refLink) ?>" style="flex:1; min-width:220px; font-size:.82rem; padding:8px 10px; border-radius:6px; border:1px solid var(--border);">
+            <button type="button" class="btn btn-outline btn-sm" id="ref-link-copy">Copiar link</button>
+            <a href="https://wa.me/?text=<?= rawurlencode('Olá! Segue o link pra você conhecer o Ecodiffusore e já garantir sua economia de diesel: ' . $refLink) ?>" target="_blank" rel="noopener" class="btn btn-primary btn-sm">💬 Compartilhar</a>
+        </div>
+    </div>
+    <script>
+    document.getElementById('ref-link-copy')?.addEventListener('click', function () {
+        var input = document.getElementById('ref-link-input');
+        input.select();
+        navigator.clipboard?.writeText(input.value);
+        this.textContent = 'Copiado!';
+        setTimeout(() => { this.textContent = 'Copiar link'; }, 2000);
+    });
+    </script>
+<?php endif; ?>
+
 <p class="hint-text" style="margin-top:-6px;">Documentos institucionais pra mandar pro cliente na hora certa — mesmos arquivos já publicados no site.</p>
 
 <?php if ($sucesso): ?>
