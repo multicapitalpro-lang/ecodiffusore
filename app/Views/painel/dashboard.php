@@ -198,58 +198,57 @@ $hasMetrics = isset($metrics);
         </div>
     <?php endif; ?>
 
-    <h3 class="section-title">Valor total de pedidos por dia</h3>
+    <h3 class="section-title">Pedidos por dia</h3>
     <div class="chart-box">
+        <div class="chart-tabs" role="tablist" id="dashboard-daily-tabs">
+            <button type="button" class="chart-tab is-active" data-chart-tab="total">Valor Total</button>
+            <button type="button" class="chart-tab" data-chart-tab="pendente">Pendente</button>
+            <button type="button" class="chart-tab" data-chart-tab="pago">Pago</button>
+        </div>
         <div style="position:relative; width:100%; height:320px;">
-            <canvas id="dashboard-daily-chart" role="img" aria-label="Valor total de pedidos por dia, período atual comparado ao anterior">Gráfico de valor de pedidos por dia.</canvas>
+            <canvas id="dashboard-daily-chart" role="img" aria-label="Pedidos por dia">Gráfico de pedidos por dia.</canvas>
         </div>
         <script id="dashboard-daily-chart-data" type="application/json"><?= $chartDailyJson ?></script>
-        <p class="chart-legend"><span class="dot dot-current"></span> Período atual &nbsp; <span class="dot dot-previous"></span> Período anterior</p>
+        <script id="dashboard-situacao-chart-data" type="application/json"><?= $chartSituacaoJson ?? '{}' ?></script>
+        <p class="chart-legend" id="dashboard-daily-legend"><span class="dot dot-current"></span> Período atual &nbsp; <span class="dot dot-previous"></span> Período anterior</p>
     </div>
 
-    <?php if (isset($chartSituacaoJson)): ?>
-        <h3 class="section-title">Total, pendente e pago por dia (período filtrado)</h3>
-        <div class="chart-box">
-            <div style="position:relative; width:100%; height:320px;">
-                <canvas id="dashboard-situacao-chart" role="img" aria-label="Valor total, pendente e pago por dia">Gráfico de total, pendente e pago por dia.</canvas>
-            </div>
-            <script id="dashboard-situacao-chart-data" type="application/json"><?= $chartSituacaoJson ?></script>
-            <p class="chart-legend"><span class="dot dot-current"></span> Total &nbsp; <span class="dot" style="background:#d69a1e;"></span> Pendente &nbsp; <span class="dot" style="background:#2a5c9a;"></span> Pago</p>
-        </div>
-    <?php endif; ?>
-
     <?php if (isset($chartPendingByState)): ?>
-        <h3 class="section-title">Pendentes por região (período filtrado)</h3>
-        <div class="charts-grid-3">
-            <div class="chart-box">
-                <span class="hint-inline">Por estado</span>
-                <div class="chart-bar-wrap"><?= $chartPendingByState ?></div>
-            </div>
-            <div class="chart-box">
-                <span class="hint-inline">Por cidade (top 8)</span>
-                <div class="chart-bar-wrap"><?= $chartPendingByCity ?></div>
-            </div>
-            <div class="chart-box">
-                <span class="hint-inline">Por licenciado (top 8)</span>
-                <div class="chart-bar-wrap"><?= $chartPendingByLicenciado ?></div>
+        <h3 class="section-title">Vendas por região (período filtrado)</h3>
+        <div class="chart-tabs" role="tablist" id="dashboard-region-tabs">
+            <button type="button" class="chart-tab is-active" data-region-tab="pendente">Pendentes</button>
+            <button type="button" class="chart-tab" data-region-tab="pago">Vendidos</button>
+        </div>
+        <div data-region-panel="pendente">
+            <div class="charts-grid-3">
+                <div class="chart-box">
+                    <span class="hint-inline">Por estado</span>
+                    <div class="chart-bar-wrap"><?= $chartPendingByState ?></div>
+                </div>
+                <div class="chart-box">
+                    <span class="hint-inline">Por cidade (top 8)</span>
+                    <div class="chart-bar-wrap"><?= $chartPendingByCity ?></div>
+                </div>
+                <div class="chart-box">
+                    <span class="hint-inline">Por licenciado (top 8)</span>
+                    <div class="chart-bar-wrap"><?= $chartPendingByLicenciado ?></div>
+                </div>
             </div>
         </div>
-    <?php endif; ?>
-
-    <?php if (isset($chartPaidByState)): ?>
-        <h3 class="section-title">Vendidos por região (período filtrado)</h3>
-        <div class="charts-grid-3">
-            <div class="chart-box">
-                <span class="hint-inline">Por estado</span>
-                <div class="chart-bar-wrap"><?= $chartPaidByState ?></div>
-            </div>
-            <div class="chart-box">
-                <span class="hint-inline">Por cidade (top 8)</span>
-                <div class="chart-bar-wrap"><?= $chartPaidByCity ?></div>
-            </div>
-            <div class="chart-box">
-                <span class="hint-inline">Por licenciado (top 8)</span>
-                <div class="chart-bar-wrap"><?= $chartPaidByLicenciado ?></div>
+        <div data-region-panel="pago" hidden>
+            <div class="charts-grid-3">
+                <div class="chart-box">
+                    <span class="hint-inline">Por estado</span>
+                    <div class="chart-bar-wrap"><?= $chartPaidByState ?></div>
+                </div>
+                <div class="chart-box">
+                    <span class="hint-inline">Por cidade (top 8)</span>
+                    <div class="chart-bar-wrap"><?= $chartPaidByCity ?></div>
+                </div>
+                <div class="chart-box">
+                    <span class="hint-inline">Por licenciado (top 8)</span>
+                    <div class="chart-bar-wrap"><?= $chartPaidByLicenciado ?></div>
+                </div>
             </div>
         </div>
     <?php endif; ?>

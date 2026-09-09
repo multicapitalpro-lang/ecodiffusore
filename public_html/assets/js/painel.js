@@ -102,15 +102,20 @@ function bindItemsTable(root) {
     recalcAll();
 }
 
+// Grafico unico com abas (Valor Total / Pendente / Pago) em vez de 2 graficos empilhados na tela
+// -- pedido do usuario, clicar na aba troca o dataset do MESMO grafico (chart.data + chart.update()),
+// sem recriar a instancia. "Valor Total" tem 2 linhas (atual/anterior); Pendente/Pago tem so 1.
 function bindDashboardChart(root) {
     var canvas = root.querySelector('#dashboard-daily-chart');
-    var dataScript = root.querySelector('#dashboard-daily-chart-data');
-    if (!canvas || !dataScript || canvas.dataset.chartBound || typeof Chart === 'undefined') return;
+    var dailyDataScript = root.querySelector('#dashboard-daily-chart-data');
+    var situacaoDataScript = root.querySelector('#dashboard-situacao-chart-data');
+    if (!canvas || !dailyDataScript || canvas.dataset.chartBound || typeof Chart === 'undefined') return;
     canvas.dataset.chartBound = '1';
 
-    var data;
+    var dailyData, situacaoData;
     try {
-        data = JSON.parse(dataScript.textContent);
+        dailyData = JSON.parse(dailyDataScript.textContent);
+        situacaoData = situacaoDataScript ? JSON.parse(situacaoDataScript.textContent) : null;
     } catch (e) {
         return;
     }
@@ -124,39 +129,41 @@ function bindDashboardChart(root) {
         return 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
-    new Chart(canvas, {
-        type: 'line',
-        data: {
-            labels: data.labels,
+    var views = {
+        total: {
+            labels: dailyData.labels,
+            legend: '<span class="dot dot-current"></span> Período atual &nbsp; <span class="dot dot-previous"></span> Período anterior',
             datasets: [
                 {
-                    label: 'Período atual',
-                    data: data.current,
-                    borderColor: '#6ea62c',
-                    backgroundColor: gradient,
-                    fill: true,
-                    tension: 0.4,
-                    pointRadius: 0,
-                    pointHoverRadius: 5,
-                    pointBackgroundColor: '#fff',
-                    pointBorderColor: '#6ea62c',
-                    pointBorderWidth: 2,
-                    borderWidth: 2.5
+                    label: 'Período atual', data: dailyData.current, borderColor: '#6ea62c', backgroundColor: gradient,
+                    fill: true, tension: 0.4, pointRadius: 0, pointHoverRadius: 5, pointBackgroundColor: '#fff',
+                    pointBorderColor: '#6ea62c', pointBorderWidth: 2, borderWidth: 2.5
                 },
                 {
-                    label: 'Período anterior',
-                    data: data.previous,
-                    borderColor: '#c9cfdc',
-                    backgroundColor: 'transparent',
-                    borderDash: [4, 3],
-                    fill: false,
-                    tension: 0.4,
-                    pointRadius: 0,
-                    pointHoverRadius: 4,
-                    borderWidth: 1.75
+                    label: 'Período anterior', data: dailyData.previous, borderColor: '#c9cfdc', backgroundColor: 'transparent',
+                    borderDash: [4, 3], fill: false, tension: 0.4, pointRadius: 0, pointHoverRadius: 4, borderWidth: 1.75
                 }
             ]
         },
+        pendente: situacaoData && {
+            labels: situacaoData.labels,
+            legend: '<span class="dot" style="background:#d69a1e;"></span> Pendente',
+            datasets: [
+                { label: 'Pendente', data: situacaoData.pending, borderColor: '#d69a1e', backgroundColor: 'transparent', fill: false, tension: 0.4, pointRadius: 0, pointHoverRadius: 4, borderWidth: 2.5 }
+            ]
+        },
+        pago: situacaoData && {
+            labels: situacaoData.labels,
+            legend: '<span class="dot" style="background:#2a5c9a;"></span> Pago',
+            datasets: [
+                { label: 'Pago', data: situacaoData.paid, borderColor: '#2a5c9a', backgroundColor: 'transparent', fill: false, tension: 0.4, pointRadius: 0, pointHoverRadius: 4, borderWidth: 2.5 }
+            ]
+        }
+    };
+
+    var chart = new Chart(canvas, {
+        type: 'line',
+        data: { labels: views.total.labels, datasets: views.total.datasets },
         options: {
             responsive: true,
             maintainAspectRatio: false,
@@ -164,134 +171,67 @@ function bindDashboardChart(root) {
             plugins: {
                 legend: { display: false },
                 tooltip: {
-                    backgroundColor: '#2c2c2a',
-                    titleColor: '#f0efec',
-                    bodyColor: '#c3c2b7',
-                    padding: 10,
-                    cornerRadius: 6,
-                    callbacks: {
-                        label: function (item) {
-                            return item.dataset.label + ': ' + fmtCurrency(item.raw);
-                        }
-                    }
+                    backgroundColor: '#2c2c2a', titleColor: '#f0efec', bodyColor: '#c3c2b7', padding: 10, cornerRadius: 6,
+                    callbacks: { label: function (item) { return item.dataset.label + ': ' + fmtCurrency(item.raw); } }
                 }
             },
             scales: {
                 x: { grid: { display: false }, ticks: { color: '#8a93ab', font: { size: 11 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 8 } },
                 y: {
-                    beginAtZero: true,
-                    grid: { color: '#eef0f5' },
+                    beginAtZero: true, grid: { color: '#eef0f5' },
                     ticks: {
-                        color: '#8a93ab',
-                        font: { size: 11 },
-                        callback: function (v) {
-                            return v >= 1000 ? 'R$ ' + (v / 1000).toFixed(1).replace('.0', '') + 'k' : 'R$ ' + v;
-                        }
+                        color: '#8a93ab', font: { size: 11 },
+                        callback: function (v) { return v >= 1000 ? 'R$ ' + (v / 1000).toFixed(1).replace('.0', '') + 'k' : 'R$ ' + v; }
                     }
                 }
             }
         }
     });
+
+    var legendEl = root.querySelector('#dashboard-daily-legend');
+    var tabsWrap = root.querySelector('#dashboard-daily-tabs');
+    if (!tabsWrap) return;
+
+    tabsWrap.querySelectorAll('[data-chart-tab]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var key = btn.dataset.chartTab;
+            var view = views[key];
+            if (!view) return;
+
+            tabsWrap.querySelectorAll('[data-chart-tab]').forEach(function (b) { b.classList.remove('is-active'); });
+            btn.classList.add('is-active');
+
+            chart.data.labels = view.labels;
+            chart.data.datasets = view.datasets;
+            chart.update();
+            if (legendEl) legendEl.innerHTML = view.legend;
+        });
+    });
 }
 
-function bindDashboardSituacaoChart(root) {
-    var canvas = root.querySelector('#dashboard-situacao-chart');
-    var dataScript = root.querySelector('#dashboard-situacao-chart-data');
-    if (!canvas || !dataScript || canvas.dataset.chartBound || typeof Chart === 'undefined') return;
-    canvas.dataset.chartBound = '1';
+// Abas "Pendentes"/"Vendidos" das 3 secoes de regiao (estado/cidade/licenciado) -- graficos ja sao
+// SVG server-side, so troca visibilidade, sem recalcular nada.
+function bindDashboardRegionTabs(root) {
+    var tabsWrap = root.querySelector('#dashboard-region-tabs');
+    if (!tabsWrap || tabsWrap.dataset.bound) return;
+    tabsWrap.dataset.bound = '1';
 
-    var data;
-    try {
-        data = JSON.parse(dataScript.textContent);
-    } catch (e) {
-        return;
-    }
-
-    function fmtCurrency(v) {
-        return 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
-
-    new Chart(canvas, {
-        type: 'line',
-        data: {
-            labels: data.labels,
-            datasets: [
-                {
-                    label: 'Total',
-                    data: data.total,
-                    borderColor: '#6ea62c',
-                    backgroundColor: 'transparent',
-                    fill: false,
-                    tension: 0.4,
-                    pointRadius: 0,
-                    pointHoverRadius: 4,
-                    borderWidth: 2.5
-                },
-                {
-                    label: 'Pendente',
-                    data: data.pending,
-                    borderColor: '#d69a1e',
-                    backgroundColor: 'transparent',
-                    fill: false,
-                    tension: 0.4,
-                    pointRadius: 0,
-                    pointHoverRadius: 4,
-                    borderWidth: 1.75
-                },
-                {
-                    label: 'Pago',
-                    data: data.paid,
-                    borderColor: '#2a5c9a',
-                    backgroundColor: 'transparent',
-                    fill: false,
-                    tension: 0.4,
-                    pointRadius: 0,
-                    pointHoverRadius: 4,
-                    borderWidth: 1.75
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            interaction: { mode: 'index', intersect: false },
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    backgroundColor: '#2c2c2a',
-                    titleColor: '#f0efec',
-                    bodyColor: '#c3c2b7',
-                    padding: 10,
-                    cornerRadius: 6,
-                    callbacks: {
-                        label: function (item) {
-                            return item.dataset.label + ': ' + fmtCurrency(item.raw);
-                        }
-                    }
-                }
-            },
-            scales: {
-                x: { grid: { display: false }, ticks: { color: '#8a93ab', font: { size: 11 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 8 } },
-                y: {
-                    beginAtZero: true,
-                    grid: { color: '#eef0f5' },
-                    ticks: {
-                        color: '#8a93ab',
-                        font: { size: 11 },
-                        callback: function (v) {
-                            return v >= 1000 ? 'R$ ' + (v / 1000).toFixed(1).replace('.0', '') + 'k' : 'R$ ' + v;
-                        }
-                    }
-                }
-            }
-        }
+    tabsWrap.querySelectorAll('[data-region-tab]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var key = btn.dataset.regionTab;
+            tabsWrap.querySelectorAll('[data-region-tab]').forEach(function (b) { b.classList.remove('is-active'); });
+            btn.classList.add('is-active');
+            root.querySelectorAll('[data-region-panel]').forEach(function (panel) {
+                panel.hidden = panel.dataset.regionPanel !== key;
+            });
+        });
     });
 }
 
 document.addEventListener('DOMContentLoaded', function () {
     bindItemsTable(document);
     bindDashboardChart(document);
-    bindDashboardSituacaoChart(document);
+    bindDashboardRegionTabs(document);
 });
 
 (function () {
