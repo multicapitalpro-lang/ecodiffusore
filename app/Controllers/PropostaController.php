@@ -91,6 +91,7 @@ class PropostaController
         $ecuStatus = $_POST['ecu_status'];
         $reprogrammedPower = trim($_POST['reprogrammed_power'] ?? '');
         $hasArla = $_POST['has_arla'];
+        $hasTelemetry = $_POST['has_telemetry'];
         $qty = max(1, (int) $_POST['quantidade']);
 
         $kmMensal = self::parseBrNumber($_POST['km_mensal']);
@@ -154,6 +155,7 @@ class PropostaController
                 'ecu_status' => $ecuStatus,
                 'reprogrammed_power' => $ecuStatus === 'reprogramado' ? $reprogrammedPower : null,
                 'has_arla' => $hasArla,
+                'has_telemetry' => $hasTelemetry,
             ]);
 
             $clientId = Client::create([
@@ -192,6 +194,7 @@ class PropostaController
             'ecu_status' => $ecuStatus,
             'reprogrammed_power' => $reprogrammedPower,
             'has_arla' => $hasArla,
+            'has_telemetry' => $hasTelemetry,
             'km_mensal' => $kmMensal,
             'km_litro' => $kmLitro,
             'preco_diesel' => $precoDiesel,
@@ -332,6 +335,9 @@ class PropostaController
 
         if (!in_array($post['has_arla'] ?? '', ['sim', 'nao'], true)) {
             $errors['has_arla'] = 'Selecione uma opção.';
+        }
+        if (!in_array($post['has_telemetry'] ?? '', ['sim', 'nao'], true)) {
+            $errors['has_telemetry'] = 'Selecione uma opção.';
         }
         if (!is_numeric($post['quantidade'] ?? '') || (int) $post['quantidade'] < 1) {
             $errors['quantidade'] = 'Informe pelo menos 1 placa.';

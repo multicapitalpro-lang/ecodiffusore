@@ -80,6 +80,15 @@ $pricingTiers = $pricingTiers ?? [];
             </div>
             <div class="form-grid-2">
                 <div>
+                    <label for="has_telemetry">Possui telemetria no veículo?</label>
+                    <select id="has_telemetry" name="has_telemetry" required>
+                        <option value="">Selecione</option>
+                        <option value="sim">Sim</option>
+                        <option value="nao">Não</option>
+                    </select>
+                    <p class="field-error" data-error-for="has_telemetry"></p>
+                </div>
+                <div>
                     <label for="ecu_status">Motor original ou reprogramado?</label>
                     <select id="ecu_status" name="ecu_status" required onchange="document.getElementById('reprogrammed-power-wrap').hidden = this.value !== 'reprogramado';">
                         <option value="">Selecione</option>

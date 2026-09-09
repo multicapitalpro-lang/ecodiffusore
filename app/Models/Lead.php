@@ -83,7 +83,8 @@ class Lead
         $stmt = Database::connection()->prepare(
             'UPDATE leads SET name = :name, vehicle_plate = :plate, vehicle_year = :year, vehicle_brand = :brand,
                 vehicle_model = :model, vehicle_power = :power, vehicle_ecu_status = :ecu_status,
-                vehicle_reprogrammed_power = :reprogrammed_power, vehicle_has_arla = :has_arla WHERE id = :id'
+                vehicle_reprogrammed_power = :reprogrammed_power, vehicle_has_arla = :has_arla,
+                vehicle_has_telemetry = :has_telemetry WHERE id = :id'
         );
         $stmt->execute([
             'id' => $id,
@@ -96,6 +97,7 @@ class Lead
             'ecu_status' => in_array($data['ecu_status'] ?? '', ['original', 'reprogramado'], true) ? $data['ecu_status'] : null,
             'reprogrammed_power' => ($data['reprogrammed_power'] ?? '') ?: null,
             'has_arla' => in_array($data['has_arla'] ?? '', ['sim', 'nao'], true) ? $data['has_arla'] : null,
+            'has_telemetry' => in_array($data['has_telemetry'] ?? '', ['sim', 'nao'], true) ? $data['has_telemetry'] : null,
         ]);
     }
 

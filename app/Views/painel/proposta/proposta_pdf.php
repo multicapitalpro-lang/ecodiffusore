@@ -46,6 +46,7 @@ $hasPayback = $payback && $payback['tiers']['avg']['monthly'] > 0;
     <tr><td>Potência</td><td><?= htmlspecialchars($result['power'] ?: '—', ENT_QUOTES, 'UTF-8') ?></td></tr>
     <tr><td>Motor</td><td><?= $result['ecu_status'] === 'original' ? 'Original de fábrica' : 'Reprogramado (chip)' . ($result['reprogrammed_power'] ? ' — ' . htmlspecialchars($result['reprogrammed_power'], ENT_QUOTES, 'UTF-8') : '') ?></td></tr>
     <tr><td>ARLA</td><td><?= $result['has_arla'] === 'sim' ? 'Sim' : 'Não' ?></td></tr>
+    <tr><td>Telemetria</td><td><?= ($result['has_telemetry'] ?? 'nao') === 'sim' ? 'Sim' : 'Não' ?></td></tr>
 </table>
 
 <?php if (!empty($result['product_price'])): ?>
