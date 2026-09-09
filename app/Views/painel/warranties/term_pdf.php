@@ -18,87 +18,157 @@ $vehicleLine = trim(implode(' ', array_filter([
 <meta charset="UTF-8">
 <title>Termo de Garantia</title>
 <style>
-    body { font-family: 'DejaVu Sans', sans-serif; font-size: 10.5px; color: #222; }
-    .letterhead { border-bottom: 3px solid #1a7a4c; padding-bottom: 12px; margin-bottom: 20px; }
-    .letterhead-brand { font-size: 16px; font-weight: bold; color: #1a7a4c; letter-spacing: .5px; text-transform: uppercase; }
-    .letterhead-title { margin: 4px 0; font-size: 21px; }
-    .letterhead-meta { color: #666; font-size: 10px; }
-    h2 { font-size: 13px; margin: 18px 0 8px; color: #0e0e0e; border-bottom: 1px solid #ddd; padding-bottom: 4px; }
-    table.data-table { width: 100%; border-collapse: collapse; margin-bottom: 4px; }
-    table.data-table td { border: 1px solid #ddd; padding: 6px 9px; vertical-align: top; }
-    table.data-table td.label { width: 30%; color: #666; background: #fafafa; }
-    .terms-text { font-size: 10px; line-height: 1.6; text-align: justify; margin: 0 0 10px; }
-    .terms-text strong { color: #0e0e0e; }
-    .signature-box { margin-top: 44px; text-align: center; }
-    .signature-line { border-top: 1px solid #333; width: 280px; margin: 0 auto 4px; padding-top: 4px; }
-    .footer-note { margin-top: 20px; font-size: 9px; color: #777; }
+    @page { margin: 100px 42px 70px 42px; }
+    body { font-family: 'DejaVu Sans', sans-serif; font-size: 10.5px; color: #2b2b2b; line-height: 1.45; }
+
+    header { position: fixed; top: -80px; left: 0px; right: 0px; height: 80px; }
+    footer { position: fixed; bottom: -55px; left: 0px; right: 0px; height: 40px; text-align: center; }
+
+    .brand-bar { background: #0e2a1c; height: 6px; width: 100%; }
+    .letterhead-inner { padding: 14px 0 10px; border-bottom: 2px solid #8dc63f; }
+    .letterhead-brand { font-size: 17px; font-weight: bold; color: #0e2a1c; letter-spacing: .4px; }
+    .letterhead-tag { font-size: 8.5px; color: #6ea62c; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; }
+    .letterhead-doc { float: right; text-align: right; font-size: 9px; color: #777; }
+    .letterhead-doc strong { display: block; font-size: 13px; color: #0e2a1c; }
+
+    .footer-line { border-top: 1px solid #ddd; padding-top: 6px; font-size: 8px; color: #999; }
+
+    h1.doc-title { font-size: 19px; color: #0e2a1c; margin: 0 0 3px; text-align: center; text-transform: uppercase; letter-spacing: .5px; }
+    p.doc-subtitle { text-align: center; font-size: 9.5px; color: #777; margin: 0 0 18px; }
+
+    .section { margin-bottom: 14px; page-break-inside: avoid; }
+    .section-title {
+        background: #f0f7e6; color: #4a7a1e; font-size: 10px; font-weight: bold; text-transform: uppercase;
+        letter-spacing: .4px; padding: 5px 10px; margin: 0 0 6px; border-left: 3px solid #8dc63f;
+    }
+    table.info-table { width: 100%; border-collapse: collapse; }
+    table.info-table td { padding: 5px 10px; border-bottom: 1px solid #ececec; vertical-align: top; }
+    table.info-table td.label { width: 34%; color: #888; font-size: 9.5px; }
+    table.info-table td.value { font-weight: bold; color: #222; }
+
+    .terms-block { margin-top: 4px; }
+    p.terms-text { font-size: 9.7px; line-height: 1.65; text-align: justify; margin: 0 0 10px; page-break-inside: avoid; }
+    p.terms-text strong { color: #0e2a1c; }
+    p.terms-highlight {
+        background: #fbf6e8; border-left: 3px solid #d6a92c; padding: 8px 12px; font-size: 9.7px;
+        line-height: 1.6; margin: 0 0 10px; page-break-inside: avoid;
+    }
+    p.terms-highlight strong { color: #8a6710; }
+
+    .signature-area { margin-top: 30px; page-break-inside: avoid; }
+    .signature-row { display: table; width: 100%; }
+    .signature-col { display: table-cell; width: 50%; text-align: center; padding: 0 14px; }
+    .signature-line { border-top: 1px solid #444; margin: 40px 10px 5px; }
+    .signature-name { font-size: 9.5px; font-weight: bold; color: #222; }
+    .signature-role { font-size: 8.5px; color: #888; }
+
+    .stamp {
+        display: inline-block; margin-top: 16px; padding: 4px 12px; border: 1px solid #8dc63f; border-radius: 3px;
+        color: #4a7a1e; font-size: 8.5px; font-weight: bold; text-transform: uppercase; letter-spacing: .5px;
+    }
 </style>
 </head>
 <body>
-<div class="letterhead">
-    <div class="letterhead-brand"><?= $e($company['razao_social'] ?? 'Ecodiffusore Brasil') ?></div>
-    <div class="letterhead-title">Termo de Garantia</div>
-    <div class="letterhead-meta">Pedido #<?= (int) $warranty['order_id'] ?> · Emitido em <?= date('d/m/Y') ?></div>
+
+<header>
+    <div class="brand-bar"></div>
+    <div class="letterhead-inner">
+        <div class="letterhead-doc"><strong>Termo #<?= (int) $warranty['id'] ?></strong>Pedido #<?= (int) $warranty['order_id'] ?></div>
+        <div class="letterhead-brand"><?= $e($company['razao_social'] ?? 'Ecodiffusore Brasil') ?></div>
+        <div class="letterhead-tag">Garantia Estendida do Produto</div>
+    </div>
+</header>
+
+<footer>
+    <div class="footer-line">
+        <?= $e($company['razao_social'] ?? 'Ecodiffusore Brasil') ?> · CNPJ <?= $e($company['cnpj'] ?? null) ?> · Documento gerado eletronicamente — ecodiffusorebrasil.com.br
+    </div>
+</footer>
+
+<h1 class="doc-title">Termo de Garantia</h1>
+<p class="doc-subtitle">Emitido em <?= date('d/m/Y') ?> · Válido em todo o território nacional</p>
+
+<div class="section">
+    <p class="section-title">Dados da empresa emissora</p>
+    <table class="info-table">
+        <tr><td class="label">Razão social</td><td class="value"><?= $e($company['razao_social'] ?? null) ?></td></tr>
+        <tr><td class="label">CNPJ</td><td class="value"><?= $e($company['cnpj'] ?? null) ?></td></tr>
+        <tr><td class="label">Endereço</td><td class="value"><?= $e($company['endereco'] ?? null) ?></td></tr>
+    </table>
 </div>
 
-<h2>Dados da empresa</h2>
-<table class="data-table">
-    <tr><td class="label">Razão social</td><td><?= $e($company['razao_social'] ?? null) ?></td></tr>
-    <tr><td class="label">CNPJ</td><td><?= $e($company['cnpj'] ?? null) ?></td></tr>
-    <tr><td class="label">Endereço</td><td><?= $e($company['endereco'] ?? null) ?></td></tr>
-</table>
-
-<h2>Dados do comprador</h2>
-<table class="data-table">
-    <tr><td class="label">Nome / Razão social</td><td><?= $e($warranty['client_name'] ?? null) ?></td></tr>
-    <tr><td class="label">CPF/CNPJ</td><td><?= $e($warranty['client_document'] ?? null) ?></td></tr>
-    <tr><td class="label">Endereço</td><td><?= $e(trim(($warranty['client_address'] ?? '') . (!empty($warranty['client_city']) ? ', ' . $warranty['client_city'] : '') . (!empty($warranty['client_state']) ? '/' . $warranty['client_state'] : ''))) ?></td></tr>
-</table>
-
-<h2>Dados do motorista</h2>
-<table class="data-table">
-    <tr><td class="label">Nome completo</td><td><?= $e($warranty['driver_name'] ?? null) ?></td></tr>
-    <tr><td class="label">CPF</td><td><?= $e($warranty['driver_document'] ?? null) ?></td></tr>
-</table>
-
-<h2>Dados do pedido e do veículo</h2>
-<table class="data-table">
-    <tr><td class="label">Nº do pedido</td><td>#<?= (int) $warranty['order_id'] ?></td></tr>
-    <tr><td class="label">Nº da nota fiscal</td><td><?= $e($warranty['nfe_number'] ?? null) ?></td></tr>
-    <tr><td class="label">Data do pedido</td><td><?= $e(date('d/m/Y', strtotime($warranty['order_date']))) ?></td></tr>
-    <tr><td class="label">Produto</td><td><?= $e($produtos) ?></td></tr>
-    <tr><td class="label">Veículo</td><td><?= $e($vehicleLine ?: null) ?></td></tr>
-    <tr><td class="label">Placa</td><td><?= $e($vehicle['plate'] ?? null) ?></td></tr>
-    <tr><td class="label">Garantia aprovada em</td><td><?= $warranty['resolved_at'] ? $e(date('d/m/Y', strtotime($warranty['resolved_at']))) : '—' ?></td></tr>
-</table>
-
-<h2>Termo</h2>
-<p class="terms-text">
-    A <?= $e($company['razao_social'] ?? 'Ecodiffusore Brasil') ?> certifica que a solicitação de
-    garantia referente ao pedido acima foi analisada e <strong>aprovada</strong>, conforme os
-    documentos e informações apresentados pelo comprador. Este termo comprova a cobertura de
-    Garantia Estendida do produto adquirido, nos termos e condições estabelecidos abaixo.
-</p>
-<p class="terms-text">
-    <strong>Prazo de garantia:</strong> 90 (noventa) dias para casos de arrependimento de compra,
-    caso comprovadamente não haja economia do produto no veículo.
-</p>
-<p class="terms-text">
-    Para efeitos de eventual pedido de revisão da economia, o motorista ou transportador deverá
-    obrigatoriamente ter anexado e comprovado na hora da compra o relatório de consumo e média ou
-    telemetria dos últimos 180 (cento e oitenta) dias antes da data da compra, e também comprovar
-    que, a partir da instalação do equipamento, o veículo manteve os mesmos trajetos, peso de carga
-    e motorista. O cliente somente poderá ser reembolsado caso, na aferição, seja comprovado que a
-    economia foi impreterivelmente menor do que 5% (cinco por cento) na média mensal da frota.
-</p>
-<?php if (!empty($warranty['resolution_note'])): ?>
-<p class="terms-text"><strong>Observações da análise:</strong> <?= nl2br($e($warranty['resolution_note'])) ?></p>
-<?php endif; ?>
-
-<div class="signature-box">
-    <div class="signature-line"><?= $e($company['razao_social'] ?? 'Ecodiffusore Brasil') ?><?= !empty($warranty['resolved_by_name']) ? ' — ' . $e($warranty['resolved_by_name']) : '' ?></div>
+<div class="section">
+    <p class="section-title">Dados do comprador</p>
+    <table class="info-table">
+        <tr><td class="label">Nome / Razão social</td><td class="value"><?= $e($warranty['client_name'] ?? null) ?></td></tr>
+        <tr><td class="label">CPF/CNPJ</td><td class="value"><?= $e($warranty['client_document'] ?? null) ?></td></tr>
+        <tr><td class="label">Endereço</td><td class="value"><?= $e(trim(($warranty['client_address'] ?? '') . (!empty($warranty['client_city']) ? ', ' . $warranty['client_city'] : '') . (!empty($warranty['client_state']) ? '/' . $warranty['client_state'] : ''))) ?></td></tr>
+    </table>
 </div>
 
-<p class="footer-note">Documento gerado eletronicamente pelo sistema Ecodiffusore Brasil — ecodiffusorebrasil.com.br</p>
+<div class="section">
+    <p class="section-title">Dados do motorista</p>
+    <table class="info-table">
+        <tr><td class="label">Nome completo</td><td class="value"><?= $e($warranty['driver_name'] ?? null) ?></td></tr>
+        <tr><td class="label">CPF</td><td class="value"><?= $e($warranty['driver_document'] ?? null) ?></td></tr>
+    </table>
+</div>
+
+<div class="section">
+    <p class="section-title">Dados do pedido e do veículo</p>
+    <table class="info-table">
+        <tr><td class="label">Nº do pedido</td><td class="value">#<?= (int) $warranty['order_id'] ?></td></tr>
+        <tr><td class="label">Nº da nota fiscal</td><td class="value"><?= $e($warranty['nfe_number'] ?? null) ?></td></tr>
+        <tr><td class="label">Data do pedido</td><td class="value"><?= $e(date('d/m/Y', strtotime($warranty['order_date']))) ?></td></tr>
+        <tr><td class="label">Produto</td><td class="value"><?= $e($produtos) ?></td></tr>
+        <tr><td class="label">Veículo</td><td class="value"><?= $e($vehicleLine ?: null) ?></td></tr>
+        <tr><td class="label">Placa</td><td class="value"><?= $e($vehicle['plate'] ?? null) ?></td></tr>
+        <tr><td class="label">Garantia aprovada em</td><td class="value"><?= $warranty['resolved_at'] ? $e(date('d/m/Y', strtotime($warranty['resolved_at']))) : '—' ?></td></tr>
+    </table>
+</div>
+
+<div class="section terms-block">
+    <p class="section-title">Termo de garantia</p>
+    <p class="terms-text">
+        A <strong><?= $e($company['razao_social'] ?? 'Ecodiffusore Brasil') ?></strong> certifica que a solicitação de
+        garantia referente ao pedido acima foi analisada e <strong>aprovada</strong>, conforme os documentos e
+        informações apresentados pelo comprador. Este termo comprova a cobertura de Garantia Estendida do produto
+        adquirido, nos termos e condições estabelecidos a seguir.
+    </p>
+    <p class="terms-highlight">
+        <strong>Prazo de garantia:</strong> 90 (noventa) dias, contados da confirmação do pagamento, para casos de
+        arrependimento de compra, caso comprovadamente não haja economia do produto no veículo.
+    </p>
+    <p class="terms-text">
+        Para efeitos de eventual pedido de revisão da economia, o motorista ou transportador deverá obrigatoriamente
+        ter anexado e comprovado na hora da compra o relatório de consumo e média ou telemetria dos últimos 180
+        (cento e oitenta) dias antes da data da compra, e também comprovar que, a partir da instalação do
+        equipamento, o veículo manteve os mesmos trajetos, peso de carga e motorista. O cliente somente poderá ser
+        reembolsado caso, na aferição, seja comprovado que a economia foi impreterivelmente menor do que 5% (cinco
+        por cento) na média mensal da frota.
+    </p>
+    <?php if (!empty($warranty['resolution_note'])): ?>
+    <p class="terms-text"><strong>Observações da análise:</strong> <?= nl2br($e($warranty['resolution_note'])) ?></p>
+    <?php endif; ?>
+</div>
+
+<div class="signature-area">
+    <div class="signature-row">
+        <div class="signature-col">
+            <div class="signature-line"></div>
+            <div class="signature-name"><?= $e($company['razao_social'] ?? 'Ecodiffusore Brasil') ?></div>
+            <div class="signature-role"><?= !empty($warranty['resolved_by_name']) ? $e($warranty['resolved_by_name']) : 'Responsável pela aprovação' ?></div>
+        </div>
+        <div class="signature-col">
+            <div class="signature-line"></div>
+            <div class="signature-name"><?= $e($warranty['client_name'] ?? null) ?></div>
+            <div class="signature-role">Comprador</div>
+        </div>
+    </div>
+    <div style="text-align:center;">
+        <span class="stamp">✔ Garantia aprovada</span>
+    </div>
+</div>
+
 </body>
 </html>
