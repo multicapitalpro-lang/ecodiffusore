@@ -1,9 +1,12 @@
 <?php
+use App\Core\Roles;
 use App\Core\View;
 ?>
 <div class="page-header">
-    <h1>Relatórios Financeiros</h1>
-    <a href="/painel/financeiro/relatorios/agendamentos" class="btn btn-outline">Agendamentos</a>
+    <h1>Relatórios</h1>
+    <?php if (in_array($user['role_slug'], Roles::MANAGEMENT, true)): ?>
+        <a href="/painel/financeiro/relatorios/agendamentos" class="btn btn-outline">Agendamentos</a>
+    <?php endif; ?>
 </div>
 
 <?php foreach ($catalog as $group => $reports): ?>

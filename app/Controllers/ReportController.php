@@ -27,17 +27,32 @@ class ReportController
     private const NATIONAL_ONLY_ROLES = ['admin', 'gerente'];
     private const NATIONAL_ONLY_GROUP = 'Fiscal e Antecipações';
 
+    /** "Vendas e CRM" (Relatorio de Vendas por Vendedor / Garantias) e' o unico grupo que TODO
+     *  STAFF ve, inclusive Supervisor e Vendedor -- que antes nao tinham NENHUM relatorio (so
+     *  Roles::MANAGEMENT + gerente/Fiscal tinham acesso a Relatorios). Financeiro (Caixas/Contas/
+     *  Comissoes/Fiscal) continua exatamente como sempre foi, sem mudanca de acesso. */
+    private const SALES_REPORT_TYPES = ['vendas_por_vendedor', 'garantias'];
+    private const SALES_REPORT_GROUP = 'Vendas e CRM';
+
     public function index(): void
     {
-        Auth::requireRole([...self::ALLOWED_ROLES, ...self::NATIONAL_ONLY_ROLES]);
+        Auth::requireRole(Roles::STAFF);
         $user = Auth::user();
 
         $catalog = FinancialReports::catalog();
-        if (!in_array($user['role_slug'], self::NATIONAL_ONLY_ROLES, true)) {
+        $hasFinanceAccess = in_array($user['role_slug'], self::ALLOWED_ROLES, true);
+        $hasNationalAccess = in_array($user['role_slug'], self::NATIONAL_ONLY_ROLES, true);
+
+        if (!$hasNationalAccess) {
             unset($catalog[self::NATIONAL_ONLY_GROUP]);
-        } elseif (!in_array($user['role_slug'], self::ALLOWED_ROLES, true)) {
-            // gerente (fora de Roles::MANAGEMENT): so enxerga o grupo nacional, resto e regional/pool
-            $catalog = array_intersect_key($catalog, [self::NATIONAL_ONLY_GROUP => true]);
+        }
+        if (!$hasFinanceAccess && !$hasNationalAccess) {
+            // Supervisor/Vendedor: so o grupo de Vendas e CRM, nada de financeiro/fiscal.
+            $catalog = array_intersect_key($catalog, [self::SALES_REPORT_GROUP => true]);
+        } elseif (!$hasFinanceAccess) {
+            // Gerente (fora de Roles::MANAGEMENT): Vendas e CRM + o grupo nacional, nunca
+            // Caixas/Contas/Comissoes (regional/pool).
+            $catalog = array_intersect_key($catalog, [self::SALES_REPORT_GROUP => true, self::NATIONAL_ONLY_GROUP => true]);
         }
 
         View::render('painel/reports/index', [
@@ -48,7 +63,7 @@ class ReportController
 
     public function show(string $type): void
     {
-        Auth::requireRole([...self::ALLOWED_ROLES, ...self::NATIONAL_ONLY_ROLES]);
+        Auth::requireRole(Roles::STAFF);
         $user = Auth::user();
         $this->assertTypeAllowed($type, $user);
 
@@ -60,19 +75,19 @@ class ReportController
             'title' => FinancialReports::title($type),
             'from' => $from,
             'to' => $to,
-            'report' => FinancialReports::generate($type, $from, $to, $this->scopeFor($user)),
+            'report' => FinancialReports::generate($type, $from, $to, $this->scopeFor($user, $type)),
         ]);
     }
 
     public function pdf(string $type): void
     {
-        Auth::requireRole([...self::ALLOWED_ROLES, ...self::NATIONAL_ONLY_ROLES]);
+        Auth::requireRole(Roles::STAFF);
         $user = Auth::user();
         $this->assertTypeAllowed($type, $user);
 
         [$from, $to] = DateRange::fromRequest();
         $title = FinancialReports::title($type);
-        $report = FinancialReports::generate($type, $from, $to, $this->scopeFor($user));
+        $report = FinancialReports::generate($type, $from, $to, $this->scopeFor($user, $type));
 
         ob_start();
         View::render('painel/reports/pdf', compact('title', 'from', 'to', 'report'), null);
@@ -84,16 +99,26 @@ class ReportController
 
     private function assertTypeAllowed(string $type, array $user): void
     {
-        $isNationalType = in_array($type, self::NATIONAL_ONLY_TYPES, true);
-        $isNationalRole = in_array($user['role_slug'], self::NATIONAL_ONLY_ROLES, true);
+        $role = $user['role_slug'];
+
+        // Vendas e CRM: liberado pra todo STAFF (ja garantido pelo Auth::requireRole acima),
+        // so escopado por rede -- nenhuma restricao extra de papel.
+        if (in_array($type, self::SALES_REPORT_TYPES, true)) {
+            return;
+        }
 
         // Dado nacional sensivel, so admin/gerente.
-        if ($isNationalType && !$isNationalRole) {
+        $isNationalType = in_array($type, self::NATIONAL_ONLY_TYPES, true);
+        if ($isNationalType && !in_array($role, self::NATIONAL_ONLY_ROLES, true)) {
+            $this->deny();
+        }
+        // Supervisor/Vendedor nunca acessam relatorio financeiro/fiscal, so Vendas e CRM.
+        if (!in_array($role, [...self::ALLOWED_ROLES, ...self::NATIONAL_ONLY_ROLES], true)) {
             $this->deny();
         }
         // Gerente fica restrito aos relatorios nacionais -- nao acessa Caixas/Contas/Comissoes
         // (regional/pool) so por ter ganhado essa excecao de acesso a Relatorios.
-        if ($user['role_slug'] === 'gerente' && !$isNationalType) {
+        if ($role === 'gerente' && !$isNationalType) {
             $this->deny();
         }
     }
@@ -107,10 +132,25 @@ class ReportController
 
     /** null = sem escopo (Admin, e Gerente nos relatorios nacionais de Fiscal/Antecipacoes --
      *  dado sensivel da operacao inteira, nao da regiao de um Licenciado, ver assertTypeAllowed).
-     *  Gestor/Licenciado veem so a propria rede -- mesma correcao de FinanceController. */
-    private function scopeFor(array $user): ?array
+     *  Gestor/Licenciado veem so a propria rede -- mesma correcao de FinanceController.
+     *  Pra "Vendas e CRM" (unico grupo que Supervisor/Vendedor/Gerente tambem acessam), o escopo
+     *  usa a MESMA hierarquia ja usada em PerformanceController/DashboardController pra esses
+     *  papeis (downlineIds/supervisedIds/nationalIds/self), diferente do resto do financeiro. */
+    private function scopeFor(array $user, string $type = ''): ?array
     {
-        if (in_array($user['role_slug'], [Roles::REGIONAL_OWNER, 'gestor'], true)) {
+        $role = $user['role_slug'];
+
+        if (in_array($type, self::SALES_REPORT_TYPES, true)) {
+            return match ($role) {
+                'admin' => null,
+                Roles::SELLER => [(int) $user['id']],
+                'supervisor' => User::supervisedIds((int) $user['id']),
+                'gerente' => User::nationalIds((int) $user['id']),
+                default => User::downlineIds((int) $user['id']), // gestor/licenciado
+            };
+        }
+
+        if (in_array($role, [Roles::REGIONAL_OWNER, 'gestor'], true)) {
             return User::downlineIds((int) $user['id']);
         }
 

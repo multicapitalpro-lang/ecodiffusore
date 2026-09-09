@@ -4,12 +4,17 @@ namespace App\Core;
 
 use App\Models\AsaasAnticipation;
 use App\Models\Order;
+use App\Models\WarrantyRequest;
 
 class FinancialReports
 {
     public static function catalog(): array
     {
         return [
+            'Vendas e CRM' => [
+                'vendas_por_vendedor' => 'Relatório de Vendas por Vendedor',
+                'garantias' => 'Relatório de Garantias',
+            ],
             'Caixas e Bancos' => [
                 'balancete' => 'Balancete (entradas x saídas)',
                 'dre' => 'DRE — Demonstrativo de Resultado',
@@ -58,6 +63,8 @@ class FinancialReports
     public static function generate(string $type, string $from, string $to, ?array $sellerIds = null): array
     {
         return match ($type) {
+            'vendas_por_vendedor' => self::vendasPorVendedor($from, $to, $sellerIds),
+            'garantias' => self::garantiasReport($from, $to, $sellerIds),
             'balancete' => self::balancete($from, $to, $sellerIds),
             'dre' => self::dre($from, $to, $sellerIds),
             'fluxo_caixa' => self::fluxoCaixa($from, $to, $sellerIds),
@@ -100,6 +107,67 @@ class FinancialReports
             EXISTS (SELECT 1 FROM orders o2 WHERE o2.id = {$alias}.order_id AND o2.seller_id IN ({$orderIn}))
             OR EXISTS (SELECT 1 FROM clients c2 WHERE c2.id = {$alias}.client_id AND c2.seller_id IN ({$clientIn}))
         )";
+    }
+
+    // ---- Vendas por Vendedor: mesmo motor de /painel/desempenho/vendedores (Order::sellerRanking),
+    // reaproveitado aqui como relatorio exportavel -- gap real, nao existia nenhum relatorio de
+    // vendas/CRM ate agora, so financeiro (Caixas/Contas/Comissoes/Fiscal). ----
+    private static function vendasPorVendedor(string $from, string $to, ?array $sellerIds): array
+    {
+        $ranking = Order::sellerRanking($from, $to, $sellerIds);
+
+        $rows = array_map(fn ($r) => [
+            $r['name'],
+            (int) $r['order_count'],
+            'R$ ' . number_format((float) $r['total_value'], 2, ',', '.'),
+            'R$ ' . number_format((float) $r['avg_ticket'], 2, ',', '.'),
+            $r['conversion_pct'] !== null ? $r['conversion_pct'] . '%' : '—',
+        ], $ranking);
+
+        $totalPedidos = array_sum(array_map(fn ($r) => (int) $r['order_count'], $ranking));
+
+        return [
+            'kind' => 'simple',
+            'columns' => ['Vendedor', 'Pedidos', 'Valor Vendido', 'Ticket Médio', 'Conversão'],
+            'rows' => $rows,
+            'totals' => ['Total de pedidos' => (string) $totalPedidos],
+        ];
+    }
+
+    // ---- Garantias: lista de solicitacoes no periodo (aberta/em_analise/aprovada/rejeitada/
+    // concluida) -- outro gap real, ate agora so dava pra ver isso navegando /painel/garantias
+    // tela por tela, sem relatorio exportavel/consolidado por periodo. ----
+    private static function garantiasReport(string $from, string $to, ?array $sellerIds): array
+    {
+        $all = WarrantyRequest::forScope($sellerIds, null);
+        $fromTs = strtotime($from . ' 00:00:00');
+        $toTs = strtotime($to . ' 23:59:59');
+        $inPeriod = array_filter($all, function ($w) use ($fromTs, $toTs) {
+            $createdTs = strtotime($w['created_at']);
+            return $createdTs >= $fromTs && $createdTs <= $toTs;
+        });
+
+        $labels = ['aberta' => 'Aberta', 'em_analise' => 'Em análise', 'aprovada' => 'Aprovada', 'rejeitada' => 'Rejeitada', 'concluida' => 'Concluída'];
+        $rows = array_map(fn ($w) => [
+            '#' . $w['order_id'],
+            $w['client_name'],
+            $w['seller_name'] ?? '—',
+            $labels[$w['status']] ?? $w['status'],
+            date('d/m/Y', strtotime($w['created_at'])),
+        ], $inPeriod);
+
+        $countByStatus = [];
+        foreach ($inPeriod as $w) {
+            $label = $labels[$w['status']] ?? $w['status'];
+            $countByStatus[$label] = ($countByStatus[$label] ?? 0) + 1;
+        }
+
+        return [
+            'kind' => 'simple',
+            'columns' => ['Pedido', 'Cliente', 'Vendedor', 'Status', 'Aberta em'],
+            'rows' => $rows,
+            'totals' => array_map(fn ($v) => (string) $v, $countByStatus),
+        ];
     }
 
     // ---- Balancete: linhas por categoria (Despesas/Receitas) em colunas semanais + Resultado ----
