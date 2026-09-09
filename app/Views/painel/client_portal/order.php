@@ -11,8 +11,18 @@ $methodLabels = ['PIX' => 'Pix', 'BOLETO' => 'Boleto', 'CREDIT_CARD' => 'Cartão
 <div class="order-summary">
     <p><strong>Data:</strong> <?= View::e(date('d/m/Y', strtotime($order['order_date']))) ?></p>
     <p><strong>Situação:</strong> <span class="status-badge status-<?= $order['status'] === 'verificado' ? 'active' : ($order['status'] === 'cancelado' ? 'inactive' : 'novo') ?>"><?= $statusLabels[$order['status']] ?? $order['status'] ?></span></p>
+    <?php
+        $isCorreios = !empty($order['tracking_carrier']) && stripos($order['tracking_carrier'], 'correios') !== false;
+        $correiosUrl = 'https://rastreamento.correios.com.br/app/index.php?objetos=' . urlencode((string) ($order['tracking_code'] ?? ''));
+    ?>
     <?php if (!empty($order['tracking_code']) || !empty($order['tracking_carrier'])): ?>
-        <p><strong>Rastreio:</strong> <?= View::e($order['tracking_carrier'] ?: '—') ?><?php if (!empty($order['tracking_code'])): ?> — código <code><?= View::e($order['tracking_code']) ?></code><?php endif; ?></p>
+        <p><strong>Rastreio:</strong> <?= View::e($order['tracking_carrier'] ?: '—') ?>
+            <?php if (!empty($order['tracking_code']) && $isCorreios): ?>
+                — código <a href="<?= View::e($correiosUrl) ?>" target="_blank" rel="noopener"><code><?= View::e($order['tracking_code']) ?></code> ↗</a>
+            <?php elseif (!empty($order['tracking_code'])): ?>
+                — código <code><?= View::e($order['tracking_code']) ?></code>
+            <?php endif; ?>
+        </p>
         <?php if (!empty($order['tracking_status'])): ?>
             <p><strong>Status atual:</strong> <?= View::e($order['tracking_status']) ?><?php if (!empty($order['tracking_status_date'])): ?> <small class="hint-text">(em <?= View::e(date('d/m/Y H:i', strtotime($order['tracking_status_date']))) ?>)</small><?php endif; ?></p>
         <?php endif; ?>
