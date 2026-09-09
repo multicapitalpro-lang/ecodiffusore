@@ -218,6 +218,7 @@ a { text-decoration: none; color: inherit; }
 /* Listas mobile-first (parcelas, retorno ano a ano) -- linhas que quebram em flex em vez de
    tabela com colunas fixas, pra nunca precisar de scroll horizontal num modal estreito. */
 .proposta-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.proposta-list[hidden] { display: none; }
 .proposta-list-row {
     display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
     background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px;
