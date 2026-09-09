@@ -133,15 +133,15 @@ $erro = isset($_GET['erro']);
             </div>
             <div class="extra-chart-card">
                 <h4>Menos poluentes no escapamento</h4>
-                <p>Combustão mais completa ajuda a reduzir a emissão de poluentes em até 40% — comparativo ilustrativo:</p>
+                <p>Combustão mais completa ajuda a reduzir a emissão de poluentes em até 70% — comparativo ilustrativo:</p>
                 <div class="emissions-bars">
                     <div class="emissions-bar-row">
                         <span>Sem Ecodiffusore <strong>100%</strong></span>
                         <div class="emissions-bar-track"><div class="emissions-bar-fill before"></div></div>
                     </div>
                     <div class="emissions-bar-row">
-                        <span>Com Ecodiffusore <strong>até 40% menos</strong></span>
-                        <div class="emissions-bar-track"><div class="emissions-bar-fill after" style="width:60%;"></div></div>
+                        <span>Com Ecodiffusore <strong>até 70% menos</strong></span>
+                        <div class="emissions-bar-track"><div class="emissions-bar-fill after" style="width:30%;"></div></div>
                     </div>
                 </div>
             </div>
