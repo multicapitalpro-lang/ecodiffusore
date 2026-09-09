@@ -594,6 +594,7 @@ document.addEventListener('DOMContentLoaded', function () {
             var vendedorWrap = root.querySelector('#vendedor-commission-wrap');
             var commissionPctWrap = root.querySelector('#commission-pct-wrap');
             var licenciadoNote = root.querySelector('#licenciado-commission-note');
+            var screensWrap = root.querySelector('#screens-permissions-wrap');
 
             function update() {
                 var opt = roleSelect.options[roleSelect.selectedIndex];
@@ -602,6 +603,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (vendedorWrap) vendedorWrap.style.display = slug === 'vendedor' ? '' : 'none';
                 if (commissionPctWrap) commissionPctWrap.style.display = slug === 'licenciado' ? 'none' : '';
                 if (licenciadoNote) licenciadoNote.style.display = slug === 'licenciado' ? '' : 'none';
+                if (screensWrap) screensWrap.style.display = (slug === 'gestor' || slug === 'vendedor') ? '' : 'none';
             }
 
             roleSelect.addEventListener('change', update);

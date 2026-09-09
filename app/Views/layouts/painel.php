@@ -34,6 +34,9 @@ $icons = [
 $icon = function (string $name) use ($icons) {
     return '<svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' . ($icons[$name] ?? '') . '</svg>';
 };
+/** Restricao granular de tela, so pra Gestor/Vendedor (ver App\Core\ScreenPermissions) -- esconde
+ *  o link do menu, mas quem realmente bloqueia acesso direto por URL e' o Router. */
+$canScreen = fn (string $key) => \App\Core\ScreenPermissions::can($user, $key);
 
 $managerRoles = Roles::MANAGEMENT;
 $staffRoles = Roles::STAFF;
@@ -80,11 +83,15 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/desempen
                 <details class="nav-group" <?= $leadsOpen ? 'open' : '' ?>>
                     <summary><?= $icon('pin') ?> Leads</summary>
                     <div class="nav-subitems">
-                        <a href="/painel/leads" class="<?= $isActive('/painel/leads') ? 'is-active' : '' ?>">Leads</a>
+                        <?php if ($canScreen('leads')): ?>
+                            <a href="/painel/leads" class="<?= $isActive('/painel/leads') ? 'is-active' : '' ?>">Leads</a>
+                        <?php endif; ?>
                         <?php if (in_array($role, array_merge($managerRoles, Roles::NATIONAL_SUPPORT), true)): ?>
                             <a href="/painel/leads/extensoes" class="<?= $isActive('/painel/leads/extensoes') ? 'is-active' : '' ?>">Extensões de Prazo</a>
                         <?php endif; ?>
-                        <a href="/painel/clientes" class="<?= $isActive('/painel/clientes') ? 'is-active' : '' ?>">Clientes</a>
+                        <?php if ($canScreen('clientes')): ?>
+                            <a href="/painel/clientes" class="<?= $isActive('/painel/clientes') ? 'is-active' : '' ?>">Clientes</a>
+                        <?php endif; ?>
                         <?php if ($role === 'admin'): ?>
                             <a href="/painel/configuracoes/roteamento" class="<?= $isActive('/painel/configuracoes/roteamento') ? 'is-active' : '' ?>">Roteamento de Leads</a>
                         <?php endif; ?>
@@ -94,11 +101,21 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/desempen
                 <details class="nav-group" <?= $vendasOpen ? 'open' : '' ?>>
                     <summary><?= $icon('cart') ?> Vendas (CRM)</summary>
                     <div class="nav-subitems">
-                        <a href="/painel/simulador" class="<?= $isActive('/painel/simulador') ? 'is-active' : '' ?>">Simulador de Economia</a>
-                        <a href="/painel/materiais" class="<?= $isActive('/painel/materiais') ? 'is-active' : '' ?>">Materiais de Venda</a>
-                        <a href="/painel/pedidos" class="<?= $isActive('/painel/pedidos') ? 'is-active' : '' ?>">Pedidos</a>
-                        <a href="/painel/orcamentos" class="<?= $isActive('/painel/orcamentos') ? 'is-active' : '' ?>">Orçamentos</a>
-                        <a href="/painel/entregas" class="<?= $isActive('/painel/entregas') ? 'is-active' : '' ?>">Acompanhar Entregas</a>
+                        <?php if ($canScreen('simulador')): ?>
+                            <a href="/painel/simulador" class="<?= $isActive('/painel/simulador') ? 'is-active' : '' ?>">Simulador de Economia</a>
+                        <?php endif; ?>
+                        <?php if ($canScreen('materiais')): ?>
+                            <a href="/painel/materiais" class="<?= $isActive('/painel/materiais') ? 'is-active' : '' ?>">Materiais de Venda</a>
+                        <?php endif; ?>
+                        <?php if ($canScreen('pedidos')): ?>
+                            <a href="/painel/pedidos" class="<?= $isActive('/painel/pedidos') ? 'is-active' : '' ?>">Pedidos</a>
+                        <?php endif; ?>
+                        <?php if ($canScreen('orcamentos')): ?>
+                            <a href="/painel/orcamentos" class="<?= $isActive('/painel/orcamentos') ? 'is-active' : '' ?>">Orçamentos</a>
+                        <?php endif; ?>
+                        <?php if ($canScreen('entregas')): ?>
+                            <a href="/painel/entregas" class="<?= $isActive('/painel/entregas') ? 'is-active' : '' ?>">Acompanhar Entregas</a>
+                        <?php endif; ?>
                         <?php if (in_array($role, ['admin', 'gerente'], true)): ?>
                             <a href="/painel/garantias" class="<?= $isActive('/painel/garantias') ? 'is-active' : '' ?>">
                                 Garantias
@@ -123,13 +140,13 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/desempen
                 <details class="nav-group" <?= $desempenhoOpen ? 'open' : '' ?>>
                     <summary><?= $icon('chart') ?> Desempenho</summary>
                     <div class="nav-subitems">
-                        <?php if (in_array($role, $managerRoles, true)): ?>
+                        <?php if (in_array($role, $managerRoles, true) && $canScreen('desempenho')): ?>
                             <a href="/painel/desempenho/vendedores" class="<?= $isActive('/painel/desempenho/vendedores') ? 'is-active' : '' ?>">Vendedores</a>
                         <?php endif; ?>
-                        <?php if (in_array($role, array_merge($managerRoles, $nationalSupportRoles), true)): ?>
+                        <?php if (in_array($role, array_merge($managerRoles, $nationalSupportRoles), true) && $canScreen('desempenho')): ?>
                             <a href="/painel/desempenho/funil" class="<?= $isActive('/painel/desempenho/funil') ? 'is-active' : '' ?>">Funil de Conversão</a>
                         <?php endif; ?>
-                        <?php if ($role === Roles::SELLER): ?>
+                        <?php if ($role === Roles::SELLER && $canScreen('desempenho')): ?>
                             <a href="/painel/meu-ranking" class="<?= $isActive('/painel/meu-ranking') ? 'is-active' : '' ?>">Meu Ranking</a>
                         <?php endif; ?>
                         <a href="/painel/metas" class="<?= $isActive('/painel/metas') ? 'is-active' : '' ?>">Metas</a>
@@ -153,7 +170,9 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/desempen
                             <a href="/painel/financeiro/contas-a-receber" class="<?= $isActive('/painel/financeiro/contas-a-receber') ? 'is-active' : '' ?>">Contas a Receber</a>
                             <a href="/painel/financeiro/remessas" class="<?= $isActive('/painel/financeiro/remessas') ? 'is-active' : '' ?>">Remessa e Retorno</a>
                         <?php endif; ?>
-                        <a href="/painel/financeiro/comissoes" class="<?= $isActive('/painel/financeiro/comissoes') ? 'is-active' : '' ?>">Comissões</a>
+                        <?php if ($canScreen('comissoes')): ?>
+                            <a href="/painel/financeiro/comissoes" class="<?= $isActive('/painel/financeiro/comissoes') ? 'is-active' : '' ?>">Comissões</a>
+                        <?php endif; ?>
                         <?php if (in_array($role, array_merge($managerRoles, ['gerente']), true)): ?>
                             <a href="/painel/financeiro/relatorios" class="<?= $isActive('/painel/financeiro/relatorios') ? 'is-active' : '' ?>">Relatórios</a>
                         <?php endif; ?>

@@ -7,6 +7,7 @@ use App\Core\Csrf;
 use App\Core\Response;
 use App\Core\Roles;
 use App\Core\Router;
+use App\Core\ScreenPermissions;
 use App\Core\View;
 use App\Models\AuditLog;
 use App\Models\Commission;
@@ -98,6 +99,7 @@ class UserController
             'canSetCommission' => $this->canSetCommission($user),
             'pricingTiers' => PricingTier::all(),
             'vendorTierValues' => [],
+            'allowedScreens' => null,
             'editing' => null,
             'errors' => [],
             'isModal' => $isFragment,
@@ -130,6 +132,7 @@ class UserController
                 'canSetCommission' => $this->canSetCommission($user),
                 'pricingTiers' => PricingTier::all(),
                 'vendorTierValues' => $this->tierValuesFromPost($_POST),
+                'allowedScreens' => $_POST['screens'] ?? [],
                 'editing' => null,
                 'errors' => $errors,
                 'old' => $_POST,
@@ -168,6 +171,10 @@ class UserController
 
         if ($createdRoleSlug === 'vendedor' && $this->canSetCommission($user)) {
             UserCommissionTier::setForUser($newUserId, $this->vendorTierValues($_POST));
+        }
+
+        if (in_array($createdRoleSlug, ['gestor', 'vendedor'], true)) {
+            ScreenPermissions::setFor($newUserId, $_POST['screens'] ?? []);
         }
 
         if ($createdRoleSlug === 'licenciado') {
@@ -216,6 +223,7 @@ class UserController
             'canSetCommission' => $this->canSetCommission($user),
             'pricingTiers' => PricingTier::all(),
             'vendorTierValues' => UserCommissionTier::forUser($id),
+            'allowedScreens' => ScreenPermissions::getFor($id),
             'editing' => $editing,
             'errors' => [],
             'isModal' => $isFragment,
@@ -256,6 +264,7 @@ class UserController
                 'canSetCommission' => $this->canSetCommission($user),
                 'pricingTiers' => PricingTier::all(),
                 'vendorTierValues' => $this->tierValuesFromPost($_POST),
+                'allowedScreens' => $_POST['screens'] ?? [],
                 'editing' => array_merge(['id' => $id], $_POST),
                 'errors' => $errors,
             ]);
@@ -296,6 +305,10 @@ class UserController
         } elseif ($editedRoleSlug !== 'vendedor') {
             // Papel deixou de ser vendedor -- limpa qualquer faixa configurada antes.
             UserCommissionTier::setForUser($id, []);
+        }
+
+        if (in_array($editedRoleSlug, ['gestor', 'vendedor'], true)) {
+            ScreenPermissions::setFor($id, $_POST['screens'] ?? []);
         }
 
         $this->logIfChanged($before, 'commission_pct', $commissionPct, $id);

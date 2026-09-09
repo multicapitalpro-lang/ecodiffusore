@@ -46,6 +46,17 @@ class Router
 
             if (preg_match($route['pattern'], $path, $matches)) {
                 array_shift($matches);
+
+                // Permissao granular por tela (so Gestor/Vendedor, ver App\Core\ScreenPermissions)
+                // -- checagem central aqui pra nao precisar repetir em cada controller individual.
+                $currentUser = Auth::user();
+                $screenKey = $currentUser ? ScreenPermissions::screenForPath($path) : null;
+                if ($screenKey !== null && !ScreenPermissions::can($currentUser, $screenKey)) {
+                    http_response_code(403);
+                    require BASE_PATH . '/app/Views/errors/403.php';
+                    return;
+                }
+
                 [$class, $action] = $route['handler'];
                 $controller = new $class();
                 $controller->$action(...$matches);

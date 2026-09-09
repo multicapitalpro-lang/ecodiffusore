@@ -1,5 +1,6 @@
 <?php
 use App\Core\Csrf;
+use App\Core\ScreenPermissions;
 use App\Core\View;
 $isEdit = $editing !== null;
 $isModal = $isModal ?? false;
@@ -123,6 +124,20 @@ $values = $editing ?? ($old ?? []);
             <p class="hint-text">Um valor por faixa (vazio = essa faixa cai no % de comissão padrão acima). Sai do pool que o Licenciado recebe da Ecodiffusore — não é um custo adicional.</p>
         </div>
     <?php endif; ?>
+
+    <?php
+    $allowedScreens = $allowedScreens ?? null;
+    $checkedScreens = $allowedScreens === null ? array_keys(ScreenPermissions::SCREENS) : $allowedScreens;
+    ?>
+    <div id="screens-permissions-wrap" style="display:none;">
+        <label>Telas que esta pessoa pode ver</label>
+        <p class="hint-text" style="margin-top:0;">Restringe o menu e o acesso direto por link — desmarque só o que essa pessoa não deve ver.</p>
+        <?php foreach (ScreenPermissions::SCREENS as $key => $label): ?>
+            <label class="checkbox-label">
+                <input type="checkbox" name="screens[]" value="<?= View::e($key) ?>" <?= in_array($key, $checkedScreens, true) ? 'checked' : '' ?>> <?= View::e($label) ?>
+            </label>
+        <?php endforeach; ?>
+    </div>
 
     <label for="discount_limit_pct">Limite de desconto sem aprovação (%)</label>
     <input type="number" id="discount_limit_pct" name="discount_limit_pct" step="0.01" min="0" max="100"
