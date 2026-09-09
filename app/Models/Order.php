@@ -425,34 +425,53 @@ class Order
 
     /** Dados do veiculo informados NO ATO DA COMPRA -- prioriza o que o proprio Pedido gravou
      *  (vehicle_type/vehicle_plate, preenchido quando o staff cria o pedido manualmente com
-     *  veiculo); se vazio, busca no Lead de origem do Orcamento que gerou este Pedido (fluxo
-     *  Proposta Facil / orcamento por placa, que captura placa/ano/marca/modelo completos no
-     *  Lead, nao no Pedido). Usado no Termo de Garantia -- ver WarrantyController::downloadTerm(). */
+     *  veiculo, sem os campos extras abaixo); se vazio, busca no Lead de origem do Orcamento que
+     *  gerou este Pedido (fluxo Proposta Facil / orcamento por placa, que captura o veiculo
+     *  completo -- potencia, original/reprogramado, ARLA, telemetria, km/mes, km/litro, preco do
+     *  diesel -- no Lead, nao no Pedido). Usado no Termo de Garantia e na tela da Fabrica. */
     public static function vehicleInfoFor(int $orderId): array
     {
+        $empty = [
+            'plate' => null, 'brand' => null, 'model' => null, 'year' => null,
+            'power' => null, 'ecu_status' => null, 'reprogrammed_power' => null,
+            'has_arla' => null, 'has_telemetry' => null,
+            'km_mensal' => null, 'km_litro' => null, 'preco_diesel' => null,
+        ];
+
         $order = self::find($orderId);
         if ($order && (!empty($order['vehicle_type']) || !empty($order['vehicle_plate']))) {
-            return [
+            return array_merge($empty, [
                 'plate' => $order['vehicle_plate'] ?: null,
                 'brand' => $order['vehicle_type'] ?: null,
-                'model' => null,
-                'year' => null,
-            ];
+            ]);
         }
 
         $row = Database::connection()->prepare(
-            'SELECT l.vehicle_plate, l.vehicle_brand, l.vehicle_model, l.vehicle_year
+            'SELECT l.vehicle_plate, l.vehicle_brand, l.vehicle_model, l.vehicle_year, l.vehicle_power,
+                    l.vehicle_ecu_status, l.vehicle_reprogrammed_power, l.vehicle_has_arla, l.vehicle_has_telemetry,
+                    l.vehicle_km_mensal, l.vehicle_km_litro, l.vehicle_preco_diesel
              FROM quotes q JOIN leads l ON l.id = q.lead_id
              WHERE q.converted_order_id = :order_id LIMIT 1'
         );
         $row->execute(['order_id' => $orderId]);
         $lead = $row->fetch();
+        if (!$lead) {
+            return $empty;
+        }
 
         return [
             'plate' => $lead['vehicle_plate'] ?? null,
             'brand' => $lead['vehicle_brand'] ?? null,
             'model' => $lead['vehicle_model'] ?? null,
             'year' => $lead['vehicle_year'] ?? null,
+            'power' => $lead['vehicle_power'] ?? null,
+            'ecu_status' => $lead['vehicle_ecu_status'] ?? null,
+            'reprogrammed_power' => $lead['vehicle_reprogrammed_power'] ?? null,
+            'has_arla' => $lead['vehicle_has_arla'] ?? null,
+            'has_telemetry' => $lead['vehicle_has_telemetry'] ?? null,
+            'km_mensal' => $lead['vehicle_km_mensal'] ?? null,
+            'km_litro' => $lead['vehicle_km_litro'] ?? null,
+            'preco_diesel' => $lead['vehicle_preco_diesel'] ?? null,
         ];
     }
 

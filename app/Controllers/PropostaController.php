@@ -156,6 +156,9 @@ class PropostaController
                 'reprogrammed_power' => $ecuStatus === 'reprogramado' ? $reprogrammedPower : null,
                 'has_arla' => $hasArla,
                 'has_telemetry' => $hasTelemetry,
+                'km_mensal' => $kmMensal,
+                'km_litro' => $kmLitro,
+                'preco_diesel' => $precoDiesel,
             ]);
 
             $clientId = Client::create([

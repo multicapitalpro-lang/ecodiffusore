@@ -65,8 +65,28 @@ $erro = isset($_GET['erro']);
                             —
                         <?php endif; ?>
                     </td>
-                    <td style="min-width:160px">
-                        <?= View::e(trim(($o['vehicle_type'] ?: '') . ($o['vehicle_plate'] ? ' · ' . $o['vehicle_plate'] : '')) ?: '—') ?>
+                    <td style="min-width:200px">
+                        <?php $v = $o['vehicle_info']; ?>
+                        <?php if ($v['plate'] || $v['brand']): ?>
+                            <strong><?= View::e(trim(($v['brand'] ?: '—') . ($v['model'] ? ' ' . $v['model'] : ''))) ?></strong><?= $v['plate'] ? ' · ' . View::e($v['plate']) : '' ?>
+                            <details style="margin-top:4px">
+                                <summary class="link-small" style="cursor:pointer">Ver detalhes do veículo</summary>
+                                <div style="font-size:.78rem;color:var(--gray-text);margin-top:6px;line-height:1.6">
+                                    <?php if ($v['year']): ?>Ano modelo: <?= View::e($v['year']) ?><br><?php endif; ?>
+                                    <?php if ($v['power']): ?>Potência do motor: <?= View::e($v['power']) ?><br><?php endif; ?>
+                                    <?php if ($v['ecu_status']): ?>
+                                        Motor: <?= $v['ecu_status'] === 'original' ? 'Original de fábrica' : 'Reprogramado (chip)' ?><?php if ($v['ecu_status'] === 'reprogramado' && $v['reprogrammed_power']): ?> — <?= View::e($v['reprogrammed_power']) ?><?php endif; ?><br>
+                                    <?php endif; ?>
+                                    <?php if ($v['has_arla']): ?>Possui ARLA: <?= $v['has_arla'] === 'sim' ? 'Sim' : 'Não' ?><br><?php endif; ?>
+                                    <?php if ($v['has_telemetry']): ?>Telemetria: <?= $v['has_telemetry'] === 'sim' ? 'Sim' : 'Não' ?><br><?php endif; ?>
+                                    <?php if ($v['km_mensal']): ?>Média km rodados/mês: <?= number_format((float) $v['km_mensal'], 0, ',', '.') ?> km<br><?php endif; ?>
+                                    <?php if ($v['km_litro']): ?>Média km/litro: <?= number_format((float) $v['km_litro'], 1, ',', '.') ?> km/l<br><?php endif; ?>
+                                    <?php if ($v['preco_diesel']): ?>Preço médio do diesel: R$ <?= number_format((float) $v['preco_diesel'], 3, ',', '.') ?><br><?php endif; ?>
+                                </div>
+                            </details>
+                        <?php else: ?>
+                            —
+                        <?php endif; ?>
                         <?php if (!empty($o['notes'])): ?>
                             <br><small class="hint-text">📝 <?= View::e($o['notes']) ?></small>
                         <?php endif; ?>

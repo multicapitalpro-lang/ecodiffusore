@@ -30,6 +30,9 @@ class FactoryController
         foreach ($orders as &$o) {
             $o['warranty_term_id'] = $termByOrderId[(int) $o['id']] ?? null;
             $o['items'] = $itemsByOrderId[(int) $o['id']] ?? [];
+            // Fila da fabrica costuma ser curta (so pedidos pagos ainda nao entregues) -- 1 consulta
+            // extra por pedido aqui e' aceitavel, mesmo padrao ja usado noutras telas admin pequenas.
+            $o['vehicle_info'] = Order::vehicleInfoFor((int) $o['id']);
         }
         unset($o);
 

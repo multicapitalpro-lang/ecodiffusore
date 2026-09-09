@@ -148,6 +148,9 @@ class PublicController
             'ecu_status' => $ecuStatus,
             'reprogrammed_power' => $ecuStatus === 'reprogramado' ? $reprogrammedPower : null,
             'has_arla' => $hasArla,
+            'km_mensal' => $kmMensal,
+            'km_litro' => $kmLitro,
+            'preco_diesel' => $precoDiesel,
         ]);
 
         $_SESSION['checkout_name'] = $name;

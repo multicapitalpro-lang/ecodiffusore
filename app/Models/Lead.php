@@ -77,14 +77,18 @@ class Lead
         $stmt->execute(['status' => $status, 'id' => $id]);
     }
 
-    /** Grava os dados do veiculo (e reconfirma o nome) capturados no wizard de orcamento em /comprar */
+    /** Grava os dados do veiculo (e reconfirma o nome) capturados no wizard de orcamento em /comprar
+     *  ou na Proposta Facil -- km_mensal/km_litro/preco_diesel sao os numeros que alimentam o
+     *  EconomyCalculator na hora da proposta, mas ate aqui so viviam em $_SESSION (perdidos depois);
+     *  gravar no Lead deixa esses dados disponiveis depois (ex: tela da Fabrica). */
     public static function updateVehicleInfo(int $id, array $data): void
     {
         $stmt = Database::connection()->prepare(
             'UPDATE leads SET name = :name, vehicle_plate = :plate, vehicle_year = :year, vehicle_brand = :brand,
                 vehicle_model = :model, vehicle_power = :power, vehicle_ecu_status = :ecu_status,
                 vehicle_reprogrammed_power = :reprogrammed_power, vehicle_has_arla = :has_arla,
-                vehicle_has_telemetry = :has_telemetry WHERE id = :id'
+                vehicle_has_telemetry = :has_telemetry, vehicle_km_mensal = :km_mensal,
+                vehicle_km_litro = :km_litro, vehicle_preco_diesel = :preco_diesel WHERE id = :id'
         );
         $stmt->execute([
             'id' => $id,
@@ -98,6 +102,9 @@ class Lead
             'reprogrammed_power' => ($data['reprogrammed_power'] ?? '') ?: null,
             'has_arla' => in_array($data['has_arla'] ?? '', ['sim', 'nao'], true) ? $data['has_arla'] : null,
             'has_telemetry' => in_array($data['has_telemetry'] ?? '', ['sim', 'nao'], true) ? $data['has_telemetry'] : null,
+            'km_mensal' => ((float) ($data['km_mensal'] ?? 0)) > 0 ? $data['km_mensal'] : null,
+            'km_litro' => ((float) ($data['km_litro'] ?? 0)) > 0 ? $data['km_litro'] : null,
+            'preco_diesel' => ((float) ($data['preco_diesel'] ?? 0)) > 0 ? $data['preco_diesel'] : null,
         ]);
     }
 
