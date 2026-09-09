@@ -393,6 +393,59 @@ class Notifier
         }
     }
 
+    /** @param array $order precisa de id/verified_at/client_name/client_whatsapp/client_email
+     *  (retorno de Order::pendingExtendedWarrantyReminders()). $tier: 1=dia1, 2=dia5, 3=dia10,
+     *  4=dia15. Cobranca automatica (WhatsApp + e-mail) pro cliente que JA PAGOU mas ainda NAO
+     *  abriu a Garantia Estendida (90 dias, prazo de 15 dias pra pedir) -- tom escalando em
+     *  urgencia, pedido explicito do usuario. Nao muda em nada o fluxo de abrir garantia em si
+     *  (WarrantyRequest) -- so' cobra quem ainda nao pediu. */
+    public static function garantiaEstendidaLembrete(array $order, int $tier): void
+    {
+        $diasRestantes = match ($tier) {
+            1 => 14,
+            2 => 10,
+            3 => 5,
+            default => 0,
+        };
+        $eventKey = match ($tier) {
+            1 => 'garantia_estendida_lembrete_dia1',
+            2 => 'garantia_estendida_lembrete_dia5',
+            3 => 'garantia_estendida_lembrete_dia10',
+            default => 'garantia_estendida_lembrete_dia15',
+        };
+
+        $orderId = (int) $order['id'];
+        $url = self::BASE_URL . '/painel/minhas-garantias/nova?order_id=' . $orderId;
+        $vars = [
+            'cliente' => $order['client_name'] ?? '—',
+            'pedido' => (string) $orderId,
+            'dias_restantes' => (string) $diasRestantes,
+            'url' => $url,
+        ];
+
+        if (!empty($order['client_whatsapp'])) {
+            [$text] = self::waTexts($eventKey, $vars);
+            if ($text) {
+                self::sendWhatsApp($order['client_whatsapp'], $text);
+            }
+        }
+
+        if (!empty($order['client_email'])) {
+            [$subject, $bodyHtml] = match ($tier) {
+                1 => ['Você já pode solicitar sua Garantia Estendida', 'Seu pedido #' . $orderId . ' foi confirmado! Você tem direito à <strong>Garantia Estendida</strong> do seu Ecodiffusore — são só 15 dias pra solicitar, então não deixa pra depois.'],
+                2 => ['Faltam 10 dias pra solicitar sua Garantia Estendida', 'Passando pra lembrar: restam <strong>10 dias</strong> pra você solicitar a Garantia Estendida do pedido #' . $orderId . '. É rápido, leva só alguns minutos.'],
+                3 => ['⏰ Faltam só 5 dias — Garantia Estendida', 'Atenção: faltam apenas <strong>5 dias</strong> pra solicitar a Garantia Estendida do seu pedido #' . $orderId . '. Depois desse prazo não será mais possível pedir.'],
+                default => ['🚨 Último dia pra solicitar sua Garantia Estendida', 'Hoje é o <strong>último dia</strong> pra solicitar a Garantia Estendida do seu pedido #' . $orderId . '. Não perca essa proteção extra — solicite agora.'],
+            };
+
+            $html = '<p>Olá, ' . self::esc((string) ($order['client_name'] ?? '')) . '!</p>'
+                . '<p>' . $bodyHtml . '</p>'
+                . self::button($url, 'Solicitar Garantia Estendida');
+
+            Mailer::send($order['client_email'], $subject . ' - Ecodiffusore Brasil', self::template($subject, $html));
+        }
+    }
+
     /** @param array $warranty precisa de id/order_id/seller_id/client_name (retorno de
      *  WarrantyRequest::find()). So WhatsApp, sem e-mail -- notifica quem vendeu o pedido, nao o
      *  cliente (mensagens pro cliente ficam pra fase seguinte). */

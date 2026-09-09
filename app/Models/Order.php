@@ -392,6 +392,31 @@ class Order
         )->fetchAll();
     }
 
+    /** Pedidos pagos que ainda NAO abriram nenhuma solicitacao de Garantia Estendida -- fila do
+     *  lembrete escalonado (dia 1/5/10/15, ver App\Core\ExtendedWarrantyReminder). O fluxo de
+     *  solicitar garantia em si (WarrantyRequest) nao muda em nada, isso e' so a cobranca
+     *  automatica pro cliente que ainda nao pediu. */
+    public static function pendingExtendedWarrantyReminders(): array
+    {
+        return Database::connection()->query(
+            "SELECT o.id, o.verified_at, o.warranty_reminder_count,
+                    c.name AS client_name, c.whatsapp AS client_whatsapp, c.email AS client_email
+             FROM orders o
+             JOIN clients c ON c.id = o.client_id
+             WHERE o.status = 'verificado' AND o.verified_at IS NOT NULL
+               AND o.warranty_reminder_count < 4
+               AND NOT EXISTS (SELECT 1 FROM warranty_requests w WHERE w.order_id = o.id)"
+        )->fetchAll();
+    }
+
+    public static function markWarrantyReminderSent(int $id, int $newCount): void
+    {
+        $stmt = Database::connection()->prepare(
+            'UPDATE orders SET warranty_reminder_count = :count, warranty_reminder_last_sent_at = NOW() WHERE id = :id'
+        );
+        $stmt->execute(['count' => $newCount, 'id' => $id]);
+    }
+
     /** Contadores pro cabecalho da tela da fabrica -- entre os pagos: sem codigo ainda (pendente),
      *  com codigo mas nao entregue (em rota) e ja entregue. */
     public static function factoryStats(): array
@@ -437,6 +462,7 @@ class Order
         }
 
         self::updateStatus($id, 'verificado');
+        Database::connection()->prepare('UPDATE orders SET verified_at = NOW() WHERE id = :id')->execute(['id' => $id]);
 
         if ($order['seller_id']) {
             Commission::createCascadeForOrder($id, (int) $order['seller_id'], (float) $order['total_value']);

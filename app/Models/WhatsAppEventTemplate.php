@@ -26,6 +26,10 @@ class WhatsAppEventTemplate
         'pedido_atualizacao_entrega',
         'cobranca_gerada',
         'orcamento_lembrete_lead',
+        'garantia_estendida_lembrete_dia1',
+        'garantia_estendida_lembrete_dia5',
+        'garantia_estendida_lembrete_dia10',
+        'garantia_estendida_lembrete_dia15',
     ];
 
     public const LABELS = [
@@ -42,6 +46,10 @@ class WhatsAppEventTemplate
         'pedido_atualizacao_entrega' => 'Atualização de entrega (cliente)',
         'cobranca_gerada' => 'Cobrança gerada (cliente)',
         'orcamento_lembrete_lead' => 'Lembrete de orçamento parado (lead/cliente)',
+        'garantia_estendida_lembrete_dia1' => 'Garantia Estendida — lembrete dia 1 (cliente)',
+        'garantia_estendida_lembrete_dia5' => 'Garantia Estendida — lembrete dia 5 (cliente)',
+        'garantia_estendida_lembrete_dia10' => 'Garantia Estendida — lembrete dia 10 (cliente)',
+        'garantia_estendida_lembrete_dia15' => 'Garantia Estendida — último dia (cliente)',
     ];
 
     /** Quais placeholders {chave} cada evento aceita -- so pra exibir dica na tela, nao valida nada. */
@@ -59,10 +67,17 @@ class WhatsAppEventTemplate
         'pedido_atualizacao_entrega' => ['transportadora', 'codigo', 'prazo', 'url'],
         'cobranca_gerada' => ['pedido', 'produto', 'valor', 'forma', 'vencimento', 'url'],
         'orcamento_lembrete_lead' => ['nome', 'produto', 'valor', 'vendedor', 'url'],
+        'garantia_estendida_lembrete_dia1' => ['cliente', 'pedido', 'dias_restantes', 'url'],
+        'garantia_estendida_lembrete_dia5' => ['cliente', 'pedido', 'dias_restantes', 'url'],
+        'garantia_estendida_lembrete_dia10' => ['cliente', 'pedido', 'dias_restantes', 'url'],
+        'garantia_estendida_lembrete_dia15' => ['cliente', 'pedido', 'dias_restantes', 'url'],
     ];
 
     /** Eventos que so usam UM dos dois textos (o outro fica sempre null/nao editavel). */
-    public const SELF_ONLY = ['follow_up_lembrete', 'acesso_portal_criado', 'pedido_atualizacao_entrega', 'cobranca_gerada', 'orcamento_lembrete_lead'];
+    public const SELF_ONLY = [
+        'follow_up_lembrete', 'acesso_portal_criado', 'pedido_atualizacao_entrega', 'cobranca_gerada', 'orcamento_lembrete_lead',
+        'garantia_estendida_lembrete_dia1', 'garantia_estendida_lembrete_dia5', 'garantia_estendida_lembrete_dia10', 'garantia_estendida_lembrete_dia15',
+    ];
     public const NETWORK_ONLY = ['vendedor_inativo', 'licenciado_pendente_aprovacao'];
 
     /** Quem de fato recebe cada variante, POR EVENTO -- o alcance da "rede" varia bastante entre
@@ -80,6 +95,10 @@ class WhatsAppEventTemplate
         'pedido_atualizacao_entrega' => 'Cliente (dono do pedido)',
         'cobranca_gerada' => 'Cliente (dono do pedido)',
         'orcamento_lembrete_lead' => 'Lead/cliente (dono do orçamento)',
+        'garantia_estendida_lembrete_dia1' => 'Cliente (dono do pedido)',
+        'garantia_estendida_lembrete_dia5' => 'Cliente (dono do pedido)',
+        'garantia_estendida_lembrete_dia10' => 'Cliente (dono do pedido)',
+        'garantia_estendida_lembrete_dia15' => 'Cliente (dono do pedido)',
     ];
 
     public const NETWORK_LABELS = [

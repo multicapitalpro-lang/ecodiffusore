@@ -7,6 +7,7 @@ use App\Core\BrazilStates;
 use App\Core\Chart;
 use App\Core\Csrf;
 use App\Core\DateRange;
+use App\Core\ExtendedWarrantyReminder;
 use App\Core\FollowUpReminder;
 use App\Core\InactivityAlert;
 use App\Core\NfeStatusChecker;
@@ -70,6 +71,7 @@ class DashboardController
             InactivityAlert::processDue();
             QuoteLeadReminder::processDue();
             NfeStatusChecker::processDue();
+            ExtendedWarrantyReminder::processDue();
         }
 
         if (in_array($role, Roles::STAFF, true)) {
