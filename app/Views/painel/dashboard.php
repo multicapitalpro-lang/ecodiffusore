@@ -346,10 +346,14 @@ $hasMetrics = isset($metrics);
         <h3 class="section-title">Meus pedidos</h3>
         <div class="table-scroll">
             <table class="data-table">
-                <thead><tr><th>#</th><th>Data</th><th>Total</th><th>Situação</th><th>Pagamento</th><th>Rastreio</th><th></th></tr></thead>
+                <thead><tr><th>#</th><th>Data</th><th>Total</th><th>Situação</th><th>Pagamento</th><th>Rastreio</th><th>Nota Fiscal</th><th></th></tr></thead>
                 <tbody>
                     <?php foreach ($myOrders as $o): ?>
-                        <?php $pendingPayment = current(array_filter($o['payments'], fn ($p) => $p['status'] === 'pendente')) ?: null; ?>
+                        <?php
+                            $pendingPayment = current(array_filter($o['payments'], fn ($p) => $p['status'] === 'pendente')) ?: null;
+                            $isCorreios = !empty($o['tracking_carrier']) && stripos($o['tracking_carrier'], 'correios') !== false;
+                            $correiosUrl = 'https://rastreamento.correios.com.br/app/index.php?objetos=' . urlencode((string) ($o['tracking_code'] ?? ''));
+                        ?>
                         <tr>
                             <td>#<?= (int) $o['id'] ?></td>
                             <td><?= View::e(date('d/m/Y', strtotime($o['order_date']))) ?></td>
@@ -367,7 +371,19 @@ $hasMetrics = isset($metrics);
                             <td>
                                 <?php if (!empty($o['tracking_code'])): ?>
                                     <?= View::e($o['tracking_carrier'] ?: 'Rastreio') ?>
+                                    <?php if ($isCorreios): ?>
+                                        — <a href="<?= View::e($correiosUrl) ?>" target="_blank" rel="noopener"><?= View::e($o['tracking_code']) ?> ↗</a>
+                                    <?php else: ?>
+                                        — <?= View::e($o['tracking_code']) ?>
+                                    <?php endif; ?>
                                     <?php if (!empty($o['tracking_status'])): ?><br><small class="hint-text"><?= View::e($o['tracking_status']) ?></small><?php endif; ?>
+                                <?php else: ?>
+                                    —
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <?php if (!empty($o['nfe_pdf_url'])): ?>
+                                    <a href="<?= View::e($o['nfe_pdf_url']) ?>" target="_blank" rel="noopener">📄 Baixar</a>
                                 <?php else: ?>
                                     —
                                 <?php endif; ?>
@@ -376,7 +392,7 @@ $hasMetrics = isset($metrics);
                         </tr>
                     <?php endforeach; ?>
                     <?php if (!$myOrders): ?>
-                        <tr><td colspan="7">Nenhum pedido ainda.</td></tr>
+                        <tr><td colspan="8">Nenhum pedido ainda.</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>
