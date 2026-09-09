@@ -25,6 +25,7 @@ $showPopup = $showPopup ?? false;
             <a href="#depoimentos">Depoimentos</a>
             <a href="#faq">Dúvidas</a>
             <a href="#licenciado">Seja Licenciado</a>
+            <a href="/painel/login" class="site-nav-login">👤 Já sou cliente — Meus Pedidos</a>
         </nav>
         <a href="/comprar" class="btn btn-primary site-header-cta">Ver Mais Detalhes</a>
     </div>

@@ -15,6 +15,7 @@ $erro = isset($_GET['erro']);
                 <a href="#contato" class="btn btn-primary">Quero Economizar Agora</a>
                 <a href="https://wa.me/5545991021551" target="_blank" rel="noopener" class="btn btn-outline">Falar no WhatsApp</a>
             </div>
+            <a href="/painel/login" class="hero-login-link">👤 Já sou cliente — acessar Meus Pedidos</a>
             <ul class="hero-stats">
                 <li><strong>5% a 20%</strong><span>de economia de diesel (mínimo garantido a potencial máximo)</span></li>
                 <li><strong>Até R$ 5 mil</strong><span>de economia mensal por caminhão</span></li>
