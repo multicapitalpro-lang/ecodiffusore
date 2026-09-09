@@ -17,6 +17,30 @@ class OrderItem
         return $stmt->fetchAll();
     }
 
+    /** Itens de varios pedidos de uma vez (evita N+1 na tela da fabrica, que ja lista todos os
+     *  pedidos pagos numa pagina so) -- agrupados por order_id, sem preco/subtotal (a fabrica
+     *  nunca ve valor, so nome do produto + quantidade). */
+    public static function forOrders(array $orderIds): array
+    {
+        if (!$orderIds) {
+            return [];
+        }
+
+        $placeholders = implode(',', array_fill(0, count($orderIds), '?'));
+        $stmt = Database::connection()->prepare(
+            "SELECT oi.order_id, oi.quantity, p.name AS product_name
+             FROM order_items oi JOIN products p ON p.id = oi.product_id
+             WHERE oi.order_id IN ({$placeholders})"
+        );
+        $stmt->execute(array_values($orderIds));
+
+        $byOrder = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $byOrder[(int) $row['order_id']][] = ['product_name' => $row['product_name'], 'quantity' => (int) $row['quantity']];
+        }
+        return $byOrder;
+    }
+
     public static function create(int $orderId, int $productId, int $quantity, float $unitPrice): void
     {
         $stmt = Database::connection()->prepare(

@@ -21,10 +21,13 @@ class FactoryController
     {
         Auth::requireRole([Roles::FACTORY]);
         $orders = Order::forFactory();
+        $orderIds = array_map(fn ($o) => (int) $o['id'], $orders);
 
-        $termByOrderId = WarrantyRequest::approvedTermByOrderIds(array_map(fn ($o) => (int) $o['id'], $orders));
+        $termByOrderId = WarrantyRequest::approvedTermByOrderIds($orderIds);
+        $itemsByOrderId = OrderItem::forOrders($orderIds);
         foreach ($orders as &$o) {
             $o['warranty_term_id'] = $termByOrderId[(int) $o['id']] ?? null;
+            $o['items'] = $itemsByOrderId[(int) $o['id']] ?? [];
         }
         unset($o);
 

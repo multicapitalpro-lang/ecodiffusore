@@ -39,7 +39,8 @@ $erro = isset($_GET['erro']);
         <thead>
             <tr>
                 <th>Pedido</th>
-                <th>Produto</th>
+                <th>Produto(s)</th>
+                <th>Veículo / Obs.</th>
                 <th>Destinatário</th>
                 <th>Endereço</th>
                 <th>Transportadora</th>
@@ -55,10 +56,24 @@ $erro = isset($_GET['erro']);
                 <?php $formId = 'entrega-' . (int) $o['id']; ?>
                 <tr>
                     <td>#<?= (int) $o['id'] ?><br><small class="hint-text"><?= View::e(date('d/m/Y', strtotime($o['order_date']))) ?></small></td>
-                    <td><?= View::e($o['produtos'] ?: '—') ?></td>
+                    <td>
+                        <?php if ($o['items']): ?>
+                            <?php foreach ($o['items'] as $item): ?>
+                                <div><?= View::e($item['product_name']) ?> <strong>x<?= (int) $item['quantity'] ?></strong></div>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            —
+                        <?php endif; ?>
+                    </td>
+                    <td style="min-width:160px">
+                        <?= View::e(trim(($o['vehicle_type'] ?: '') . ($o['vehicle_plate'] ? ' · ' . $o['vehicle_plate'] : '')) ?: '—') ?>
+                        <?php if (!empty($o['notes'])): ?>
+                            <br><small class="hint-text">📝 <?= View::e($o['notes']) ?></small>
+                        <?php endif; ?>
+                    </td>
                     <td>
                         <?= View::e($o['client_name']) ?><br>
-                        <small class="hint-text"><?= View::e($o['client_document'] ?: '—') ?><?php if (!empty($o['client_whatsapp'])): ?> · <?= View::e($o['client_whatsapp']) ?><?php endif; ?></small>
+                        <small class="hint-text"><?= View::e($o['client_document'] ?: '—') ?><?php if (!empty($o['client_whatsapp'])): ?> · <?= View::e($o['client_whatsapp']) ?><?php endif; ?><?php if (!empty($o['client_email'])): ?> · <?= View::e($o['client_email']) ?><?php endif; ?></small>
                     </td>
                     <td style="min-width:220px">
                         <?= View::e($o['street'] ?: '—') ?><?= $o['number'] ? ', ' . View::e($o['number']) : '' ?><?= $o['complement'] ? ' - ' . View::e($o['complement']) : '' ?><br>
@@ -93,7 +108,7 @@ $erro = isset($_GET['erro']);
                 </tr>
             <?php endforeach; ?>
             <?php if (!$orders): ?>
-                <tr><td colspan="10">Nenhum pedido pago aguardando despacho no momento.</td></tr>
+                <tr><td colspan="11">Nenhum pedido pago aguardando despacho no momento.</td></tr>
             <?php endif; ?>
         </tbody>
     </table>
