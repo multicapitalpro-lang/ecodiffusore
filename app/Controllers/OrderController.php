@@ -40,6 +40,16 @@ class OrderController
         $orders = Order::all($filters);
         [$orders, $stats] = $this->attachPaymentSituation($orders);
 
+        // Filtro vindo dos cards clicaveis do Dashboard (Pedidos pendentes/pagos) -- so' faz
+        // sentido em cima da situacao ja calculada (Payment::situationFor), que nao e' uma coluna
+        // do banco, entao filtra a lista ja carregada em vez de mexer em Order::all().
+        $situacaoPagamento = $_GET['situacao_pagamento'] ?? null;
+        if ($situacaoPagamento === 'pendente') {
+            $orders = array_values(array_filter($orders, fn ($o) => in_array($o['payment_situation']['slug'], ['pendente', 'expirado'], true)));
+        } elseif ($situacaoPagamento === 'pago') {
+            $orders = array_values(array_filter($orders, fn ($o) => $o['payment_situation']['slug'] === 'pago'));
+        }
+
         $showLicenciadoColumn = in_array($user['role_slug'], ['supervisor', 'gerente'], true);
         if ($showLicenciadoColumn) {
             foreach ($orders as &$o) {
@@ -52,6 +62,7 @@ class OrderController
             'user' => $user,
             'orders' => $orders,
             'stats' => $stats,
+            'situacaoPagamento' => $situacaoPagamento,
             'filters' => $filters,
             'clients' => Client::all(array_merge($this->scopeFilters(Auth::user()), ['include_unassigned' => true])),
             'products' => Product::all(true),

@@ -146,8 +146,27 @@ class DashboardController
             // CRM: mesmo escopo ja calculado acima pros pedidos (sellerId/sellerIds), reaproveitado
             // pra nao duplicar consulta de downlineIds/supervisedIds/nationalIds.
             $crmScope = $sellerId !== null ? ['seller_id' => $sellerId] : ($sellerIds !== null ? ['seller_ids' => $sellerIds] : []);
-            $data['pedidosPendentes'] = Order::countPendingPayment($crmScope);
+
+            // Cards "Pedidos pendentes"/"Pedidos pagos" (pedido do usuario, Dashboard) -- de
+            // proposito SEM filtro de periodo (mesmo criterio que pedidosPendentes ja tinha antes):
+            // e' um retrato operacional de agora ("quem ainda nao pagou", "quanto ja recebi no
+            // total"), nao uma metrica do periodo filtrado no formulario acima.
+            $situationAllTime = Order::paymentSituationSummary($crmScope);
+            $data['pedidosPendentes'] = $situationAllTime['pending']['count'];
+            $data['pedidosPendentesValor'] = $situationAllTime['pending']['total_value'];
+            $data['pedidosPagos'] = $situationAllTime['paid']['count'];
+            $data['pedidosPagosValor'] = $situationAllTime['paid']['total_value'];
             $data['orcamentosPendentes'] = Quote::countPendingPayment($crmScope);
+
+            // Segundo grafico do Dashboard: mesma serie diaria do grafico principal, so que
+            // separada em total/pendente/pago -- pedido do usuario pra ver de cara quanto do
+            // faturamento do periodo ja virou dinheiro de verdade. Mesmo escopo por hierarquia
+            // de tudo mais nesse bloco (sellerId/sellerIds).
+            $data['chartSituacaoJson'] = json_encode(Chart::dailySituationData(
+                Order::dailySeriesBySituation($from, $to, $sellerId, $sellerIds),
+                $from,
+                $to
+            ), JSON_UNESCAPED_UNICODE);
 
             if ($role === 'admin') {
                 $leads = Lead::all();
@@ -214,52 +233,25 @@ class DashboardController
             $data['licenciadosAtivos'] = count($licenciadosAtivos);
             $data['estadosCobertos'] = count(BrazilStates::groupByState($licenciadosAtivos));
 
-            // Vendas por Estado / Cidade / Licenciado: reaproveita o mesmo sellerRanking() de
-            // /painel/desempenho/vendedores, ja escopado (nacional pro admin, rede supervisionada
-            // pro supervisor/gerente -- $sellerIds calculado mais acima, no bloco STAFF). Estado e
-            // cidade sao os do VENDEDOR (users.city/state), mesmo modelo geografico que o resto do
-            // sistema ja usa (GeoMatch, BrazilStates) -- nao o endereco de cobranca do cliente.
-            $ranking = Order::sellerRanking($data['from'], $data['to'], $sellerIds);
-            $byState = [];
-            $byCity = [];
-            $byLicenciado = [];
-            $licenciadoNameCache = [];
-            foreach ($ranking as $row) {
-                $value = (float) $row['total_value'];
-                if ($value <= 0) {
-                    continue;
-                }
+            // Vendas por Estado/Cidade/Licenciado, separadas em pendentes e vendidos (pago) --
+            // pedido do usuario pra nao misturar "quem ainda deve" com "quem ja pagou" no mesmo
+            // grafico. Escopado por hierarquia (nacional pro admin, rede supervisionada pro
+            // supervisor/gerente -- $sellerIds calculado mais acima, no bloco STAFF) e pelo
+            // periodo filtrado (diferente dos cards "Pedidos pendentes/pagos" do topo, que sao
+            // um retrato sem filtro de data). Estado/cidade sao os do VENDEDOR (users.city/state),
+            // mesmo modelo geografico do resto do sistema (GeoMatch, BrazilStates).
+            $regionScope = array_merge($crmScope, ['from' => $data['from'], 'to' => $data['to']]);
+            $regionSummary = Order::paymentSituationSummary($regionScope);
 
-                $uf = strtoupper(trim($row['state'] ?? ''));
-                $stateKey = $uf !== '' ? $uf : 'Não informado';
-                $byState[$stateKey] = ($byState[$stateKey] ?? 0) + $value;
+            $pendingCharts = $this->regionCharts($regionSummary['pending']['by_seller']);
+            $data['chartPendingByState'] = $pendingCharts['byState'];
+            $data['chartPendingByCity'] = $pendingCharts['byCity'];
+            $data['chartPendingByLicenciado'] = $pendingCharts['byLicenciado'];
 
-                $city = trim($row['city'] ?? '');
-                $cityLabel = ($city !== '' ? $city : 'Não informada') . ($uf !== '' ? " / {$uf}" : '');
-                $byCity[$cityLabel] = ($byCity[$cityLabel] ?? 0) + $value;
-
-                $sellerId = (int) $row['seller_id'];
-                if (!array_key_exists($sellerId, $licenciadoNameCache)) {
-                    $licenciadoNameCache[$sellerId] = User::licenciadoNameFor($sellerId) ?? 'Sem licenciado';
-                }
-                $licName = $licenciadoNameCache[$sellerId];
-                $byLicenciado[$licName] = ($byLicenciado[$licName] ?? 0) + $value;
-            }
-
-            arsort($byState);
-            arsort($byCity);
-            arsort($byLicenciado);
-
-            $stateItems = [];
-            foreach ($byState as $uf => $value) {
-                $stateItems[] = ['label' => BrazilStates::NAMES[$uf] ?? $uf, 'value' => $value];
-            }
-            $cityItems = array_map(fn ($label, $value) => ['label' => $label, 'value' => $value], array_keys($byCity), $byCity);
-            $licItems = array_map(fn ($label, $value) => ['label' => $label, 'value' => $value], array_keys($byLicenciado), $byLicenciado);
-
-            $data['chartByState'] = Chart::bar($stateItems);
-            $data['chartByCity'] = Chart::bar($cityItems, 8);
-            $data['chartByLicenciado'] = Chart::bar($licItems, 8);
+            $paidCharts = $this->regionCharts($regionSummary['paid']['by_seller']);
+            $data['chartPaidByState'] = $paidCharts['byState'];
+            $data['chartPaidByCity'] = $paidCharts['byCity'];
+            $data['chartPaidByLicenciado'] = $paidCharts['byLicenciado'];
         }
 
         if ($role === 'admin') {
@@ -298,5 +290,60 @@ class DashboardController
         WeeklyDigest::setEnabled((int) $user['id'], !empty($_POST['enabled']));
 
         Router::redirect('/painel');
+    }
+
+    /** Converte um mapa seller_id => valor (Order::paymentSituationSummary()['pending'/'paid']
+     *  ['by_seller']) em 3 graficos de barra (estado/cidade/licenciado do VENDEDOR) -- mesma
+     *  logica que antes ficava inline num unico bloco combinado, agora reaproveitada 2x (pendente
+     *  e pago) desde que a Fase de separacao por situacao de pagamento pediu os 2 quadros. */
+    private function regionCharts(array $bySeller): array
+    {
+        $byState = [];
+        $byCity = [];
+        $byLicenciado = [];
+        $userCache = [];
+        $licenciadoNameCache = [];
+
+        foreach ($bySeller as $sid => $value) {
+            if ($value <= 0) {
+                continue;
+            }
+
+            if (!array_key_exists($sid, $userCache)) {
+                $userCache[$sid] = User::find($sid);
+            }
+            $u = $userCache[$sid];
+
+            $uf = strtoupper(trim($u['state'] ?? ''));
+            $stateKey = $uf !== '' ? $uf : 'Não informado';
+            $byState[$stateKey] = ($byState[$stateKey] ?? 0) + $value;
+
+            $city = trim($u['city'] ?? '');
+            $cityLabel = ($city !== '' ? $city : 'Não informada') . ($uf !== '' ? " / {$uf}" : '');
+            $byCity[$cityLabel] = ($byCity[$cityLabel] ?? 0) + $value;
+
+            if (!array_key_exists($sid, $licenciadoNameCache)) {
+                $licenciadoNameCache[$sid] = User::licenciadoNameFor($sid) ?? 'Sem licenciado';
+            }
+            $licName = $licenciadoNameCache[$sid];
+            $byLicenciado[$licName] = ($byLicenciado[$licName] ?? 0) + $value;
+        }
+
+        arsort($byState);
+        arsort($byCity);
+        arsort($byLicenciado);
+
+        $stateItems = [];
+        foreach ($byState as $uf => $value) {
+            $stateItems[] = ['label' => BrazilStates::NAMES[$uf] ?? $uf, 'value' => $value];
+        }
+        $cityItems = array_map(fn ($label, $value) => ['label' => $label, 'value' => $value], array_keys($byCity), $byCity);
+        $licItems = array_map(fn ($label, $value) => ['label' => $label, 'value' => $value], array_keys($byLicenciado), $byLicenciado);
+
+        return [
+            'byState' => Chart::bar($stateItems),
+            'byCity' => Chart::bar($cityItems, 8),
+            'byLicenciado' => Chart::bar($licItems, 8),
+        ];
     }
 }

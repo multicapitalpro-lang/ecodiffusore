@@ -41,6 +41,31 @@ class Chart
     }
 
     /**
+     * Mesmo preenchimento de buracos de dailySeriesData(), so que pras 3 series de
+     * Order::dailySeriesBySituation() (total/pendente/pago) num unico periodo -- grafico separado
+     * do "atual vs anterior" ja existente, pra nao empilhar 6 linhas na mesma tela.
+     * @param array{total: array<string,float>, pending: array<string,float>, paid: array<string,float>} $series
+     * @return array{labels: string[], total: float[], pending: float[], paid: float[]}
+     */
+    public static function dailySituationData(array $series, string $from, string $to): array
+    {
+        $days = [];
+        $cursor = strtotime($from);
+        $end = strtotime($to);
+        while ($cursor <= $end) {
+            $days[] = date('Y-m-d', $cursor);
+            $cursor = strtotime('+1 day', $cursor);
+        }
+
+        return [
+            'labels' => array_map(fn ($d) => date('d/m', strtotime($d)), $days),
+            'total' => array_values(array_map(fn ($d) => round((float) ($series['total'][$d] ?? 0.0), 2), $days)),
+            'pending' => array_values(array_map(fn ($d) => round((float) ($series['pending'][$d] ?? 0.0), 2), $days)),
+            'paid' => array_values(array_map(fn ($d) => round((float) ($series['paid'][$d] ?? 0.0), 2), $days)),
+        ];
+    }
+
+    /**
      * Barras horizontais (sem JS) pra rankings curtos -- vendas por estado/cidade/licenciado/
      * vendedor. Diferente do dailyLine, a altura do viewBox cresce com a quantidade de itens e
      * o CSS deixa o wrapper com height:auto (ver .chart-bar-wrap) -- sem preserveAspectRatio="none"

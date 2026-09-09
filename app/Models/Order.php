@@ -84,6 +84,89 @@ class Order
         return $count;
     }
 
+    /** Classifica os pedidos do escopo em "pendente" (pendente/expirado) e "pago" -- mesma logica
+     *  de Payment::situationFor ja usada em countPendingPayment()/OrderController::attachPaymentSituation(),
+     *  so que aqui tambem soma o VALOR total de cada grupo e agrega por vendedor (pra quebra por
+     *  regiao no Dashboard: DashboardController ja converte by_seller -> estado/cidade/licenciado
+     *  usando users.city/state, mesmo padrao geografico do resto do painel). Pedidos cancelados ou
+     *  reembolsados nao entram em nenhum dos dois grupos. */
+    public static function paymentSituationSummary(array $filters = []): array
+    {
+        $pending = ['count' => 0, 'total_value' => 0.0, 'by_seller' => []];
+        $paid = ['count' => 0, 'total_value' => 0.0, 'by_seller' => []];
+
+        $orders = self::all($filters);
+        if (!$orders) {
+            return ['pending' => $pending, 'paid' => $paid];
+        }
+
+        $ids = array_map(fn ($o) => (int) $o['id'], $orders);
+        $payments = Payment::latestByPayableIds('order', $ids);
+
+        foreach ($orders as $o) {
+            $situation = Payment::situationFor($o, $payments[(int) $o['id']] ?? null);
+            $value = (float) $o['total_value'];
+            $sellerId = (int) ($o['seller_id'] ?? 0);
+
+            if ($situation['slug'] === 'pago') {
+                $paid['count']++;
+                $paid['total_value'] += $value;
+                if ($sellerId > 0) {
+                    $paid['by_seller'][$sellerId] = ($paid['by_seller'][$sellerId] ?? 0) + $value;
+                }
+            } elseif (in_array($situation['slug'], ['pendente', 'expirado'], true)) {
+                $pending['count']++;
+                $pending['total_value'] += $value;
+                if ($sellerId > 0) {
+                    $pending['by_seller'][$sellerId] = ($pending['by_seller'][$sellerId] ?? 0) + $value;
+                }
+            }
+        }
+
+        return ['pending' => $pending, 'paid' => $paid];
+    }
+
+    /** Serie diaria de valor pedido, separada em pendente/pago (mesma classificacao de
+     *  paymentSituationSummary(), mas dia a dia) -- usado no segundo grafico do Dashboard, alem do
+     *  grafico ja existente de "total vs periodo anterior" (dailySeries()). */
+    public static function dailySeriesBySituation(string $from, string $to, ?int $sellerId = null, ?array $sellerIds = null): array
+    {
+        $filters = ['from' => $from, 'to' => $to];
+        if ($sellerId !== null) {
+            $filters['seller_id'] = $sellerId;
+        } elseif ($sellerIds !== null) {
+            $filters['seller_ids'] = $sellerIds;
+        }
+
+        $orders = self::all($filters);
+        $pending = [];
+        $paid = [];
+        $total = [];
+
+        if ($orders) {
+            $ids = array_map(fn ($o) => (int) $o['id'], $orders);
+            $payments = Payment::latestByPayableIds('order', $ids);
+
+            foreach ($orders as $o) {
+                if ($o['status'] === 'cancelado') {
+                    continue;
+                }
+                $situation = Payment::situationFor($o, $payments[(int) $o['id']] ?? null);
+                $value = (float) $o['total_value'];
+                $day = $o['order_date'];
+
+                $total[$day] = ($total[$day] ?? 0) + $value;
+                if ($situation['slug'] === 'pago') {
+                    $paid[$day] = ($paid[$day] ?? 0) + $value;
+                } elseif (in_array($situation['slug'], ['pendente', 'expirado'], true)) {
+                    $pending[$day] = ($pending[$day] ?? 0) + $value;
+                }
+            }
+        }
+
+        return ['total' => $total, 'pending' => $pending, 'paid' => $paid];
+    }
+
     /** Busca por numero do pedido, nome do cliente ou placa do veiculo -- usado na busca global
      *  do painel. $sellerIds null = sem escopo (Admin). */
     public static function search(string $term, ?array $sellerIds = null): array
@@ -269,8 +352,9 @@ class Order
     {
         return Database::connection()->query(
             "SELECT o.id, o.order_date, o.tracking_carrier, o.tracking_code, o.prazo_entrega,
-                    o.nfe_status, o.nfe_pdf_url,
+                    o.nfe_status, o.nfe_pdf_url, o.notes, o.vehicle_type, o.vehicle_plate,
                     c.name AS client_name, c.whatsapp AS client_whatsapp, c.document AS client_document,
+                    c.email AS client_email,
                     c.zip_code, c.street, c.number, c.complement, c.neighborhood, c.city, c.state,
                     (SELECT GROUP_CONCAT(p.name, ' (x', oi.quantity, ')' SEPARATOR ', ')
                      FROM order_items oi JOIN products p ON p.id = oi.product_id WHERE oi.order_id = o.id) AS produtos

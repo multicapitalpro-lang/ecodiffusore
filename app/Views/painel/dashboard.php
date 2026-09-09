@@ -35,7 +35,16 @@ $hasMetrics = isset($metrics);
                 <div class="dash-card <?= $pedidosPendentes > 0 ? 'dash-card-danger' : '' ?>">
                     <span>Pedidos com pagamento pendente</span>
                     <strong><?= (int) $pedidosPendentes ?></strong>
-                    <a href="/painel/pedidos">Ver pedidos</a>
+                    <small class="hint-inline">R$ <?= number_format($pedidosPendentesValor, 2, ',', '.') ?></small>
+                    <a href="/painel/pedidos?situacao_pagamento=pendente">Ver pedidos</a>
+                </div>
+            <?php endif; ?>
+            <?php if (isset($pedidosPagos)): ?>
+                <div class="dash-card">
+                    <span>Pedidos pagos</span>
+                    <strong><?= (int) $pedidosPagos ?></strong>
+                    <small class="hint-inline">R$ <?= number_format($pedidosPagosValor, 2, ',', '.') ?></small>
+                    <a href="/painel/pedidos?situacao_pagamento=pago">Ver pedidos</a>
                 </div>
             <?php endif; ?>
             <?php if (isset($orcamentosPendentes)): ?>
@@ -198,20 +207,49 @@ $hasMetrics = isset($metrics);
         <p class="chart-legend"><span class="dot dot-current"></span> Período atual &nbsp; <span class="dot dot-previous"></span> Período anterior</p>
     </div>
 
-    <?php if (isset($chartByState)): ?>
-        <h3 class="section-title">Vendas por região (período filtrado)</h3>
+    <?php if (isset($chartSituacaoJson)): ?>
+        <h3 class="section-title">Total, pendente e pago por dia (período filtrado)</h3>
+        <div class="chart-box">
+            <div style="position:relative; width:100%; height:320px;">
+                <canvas id="dashboard-situacao-chart" role="img" aria-label="Valor total, pendente e pago por dia">Gráfico de total, pendente e pago por dia.</canvas>
+            </div>
+            <script id="dashboard-situacao-chart-data" type="application/json"><?= $chartSituacaoJson ?></script>
+            <p class="chart-legend"><span class="dot dot-current"></span> Total &nbsp; <span class="dot" style="background:#d69a1e;"></span> Pendente &nbsp; <span class="dot" style="background:#2a5c9a;"></span> Pago</p>
+        </div>
+    <?php endif; ?>
+
+    <?php if (isset($chartPendingByState)): ?>
+        <h3 class="section-title">Pendentes por região (período filtrado)</h3>
         <div class="charts-grid-3">
             <div class="chart-box">
                 <span class="hint-inline">Por estado</span>
-                <div class="chart-bar-wrap"><?= $chartByState ?></div>
+                <div class="chart-bar-wrap"><?= $chartPendingByState ?></div>
             </div>
             <div class="chart-box">
                 <span class="hint-inline">Por cidade (top 8)</span>
-                <div class="chart-bar-wrap"><?= $chartByCity ?></div>
+                <div class="chart-bar-wrap"><?= $chartPendingByCity ?></div>
             </div>
             <div class="chart-box">
                 <span class="hint-inline">Por licenciado (top 8)</span>
-                <div class="chart-bar-wrap"><?= $chartByLicenciado ?></div>
+                <div class="chart-bar-wrap"><?= $chartPendingByLicenciado ?></div>
+            </div>
+        </div>
+    <?php endif; ?>
+
+    <?php if (isset($chartPaidByState)): ?>
+        <h3 class="section-title">Vendidos por região (período filtrado)</h3>
+        <div class="charts-grid-3">
+            <div class="chart-box">
+                <span class="hint-inline">Por estado</span>
+                <div class="chart-bar-wrap"><?= $chartPaidByState ?></div>
+            </div>
+            <div class="chart-box">
+                <span class="hint-inline">Por cidade (top 8)</span>
+                <div class="chart-bar-wrap"><?= $chartPaidByCity ?></div>
+            </div>
+            <div class="chart-box">
+                <span class="hint-inline">Por licenciado (top 8)</span>
+                <div class="chart-bar-wrap"><?= $chartPaidByLicenciado ?></div>
             </div>
         </div>
     <?php endif; ?>

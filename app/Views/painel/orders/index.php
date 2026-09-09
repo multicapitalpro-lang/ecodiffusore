@@ -17,6 +17,7 @@ $showLicenciadoColumn = $showLicenciadoColumn ?? false;
 $isViewOnly = in_array($user['role_slug'] ?? '', Roles::NATIONAL_SUPPORT, true);
 $preselectClientId = (int) ($_GET['cliente_id'] ?? 0);
 $openModal = (isset($_GET['novo']) || $errors) && !$isViewOnly;
+$situacaoPagamento = $situacaoPagamento ?? null;
 ?>
 <div class="page-header">
     <h1>Pedidos de Venda</h1>
@@ -27,6 +28,12 @@ $openModal = (isset($_GET['novo']) || $errors) && !$isViewOnly;
         <?php endif; ?>
     </div>
 </div>
+
+<?php if ($situacaoPagamento === 'pendente'): ?>
+    <p class="form-msg form-msg-erro">Mostrando só pedidos com pagamento pendente ou expirado. <a href="/painel/pedidos">Limpar filtro</a></p>
+<?php elseif ($situacaoPagamento === 'pago'): ?>
+    <p class="form-msg form-msg-ok">Mostrando só pedidos pagos. <a href="/painel/pedidos">Limpar filtro</a></p>
+<?php endif; ?>
 
 <div class="cards-grid">
     <div class="dash-card">
