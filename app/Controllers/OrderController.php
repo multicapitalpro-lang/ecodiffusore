@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Core\Auth;
+use App\Core\CorreiosClient;
 use App\Core\Csrf;
 use App\Core\Csv;
 use App\Core\FileUpload;
@@ -386,7 +387,21 @@ class OrderController
             Router::redirect("/painel/pedidos/{$id}?erro=1");
         }
 
-        Order::updateTracking($id, trim($_POST['tracking_code'] ?? ''), trim($_POST['tracking_carrier'] ?? ''), trim($_POST['prazo_entrega'] ?? ''));
+        $trackingCode = trim($_POST['tracking_code'] ?? '');
+        Order::updateTracking($id, $trackingCode, trim($_POST['tracking_carrier'] ?? ''), trim($_POST['prazo_entrega'] ?? ''));
+
+        // Mesmo feedback imediato de status que a Fabrica ganha (FactoryController::updateDelivery) --
+        // o CorreiosTrackingChecker::processDue() mantem atualizado depois disso.
+        if ($trackingCode !== '') {
+            try {
+                $result = (new CorreiosClient())->track($trackingCode);
+                if ($result) {
+                    Order::updateTrackingStatus($id, $result['status'] ?? null, $result['date'] ?? null, $result['entregue'] ?? false);
+                }
+            } catch (\Throwable $e) {
+                // Best-effort -- sem status na hora nao deve impedir o salvamento do rastreio.
+            }
+        }
 
         Router::redirect("/painel/pedidos/{$id}?sucesso=1");
     }

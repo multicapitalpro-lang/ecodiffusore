@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Core\Auth;
 use App\Core\Csrf;
+use App\Core\CorreiosClient;
 use App\Core\Notifier;
 use App\Core\Pdf;
 use App\Core\Roles;
@@ -82,7 +83,22 @@ class FactoryController
             Router::redirect('/painel/fabrica?erro=1');
         }
 
-        Order::updateTracking($id, trim($_POST['tracking_code'] ?? ''), trim($_POST['tracking_carrier'] ?? ''), trim($_POST['prazo_entrega'] ?? ''));
+        $trackingCode = trim($_POST['tracking_code'] ?? '');
+        Order::updateTracking($id, $trackingCode, trim($_POST['tracking_carrier'] ?? ''), trim($_POST['prazo_entrega'] ?? ''));
+
+        // Consulta o status real na hora que a fabrica cadastra o codigo -- feedback imediato pra
+        // ela mesma na tela; o CorreiosTrackingChecker::processDue() cuida de manter atualizado
+        // depois disso (o pacote continua se movendo, o status de hoje fica velho em poucas horas).
+        if ($trackingCode !== '') {
+            try {
+                $result = (new CorreiosClient())->track($trackingCode);
+                if ($result) {
+                    Order::updateTrackingStatus($id, $result['status'] ?? null, $result['date'] ?? null, $result['entregue'] ?? false);
+                }
+            } catch (\Throwable $e) {
+                // Best-effort -- sem status na hora nao deve impedir o salvamento do rastreio.
+            }
+        }
 
         $updated = Order::find($id);
         if ($updated) {

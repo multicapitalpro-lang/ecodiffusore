@@ -34,6 +34,16 @@ return [
         'template_key' => 'TROQUE_AQUI', // chave do Modelo "Contrato Assinatura Diferencial" (Automação > Modelos no ClickSign)
     ],
 
+    // API oficial dos Correios (https://api.correios.com.br) -- App\Core\CorreiosClient. Rastreio
+    // real (status/data do ultimo evento) quando a fabrica cadastra o codigo. Precisa de um contrato
+    // Correios (Cartao de Postagem) e credenciais do Meu Correios Business -- SEM isso, track()
+    // sempre devolve null (fica so o codigo/transportadora digitado manualmente, sem status ao vivo).
+    'correios' => [
+        'usuario' => 'TROQUE_AQUI', // CNPJ ou usuario do Meu Correios Business
+        'senha' => 'TROQUE_AQUI',
+        'cartao_postagem' => 'TROQUE_AQUI', // numero do Cartao de Postagem vinculado ao contrato
+    ],
+
     // SMTP autenticado (App\Core\Mailer) -- PHP mail() puro nao entregava (confirmado com
     // mail-tester.com: nem chegava no destino). host/port/encryption vem da tela "Configurar
     // cliente de e-mail" da caixa no hPanel (Hostinger) -- normalmente smtp.hostinger.com,

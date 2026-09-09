@@ -97,6 +97,27 @@ class Notifier
         self::sendToFullChain((int) $order['seller_id'], $subject, $title, $body, $waSelf, $waNetwork);
     }
 
+    /** @param array $order precisa de id/client_name/total_value (retorno de Order::find()). So
+     *  WhatsApp, pra todo usuario do papel Fabrica -- avisa que caiu um pedido novo JA PAGO pra ela
+     *  incluir o codigo de rastreio (Fase 28: fabrica so ve pedidos com status verificado). Ao
+     *  contrario de pedidoAprovado(), dispara mesmo sem seller_id (ex: checkout publico sem
+     *  vendedor) -- a fabrica precisa saber de TODO pedido pago, tenha vendedor ou nao. */
+    public static function novoPedidoPagoFabrica(array $order): void
+    {
+        $produtos = OrderItem::forOrder((int) $order['id']);
+        $produto = $produtos
+            ? implode(', ', array_map(fn ($i) => $i['product_name'] . ' (x' . (int) $i['quantity'] . ')', $produtos))
+            : '—';
+
+        $text = "📦 Novo pedido pago #{$order['id']}! Cliente {$order['client_name']}, produto: {$produto}. Acesse o painel e inclua o código de rastreio: " . self::BASE_URL . '/painel/fabrica';
+
+        foreach (User::allByRole(Roles::FACTORY) as $fabrica) {
+            if (!empty($fabrica['whatsapp'])) {
+                self::sendWhatsApp($fabrica['whatsapp'], $text);
+            }
+        }
+    }
+
     /** @param array $order precisa de id/seller_id/client_name (mesmas chaves de pedidoVars) --
      *  so WhatsApp, sem e-mail (nao pedido pelo usuario pra esse evento). */
     public static function pedidoCancelado(array $order): void

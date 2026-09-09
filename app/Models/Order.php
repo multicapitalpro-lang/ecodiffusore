@@ -335,9 +335,18 @@ class Order
 
     public static function updateTracking(int $id, ?string $trackingCode, ?string $trackingCarrier, ?string $prazoEntrega = null): void
     {
-        $stmt = Database::connection()->prepare(
-            'UPDATE orders SET tracking_code = :code, tracking_carrier = :carrier, prazo_entrega = :prazo WHERE id = :id'
-        );
+        $current = self::find($id);
+        $codeChanged = $current && (string) ($current['tracking_code'] ?? '') !== (string) $trackingCode;
+
+        $sql = 'UPDATE orders SET tracking_code = :code, tracking_carrier = :carrier, prazo_entrega = :prazo';
+        // Codigo novo/trocado invalida o status ja consultado do codigo anterior -- senao ficaria
+        // mostrando "Objeto entregue" de um rastreio antigo pro codigo novo ate a proxima checagem.
+        if ($codeChanged) {
+            $sql .= ', tracking_status = NULL, tracking_status_date = NULL, tracking_checked_at = NULL';
+        }
+        $sql .= ' WHERE id = :id';
+
+        $stmt = Database::connection()->prepare($sql);
         $stmt->execute([
             'code' => $trackingCode !== '' ? $trackingCode : null,
             'carrier' => $trackingCarrier !== '' ? $trackingCarrier : null,
@@ -346,12 +355,44 @@ class Order
         ]);
     }
 
+    /** Grava o ultimo status conhecido via Correios (App\Core\CorreiosClient/CorreiosTrackingChecker).
+     *  Se $entregue e ainda nao tinha delivered_at, marca a entrega automaticamente -- confiavel
+     *  agora que vem de dado real da transportadora (diferente do que foi decidido na Fase 28, que
+     *  deixou "marcar como entregue" manual por falta de fonte confiavel de status). */
+    public static function updateTrackingStatus(int $id, ?string $status, ?string $date, bool $entregue): void
+    {
+        $stmt = Database::connection()->prepare(
+            'UPDATE orders SET tracking_status = :status, tracking_status_date = :date, tracking_checked_at = NOW() WHERE id = :id'
+        );
+        $stmt->execute(['status' => $status, 'date' => $date, 'id' => $id]);
+
+        if ($entregue) {
+            $order = self::find($id);
+            if ($order && empty($order['delivered_at'])) {
+                self::markDelivered($id);
+            }
+        }
+    }
+
+    /** Pedidos com codigo de rastreio, ainda nao entregues, nunca checados ou checados ha mais de
+     *  6h -- fila do lazy-check da Correios (App\Core\CorreiosTrackingChecker), mesmo padrao do
+     *  pendingNfeCheck(). */
+    public static function pendingCorreiosCheck(): array
+    {
+        return Database::connection()->query(
+            "SELECT id, tracking_code FROM orders
+             WHERE tracking_code IS NOT NULL AND tracking_code != '' AND delivered_at IS NULL
+               AND (tracking_checked_at IS NULL OR tracking_checked_at < DATE_SUB(NOW(), INTERVAL 6 HOUR))"
+        )->fetchAll();
+    }
+
     /** So pedidos PAGOS (verificado) e ainda NAO entregues -- a fila de acao da fabrica. Nunca
      *  mostra cancelado/em_andamento/atendido, nem dado financeiro (valor/comissao/vendedor). */
     public static function forFactory(): array
     {
         return Database::connection()->query(
             "SELECT o.id, o.order_date, o.tracking_carrier, o.tracking_code, o.prazo_entrega,
+                    o.tracking_status, o.tracking_status_date,
                     o.nfe_status, o.nfe_pdf_url, o.notes, o.vehicle_type, o.vehicle_plate,
                     c.name AS client_name, c.whatsapp AS client_whatsapp, c.document AS client_document,
                     c.email AS client_email,
@@ -509,6 +550,7 @@ class Order
         }
 
         Notifier::pedidoAprovado($order);
+        Notifier::novoPedidoPagoFabrica($order);
 
         return true;
     }

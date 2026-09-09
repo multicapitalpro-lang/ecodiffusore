@@ -65,6 +65,9 @@ $situation = $order['payment_situation'] ?? ['label' => '—', 'badge' => 'novo'
     <button type="submit" class="btn btn-outline">Salvar rastreio</button>
 </form>
 <?php endif; ?>
+<?php if (!empty($order['tracking_status'])): ?>
+    <p><strong>Status (Correios):</strong> <?= View::e($order['tracking_status']) ?><?php if (!empty($order['tracking_status_date'])): ?> <small class="hint-text">(em <?= View::e(date('d/m/Y H:i', strtotime($order['tracking_status_date']))) ?>)</small><?php endif; ?></p>
+<?php endif; ?>
 
 <?php include __DIR__ . '/../_approval_banner.php'; ?>
 

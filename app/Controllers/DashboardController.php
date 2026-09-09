@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Core\Auth;
 use App\Core\BrazilStates;
 use App\Core\Chart;
+use App\Core\CorreiosTrackingChecker;
 use App\Core\Csrf;
 use App\Core\DateRange;
 use App\Core\ExtendedWarrantyReminder;
@@ -72,6 +73,7 @@ class DashboardController
             QuoteLeadReminder::processDue();
             NfeStatusChecker::processDue();
             ExtendedWarrantyReminder::processDue();
+            CorreiosTrackingChecker::processDue();
         }
 
         if (in_array($role, Roles::STAFF, true)) {

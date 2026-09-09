@@ -364,7 +364,14 @@ $hasMetrics = isset($metrics);
                                     —
                                 <?php endif; ?>
                             </td>
-                            <td><?= !empty($o['tracking_code']) ? View::e($o['tracking_carrier'] ?: 'Rastreio') : '—' ?></td>
+                            <td>
+                                <?php if (!empty($o['tracking_code'])): ?>
+                                    <?= View::e($o['tracking_carrier'] ?: 'Rastreio') ?>
+                                    <?php if (!empty($o['tracking_status'])): ?><br><small class="hint-text"><?= View::e($o['tracking_status']) ?></small><?php endif; ?>
+                                <?php else: ?>
+                                    —
+                                <?php endif; ?>
+                            </td>
                             <td><a href="/painel/meus-pedidos/<?= (int) $o['id'] ?>">Ver detalhes</a></td>
                         </tr>
                     <?php endforeach; ?>

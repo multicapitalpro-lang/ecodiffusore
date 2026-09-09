@@ -80,7 +80,12 @@ $erro = isset($_GET['erro']);
                         <small class="hint-text"><?= View::e($o['neighborhood'] ?: '—') ?>, <?= View::e($o['city'] ?: '—') ?>/<?= View::e($o['state'] ?: '—') ?> · CEP <?= View::e($o['zip_code'] ?: '—') ?></small>
                     </td>
                     <td><input form="<?= $formId ?>" type="text" name="tracking_carrier" value="<?= View::e($o['tracking_carrier'] ?? '') ?>" placeholder="Correios, Jadlog..." style="width:120px"></td>
-                    <td><input form="<?= $formId ?>" type="text" name="tracking_code" value="<?= View::e($o['tracking_code'] ?? '') ?>" style="width:120px"></td>
+                    <td>
+                        <input form="<?= $formId ?>" type="text" name="tracking_code" value="<?= View::e($o['tracking_code'] ?? '') ?>" style="width:120px">
+                        <?php if (!empty($o['tracking_status'])): ?>
+                            <br><small class="hint-text"><?= View::e($o['tracking_status']) ?></small>
+                        <?php endif; ?>
+                    </td>
                     <td><input form="<?= $formId ?>" type="date" name="prazo_entrega" value="<?= View::e($o['prazo_entrega'] ?? '') ?>" style="width:140px"></td>
                     <td>
                         <?php if (!empty($o['nfe_pdf_url'])): ?>
