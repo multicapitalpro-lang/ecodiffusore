@@ -385,8 +385,11 @@ a { text-decoration: none; color: inherit; }
 .filter-bar label { font-size: .8rem; font-weight: 600; color: var(--gray-text); display: flex; align-items: center; gap: 6px; }
 
 .section-title { font-size: 1rem; font-family: 'Poppins', sans-serif; margin: 28px 0 14px; }
-.two-col { display: grid; gap: 22px; grid-template-columns: 1fr; }
-@media (min-width: 900px) { .two-col { grid-template-columns: 1fr 1fr; } }
+/* minmax(0, 1fr), nao so 1fr -- item de grid tem min-width:auto por padrao, entao sem isso uma
+   tabela com min-width interno (ex: .data-table) nunca encolhe o bastante pra o .table-scroll
+   dela rolar sozinho, e o overflow vaza pro resto da pagina inteira (quebra o layout no celular). */
+.two-col { display: grid; gap: 22px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 900px) { .two-col { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
 /* Assinatura do Licenciado (Fase 32b) -- cards de feature + planos, usados na pagina cheia
    (/painel/assinatura) e no modal reutilizavel (painel/subscription/_modal.php). */
 .plan-features { display: grid; gap: 10px; margin: 14px 0 20px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
@@ -437,8 +440,8 @@ a { text-decoration: none; color: inherit; }
     .plan-features { grid-template-columns: 1fr; }
 }
 
-.cards-grid-2 { display: grid; gap: 22px; grid-template-columns: 1fr; }
-@media (min-width: 1000px) { .cards-grid-2 { grid-template-columns: 1fr 1fr; } }
+.cards-grid-2 { display: grid; gap: 22px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 1000px) { .cards-grid-2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
 
 .text-green { color: var(--green-dark); }
 .text-red { color: #c53030; }
@@ -480,12 +483,12 @@ a { text-decoration: none; color: inherit; }
     .funnel-stage-arrow { flex-direction: row; }
 }
 .chart-bar-wrap .chart-bar-svg { width: 100%; height: auto; display: block; }
-.charts-grid-3 { display: grid; gap: 22px; grid-template-columns: 1fr; margin-top: 28px; }
-@media (min-width: 720px) { .charts-grid-3 { grid-template-columns: 1fr 1fr; } }
-@media (min-width: 1280px) { .charts-grid-3 { grid-template-columns: 1fr 1fr 1fr; } }
+.charts-grid-3 { display: grid; gap: 22px; grid-template-columns: minmax(0, 1fr); margin-top: 28px; }
+@media (min-width: 720px) { .charts-grid-3 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+@media (min-width: 1280px) { .charts-grid-3 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); } }
 
-.form-grid-2 { display: grid; gap: 16px; grid-template-columns: 1fr; }
-@media (min-width: 760px) { .form-grid-2 { grid-template-columns: 1fr 1fr; } }
+.form-grid-2 { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 760px) { .form-grid-2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
 .panel-form-wide { max-width: 100%; }
 .panel-form-wide textarea {
     padding: 11px 14px; border-radius: 8px; border: 1.5px solid var(--border); font-family: inherit; font-size: .92rem;
@@ -513,8 +516,8 @@ a { text-decoration: none; color: inherit; }
 .report-matrix-table th:not(:first-child), .report-matrix-table td:not(:first-child) { text-align: right; white-space: nowrap; }
 tr.report-row-header td { background: var(--gray-bg); font-weight: 700; }
 tr.report-row-bold td { font-weight: 700; }
-.report-split { display: grid; gap: 22px; grid-template-columns: 1fr; }
-@media (min-width: 900px) { .report-split { grid-template-columns: 1fr 1fr; } }
+.report-split { display: grid; gap: 22px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 900px) { .report-split { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
 .report-split-col h3 { font-size: .95rem; font-family: 'Poppins', sans-serif; margin: 0 0 10px; }
 
 /* Estrutura de equipe */
@@ -564,7 +567,7 @@ tr.report-row-bold td { font-weight: 700; }
 /* Grade compacta do modal de detalhe do Lead -- antes era uma lista de <p> empilhados (6+ linhas
    so pros dados basicos, mais o veiculo embaixo), ficava um modal bem alto pra rolar. 2 colunas
    corta a altura pela metade; empilha em 1 coluna so em tela bem estreita. */
-.lead-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; margin-bottom: 14px; font-size: .88rem; }
+.lead-detail-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px 16px; margin-bottom: 14px; font-size: .88rem; }
 .lead-detail-grid:empty { display: none; margin: 0; }
 @media (max-width: 420px) { .lead-detail-grid { grid-template-columns: 1fr; } }
 .kanban-card select { margin-top: 4px; padding: 6px 8px; font-size: .78rem; border-radius: 6px; border: 1px solid var(--border); }
