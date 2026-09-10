@@ -40,6 +40,7 @@ return [
     // do Mercado Pago) e' necessario aqui.
     'mercadopago' => [
         'access_token' => 'TROQUE_AQUI',
+        'webhook_secret' => 'TROQUE_AQUI', // "Assinatura secreta" da tela de Webhooks no painel do Mercado Pago (opcional -- so reforca a validacao, o webhook ja se auto-verifica reconsultando a API)
     ],
 
     // API oficial dos Correios (https://api.correios.com.br) -- App\Core\CorreiosClient. Rastreio
