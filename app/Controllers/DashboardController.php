@@ -30,9 +30,11 @@ use App\Models\LeadNote;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Payment;
+use App\Models\PricingTier;
 use App\Models\Quote;
 use App\Models\SellerActivity;
 use App\Models\User;
+use App\Models\UserCommissionTier;
 
 class DashboardController
 {
@@ -191,6 +193,24 @@ class DashboardController
             // podem todos ser beneficiario de comissao -- admin normalmente nao, fica 0).
             $myCommission = Commission::byBeneficiary(['beneficiary_id' => (int) $user['id']]);
             $data['minhaComissaoPendente'] = (float) ($myCommission[0]['total_pendente'] ?? 0);
+
+            // Fase 31: tabela de faixas de preco/comissao, pedido do usuario pro Licenciado/Gestor
+            // sempre saberem "se eu negociar a X, ganho quanto" -- mesma tabela do admin
+            // (App\Models\PricingTier), so leitura. Vendedor ve uma tabela DIFERENTE (so a propria
+            // comissao configurada, sem a % do Licenciado -- "nao importa pro vendedor, pro
+            // vendedor nao crescer o olho", pedido explicito do usuario).
+            if (in_array($role, ['licenciado', 'gestor'], true)) {
+                $data['pricingTiersRef'] = PricingTier::all();
+            }
+            if ($role === Roles::SELLER) {
+                $tierValues = UserCommissionTier::forUser((int) $user['id']);
+                $data['vendorOwnTiers'] = array_map(fn ($t) => [
+                    'min_price' => $t['min_price'],
+                    'max_price' => $t['max_price'],
+                    'value' => $tierValues[$t['id']] ?? null,
+                ], PricingTier::all());
+                $data['vendorCommissionType'] = $user['commission_type'] ?? null;
+            }
         }
 
         if (in_array($role, Roles::MANAGEMENT, true)) {

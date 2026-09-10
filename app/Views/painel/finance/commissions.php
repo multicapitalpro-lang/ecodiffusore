@@ -55,6 +55,50 @@ $presets = [
     </div>
 </div>
 
+<?php if (!empty($pricingTiersRef)): ?>
+    <h3 class="section-title">Faixas de preço negociável</h3>
+    <p class="hint-text" style="margin-top:0;">Quanto sua equipe negociar por unidade define sua comissão nessa venda.</p>
+    <div class="table-scroll">
+        <table class="data-table">
+            <thead><tr><th>Faixa de preço</th><th>Sua comissão</th></tr></thead>
+            <tbody>
+                <?php foreach ($pricingTiersRef as $t): ?>
+                    <tr>
+                        <td>R$ <?= number_format((float) $t['min_price'], 2, ',', '.') ?><?= $t['max_price'] !== null ? ' a R$ ' . number_format((float) $t['max_price'], 2, ',', '.') : ' acima' ?></td>
+                        <td><?= number_format((float) $t['licenciado_commission_pct'], 2, ',', '.') ?>%</td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+<?php endif; ?>
+
+<?php if (!empty($vendorOwnTiers)): ?>
+    <h3 class="section-title">Sua comissão por faixa de preço</h3>
+    <p class="hint-text" style="margin-top:0;">Quanto você negociar por unidade define sua comissão nessa venda — combinado com seu Licenciado.</p>
+    <div class="table-scroll">
+        <table class="data-table">
+            <thead><tr><th>Faixa de preço</th><th>Sua comissão</th></tr></thead>
+            <tbody>
+                <?php foreach ($vendorOwnTiers as $t): ?>
+                    <tr>
+                        <td>R$ <?= number_format((float) $t['min_price'], 2, ',', '.') ?><?= $t['max_price'] !== null ? ' a R$ ' . number_format((float) $t['max_price'], 2, ',', '.') : ' acima' ?></td>
+                        <td>
+                            <?php if ($t['value'] === null): ?>
+                                <span class="hint-text">Consulte seu Licenciado</span>
+                            <?php elseif ($vendorCommissionType === 'fixo'): ?>
+                                R$ <?= number_format((float) $t['value'], 2, ',', '.') ?> por unidade
+                            <?php else: ?>
+                                <?= number_format((float) $t['value'], 2, ',', '.') ?>% da venda
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+<?php endif; ?>
+
 <?php if (count($byRole) > 1): ?>
 <h3 class="section-title">Resumo por papel</h3>
 <div class="table-scroll">

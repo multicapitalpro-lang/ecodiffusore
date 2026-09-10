@@ -17,7 +17,9 @@ use App\Models\FinancialAttachment;
 use App\Models\FinancialCategory;
 use App\Models\FinancialTransaction;
 use App\Models\Order;
+use App\Models\PricingTier;
 use App\Models\User;
+use App\Models\UserCommissionTier;
 
 class FinanceController
 {
@@ -604,6 +606,23 @@ class FinanceController
         }
         unset($c);
 
+        // Fase 31: mesma tabela de referencia de faixas de preco/comissao mostrada no Dashboard
+        // (DashboardController::index()) -- repetida aqui porque o usuario pediu visibilidade nos
+        // dois lugares. Licenciado/Gestor veem a % do Licenciado; Vendedor ve so a propria comissao
+        // configurada (nunca a % do Licenciado).
+        $pricingTiersRef = null;
+        $vendorOwnTiers = null;
+        if (in_array($user['role_slug'], ['licenciado', 'gestor'], true)) {
+            $pricingTiersRef = PricingTier::all();
+        } elseif ($user['role_slug'] === Roles::SELLER) {
+            $tierValues = UserCommissionTier::forUser((int) $user['id']);
+            $vendorOwnTiers = array_map(fn ($t) => [
+                'min_price' => $t['min_price'],
+                'max_price' => $t['max_price'],
+                'value' => $tierValues[$t['id']] ?? null,
+            ], PricingTier::all());
+        }
+
         View::render('painel/finance/commissions', [
             'user' => $user,
             'commissions' => $commissions,
@@ -612,6 +631,9 @@ class FinanceController
             'byRole' => Commission::byRole($filters),
             'period' => $period,
             'canManageAny' => (bool) $manageScope,
+            'pricingTiersRef' => $pricingTiersRef,
+            'vendorOwnTiers' => $vendorOwnTiers,
+            'vendorCommissionType' => $user['commission_type'] ?? null,
         ]);
     }
 

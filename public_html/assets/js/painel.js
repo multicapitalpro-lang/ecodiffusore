@@ -502,6 +502,13 @@ document.addEventListener('DOMContentLoaded', function () {
             var commissionPctWrap = root.querySelector('#commission-pct-wrap');
             var licenciadoNote = root.querySelector('#licenciado-commission-note');
             var screensWrap = root.querySelector('#screens-permissions-wrap');
+            var commissionHints = root.querySelectorAll('[data-commission-hint]');
+
+            // O campo generico "Comissao desta pessoa (%)" significa uma coisa diferente por
+            // papel (Gestor: % do pool; Gerente/Supervisor: % do pedido pago pela empresa;
+            // Vendedor: comissao padrao de faixa) -- mostra so a frase relevante pro papel
+            // escolhido, em vez de listar as 3 juntas sempre (motivo real do "confuso" reportado).
+            var hintKeyByRole = { gestor: 'gestor', gerente: 'nacional', supervisor: 'nacional', vendedor: 'vendedor' };
 
             function update() {
                 var opt = roleSelect.options[roleSelect.selectedIndex];
@@ -511,6 +518,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (commissionPctWrap) commissionPctWrap.style.display = slug === 'licenciado' ? 'none' : '';
                 if (licenciadoNote) licenciadoNote.style.display = slug === 'licenciado' ? '' : 'none';
                 if (screensWrap) screensWrap.style.display = (slug === 'gestor' || slug === 'vendedor') ? '' : 'none';
+
+                var activeHintKey = hintKeyByRole[slug] || null;
+                commissionHints.forEach(function (h) { h.hidden = h.dataset.commissionHint !== activeHintKey; });
             }
 
             roleSelect.addEventListener('change', update);

@@ -89,7 +89,9 @@ $values = $editing ?? ($old ?? []);
             <label for="commission_pct">Comissão desta pessoa (%)</label>
             <input type="number" id="commission_pct" name="commission_pct" step="0.01" min="0" max="100"
                    value="<?= View::e((string) ($values['commission_pct'] ?? '')) ?>" placeholder="Ex: 15.00">
-            <p class="hint-text">Para gestor: % do pool do licenciado que será repassado a esta pessoa. Para gerente/supervisor: % do total do pedido pago direto pela Ecodiffusore (não sai do pool de ninguém). Para vendedor: usado só se a venda não tiver faixa de preço configurada abaixo.</p>
+            <p class="hint-text" data-commission-hint="gestor">% do pool que o Licenciado recebe da venda (ver "Faixas de preço negociável" acima) que será repassado a este Gestor.</p>
+            <p class="hint-text" data-commission-hint="nacional" hidden>% do total do pedido, pago direto pela Ecodiffusore — não sai do pool de ninguém.</p>
+            <p class="hint-text" data-commission-hint="vendedor" hidden>Comissão padrão deste Vendedor — só usada quando a venda cair numa faixa de preço SEM valor específico definido na tabela abaixo.</p>
         </div>
 
         <div id="licenciado-commission-note" style="display:none;">
@@ -98,6 +100,7 @@ $values = $editing ?? ($old ?? []);
 
         <div id="vendedor-commission-wrap" style="display:none;">
             <label>Como pagar este Vendedor por venda?</label>
+            <p class="hint-text" style="margin-top:0;">Opcional: defina um valor por faixa de preço abaixo pra pagar esse Vendedor direto pelo valor/percentual da venda, em vez do % padrão do campo "Comissão desta pessoa" acima. Escolha primeiro o formato:</p>
             <label class="checkbox-label">
                 <input type="radio" name="commission_type" value="percentual" <?= ($values['commission_type'] ?? 'percentual') === 'percentual' ? 'checked' : '' ?>> % da venda
             </label>
