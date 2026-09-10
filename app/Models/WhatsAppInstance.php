@@ -48,16 +48,30 @@ class WhatsAppInstance
         return self::find((int) Database::connection()->lastInsertId());
     }
 
+    /** O "CASE WHEN :param = 'open'" original dava erro de collation (parametro fica com a
+     *  collation padrao da conexao, diferente da collation da tabela) -- resolvendo em PHP em vez
+     *  de comparar string dentro do SQL evita a classe inteira desse problema. */
     public static function updateStatus(int $id, string $status, ?string $phoneNumber = null, ?string $profileName = null): void
     {
+        $current = self::find($id);
+        $connectedAt = ($status === 'open' && empty($current['connected_at']))
+            ? date('Y-m-d H:i:s')
+            : ($current['connected_at'] ?? null);
+
         $stmt = Database::connection()->prepare(
             'UPDATE whatsapp_instances SET status = :status,
                 phone_number = COALESCE(:phone, phone_number),
                 profile_name = COALESCE(:profile, profile_name),
-                connected_at = CASE WHEN :status2 = "open" AND connected_at IS NULL THEN NOW() ELSE connected_at END
+                connected_at = :connected_at
              WHERE id = :id'
         );
-        $stmt->execute(['status' => $status, 'status2' => $status, 'phone' => $phoneNumber, 'profile' => $profileName, 'id' => $id]);
+        $stmt->execute([
+            'status' => $status,
+            'phone' => $phoneNumber,
+            'profile' => $profileName,
+            'connected_at' => $connectedAt,
+            'id' => $id,
+        ]);
     }
 
     public static function touchSync(int $id): void
