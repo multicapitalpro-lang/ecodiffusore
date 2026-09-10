@@ -108,21 +108,23 @@ $values = $editing ?? ($old ?? []);
                 <input type="radio" name="commission_type" value="fixo" <?= ($values['commission_type'] ?? '') === 'fixo' ? 'checked' : '' ?>> Valor fixo (R$) por unidade
             </label>
 
-            <table class="data-table" style="margin-top:10px;">
-                <thead><tr><th>Faixa de preço negociado</th><th>Comissão do vendedor</th></tr></thead>
-                <tbody>
-                    <?php foreach ($pricingTiers as $tier): ?>
-                        <tr>
-                            <td>R$ <?= number_format((float) $tier['min_price'], 2, ',', '.') ?><?= $tier['max_price'] !== null ? ' a R$ ' . number_format((float) $tier['max_price'], 2, ',', '.') : ' acima' ?></td>
-                            <td>
-                                <input type="number" name="commission_tier_<?= (int) $tier['id'] ?>" step="0.01" min="0"
-                                       value="<?= View::e((string) ($vendorTierValues[$tier['id']] ?? '')) ?>" style="width:100px;">
-                                <p class="field-error" data-error-for="commission_tier_<?= (int) $tier['id'] ?>"><?= View::e($errors['commission_tier_' . $tier['id']] ?? '') ?></p>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
+            <div class="table-scroll">
+                <table class="data-table" style="margin-top:10px;">
+                    <thead><tr><th>Faixa de preço negociado</th><th>Comissão do vendedor</th></tr></thead>
+                    <tbody>
+                        <?php foreach ($pricingTiers as $tier): ?>
+                            <tr>
+                                <td>R$ <?= number_format((float) $tier['min_price'], 2, ',', '.') ?><?= $tier['max_price'] !== null ? ' a R$ ' . number_format((float) $tier['max_price'], 2, ',', '.') : ' acima' ?></td>
+                                <td>
+                                    <input type="number" name="commission_tier_<?= (int) $tier['id'] ?>" step="0.01" min="0"
+                                           value="<?= View::e((string) ($vendorTierValues[$tier['id']] ?? '')) ?>" style="width:100px;">
+                                    <p class="field-error" data-error-for="commission_tier_<?= (int) $tier['id'] ?>"><?= View::e($errors['commission_tier_' . $tier['id']] ?? '') ?></p>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
             <p class="hint-text">Um valor por faixa (vazio = essa faixa cai no % de comissão padrão acima). Sai do pool que o Licenciado recebe da Ecodiffusore — não é um custo adicional.</p>
         </div>
     <?php endif; ?>

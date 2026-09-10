@@ -347,14 +347,16 @@ $hasMetrics = isset($metrics);
         </div>
         <div>
             <h3 class="section-title">Resumo</h3>
-            <table class="data-table">
-                <tbody>
-                    <tr><td>Faturamento</td><td>R$ <?= number_format($metrics['total_value'], 2, ',', '.') ?></td></tr>
-                    <tr><td>Custo dos produtos</td><td>R$ <?= number_format($costTotal, 2, ',', '.') ?></td></tr>
-                    <tr><td>Margem bruta</td><td>R$ <?= number_format($grossMargin, 2, ',', '.') ?></td></tr>
-                    <tr><td>Impostos / Taxas</td><td>R$ 0,00 <span class="hint-inline">(não modelado ainda)</span></td></tr>
-                </tbody>
-            </table>
+            <div class="table-scroll">
+                <table class="data-table">
+                    <tbody>
+                        <tr><td>Faturamento</td><td>R$ <?= number_format($metrics['total_value'], 2, ',', '.') ?></td></tr>
+                        <tr><td>Custo dos produtos</td><td>R$ <?= number_format($costTotal, 2, ',', '.') ?></td></tr>
+                        <tr><td>Margem bruta</td><td>R$ <?= number_format($grossMargin, 2, ',', '.') ?></td></tr>
+                        <tr><td>Impostos / Taxas</td><td>R$ 0,00 <span class="hint-inline">(não modelado ainda)</span></td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 

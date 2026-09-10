@@ -60,27 +60,31 @@ $maskReportValue = function ($value) use ($hasSub) {
         <div class="report-split">
             <div class="report-split-col">
                 <h3><?= View::e($report['left']['title']) ?></h3>
-                <table class="data-table">
-                    <tbody>
-                        <?php foreach ($report['left']['rows'] as $row): ?>
-                            <tr><td><?= View::e($row[0]) ?></td><td><?= View::e($maskReportValue($row[1])) ?></td></tr>
-                        <?php endforeach; ?>
-                        <?php if (!$report['left']['rows']): ?><tr><td colspan="2">Sem dados no período.</td></tr><?php endif; ?>
-                    </tbody>
-                    <tfoot><tr><td><strong>Total</strong></td><td><strong><?= View::e($maskReportValue($report['left']['total'])) ?></strong></td></tr></tfoot>
-                </table>
+                <div class="table-scroll">
+                    <table class="data-table">
+                        <tbody>
+                            <?php foreach ($report['left']['rows'] as $row): ?>
+                                <tr><td><?= View::e($row[0]) ?></td><td><?= View::e($maskReportValue($row[1])) ?></td></tr>
+                            <?php endforeach; ?>
+                            <?php if (!$report['left']['rows']): ?><tr><td colspan="2">Sem dados no período.</td></tr><?php endif; ?>
+                        </tbody>
+                        <tfoot><tr><td><strong>Total</strong></td><td><strong><?= View::e($maskReportValue($report['left']['total'])) ?></strong></td></tr></tfoot>
+                    </table>
+                </div>
             </div>
             <div class="report-split-col">
                 <h3><?= View::e($report['right']['title']) ?></h3>
-                <table class="data-table">
-                    <tbody>
-                        <?php foreach ($report['right']['rows'] as $row): ?>
-                            <tr><td><?= View::e($row[0]) ?></td><td><?= View::e($maskReportValue($row[1])) ?></td></tr>
-                        <?php endforeach; ?>
-                        <?php if (!$report['right']['rows']): ?><tr><td colspan="2">Sem dados no período.</td></tr><?php endif; ?>
-                    </tbody>
-                    <tfoot><tr><td><strong>Total</strong></td><td><strong><?= View::e($maskReportValue($report['right']['total'])) ?></strong></td></tr></tfoot>
-                </table>
+                <div class="table-scroll">
+                    <table class="data-table">
+                        <tbody>
+                            <?php foreach ($report['right']['rows'] as $row): ?>
+                                <tr><td><?= View::e($row[0]) ?></td><td><?= View::e($maskReportValue($row[1])) ?></td></tr>
+                            <?php endforeach; ?>
+                            <?php if (!$report['right']['rows']): ?><tr><td colspan="2">Sem dados no período.</td></tr><?php endif; ?>
+                        </tbody>
+                        <tfoot><tr><td><strong>Total</strong></td><td><strong><?= View::e($maskReportValue($report['right']['total'])) ?></strong></td></tr></tfoot>
+                    </table>
+                </div>
             </div>
         </div>
 
