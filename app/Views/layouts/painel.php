@@ -186,6 +186,7 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/desempen
             <?php endif; ?>
 
             <?php if (in_array($role, ['licenciado', 'gestor', 'vendedor'], true)): ?>
+                <a href="/painel/whatsapp" class="<?= $isActive('/painel/whatsapp') ? 'is-active' : '' ?>">💬 Meu WhatsApp</a>
                 <a href="/painel/assinatura" class="<?= $isActive('/painel/assinatura') ? 'is-active' : '' ?>">⭐ Assinatura</a>
             <?php endif; ?>
 

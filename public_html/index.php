@@ -258,6 +258,24 @@ $router->post('/painel/meus-custos/{id}/excluir', [App\Controllers\LicenciadoExp
 $router->get('/aceite-comissao/{token}', [App\Controllers\AcceptanceController::class, 'show']);
 $router->post('/aceite-comissao/{token}/aceitar', [App\Controllers\AcceptanceController::class, 'accept']);
 
+// Webhook Evolution API (publico) -- uma URL so pra todas as instancias por-usuario (Fase 33)
+$router->post('/webhooks/evolution', [App\Controllers\WhatsAppWebhookController::class, 'receive']);
+
+// Painel de WhatsApp do Licenciado/Gestor/Vendedor (Fase 33, dentro da assinatura)
+$router->get('/painel/whatsapp', [App\Controllers\WhatsAppInstanceController::class, 'index']);
+$router->get('/painel/whatsapp/status', [App\Controllers\WhatsAppInstanceController::class, 'status']);
+$router->post('/painel/whatsapp/conectar', [App\Controllers\WhatsAppInstanceController::class, 'connect']);
+$router->post('/painel/whatsapp/desconectar', [App\Controllers\WhatsAppInstanceController::class, 'disconnect']);
+$router->get('/painel/whatsapp/conversas', [App\Controllers\WhatsAppInboxController::class, 'index']);
+$router->get('/painel/whatsapp/conversas/{id}', [App\Controllers\WhatsAppInboxController::class, 'show']);
+$router->get('/painel/whatsapp/conversas/{id}/poll', [App\Controllers\WhatsAppInboxController::class, 'poll']);
+$router->post('/painel/whatsapp/conversas/{id}/enviar', [App\Controllers\WhatsAppInboxController::class, 'send']);
+$router->post('/painel/whatsapp/conversas/{id}/lead', [App\Controllers\WhatsAppInboxController::class, 'linkLead']);
+$router->post('/painel/whatsapp/conversas/{id}/tags', [App\Controllers\WhatsAppInboxController::class, 'assignTag']);
+$router->post('/painel/whatsapp/conversas/{id}/tags/{tagId}/remover', [App\Controllers\WhatsAppInboxController::class, 'removeTag']);
+$router->post('/painel/whatsapp/sincronizar', [App\Controllers\WhatsAppInboxController::class, 'sync']);
+$router->post('/painel/whatsapp/tags', [App\Controllers\WhatsAppInboxController::class, 'storeTag']);
+
 // Busca global
 $router->get('/painel/busca', [App\Controllers\SearchController::class, 'index']);
 
