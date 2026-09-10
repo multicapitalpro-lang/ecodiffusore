@@ -397,7 +397,11 @@ class User
 
     public static function findByCommissionAcceptToken(string $token): ?array
     {
-        $stmt = Database::connection()->prepare('SELECT * FROM users WHERE commission_accept_token = :token');
+        $stmt = Database::connection()->prepare(
+            'SELECT u.*, r.slug AS role_slug, r.name AS role_name
+             FROM users u JOIN roles r ON r.id = u.role_id
+             WHERE u.commission_accept_token = :token'
+        );
         $stmt->execute(['token' => $token]);
         $row = $stmt->fetch();
         return $row ?: null;
