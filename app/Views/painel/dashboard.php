@@ -121,6 +121,15 @@ $hasMetrics = isset($metrics);
                 <strong>R$ <?= number_format($contasReceberAberto, 2, ',', '.') ?></strong>
             </div>
         </div>
+    <?php elseif (in_array($user['role_slug'], ['licenciado', 'gestor'], true)): ?>
+        <div class="page-header">
+            <h3 class="section-title" style="margin:28px 0 0;">Financeiro</h3>
+        </div>
+        <div class="dash-card">
+            <span>🔒 Caixas, Contas a Pagar e a Receber</span>
+            <span class="hint-inline">Disponível na assinatura do Licenciado.</span>
+            <a href="/painel/assinatura" class="btn btn-outline" style="margin-top:8px;width:fit-content;">Ver detalhes</a>
+        </div>
     <?php endif; ?>
 
     <?php if (isset($impostoPagoPeriodo)): ?>

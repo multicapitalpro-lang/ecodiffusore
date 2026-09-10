@@ -94,7 +94,7 @@ $erroLabels = [
             <thead>
                 <tr>
                     <th><input type="checkbox" id="select-all-users"></th>
-                    <th>Nome</th><th>E-mail</th><th>Papel</th><th>Status</th><th>Onboarding</th><th>Cidade/UF</th><th>Responsável</th><th>Cadastrado em</th><th>Último login</th><th></th>
+                    <th>Nome</th><th>E-mail</th><th>Papel</th><th>Status</th><th>Onboarding</th><th>Aceite de Comissão</th><th>Cidade/UF</th><th>Responsável</th><th>Cadastrado em</th><th>Último login</th><th></th>
                 </tr>
             </thead>
             <tbody>
@@ -109,6 +109,17 @@ $erroLabels = [
                             <?php if (($u['licenciado_onboarding_status'] ?? 'nao_aplicavel') !== 'nao_aplicavel'): ?>
                                 <?php [$label, $badge] = $onboardingLabels[$u['licenciado_onboarding_status']] ?? [$u['licenciado_onboarding_status'], 'novo']; ?>
                                 <span class="status-badge status-<?= View::e($badge) ?>"><?= View::e($label) ?></span>
+                            <?php else: ?>
+                                —
+                            <?php endif; ?>
+                        </td>
+                        <td>
+                            <?php if (in_array($u['role_slug'], ['gestor', 'vendedor'], true)): ?>
+                                <?php if (!empty($u['commission_accepted_at'])): ?>
+                                    <span class="status-badge status-active">Aceito em <?= View::e(date('d/m/Y', strtotime($u['commission_accepted_at']))) ?></span>
+                                <?php else: ?>
+                                    <span class="status-badge status-contatado">Aguardando aceite</span>
+                                <?php endif; ?>
                             <?php else: ?>
                                 —
                             <?php endif; ?>

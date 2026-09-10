@@ -9,6 +9,7 @@ use App\Core\FinancialReports;
 use App\Core\Pdf;
 use App\Core\Roles;
 use App\Core\Router;
+use App\Core\SubscriptionGate;
 use App\Core\View;
 use App\Models\ReportSchedule;
 use App\Models\User;
@@ -38,6 +39,7 @@ class ReportController
     {
         Auth::requireRole(Roles::STAFF);
         $user = Auth::user();
+        SubscriptionGate::requireAccess($user);
 
         $catalog = FinancialReports::catalog();
         $hasFinanceAccess = in_array($user['role_slug'], self::ALLOWED_ROLES, true);
@@ -65,6 +67,7 @@ class ReportController
     {
         Auth::requireRole(Roles::STAFF);
         $user = Auth::user();
+        SubscriptionGate::requireAccess($user);
         $this->assertTypeAllowed($type, $user);
 
         [$from, $to] = DateRange::fromRequest();
@@ -83,6 +86,7 @@ class ReportController
     {
         Auth::requireRole(Roles::STAFF);
         $user = Auth::user();
+        SubscriptionGate::requireAccess($user);
         $this->assertTypeAllowed($type, $user);
 
         [$from, $to] = DateRange::fromRequest();
@@ -161,6 +165,7 @@ class ReportController
     {
         Auth::requireRole(self::ALLOWED_ROLES);
         $user = Auth::user();
+        SubscriptionGate::requireAccess($user);
 
         View::render('painel/reports/schedules', [
             'user' => $user,
@@ -188,6 +193,7 @@ class ReportController
     {
         Auth::requireRole(self::ALLOWED_ROLES);
         $user = Auth::user();
+        SubscriptionGate::requireAccess($user);
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
             Router::redirect('/painel/financeiro/relatorios/agendamentos?erro=1');

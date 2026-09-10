@@ -173,6 +173,9 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/desempen
                         <?php if ($canScreen('comissoes')): ?>
                             <a href="/painel/financeiro/comissoes" class="<?= $isActive('/painel/financeiro/comissoes') ? 'is-active' : '' ?>">Comissões</a>
                         <?php endif; ?>
+                        <?php if ($role === 'licenciado'): ?>
+                            <a href="/painel/meus-custos" class="<?= $isActive('/painel/meus-custos') ? 'is-active' : '' ?>">Meus Custos</a>
+                        <?php endif; ?>
                         <a href="/painel/financeiro/relatorios" class="<?= $isActive('/painel/financeiro/relatorios') ? 'is-active' : '' ?>">Relatórios</a>
                         <?php if (in_array($role, ['admin', 'gerente'], true)): ?>
                             <a href="/painel/financeiro/impostos" class="<?= $isActive('/painel/financeiro/impostos') ? 'is-active' : '' ?>">Controle Fiscal</a>
@@ -180,6 +183,10 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/desempen
                         <?php endif; ?>
                     </div>
                 </details>
+            <?php endif; ?>
+
+            <?php if (in_array($role, ['licenciado', 'gestor', 'vendedor'], true)): ?>
+                <a href="/painel/assinatura" class="<?= $isActive('/painel/assinatura') ? 'is-active' : '' ?>">⭐ Assinatura</a>
             <?php endif; ?>
 
             <?php if (in_array($role, $userManagementRoles, true)): ?>

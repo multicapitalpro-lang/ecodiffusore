@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Core\Auth;
 use App\Core\Csrf;
+use App\Core\Notifier;
 use App\Core\Response;
 use App\Core\Roles;
 use App\Core\Router;
@@ -175,6 +176,12 @@ class UserController
 
         if (in_array($createdRoleSlug, ['gestor', 'vendedor'], true)) {
             ScreenPermissions::setFor($newUserId, $_POST['screens'] ?? []);
+
+            // Fase 32: Gestor/Vendedor recebe as condicoes de comissao no WhatsApp e confirma com
+            // 1 clique, sem precisar logar -- pedido explicito do usuario, "fica salvo em sistema
+            // essa informacao".
+            $token = User::generateCommissionAcceptToken($newUserId);
+            Notifier::propostaComissaoCriada(User::find($newUserId), $token);
         }
 
         if ($createdRoleSlug === 'licenciado') {

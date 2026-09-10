@@ -9,6 +9,7 @@ use App\Core\FileUpload;
 use App\Core\Response;
 use App\Core\Roles;
 use App\Core\Router;
+use App\Core\SubscriptionGate;
 use App\Core\View;
 use App\Models\Client;
 use App\Models\Commission;
@@ -50,6 +51,7 @@ class FinanceController
     public function accounts(): void
     {
         Auth::requireRole(Roles::MANAGEMENT);
+        SubscriptionGate::requireAccess(Auth::user());
         $user = Auth::user();
 
         $accounts = FinancialAccount::all();
@@ -79,6 +81,7 @@ class FinanceController
     public function storeTransfer(): void
     {
         Auth::requireRole(Roles::MANAGEMENT);
+        SubscriptionGate::requireAccess(Auth::user());
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
             Router::redirect('/painel/financeiro/caixas-bancos?erro=1');
@@ -108,6 +111,7 @@ class FinanceController
     public function setDefaultAccount(string $id): void
     {
         Auth::requireRole(Roles::MANAGEMENT);
+        SubscriptionGate::requireAccess(Auth::user());
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
             Router::redirect('/painel/financeiro/caixas-bancos?erro=1');
@@ -121,6 +125,7 @@ class FinanceController
     public function storeAccount(): void
     {
         Auth::requireRole(Roles::MANAGEMENT);
+        SubscriptionGate::requireAccess(Auth::user());
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
             Router::redirect('/painel/financeiro/caixas-bancos?erro=1');
@@ -138,6 +143,7 @@ class FinanceController
     public function storeTransaction(): void
     {
         Auth::requireRole(Roles::MANAGEMENT);
+        SubscriptionGate::requireAccess(Auth::user());
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
             if (Response::isAjax()) {
@@ -191,12 +197,14 @@ class FinanceController
     public function payable(): void
     {
         Auth::requireRole(Roles::MANAGEMENT);
+        SubscriptionGate::requireAccess(Auth::user());
         $this->renderLedger('saida', 'Contas a Pagar');
     }
 
     public function receivable(): void
     {
         Auth::requireRole(Roles::MANAGEMENT);
+        SubscriptionGate::requireAccess(Auth::user());
         $this->renderLedger('entrada', 'Contas a Receber');
     }
 
@@ -245,6 +253,7 @@ class FinanceController
     public function storePayable(): void
     {
         Auth::requireRole(Roles::MANAGEMENT);
+        SubscriptionGate::requireAccess(Auth::user());
 
         $type = ($_POST['type'] ?? 'saida') === 'entrada' ? 'entrada' : 'saida';
         $backTo = $type === 'entrada' ? '/painel/financeiro/contas-a-receber' : '/painel/financeiro/contas-a-pagar';
@@ -311,6 +320,7 @@ class FinanceController
     public function markPaid(string $id): void
     {
         Auth::requireRole(Roles::MANAGEMENT);
+        SubscriptionGate::requireAccess(Auth::user());
         $id = (int) $id;
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
@@ -481,6 +491,7 @@ class FinanceController
     public function downloadAttachment(string $id): void
     {
         Auth::requireRole(Roles::MANAGEMENT);
+        SubscriptionGate::requireAccess(Auth::user());
         $user = Auth::user();
 
         $attachment = FinancialAttachment::find((int) $id);
@@ -762,6 +773,7 @@ class FinanceController
     private function authorizeTransaction(int $id): array
     {
         Auth::requireRole(Roles::MANAGEMENT);
+        SubscriptionGate::requireAccess(Auth::user());
         $user = Auth::user();
 
         $transaction = FinancialTransaction::find($id);

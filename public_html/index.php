@@ -241,6 +241,23 @@ $router->post('/webhooks/asaas', [App\Controllers\PaymentController::class, 'web
 // Webhook ClickSign (publico)
 $router->post('/webhooks/clicksign', [App\Controllers\ClickSignWebhookController::class, 'clicksign']);
 
+// Webhook Mercado Pago (publico) -- assinatura do Licenciado
+$router->post('/webhooks/mercadopago', [App\Controllers\SubscriptionWebhookController::class, 'mercadopago']);
+$router->get('/webhooks/mercadopago', [App\Controllers\SubscriptionWebhookController::class, 'mercadopago']);
+
+// Assinatura do Licenciado (Fase 32)
+$router->get('/painel/assinatura', [App\Controllers\SubscriptionController::class, 'index']);
+$router->post('/painel/assinatura/comprar', [App\Controllers\SubscriptionController::class, 'purchase']);
+
+// Custos do Licenciado (Fase 32, sempre liberado)
+$router->get('/painel/meus-custos', [App\Controllers\LicenciadoExpenseController::class, 'index']);
+$router->post('/painel/meus-custos', [App\Controllers\LicenciadoExpenseController::class, 'store']);
+$router->post('/painel/meus-custos/{id}/excluir', [App\Controllers\LicenciadoExpenseController::class, 'destroy']);
+
+// Aceite de comissao (publico, Fase 32)
+$router->get('/aceite-comissao/{token}', [App\Controllers\AcceptanceController::class, 'show']);
+$router->post('/aceite-comissao/{token}/aceitar', [App\Controllers\AcceptanceController::class, 'accept']);
+
 // Busca global
 $router->get('/painel/busca', [App\Controllers\SearchController::class, 'index']);
 

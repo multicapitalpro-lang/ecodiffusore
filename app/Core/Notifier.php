@@ -467,6 +467,20 @@ class Notifier
         }
     }
 
+    /** @param array $newUser precisa de name/whatsapp. So WhatsApp, direto pro Gestor/Vendedor
+     *  recem-cadastrado -- pede pra ele confirmar que esta de acordo com as condicoes de comissao
+     *  que o Licenciado configurou (link publico com token, ver AcceptanceController). */
+    public static function propostaComissaoCriada(array $newUser, string $token): void
+    {
+        if (empty($newUser['whatsapp'])) {
+            return;
+        }
+
+        $url = self::BASE_URL . '/aceite-comissao/' . $token;
+        $text = "Olá, {$newUser['name']}! Você foi cadastrado(a) no painel da Ecodiffusore Brasil. Confira as condições de comissão combinadas e confirme que está de acordo, é rápido: {$url}";
+        self::sendWhatsApp($newUser['whatsapp'], $text);
+    }
+
     /** @param array $warranty precisa de id/order_id/seller_id/client_name (retorno de
      *  WarrantyRequest::find()). So WhatsApp, sem e-mail -- notifica quem vendeu o pedido, nao o
      *  cliente (mensagens pro cliente ficam pra fase seguinte). Notifica TAMBEM Admin/Gerente

@@ -34,6 +34,14 @@ return [
         'template_key' => 'TROQUE_AQUI', // chave do Modelo "Contrato Assinatura Diferencial" (Automação > Modelos no ClickSign)
     ],
 
+    // Checkout Pro do Mercado Pago (Fase 32) -- App\Core\MercadoPagoClient. Assinatura do
+    // Licenciado (Relatorios/Financeiro). SEM isso, a tela de assinatura fica "pagamento
+    // indisponivel" -- so o access_token de producao (Suas integracoes > Credenciais no painel
+    // do Mercado Pago) e' necessario aqui.
+    'mercadopago' => [
+        'access_token' => 'TROQUE_AQUI',
+    ],
+
     // API oficial dos Correios (https://api.correios.com.br) -- App\Core\CorreiosClient. Rastreio
     // real (status/data do ultimo evento) quando a fabrica cadastra o codigo. Precisa de um contrato
     // Correios (Cartao de Postagem) e credenciais do Meu Correios Business -- SEM isso, track()

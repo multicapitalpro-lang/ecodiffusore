@@ -382,6 +382,33 @@ class User
         ]);
     }
 
+    /** Gera (ou renova) o token do link de aceite de comissao (Fase 32) -- Gestor/Vendedor recebe
+     *  esse link por WhatsApp quando o Licenciado cadastra/edita as condicoes dele. Zera
+     *  commission_accepted_at -- um token novo significa condicoes novas, precisa aceitar de novo. */
+    public static function generateCommissionAcceptToken(int $id): string
+    {
+        $token = bin2hex(random_bytes(24));
+        $stmt = Database::connection()->prepare(
+            'UPDATE users SET commission_accept_token = :token, commission_accepted_at = NULL WHERE id = :id'
+        );
+        $stmt->execute(['token' => $token, 'id' => $id]);
+        return $token;
+    }
+
+    public static function findByCommissionAcceptToken(string $token): ?array
+    {
+        $stmt = Database::connection()->prepare('SELECT * FROM users WHERE commission_accept_token = :token');
+        $stmt->execute(['token' => $token]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
+    public static function acceptCommissionTerms(int $id): void
+    {
+        $stmt = Database::connection()->prepare('UPDATE users SET commission_accepted_at = NOW() WHERE id = :id');
+        $stmt->execute(['id' => $id]);
+    }
+
     public static function emailExists(string $email, ?int $exceptId = null): bool
     {
         $sql = 'SELECT id FROM users WHERE email = :email';
