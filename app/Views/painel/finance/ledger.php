@@ -1,5 +1,6 @@
 <?php
 use App\Core\Csrf;
+use App\Core\SubscriptionGate;
 use App\Core\View;
 use App\Models\FinancialTransaction;
 $statusLabels = ['pendente' => 'Pendente', 'pago' => 'Pago', 'conciliado' => 'Conciliado'];
@@ -10,10 +11,11 @@ $filters = $filters ?? [];
 $openModal = isset($_GET['novo']) || $errors;
 $personLabel = $type === 'entrada' ? 'Cliente' : 'Fornecedor';
 $today = date('Y-m-d');
+$hasSub = SubscriptionGate::hasAccess($user);
 ?>
 <div class="page-header">
     <h1><?= View::e($title) ?></h1>
-    <button type="button" class="btn btn-primary" data-modal-open="modal-payable">+ Incluir Conta</button>
+    <button type="button" class="btn btn-primary" data-modal-open="<?= $hasSub ? 'modal-payable' : 'modal-assinatura' ?>">+ Incluir Conta</button>
 </div>
 
 <?php if ($sucesso): ?>
@@ -27,16 +29,16 @@ $today = date('Y-m-d');
     </div>
     <div class="dash-card">
         <span>Valor em aberto</span>
-        <strong>R$ <?= number_format($summary['open_total'], 2, ',', '.') ?></strong>
+        <strong><?= SubscriptionGate::money($user, $summary['open_total']) ?></strong>
     </div>
     <div class="dash-card <?= $summary['overdue_count'] > 0 ? 'dash-card-danger' : '' ?>">
         <span>Vencidas</span>
         <strong><?= $summary['overdue_count'] ?></strong>
-        <small><?php if ($summary['overdue_count'] > 0): ?>R$ <?= number_format($summary['overdue_total'], 2, ',', '.') ?><?php endif; ?></small>
+        <small><?php if ($summary['overdue_count'] > 0): ?><?= SubscriptionGate::money($user, $summary['overdue_total']) ?><?php endif; ?></small>
     </div>
     <div class="dash-card">
         <span>Total pago</span>
-        <strong>R$ <?= number_format($summary['paid_total'], 2, ',', '.') ?></strong>
+        <strong><?= SubscriptionGate::money($user, $summary['paid_total']) ?></strong>
     </div>
 </div>
 
@@ -79,27 +81,39 @@ $today = date('Y-m-d');
                     <td class="<?= $t['status'] === 'pendente' && $t['due_date'] < $today ? 'text-red' : '' ?>"><?= View::e(date('d/m/Y', strtotime($t['due_date']))) ?></td>
                     <td><?= View::e($t['category_name'] ?: '—') ?></td>
                     <td>
-                        R$ <?= number_format(FinancialTransaction::totalValue($t), 2, ',', '.') ?>
+                        <?= SubscriptionGate::money($user, FinancialTransaction::totalValue($t)) ?>
                         <?php if (!empty($t['recurrence_frequency'])): ?><span class="tag-default" title="Lançamento recorrente">🔁</span><?php endif; ?>
                     </td>
                     <td><span class="status-badge status-<?= $t['status'] === 'pendente' ? 'contatado' : 'active' ?>"><?= $statusLabels[$t['status']] ?? $t['status'] ?></span></td>
                     <td><?php $items = $attachmentsByTransaction[$t['id']] ?? []; include __DIR__ . '/_attachments_cell.php'; ?></td>
                     <td class="table-actions">
                         <?php if ($t['status'] === 'pendente'): ?>
-                            <form action="/painel/financeiro/contas/<?= (int) $t['id'] ?>/baixar" method="post" class="inline-form">
-                                <?= Csrf::field() ?>
-                                <button type="submit" class="link-button">Dar baixa</button>
-                            </form>
+                            <?php if ($hasSub): ?>
+                                <form action="/painel/financeiro/contas/<?= (int) $t['id'] ?>/baixar" method="post" class="inline-form">
+                                    <?= Csrf::field() ?>
+                                    <button type="submit" class="link-button">Dar baixa</button>
+                                </form>
+                            <?php else: ?>
+                                <button type="button" class="link-button" data-modal-open="modal-assinatura">Dar baixa</button>
+                            <?php endif; ?>
                         <?php endif; ?>
                         <?php if (!empty($t['order_id'])): ?>
                             <button type="button" class="link-small" data-view-order="<?= (int) $t['order_id'] ?>">Ver pedido</button>
                         <?php endif; ?>
-                        <button type="button" class="link-small" data-edit-transaction="<?= (int) $t['id'] ?>">Editar</button>
+                        <?php if ($hasSub): ?>
+                            <button type="button" class="link-small" data-edit-transaction="<?= (int) $t['id'] ?>">Editar</button>
+                        <?php else: ?>
+                            <button type="button" class="link-small" data-modal-open="modal-assinatura">Editar</button>
+                        <?php endif; ?>
                         <?php if (empty($t['order_id'])): ?>
-                            <form action="/painel/financeiro/contas/<?= (int) $t['id'] ?>/excluir" method="post" class="inline-form">
-                                <?= Csrf::field() ?>
-                                <button type="submit" class="link-button icon-button-danger" data-confirm="Excluir esse lançamento? Essa ação não pode ser desfeita.">Excluir</button>
-                            </form>
+                            <?php if ($hasSub): ?>
+                                <form action="/painel/financeiro/contas/<?= (int) $t['id'] ?>/excluir" method="post" class="inline-form">
+                                    <?= Csrf::field() ?>
+                                    <button type="submit" class="link-button icon-button-danger" data-confirm="Excluir esse lançamento? Essa ação não pode ser desfeita.">Excluir</button>
+                                </form>
+                            <?php else: ?>
+                                <button type="button" class="link-button icon-button-danger" data-modal-open="modal-assinatura">Excluir</button>
+                            <?php endif; ?>
                         <?php endif; ?>
                     </td>
                 </tr>
@@ -131,3 +145,5 @@ $today = date('Y-m-d');
 <?php include __DIR__ . '/_edit_transaction_modal.php'; ?>
 
 <?php $redirectTo = $type === 'entrada' ? '/painel/financeiro/contas-a-receber' : '/painel/financeiro/contas-a-pagar'; include __DIR__ . '/../_client_quick_modal.php'; ?>
+
+<?php if (!$hasSub): ?><?php include __DIR__ . '/../subscription/_modal.php'; ?><?php endif; ?>

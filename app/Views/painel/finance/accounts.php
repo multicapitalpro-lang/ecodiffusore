@@ -1,19 +1,21 @@
 <?php
 use App\Core\Csrf;
+use App\Core\SubscriptionGate;
 use App\Core\View;
 $sucesso = isset($_GET['sucesso']);
 $erro = isset($_GET['erro']);
 $statusLabels = ['pendente' => 'Pendente', 'pago' => 'Pago', 'conciliado' => 'Conciliado'];
 $openModal = !empty($errors);
 $filters = $filters ?? [];
+$hasSub = SubscriptionGate::hasAccess($user);
 ?>
 <div class="page-header">
     <h1>Caixas e Bancos</h1>
     <div class="page-header-actions">
         <?php if (count($accounts) > 1): ?>
-            <button type="button" class="btn btn-outline" data-modal-open="modal-transfer">Transferir entre contas</button>
+            <button type="button" class="btn btn-outline" data-modal-open="<?= $hasSub ? 'modal-transfer' : 'modal-assinatura' ?>">Transferir entre contas</button>
         <?php endif; ?>
-        <button type="button" class="btn btn-primary" data-modal-open="modal-transaction">+ Incluir Lançamento</button>
+        <button type="button" class="btn btn-primary" data-modal-open="<?= $hasSub ? 'modal-transaction' : 'modal-assinatura' ?>">+ Incluir Lançamento</button>
     </div>
 </div>
 
@@ -32,35 +34,43 @@ $filters = $filters ?? [];
                     <span class="tag-default">padrão</span>
                 <?php endif; ?>
             </span>
-            <strong>R$ <?= number_format((float) $acc['balance'], 2, ',', '.') ?></strong>
+            <strong><?= SubscriptionGate::money($user, (float) $acc['balance']) ?></strong>
             <?php if (empty($acc['is_default'])): ?>
-                <form action="/painel/financeiro/caixas-bancos/<?= (int) $acc['id'] ?>/padrao" method="post" class="inline-form">
-                    <?= Csrf::field() ?>
-                    <button type="submit" class="link-button">Tornar padrão</button>
-                </form>
+                <?php if ($hasSub): ?>
+                    <form action="/painel/financeiro/caixas-bancos/<?= (int) $acc['id'] ?>/padrao" method="post" class="inline-form">
+                        <?= Csrf::field() ?>
+                        <button type="submit" class="link-button">Tornar padrão</button>
+                    </form>
+                <?php else: ?>
+                    <button type="button" class="link-button" data-modal-open="modal-assinatura">Tornar padrão</button>
+                <?php endif; ?>
             <?php endif; ?>
         </div>
     <?php endforeach; ?>
 </div>
 <p class="hint-text">A conta padrão é pra onde vão automaticamente o recebimento de um pedido pago e a saída de uma comissão dada baixa.</p>
 
-<details class="inline-details">
-    <summary>+ Nova conta financeira</summary>
-    <form action="/painel/financeiro/caixas-bancos/contas" method="post" class="panel-form">
-        <?= Csrf::field() ?>
-        <label for="name">Nome</label>
-        <input type="text" id="name" name="name" required>
-        <label for="type">Tipo</label>
-        <select id="type" name="type">
-            <option value="caixa">Caixa</option>
-            <option value="banco">Banco</option>
-        </select>
-        <label for="initial_balance">Saldo inicial (R$)</label>
-        <input type="number" step="0.01" id="initial_balance" name="initial_balance" value="0">
-        <label class="checkbox-inline"><input type="checkbox" name="is_default" value="1"> Tornar essa a conta padrão</label>
-        <button type="submit" class="btn btn-primary">Adicionar conta</button>
-    </form>
-</details>
+<?php if ($hasSub): ?>
+    <details class="inline-details">
+        <summary>+ Nova conta financeira</summary>
+        <form action="/painel/financeiro/caixas-bancos/contas" method="post" class="panel-form">
+            <?= Csrf::field() ?>
+            <label for="name">Nome</label>
+            <input type="text" id="name" name="name" required>
+            <label for="type">Tipo</label>
+            <select id="type" name="type">
+                <option value="caixa">Caixa</option>
+                <option value="banco">Banco</option>
+            </select>
+            <label for="initial_balance">Saldo inicial (R$)</label>
+            <input type="number" step="0.01" id="initial_balance" name="initial_balance" value="0">
+            <label class="checkbox-inline"><input type="checkbox" name="is_default" value="1"> Tornar essa a conta padrão</label>
+            <button type="submit" class="btn btn-primary">Adicionar conta</button>
+        </form>
+    </details>
+<?php else: ?>
+    <button type="button" class="btn btn-outline" data-modal-open="modal-assinatura">+ Nova conta financeira</button>
+<?php endif; ?>
 
 <h3 class="section-title">Movimentações</h3>
 <form method="get" class="filter-bar">
@@ -111,19 +121,27 @@ $filters = $filters ?? [];
                     <td><?= View::e($t['client_name'] ?: '—') ?></td>
                     <td><?= View::e($t['account_name']) ?></td>
                     <td class="<?= $t['type'] === 'entrada' ? 'text-green' : 'text-red' ?>">
-                        <?= $t['type'] === 'entrada' ? '+' : '-' ?> R$ <?= number_format((float) $t['amount'], 2, ',', '.') ?>
+                        <?= $t['type'] === 'entrada' ? '+' : '-' ?> <?= SubscriptionGate::money($user, (float) $t['amount']) ?>
                     </td>
                     <td><span class="status-badge status-<?= $t['status'] === 'pendente' ? 'contatado' : 'active' ?>"><?= $statusLabels[$t['status']] ?? $t['status'] ?></span></td>
                     <td><?php $items = $attachmentsByTransaction[$t['id']] ?? []; include __DIR__ . '/_attachments_cell.php'; ?></td>
                     <td class="table-actions">
                         <?php if (empty($t['is_transfer'])): ?>
-                            <button type="button" class="link-small" data-edit-transaction="<?= (int) $t['id'] ?>">Editar</button>
+                            <?php if ($hasSub): ?>
+                                <button type="button" class="link-small" data-edit-transaction="<?= (int) $t['id'] ?>">Editar</button>
+                            <?php else: ?>
+                                <button type="button" class="link-small" data-modal-open="modal-assinatura">Editar</button>
+                            <?php endif; ?>
                         <?php endif; ?>
                         <?php if (empty($t['order_id'])): ?>
-                            <form action="/painel/financeiro/contas/<?= (int) $t['id'] ?>/excluir" method="post" class="inline-form">
-                                <?= Csrf::field() ?>
-                                <button type="submit" class="link-button icon-button-danger" data-confirm="<?= !empty($t['is_transfer']) ? 'Excluir essa transferência? As duas pernas (origem e destino) serão removidas juntas.' : 'Excluir esse lançamento? Essa ação não pode ser desfeita.' ?>">Excluir</button>
-                            </form>
+                            <?php if ($hasSub): ?>
+                                <form action="/painel/financeiro/contas/<?= (int) $t['id'] ?>/excluir" method="post" class="inline-form">
+                                    <?= Csrf::field() ?>
+                                    <button type="submit" class="link-button icon-button-danger" data-confirm="<?= !empty($t['is_transfer']) ? 'Excluir essa transferência? As duas pernas (origem e destino) serão removidas juntas.' : 'Excluir esse lançamento? Essa ação não pode ser desfeita.' ?>">Excluir</button>
+                                </form>
+                            <?php else: ?>
+                                <button type="button" class="link-button icon-button-danger" data-modal-open="modal-assinatura">Excluir</button>
+                            <?php endif; ?>
                         <?php endif; ?>
                     </td>
                 </tr>
@@ -189,3 +207,5 @@ $filters = $filters ?? [];
 <?php include __DIR__ . '/_edit_transaction_modal.php'; ?>
 
 <?php $redirectTo = '/painel/financeiro/caixas-bancos'; include __DIR__ . '/../_client_quick_modal.php'; ?>
+
+<?php if (!$hasSub): ?><?php include __DIR__ . '/../subscription/_modal.php'; ?><?php endif; ?>

@@ -1,6 +1,7 @@
 <?php
 use App\Core\Csrf;
 use App\Core\Roles;
+use App\Core\SubscriptionGate;
 use App\Core\View;
 $role = $user['role_slug'] ?? '';
 $hasMetrics = isset($metrics);
@@ -102,34 +103,31 @@ $hasMetrics = isset($metrics);
     </div>
 
     <?php if (isset($saldoCaixa)): ?>
+        <?php $hasSub = SubscriptionGate::hasAccess($user); ?>
         <div class="page-header">
             <h3 class="section-title" style="margin:28px 0 0;">Financeiro</h3>
-            <a href="/painel/financeiro/caixas-bancos" class="link-small">Ver tudo</a>
+            <?php if ($hasSub): ?>
+                <a href="/painel/financeiro/caixas-bancos" class="link-small">Ver tudo</a>
+            <?php else: ?>
+                <button type="button" class="link-button" data-modal-open="modal-assinatura">🔒 Ver tudo</button>
+            <?php endif; ?>
         </div>
         <div class="cards-grid">
             <div class="dash-card">
                 <span>Saldo em caixa</span>
-                <strong>R$ <?= number_format($saldoCaixa, 2, ',', '.') ?></strong>
+                <strong><?= SubscriptionGate::money($user, $saldoCaixa) ?></strong>
             </div>
             <div class="dash-card <?= $contasPagarVencidas > 0 ? 'dash-card-danger' : '' ?>">
                 <span>Contas a pagar em aberto</span>
-                <strong>R$ <?= number_format($contasPagarAberto, 2, ',', '.') ?></strong>
-                <?php if ($contasPagarVencidas > 0): ?><small class="text-red"><?= (int) $contasPagarVencidas ?> vencida(s)</small><?php endif; ?>
+                <strong><?= SubscriptionGate::money($user, $contasPagarAberto) ?></strong>
+                <?php if ($contasPagarVencidas > 0): ?><small class="text-red"><?= SubscriptionGate::count($user, $contasPagarVencidas) ?> vencida(s)</small><?php endif; ?>
             </div>
             <div class="dash-card">
                 <span>Contas a receber em aberto</span>
-                <strong>R$ <?= number_format($contasReceberAberto, 2, ',', '.') ?></strong>
+                <strong><?= SubscriptionGate::money($user, $contasReceberAberto) ?></strong>
             </div>
         </div>
-    <?php elseif (in_array($user['role_slug'], ['licenciado', 'gestor'], true)): ?>
-        <div class="page-header">
-            <h3 class="section-title" style="margin:28px 0 0;">Financeiro</h3>
-        </div>
-        <div class="dash-card">
-            <span>🔒 Caixas, Contas a Pagar e a Receber</span>
-            <span class="hint-inline">Disponível na assinatura do Licenciado.</span>
-            <a href="/painel/assinatura" class="btn btn-outline" style="margin-top:8px;width:fit-content;">Ver detalhes</a>
-        </div>
+        <?php if (!$hasSub): ?><?php include __DIR__ . '/subscription/_modal.php'; ?><?php endif; ?>
     <?php endif; ?>
 
     <?php if (isset($impostoPagoPeriodo)): ?>

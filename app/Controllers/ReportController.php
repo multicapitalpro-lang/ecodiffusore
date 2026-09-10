@@ -39,7 +39,6 @@ class ReportController
     {
         Auth::requireRole(Roles::STAFF);
         $user = Auth::user();
-        SubscriptionGate::requireAccess($user);
 
         $catalog = FinancialReports::catalog();
         $hasFinanceAccess = in_array($user['role_slug'], self::ALLOWED_ROLES, true);
@@ -67,7 +66,6 @@ class ReportController
     {
         Auth::requireRole(Roles::STAFF);
         $user = Auth::user();
-        SubscriptionGate::requireAccess($user);
         $this->assertTypeAllowed($type, $user);
 
         [$from, $to] = DateRange::fromRequest();
@@ -79,6 +77,7 @@ class ReportController
             'from' => $from,
             'to' => $to,
             'report' => FinancialReports::generate($type, $from, $to, $this->scopeFor($user, $type)),
+            'hasSub' => SubscriptionGate::hasAccess($user),
         ]);
     }
 
@@ -165,7 +164,6 @@ class ReportController
     {
         Auth::requireRole(self::ALLOWED_ROLES);
         $user = Auth::user();
-        SubscriptionGate::requireAccess($user);
 
         View::render('painel/reports/schedules', [
             'user' => $user,

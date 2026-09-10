@@ -16,7 +16,6 @@ use App\Core\QuoteLeadReminder;
 use App\Core\ReportScheduler;
 use App\Core\Roles;
 use App\Core\Router;
-use App\Core\SubscriptionGate;
 use App\Core\TaxReport;
 use App\Core\View;
 use App\Core\WeeklyDigest;
@@ -214,12 +213,10 @@ class DashboardController
             }
         }
 
-        // Fase 32: pra Licenciado/Gestor, o card "Financeiro" (Caixas/Contas a Pagar/Receber) e'
-        // exatamente o mesmo dado paywalled de FinanceController::accounts()/payable()/
-        // receivable() -- sem assinatura ativa, nem o resumo aparece aqui (senao o paywall da
-        // tela cheia seria inutil, o essencial ja estaria de graca no Dashboard). Admin nunca e'
-        // afetado (SubscriptionGate::hasAccess ja devolve true pra ele).
-        if (in_array($role, Roles::MANAGEMENT, true) && SubscriptionGate::hasAccess($user)) {
+        // Fase 32b: pra Licenciado/Gestor, o card "Financeiro" (Caixas/Contas a Pagar/Receber)
+        // sempre aparece -- sem assinatura ativa, a view mascara os valores (SubscriptionGate::
+        // money()) em vez de esconder o card inteiro (ver mas nao usar, nao "nao ver nada").
+        if (in_array($role, Roles::MANAGEMENT, true)) {
             // Financeiro: mesmo escopo que FinanceController::scopeFilters() ja usa -- Licenciado
             // e Gestor veem so a propria rede, admin ve tudo.
             $financeScope = in_array($role, [Roles::REGIONAL_OWNER, 'gestor'], true)

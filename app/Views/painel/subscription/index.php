@@ -19,7 +19,7 @@ $features = [
 </div>
 
 <?php if ($bloqueado): ?>
-    <p class="form-msg form-msg-erro">Essa função faz parte da assinatura — veja abaixo o que você ganha.</p>
+    <p class="form-msg form-msg-erro">Essa ação faz parte da assinatura — veja abaixo o que você ganha. Enquanto isso, você pode continuar navegando e vendo os números das telas normalmente.</p>
 <?php endif; ?>
 <?php if ($erro === 'indisponivel'): ?>
     <p class="form-msg form-msg-erro">Pagamento online ainda está sendo configurado — fale com o suporte pra assinar por enquanto.</p>
@@ -36,7 +36,7 @@ $features = [
         <?php endif; ?>
     </p>
 <?php elseif ($active): ?>
-    <div class="cards-grid">
+    <div class="cards-grid" style="margin-bottom:20px;">
         <div class="dash-card">
             <span>✅ Assinatura ativa</span>
             <strong><?= SubscriptionPlans::LABELS[$active['plan']] ?? $active['plan'] ?></strong>
@@ -46,28 +46,26 @@ $features = [
 <?php endif; ?>
 
 <h3 class="section-title">O que você (e sua equipe) ganham</h3>
-<div class="cards-grid">
+<div class="plan-features">
     <?php foreach ($features as $title => $desc): ?>
-        <div class="dash-card">
-            <span><?= View::e($title) ?></span>
-            <span class="hint-inline"><?= View::e($desc) ?></span>
+        <div class="plan-feature">
+            <strong><?= View::e($title) ?></strong>
+            <span><?= View::e($desc) ?></span>
         </div>
     <?php endforeach; ?>
 </div>
 
 <?php if ($isLicenciado): ?>
     <h3 class="section-title">Planos</h3>
-    <div class="cards-grid">
+    <div class="plan-cards">
         <?php foreach (SubscriptionPlans::PRICES as $plan => $price): ?>
             <?php $discount = SubscriptionPlans::discountPct($plan); ?>
-            <div class="dash-card">
-                <span><?= SubscriptionPlans::LABELS[$plan] ?></span>
-                <strong>R$ <?= number_format($price, 2, ',', '.') ?></strong>
-                <span class="hint-inline">
-                    <?= $plan === 'mensal' ? 'por mês' : 'equivale a R$ ' . number_format(SubscriptionPlans::monthlyEquivalent($plan), 2, ',', '.') . '/mês' ?>
-                    <?php if ($discount > 0): ?> · <strong class="text-green"><?= $discount ?>% de desconto</strong><?php endif; ?>
-                </span>
-                <form method="post" action="/painel/assinatura/comprar" style="margin-top:10px;">
+            <div class="plan-card <?= $plan === 'anual' ? 'plan-card-highlight' : '' ?>">
+                <?php if ($discount > 0): ?><span class="plan-card-badge"><?= $discount ?>% OFF</span><?php endif; ?>
+                <span class="plan-card-name"><?= SubscriptionPlans::LABELS[$plan] ?></span>
+                <span class="plan-card-price">R$ <?= number_format($price, 2, ',', '.') ?></span>
+                <span class="plan-card-sub"><?= $plan === 'mensal' ? 'por mês' : 'R$ ' . number_format(SubscriptionPlans::monthlyEquivalent($plan), 2, ',', '.') . '/mês' ?></span>
+                <form method="post" action="/painel/assinatura/comprar">
                     <?= Csrf::field() ?>
                     <input type="hidden" name="plan" value="<?= $plan ?>">
                     <button type="submit" class="btn btn-primary" style="width:100%;">Assinar</button>

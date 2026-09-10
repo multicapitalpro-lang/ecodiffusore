@@ -6,12 +6,17 @@ use App\Models\LicenciadoSubscription;
 use App\Models\User;
 
 /**
- * Paywall do Licenciado (Fase 32): Relatorios + Financeiro (Caixas/Contas a Pagar/Contas a Receber)
- * + Controle Fiscal/Antecipacoes ficam bloqueados pra Licenciado, Gestor e Vendedor sem assinatura
- * ativa -- a assinatura e' sempre do LICENCIADO (Gestor/Vendedor herdam o acesso da rede dele,
- * nunca assinam por conta propria). Admin/Gerente/Supervisor nunca sao afetados (nao pertencem a
- * rede de um Licenciado especifico). Financeiro > Comissoes fica de fora do bloqueio de proposito
- * (e' como o Licenciado/Gestor/Vendedor recebem, nao devem ficar sem ver isso).
+ * Paywall do Licenciado (Fase 32, modelo revisado): Licenciado/Gestor/Vendedor sem assinatura ativa
+ * do Licenciado da rede podem VER as telas de Relatorios e Financeiro (Caixas/Contas a Pagar/
+ * Contas a Receber) -- os numeros aparecem mascarados (money()/count() abaixo) -- mas nao USAR
+ * (salvar, dar baixa, baixar PDF, excluir): esses botoes abrem o modal de assinatura
+ * (painel/subscription/_modal.php) em vez da acao de verdade. requireAccess() continua sendo a
+ * trava real do lado do servidor em toda acao/mutacao (storeX/updateX/destroyX/markPaid/pdf/
+ * downloadAttachment/storeSchedule) -- o popup e' so a experiencia, nao a seguranca.
+ * A assinatura e' sempre do LICENCIADO (Gestor/Vendedor herdam o acesso da rede dele, nunca
+ * assinam por conta propria). Admin/Gerente/Supervisor nunca sao afetados (nao pertencem a rede de
+ * um Licenciado especifico). Financeiro > Comissoes fica de fora do bloqueio de proposito (e' como
+ * o Licenciado/Gestor/Vendedor recebem, nao devem ficar sem ver isso).
  */
 class SubscriptionGate
 {
@@ -29,12 +34,26 @@ class SubscriptionGate
         return LicenciadoSubscription::isActive((int) $licenciado['id']);
     }
 
-    /** Redireciona pra tela de assinatura (com preview do que ganha) em vez de mostrar o
-     *  conteudo bloqueado -- chamado logo depois do Auth::requireRole() de cada tela paga. */
+    /** Redireciona pra tela de assinatura (com preview do que ganha) em vez de completar a acao --
+     *  chamado em toda mutacao (store/update/destroy/markPaid/pdf/downloadAttachment/storeSchedule),
+     *  nunca nas telas de so-visualizacao (essas ficam abertas, com numero mascarado). */
     public static function requireAccess(array $user): void
     {
         if (!self::hasAccess($user)) {
             Router::redirect('/painel/assinatura?bloqueado=1');
         }
+    }
+
+    /** Formata um valor monetario, ou mascara se sem acesso -- uso nas telas de Financeiro/
+     *  Relatorios/Dashboard que agora ficam visiveis mesmo sem assinatura. */
+    public static function money(array $user, float $value): string
+    {
+        return self::hasAccess($user) ? 'R$ ' . number_format($value, 2, ',', '.') : 'R$ ••••••';
+    }
+
+    /** Mesma logica pra contagens simples (ex: "3 vencidas"). */
+    public static function count(array $user, int $value): string
+    {
+        return self::hasAccess($user) ? (string) $value : '••';
     }
 }

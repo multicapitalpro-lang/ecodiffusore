@@ -387,6 +387,56 @@ a { text-decoration: none; color: inherit; }
 .section-title { font-size: 1rem; font-family: 'Poppins', sans-serif; margin: 28px 0 14px; }
 .two-col { display: grid; gap: 22px; grid-template-columns: 1fr; }
 @media (min-width: 900px) { .two-col { grid-template-columns: 1fr 1fr; } }
+/* Assinatura do Licenciado (Fase 32b) -- cards de feature + planos, usados na pagina cheia
+   (/painel/assinatura) e no modal reutilizavel (painel/subscription/_modal.php). */
+.plan-features { display: grid; gap: 10px; margin: 14px 0 20px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.plan-feature { display: flex; flex-direction: column; gap: 3px; padding: 12px 14px; background: var(--gray-bg); border-radius: 12px; }
+.plan-feature strong { font-size: .9rem; }
+.plan-feature span { font-size: .8rem; color: var(--gray-text); line-height: 1.4; }
+
+.plan-cards { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); margin-bottom: 18px; }
+.plan-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 22px 14px 16px;
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    background: #fff;
+    text-align: center;
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow .15s ease, transform .15s ease;
+}
+.plan-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+.plan-card-highlight { border-color: var(--green); box-shadow: 0 0 0 2px var(--green) inset, var(--shadow-md); }
+.plan-card-badge {
+    position: absolute;
+    top: -11px;
+    right: 12px;
+    background: var(--green);
+    color: var(--navy);
+    font-size: .68rem;
+    font-weight: 800;
+    letter-spacing: .02em;
+    padding: 4px 10px;
+    border-radius: 999px;
+    box-shadow: var(--shadow-sm);
+}
+.plan-card-name { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--gray-text); }
+.plan-card-price { font-size: 1.7rem; font-weight: 800; font-family: 'Poppins', sans-serif; color: var(--navy); margin: 6px 0 0; }
+.plan-card-sub { font-size: .76rem; color: var(--gray-text); margin-bottom: 14px; min-height: 2.2em; }
+.plan-card form { width: 100%; }
+
+@media (max-width: 640px) {
+    .plan-cards { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .plan-card { padding: 16px 8px 12px; }
+    .plan-card-price { font-size: 1.3rem; }
+    .plan-card-sub { min-height: 0; margin-bottom: 10px; }
+    .plan-features { grid-template-columns: 1fr; }
+}
+
 .cards-grid-2 { display: grid; gap: 22px; grid-template-columns: 1fr; }
 @media (min-width: 1000px) { .cards-grid-2 { grid-template-columns: 1fr 1fr; } }
 

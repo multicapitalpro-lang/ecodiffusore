@@ -4,7 +4,23 @@ use App\Core\View;
 /** @var string $title */
 /** @var string $from */
 /** @var string $to */
+/** @var bool $hasSub */
 $periodLabel = date('d/m/Y', strtotime($from)) . ' a ' . date('d/m/Y', strtotime($to));
+$hasSub = $hasSub ?? true;
+
+/** Mascara valores que "parecem" dinheiro/percentual/numero puro -- textos (nome, status, data
+ *  dd/mm/aaaa) passam direto. Report generation ja devolve tudo pre-formatado como string, entao
+ *  a mascara e' por heuristica de formato, nao por metadado de coluna. */
+$maskReportValue = function ($value) use ($hasSub) {
+    if ($hasSub || $value === null || $value === '') {
+        return $value;
+    }
+    $str = (string) $value;
+    if (preg_match('/^-?R\$\s?[\d.,]+$/', $str) || preg_match('/^-?[\d.,]+%$/', $str) || preg_match('/^-?[\d.,]+$/', $str)) {
+        return '••••••';
+    }
+    return $str;
+};
 ?>
 <div class="report-sheet">
     <div class="report-letterhead">
@@ -31,9 +47,9 @@ $periodLabel = date('d/m/Y', strtotime($from)) . ' a ' . date('d/m/Y', strtotime
                         <tr class="<?= $row['header'] ? 'report-row-header' : '' ?> <?= $row['bold'] ? 'report-row-bold' : '' ?>">
                             <td><?= View::e($row['label']) ?></td>
                             <?php foreach ($row['values'] as $v): ?>
-                                <td><?= $v === null ? '' : 'R$ ' . number_format((float) $v, 2, ',', '.') ?></td>
+                                <td><?= $v === null ? '' : $maskReportValue('R$ ' . number_format((float) $v, 2, ',', '.')) ?></td>
                             <?php endforeach; ?>
-                            <td><?= $row['total'] === null ? '' : 'R$ ' . number_format((float) $row['total'], 2, ',', '.') ?></td>
+                            <td><?= $row['total'] === null ? '' : $maskReportValue('R$ ' . number_format((float) $row['total'], 2, ',', '.')) ?></td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
@@ -47,11 +63,11 @@ $periodLabel = date('d/m/Y', strtotime($from)) . ' a ' . date('d/m/Y', strtotime
                 <table class="data-table">
                     <tbody>
                         <?php foreach ($report['left']['rows'] as $row): ?>
-                            <tr><td><?= View::e($row[0]) ?></td><td><?= View::e($row[1]) ?></td></tr>
+                            <tr><td><?= View::e($row[0]) ?></td><td><?= View::e($maskReportValue($row[1])) ?></td></tr>
                         <?php endforeach; ?>
                         <?php if (!$report['left']['rows']): ?><tr><td colspan="2">Sem dados no período.</td></tr><?php endif; ?>
                     </tbody>
-                    <tfoot><tr><td><strong>Total</strong></td><td><strong><?= View::e($report['left']['total']) ?></strong></td></tr></tfoot>
+                    <tfoot><tr><td><strong>Total</strong></td><td><strong><?= View::e($maskReportValue($report['left']['total'])) ?></strong></td></tr></tfoot>
                 </table>
             </div>
             <div class="report-split-col">
@@ -59,11 +75,11 @@ $periodLabel = date('d/m/Y', strtotime($from)) . ' a ' . date('d/m/Y', strtotime
                 <table class="data-table">
                     <tbody>
                         <?php foreach ($report['right']['rows'] as $row): ?>
-                            <tr><td><?= View::e($row[0]) ?></td><td><?= View::e($row[1]) ?></td></tr>
+                            <tr><td><?= View::e($row[0]) ?></td><td><?= View::e($maskReportValue($row[1])) ?></td></tr>
                         <?php endforeach; ?>
                         <?php if (!$report['right']['rows']): ?><tr><td colspan="2">Sem dados no período.</td></tr><?php endif; ?>
                     </tbody>
-                    <tfoot><tr><td><strong>Total</strong></td><td><strong><?= View::e($report['right']['total']) ?></strong></td></tr></tfoot>
+                    <tfoot><tr><td><strong>Total</strong></td><td><strong><?= View::e($maskReportValue($report['right']['total'])) ?></strong></td></tr></tfoot>
                 </table>
             </div>
         </div>
@@ -76,7 +92,7 @@ $periodLabel = date('d/m/Y', strtotime($from)) . ' a ' . date('d/m/Y', strtotime
                 </thead>
                 <tbody>
                     <?php foreach ($report['rows'] as $row): ?>
-                        <tr><?php foreach ($row as $cell): ?><td><?= View::e((string) $cell) ?></td><?php endforeach; ?></tr>
+                        <tr><?php foreach ($row as $cell): ?><td><?= View::e($maskReportValue((string) $cell)) ?></td><?php endforeach; ?></tr>
                     <?php endforeach; ?>
                     <?php if (!$report['rows']): ?>
                         <tr><td colspan="<?= count($report['columns']) ?>">Nenhum dado no período selecionado.</td></tr>
@@ -85,7 +101,7 @@ $periodLabel = date('d/m/Y', strtotime($from)) . ' a ' . date('d/m/Y', strtotime
                 <?php if (!empty($report['totals'])): ?>
                     <tfoot>
                         <?php foreach ($report['totals'] as $label => $value): ?>
-                            <tr><td colspan="<?= count($report['columns']) - 1 ?>" style="text-align:right"><strong><?= View::e($label) ?></strong></td><td><strong><?= View::e($value) ?></strong></td></tr>
+                            <tr><td colspan="<?= count($report['columns']) - 1 ?>" style="text-align:right"><strong><?= View::e($label) ?></strong></td><td><strong><?= View::e($maskReportValue($value)) ?></strong></td></tr>
                         <?php endforeach; ?>
                     </tfoot>
                 <?php endif; ?>

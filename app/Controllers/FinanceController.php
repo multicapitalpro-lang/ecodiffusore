@@ -51,7 +51,6 @@ class FinanceController
     public function accounts(): void
     {
         Auth::requireRole(Roles::MANAGEMENT);
-        SubscriptionGate::requireAccess(Auth::user());
         $user = Auth::user();
 
         $accounts = FinancialAccount::all();
@@ -197,14 +196,12 @@ class FinanceController
     public function payable(): void
     {
         Auth::requireRole(Roles::MANAGEMENT);
-        SubscriptionGate::requireAccess(Auth::user());
         $this->renderLedger('saida', 'Contas a Pagar');
     }
 
     public function receivable(): void
     {
         Auth::requireRole(Roles::MANAGEMENT);
-        SubscriptionGate::requireAccess(Auth::user());
         $this->renderLedger('entrada', 'Contas a Receber');
     }
 
