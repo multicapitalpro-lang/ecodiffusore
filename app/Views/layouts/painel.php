@@ -76,6 +76,7 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/desempen
 
             <?php if ($role === Roles::FACTORY): ?>
                 <a href="/painel/fabrica" class="<?= $isActive('/painel/fabrica') ? 'is-active' : '' ?>"><?= $icon('box') ?> Pedidos pra Despachar</a>
+                <a href="/painel/fabrica/rede" class="<?= $isActive('/painel/fabrica/rede') ? 'is-active' : '' ?>"><?= $icon('users') ?> Consultar Rede</a>
             <?php endif; ?>
 
             <?php if (in_array($role, $staffRoles, true)): ?>

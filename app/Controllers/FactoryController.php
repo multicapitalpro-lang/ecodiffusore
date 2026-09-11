@@ -10,9 +10,12 @@ use App\Core\Pdf;
 use App\Core\Roles;
 use App\Core\Router;
 use App\Core\View;
+use App\Core\Config;
 use App\Models\CompanySettings;
+use App\Models\Lead;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\User;
 use App\Models\WarrantyRequest;
 
 /** Acesso restrito da fabrica terceirizada -- so pedidos pagos (verificado), so pra atualizar
@@ -71,6 +74,36 @@ class FactoryController
         $html = ob_get_clean();
 
         Pdf::download($html, 'termo-garantia-pedido-' . $orderId . '.pdf', 'portrait');
+    }
+
+    /** Consulta (Fase 39): a Fabrica confere se quem apareceu direto com ela (fora do fluxo normal
+     *  de venda) ja e' Licenciado/Vendedor/Gestor ou Lead nosso, e -- se nao for -- tem um link fixo
+     *  pra mandar a pessoa comprar com a Ecodiffusore Brasil (rede) em vez de negociar por fora.
+     *  Sem escopo de hierarquia de proposito: a Fabrica precisa poder achar QUALQUER pessoa da rede
+     *  inteira, nao so de uma regiao. Nunca mostra preco/comissao/email -- so nome + CPF/telefone,
+     *  o minimo pra identificar. */
+    public function rede(): void
+    {
+        Auth::requireRole([Roles::FACTORY]);
+        $term = trim($_GET['q'] ?? '');
+
+        $licenciados = [];
+        $vendedores = [];
+        $leads = [];
+        if (mb_strlen($term) >= 2) {
+            $licenciados = User::searchByRoles(['licenciado'], $term);
+            $vendedores = User::searchByRoles(['gestor', 'vendedor'], $term);
+            $leads = Lead::search($term);
+        }
+
+        View::render('painel/factory/rede', [
+            'user' => Auth::user(),
+            'term' => $term,
+            'licenciados' => $licenciados,
+            'vendedores' => $vendedores,
+            'leads' => $leads,
+            'purchaseLink' => rtrim(Config::get('app_url'), '/') . '/comprar',
+        ]);
     }
 
     public function updateDelivery(string $id): void

@@ -124,6 +124,41 @@ class User
         return $stmt->fetchAll();
     }
 
+    /** Busca por nome/CPF/telefone dentro de um ou mais papeis -- usado pela Fabrica (Fase 39) pra
+     *  conferir se alguem que apareceu direto com ela ja e' Licenciado/Vendedor/Gestor nosso, sem
+     *  dar acesso a nenhum outro dado (nunca email/senha/comissao aqui, so o necessario pra
+     *  identificar a pessoa). cpf_representante so existe pra quem passou pelo onboarding de
+     *  Licenciado (Fase 17/18) -- Gestor/Vendedor nunca tem CPF cadastrado, so nome+whatsapp mesmo. */
+    public static function searchByRoles(array $roleSlugs, string $term, int $limit = 20): array
+    {
+        $digits = preg_replace('/\D/', '', $term);
+        $conditions = ['u.name LIKE :term'];
+        $params = ['term' => '%' . $term . '%'];
+        if ($digits !== '') {
+            $conditions[] = "REGEXP_REPLACE(u.whatsapp, '[^0-9]', '') LIKE :digits";
+            $conditions[] = "REGEXP_REPLACE(COALESCE(u.cpf_representante, ''), '[^0-9]', '') LIKE :digits2";
+            $params['digits'] = '%' . $digits . '%';
+            $params['digits2'] = '%' . $digits . '%';
+        }
+
+        $roleNames = [];
+        foreach (array_values($roleSlugs) as $i => $slug) {
+            $key = "role{$i}";
+            $roleNames[] = ":{$key}";
+            $params[$key] = $slug;
+        }
+
+        $sql = 'SELECT u.id, u.name, u.whatsapp, u.cpf_representante, r.slug AS role_slug, r.name AS role_name
+                FROM users u JOIN roles r ON r.id = u.role_id
+                WHERE r.slug IN (' . implode(',', $roleNames) . ")
+                  AND u.status = 'active' AND (" . implode(' OR ', $conditions) . ')
+                ORDER BY u.name LIMIT ' . (int) $limit;
+
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
     public static function allByRole(string $roleSlug): array
     {
         $stmt = Database::connection()->prepare(
