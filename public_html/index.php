@@ -198,6 +198,11 @@ $router->get('/painel/configuracoes/whatsapp/status', [App\Controllers\WhatsAppS
 $router->post('/painel/configuracoes/whatsapp/desconectar', [App\Controllers\WhatsAppSettingsController::class, 'disconnect']);
 $router->post('/painel/configuracoes/whatsapp/evento/{eventKey}', [App\Controllers\WhatsAppSettingsController::class, 'updateTemplate']);
 
+$router->get('/painel/email', [App\Controllers\EmailInboxController::class, 'index']);
+$router->get('/painel/email/{uid}', [App\Controllers\EmailInboxController::class, 'show']);
+$router->post('/painel/email/{uid}/responder', [App\Controllers\EmailInboxController::class, 'reply']);
+$router->get('/painel/email/{uid}/anexo/{partNum}', [App\Controllers\EmailInboxController::class, 'downloadAttachment']);
+
 $router->get('/painel/configuracoes/empresa', [App\Controllers\CompanySettingsController::class, 'index']);
 $router->post('/painel/configuracoes/empresa', [App\Controllers\CompanySettingsController::class, 'update']);
 

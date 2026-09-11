@@ -49,4 +49,44 @@ class Mailer
             return false;
         }
     }
+
+    /** Resposta a um e-mail existente (caixa de entrada do painel, Fase 49) -- seta
+     *  In-Reply-To/References pra o cliente de e-mail do destinatario agrupar na mesma
+     *  conversa, igual qualquer "Responder" de webmail normal. $bodyPlain vira texto simples
+     *  (sem HTML), formato mais natural pra uma resposta de atendimento. */
+    public static function sendReply(string $to, string $subject, string $bodyPlain, string $inReplyToMessageId): bool
+    {
+        require_once BASE_PATH . '/vendor/autoload.php';
+
+        $smtp = Config::get('smtp', []);
+        $mail = new PHPMailer(true);
+
+        try {
+            $mail->isSMTP();
+            $mail->Host = $smtp['host'] ?? 'smtp.hostinger.com';
+            $mail->SMTPAuth = true;
+            $mail->Username = $smtp['user'] ?? '';
+            $mail->Password = $smtp['pass'] ?? '';
+            $mail->SMTPSecure = ($smtp['encryption'] ?? 'ssl') === 'tls' ? PHPMailer::ENCRYPTION_STARTTLS : PHPMailer::ENCRYPTION_SMTPS;
+            $mail->Port = (int) ($smtp['port'] ?? 465);
+            $mail->CharSet = 'UTF-8';
+
+            $mail->setFrom($smtp['user'] ?? 'atendimento@ecodiffusorebrasil.com.br', $smtp['from_name'] ?? 'Ecodiffusore Brasil');
+            $mail->addAddress($to);
+
+            if ($inReplyToMessageId !== '') {
+                $mail->addCustomHeader('In-Reply-To', $inReplyToMessageId);
+                $mail->addCustomHeader('References', $inReplyToMessageId);
+            }
+
+            $mail->isHTML(false);
+            $mail->Subject = $subject;
+            $mail->Body = $bodyPlain;
+
+            return $mail->send();
+        } catch (PHPMailerException $e) {
+            error_log('Mailer SMTP error (reply): ' . $mail->ErrorInfo);
+            return false;
+        }
+    }
 }

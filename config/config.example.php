@@ -81,6 +81,17 @@ return [
         'reply_to' => 'contato@ecodiffusorebrasil.com.br',
     ],
 
+    // Caixa de Entrada no painel (Fase 49, App\Core\ImapClient) -- opcional: sem esse bloco,
+    // reaproveita host imap.hostinger.com/porta 993 (padrao) + o mesmo user/pass do bloco
+    // 'smtp' acima (confirmado ao vivo que funciona com a mesma senha da caixa de e-mail).
+    // Só declare 'imap' se precisar de host/porta ou credenciais diferentes do SMTP.
+    // 'imap' => [
+    //     'host' => 'imap.hostinger.com',
+    //     'port' => 993,
+    //     'user' => 'atendimento@ecodiffusorebrasil.com.br',
+    //     'pass' => 'TROQUE_AQUI',
+    // ],
+
     // WhatsApp Cloud API (Meta) -- App\Core\WhatsAppClient. Token permanente gerado via
     // Usuario do Sistema (Configuracoes da Empresa > Usuarios > Usuarios do sistema), com as
     // permissoes whatsapp_business_messaging + whatsapp_business_management, "Nunca expira".
