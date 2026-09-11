@@ -67,6 +67,19 @@ $waTime = function (?string $dt) {
             <button type="button" class="wa-filter-pill is-active" data-wa-filter="all">Tudo</button>
             <button type="button" class="wa-filter-pill" data-wa-filter="unread">Não lidas</button>
         </div>
+        <div class="wa-list-filters-extra">
+            <select id="wa-tag-filter" title="Filtrar por tag">
+                <option value="">Todas as tags</option>
+                <?php foreach ($tags as $t): ?>
+                    <option value="<?= (int) $t['id'] ?>"><?= View::e($t['name']) ?></option>
+                <?php endforeach; ?>
+            </select>
+            <select id="wa-lead-filter" title="Filtrar por lead">
+                <option value="">Todos (com/sem lead)</option>
+                <option value="with">Com lead vinculado</option>
+                <option value="without">Sem lead vinculado</option>
+            </select>
+        </div>
 
         <div class="wa-chat-scroll" id="wa-chat-scroll">
             <?php foreach ($chats as $c): ?>
@@ -74,7 +87,9 @@ $waTime = function (?string $dt) {
                 <a href="/painel/whatsapp/conversas/<?= (int) $c['id'] ?>"
                    class="wa-chat-item <?= $activeChat && (int) $activeChat['id'] === (int) $c['id'] ? 'is-active' : '' ?>"
                    data-wa-chat-link data-chat-id="<?= (int) $c['id'] ?>"
-                   data-wa-name="<?= View::e(mb_strtolower($name)) ?>" data-wa-unread="<?= (int) $c['unread_count'] ?>">
+                   data-wa-name="<?= View::e(mb_strtolower($name)) ?>" data-wa-unread="<?= (int) $c['unread_count'] ?>"
+                   data-wa-tag-ids="<?= View::e(implode(',', array_column($c['tags'], 'id'))) ?>"
+                   data-wa-has-lead="<?= !empty($c['lead_id']) ? '1' : '0' ?>">
                     <?php if ($c['is_group']): ?>
                         <span class="wa-avatar wa-avatar-group">👥</span>
                     <?php else: ?>
@@ -609,19 +624,25 @@ $waTime = function (?string $dt) {
         });
     });
 
-    // Busca por nome + filtro "Não lidas" -- tudo client-side, a lista inteira ja esta no DOM.
+    // Busca por nome + filtro "Não lidas"/tag/lead -- tudo client-side, a lista inteira ja esta no DOM.
     var searchInput = document.getElementById('wa-search-input');
     var filterPills = document.querySelectorAll('[data-wa-filter]');
+    var tagFilterSelect = document.getElementById('wa-tag-filter');
+    var leadFilterSelect = document.getElementById('wa-lead-filter');
     var activeFilter = 'all';
 
     function applyListFilters() {
         var term = (searchInput.value || '').trim().toLowerCase();
+        var tagVal = tagFilterSelect ? tagFilterSelect.value : '';
+        var leadVal = leadFilterSelect ? leadFilterSelect.value : '';
         var items = document.querySelectorAll('.wa-chat-item');
         var visibleCount = 0;
         items.forEach(function (item) {
             var matchesSearch = !term || item.dataset.waName.indexOf(term) !== -1;
             var matchesFilter = activeFilter === 'all' || parseInt(item.dataset.waUnread, 10) > 0;
-            var show = matchesSearch && matchesFilter;
+            var matchesTag = !tagVal || (',' + (item.dataset.waTagIds || '') + ',').indexOf(',' + tagVal + ',') !== -1;
+            var matchesLead = !leadVal || (leadVal === 'with' ? item.dataset.waHasLead === '1' : item.dataset.waHasLead === '0');
+            var show = matchesSearch && matchesFilter && matchesTag && matchesLead;
             item.hidden = !show;
             if (show) visibleCount++;
         });
@@ -630,6 +651,8 @@ $waTime = function (?string $dt) {
     }
 
     if (searchInput) searchInput.addEventListener('input', applyListFilters);
+    if (tagFilterSelect) tagFilterSelect.addEventListener('change', applyListFilters);
+    if (leadFilterSelect) leadFilterSelect.addEventListener('change', applyListFilters);
     filterPills.forEach(function (pill) {
         pill.addEventListener('click', function () {
             filterPills.forEach(function (p) { p.classList.remove('is-active'); });

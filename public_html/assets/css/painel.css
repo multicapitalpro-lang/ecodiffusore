@@ -756,6 +756,11 @@ dialog.modal-drawer .modal-body { flex: 1; min-height: 0; padding-bottom: 90px; 
 .wa-list-search-inner svg { width: 15px; height: 15px; color: var(--gray-text); flex-shrink: 0; }
 .wa-list-search-inner input { border: none; background: none; outline: none; flex: 1; font-size: .85rem; min-width: 0; color: var(--navy); }
 .wa-list-filters { display: flex; gap: 8px; padding: 0 12px 10px; background: #fff; flex-shrink: 0; }
+.wa-list-filters-extra { display: flex; gap: 8px; padding: 0 12px 10px; background: #fff; flex-shrink: 0; }
+.wa-list-filters-extra select {
+    flex: 1; min-width: 0; border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px;
+    font-size: .74rem; background: var(--gray-bg); font-family: inherit; color: var(--navy);
+}
 .wa-filter-pill {
     border: 1px solid var(--border); background: #fff; border-radius: 999px; padding: 5px 14px;
     font-size: .76rem; font-weight: 700; color: var(--gray-text); cursor: pointer; font-family: inherit;
