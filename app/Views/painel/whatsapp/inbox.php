@@ -53,6 +53,12 @@ $waTime = function (?string $dt) {
                         <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6.5 6.5 0 0 0-11.2-3.6M4 4v3.5H7.5M4 12a6.5 6.5 0 0 0 11.2 3.6M16 16v-3.5h-3.5"/></svg>
                     </button>
                 </form>
+                <form method="post" action="/painel/whatsapp/desconectar" class="inline-form" onsubmit="return confirm('Desconectar seu WhatsApp? Vai precisar escanear o QR Code de novo pra reconectar.');">
+                    <?= Csrf::field() ?>
+                    <button type="submit" class="wa-icon-btn" title="Desconectar aparelho" aria-label="Desconectar aparelho">
+                        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l8 8M14 6l-8 8"/><path d="M4 4h4M4 4v4M16 16h-4M16 16v-4" opacity="0"/><circle cx="10" cy="10" r="7.5"/></svg>
+                    </button>
+                </form>
             </div>
         </div>
 
