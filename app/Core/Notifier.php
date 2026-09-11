@@ -332,6 +332,24 @@ class Notifier
         Mailer::send($recipient['email'], 'Resumo semanal da equipe - Ecodiffusore Brasil', self::template('Resumo semanal da equipe', $body));
     }
 
+    /** @param array $licenciado precisa de name/whatsapp. So WhatsApp, direto pro licenciado (nao
+     *  pra rede de suporte) -- avisa que um contrato novo foi gerado e precisa ser assinado
+     *  (disparado quando Admin/Gerente clica "Forcar novo contrato" em /painel/licenciados, ja que
+     *  nesse caso o licenciado nao esta numa sessao ativa de cadastro pra ver a tela de assinatura
+     *  na hora, diferente do primeiro cadastro). */
+    public static function licenciadoContratoPendente(array $licenciado): void
+    {
+        if (empty($licenciado['whatsapp'])) {
+            return;
+        }
+
+        $vars = ['nome' => $licenciado['name'] ?? '—', 'url' => self::BASE_URL . '/painel/licenciados/aguardando-assinatura'];
+        [$text] = self::waTexts('licenciado_contrato_pendente', $vars);
+        if ($text) {
+            self::sendWhatsApp($licenciado['whatsapp'], $text);
+        }
+    }
+
     /** @param array $licenciado precisa de id/name/email */
     public static function cadastroAprovado(array $licenciado): void
     {

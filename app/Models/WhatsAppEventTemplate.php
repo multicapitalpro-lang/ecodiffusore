@@ -30,6 +30,7 @@ class WhatsAppEventTemplate
         'garantia_estendida_lembrete_dia5',
         'garantia_estendida_lembrete_dia10',
         'garantia_estendida_lembrete_dia15',
+        'licenciado_contrato_pendente',
     ];
 
     public const LABELS = [
@@ -50,6 +51,7 @@ class WhatsAppEventTemplate
         'garantia_estendida_lembrete_dia5' => 'Pós-venda de Instalação — lembrete dia 5 (cliente)',
         'garantia_estendida_lembrete_dia10' => 'Pós-venda de Instalação — lembrete dia 10 (cliente)',
         'garantia_estendida_lembrete_dia15' => 'Pós-venda de Instalação — último dia (cliente)',
+        'licenciado_contrato_pendente' => 'Contrato pendente de assinatura (licenciado)',
     ];
 
     /** Quais placeholders {chave} cada evento aceita -- so pra exibir dica na tela, nao valida nada. */
@@ -71,12 +73,14 @@ class WhatsAppEventTemplate
         'garantia_estendida_lembrete_dia5' => ['cliente', 'pedido', 'dias_restantes', 'url'],
         'garantia_estendida_lembrete_dia10' => ['cliente', 'pedido', 'dias_restantes', 'url'],
         'garantia_estendida_lembrete_dia15' => ['cliente', 'pedido', 'dias_restantes', 'url'],
+        'licenciado_contrato_pendente' => ['nome', 'url'],
     ];
 
     /** Eventos que so usam UM dos dois textos (o outro fica sempre null/nao editavel). */
     public const SELF_ONLY = [
         'follow_up_lembrete', 'acesso_portal_criado', 'pedido_atualizacao_entrega', 'cobranca_gerada', 'orcamento_lembrete_lead',
         'garantia_estendida_lembrete_dia1', 'garantia_estendida_lembrete_dia5', 'garantia_estendida_lembrete_dia10', 'garantia_estendida_lembrete_dia15',
+        'licenciado_contrato_pendente',
     ];
     public const NETWORK_ONLY = ['vendedor_inativo', 'licenciado_pendente_aprovacao'];
 
@@ -99,6 +103,7 @@ class WhatsAppEventTemplate
         'garantia_estendida_lembrete_dia5' => 'Cliente (dono do pedido)',
         'garantia_estendida_lembrete_dia10' => 'Cliente (dono do pedido)',
         'garantia_estendida_lembrete_dia15' => 'Cliente (dono do pedido)',
+        'licenciado_contrato_pendente' => 'Licenciado (dono do contrato)',
     ];
 
     public const NETWORK_LABELS = [

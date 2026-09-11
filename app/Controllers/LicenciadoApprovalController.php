@@ -103,6 +103,7 @@ class LicenciadoApprovalController
 
         User::setOnboardingStatus($id, 'aguardando_assinatura');
         AuditLog::record((int) $user['id'], 'licenciado_reenvio_assinatura', 'user', $id, [], []);
+        Notifier::licenciadoContratoPendente($target);
 
         Router::redirect('/painel/licenciados/aprovacoes?sucesso=1');
     }
