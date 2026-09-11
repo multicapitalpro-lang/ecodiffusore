@@ -7,6 +7,7 @@ use App\Core\ClickSignClient;
 use App\Core\Config;
 use App\Core\ContractTemplateFiller;
 use App\Core\Csrf;
+use App\Core\DocumentValidator;
 use App\Core\FileUpload;
 use App\Core\Response;
 use App\Core\Roles;
@@ -69,8 +70,8 @@ class LicenciadoOnboardingController
         if ($data['razao_social'] === '') {
             $errors['razao_social'] = 'Informe a razão social.';
         }
-        if (strlen($data['cnpj']) !== 14) {
-            $errors['cnpj'] = 'CNPJ inválido (14 dígitos).';
+        if (!DocumentValidator::isValidCnpj($data['cnpj'])) {
+            $errors['cnpj'] = 'CNPJ inválido — confira os números digitados.';
         }
         if (strlen($data['endereco_cep']) !== 8) {
             $errors['endereco_cep'] = 'CEP inválido (8 dígitos).';
@@ -90,8 +91,8 @@ class LicenciadoOnboardingController
         if (strlen($data['endereco_uf']) !== 2) {
             $errors['endereco_uf'] = 'Informe a UF (2 letras).';
         }
-        if (strlen($data['cpf_representante']) !== 11) {
-            $errors['cpf_representante'] = 'CPF inválido (11 dígitos).';
+        if (!DocumentValidator::isValidCpf($data['cpf_representante'])) {
+            $errors['cpf_representante'] = 'CPF inválido — confira os números digitados.';
         }
         if ($data['rg_representante'] === '') {
             $errors['rg_representante'] = 'Informe o RG.';
