@@ -214,7 +214,7 @@ $waTime = function (?string $dt) {
         btn.classList.toggle('has-text', input.value.trim() !== '');
     }
 
-    function uploadFile(chatId, file, form) {
+    function uploadFile(chatId, file, form, kind) {
         var compose = panel.querySelector('[data-wa-compose]');
         var uploadStatus = document.createElement('div');
         uploadStatus.className = 'wa-upload-preview';
@@ -225,6 +225,11 @@ $waTime = function (?string $dt) {
         var csrfInput = form.querySelector('[name=csrf_token]');
         data.append('csrf_token', csrfInput ? csrfInput.value : '');
         data.append('file', file);
+        // O navegador so grava audio em container webm/ogg -- o finfo do servidor as vezes detecta
+        // webm-so-com-audio como "video/webm" (o container webm serve tanto pra audio quanto pra
+        // video, o magic-byte sozinho nao distingue), e mandava a gravacao como VIDEO pro WhatsApp.
+        // Esse hint forca a classificacao certa so pra esse fluxo, sem depender do mimetype sniffado.
+        if (kind) data.append('kind', kind);
 
         fetch('/painel/whatsapp/conversas/' + chatId + '/enviar-midia', { method: 'POST', body: data, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
             .then(function (r) { return r.json(); })
@@ -316,7 +321,7 @@ $waTime = function (?string $dt) {
             if (blob.size === 0) return;
             var ext = blob.type.indexOf('ogg') !== -1 ? 'ogg' : 'webm';
             var file = new File([blob], 'audio.' + ext, { type: blob.type });
-            uploadFile(chatId, file, form);
+            uploadFile(chatId, file, form, 'audio');
         };
         recorder.stop();
     }

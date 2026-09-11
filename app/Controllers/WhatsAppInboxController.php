@@ -271,11 +271,24 @@ class WhatsAppInboxController
         $binary = file_get_contents($file['tmp_name']);
         $base64 = base64_encode($binary);
 
-        $isAudio = str_starts_with($mime, 'audio/');
-        $isImage = str_starts_with($mime, 'image/');
-        $isVideo = str_starts_with($mime, 'video/');
+        // A gravacao de voz do navegador (MediaRecorder) so grava em container webm/ogg -- o finfo
+        // do PHP detecta um webm SO-COM-AUDIO como "video/webm" boa parte do tempo (o container webm
+        // serve tanto pra audio quanto pra video, o magic-byte do container sozinho nao distingue
+        // faixa de audio de faixa de video). Isso mandava a nota de voz pro WhatsApp como MENSAGEM DE
+        // VIDEO. O front manda 'kind=audio' so nesse fluxo especifico (ver sendRecording() em
+        // inbox.php) pra forcar a classificacao certa, sem depender do mimetype sniffado.
+        $forcedAudio = ($_POST['kind'] ?? '') === 'audio';
+        $isAudio = $forcedAudio || str_starts_with($mime, 'audio/');
+        $isImage = !$isAudio && str_starts_with($mime, 'image/');
+        $isVideo = !$isAudio && str_starts_with($mime, 'video/');
         $mediatype = $isImage ? 'image' : ($isVideo ? 'video' : 'document');
         $messageType = $isAudio ? 'audioMessage' : ($isImage ? 'imageMessage' : ($isVideo ? 'videoMessage' : 'documentMessage'));
+        // Corrige o Content-Type que a gente mesmo guarda/serve de volta -- "video/webm" tocaria
+        // certo mesmo assim (o navegador nao liga pro header, ve o codec real), mas fica errado pra
+        // sempre no banco se nao normalizar aqui.
+        if ($forcedAudio && !str_starts_with($mime, 'audio/')) {
+            $mime = 'audio/webm';
+        }
 
         try {
             $client = new EvolutionApiClient($instance['instance_name']);
@@ -515,30 +528,34 @@ class WhatsAppInboxController
     }
 
     /** Lote pequeno por carga de tela (a Evolution responde 1 contato por chamada, nao da pra
-     *  buscar em massa) -- ver WhatsAppChat::chatsNeedingProfilePic(). Best-effort: se a Evolution
-     *  falhar ou o contato nao tiver foto publica, so grava null e marca como verificado (evita
-     *  tentar de novo a cada carga, so depois de 7 dias). */
+     *  buscar em massa) -- ver WhatsAppChat::chatsNeedingProfileInfo(). Preenche nome (so quando o
+     *  chat ainda nao tinha nenhum -- nunca troca um pushName ja capturado) e foto juntos, num so
+     *  request por contato (ver EvolutionApiClient::fetchContact()). Best-effort: se a Evolution
+     *  falhar ou o contato nao tiver nada disso, so marca como verificado (evita tentar de novo a
+     *  cada carga, so depois de 7 dias). */
     private function refreshProfilePics(array $instance, int $limit): void
     {
-        $chats = WhatsAppChat::chatsNeedingProfilePic((int) $instance['id'], $limit);
+        $chats = WhatsAppChat::chatsNeedingProfileInfo((int) $instance['id'], $limit);
         if (!$chats) {
             return;
         }
 
         $client = new EvolutionApiClient($instance['instance_name']);
         foreach ($chats as $c) {
+            $contact = null;
             try {
-                $url = $client->fetchProfilePictureUrl($c['remote_jid']);
+                $contact = $client->fetchContact($c['remote_jid']);
             } catch (\Throwable $e) {
-                $url = null;
+                // Best-effort.
             }
-            WhatsAppChat::setProfilePic((int) $c['id'], $url);
+            $nameToSet = (empty($c['name']) && !empty($contact['pushName'])) ? $contact['pushName'] : null;
+            WhatsAppChat::setProfileInfo((int) $c['id'], $nameToSet, $contact['profilePicUrl'] ?? null);
         }
     }
 
     /** Prioriza a conversa que esta sendo aberta AGORA (fora do lote generico de refreshProfilePics,
      *  que so cobre os N mais recentes) -- sem isso, abrir uma conversa mais antiga da lista nunca
-     *  puxaria a foto dela. */
+     *  puxaria o nome/foto dela. */
     private function ensureProfilePic(array $chat, array $instance): void
     {
         if ((int) $chat['is_group'] === 1 || $chat['profile_pic_checked_at'] !== null) {
@@ -547,10 +564,11 @@ class WhatsAppInboxController
 
         try {
             $client = new EvolutionApiClient($instance['instance_name']);
-            $url = $client->fetchProfilePictureUrl($chat['remote_jid']);
-            WhatsAppChat::setProfilePic((int) $chat['id'], $url);
+            $contact = $client->fetchContact($chat['remote_jid']);
+            $nameToSet = (empty($chat['name']) && !empty($contact['pushName'])) ? $contact['pushName'] : null;
+            WhatsAppChat::setProfileInfo((int) $chat['id'], $nameToSet, $contact['profilePicUrl'] ?? null);
         } catch (\Throwable $e) {
-            // Best-effort -- fica sem foto, tenta de novo na proxima vez que abrir essa conversa.
+            // Best-effort -- fica sem nome/foto, tenta de novo na proxima vez que abrir essa conversa.
         }
     }
 }

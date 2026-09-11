@@ -117,16 +117,22 @@ class EvolutionApiClient
         ];
     }
 
-    /** URL da foto de perfil publica do contato, ou null se nao tiver/privacidade impedir --
-     *  confirmado ao vivo (v2.3.7): POST /chat/fetchProfilePictureUrl/{instance} {number}, devolve
-     *  {wuid, profilePictureUrl}. Aceita numero cru ou JID completo, mesma normalizacao de sendText. */
-    public function fetchProfilePictureUrl(string $to): ?string
+    /** Nome (pushName) + foto de perfil de um contato, num so request -- confirmado ao vivo (v2.3.7):
+     *  POST /chat/findContacts/{instance} {where:{remoteJid}} devolve um array (0 ou 1 item) com
+     *  pushName/profilePicUrl, os mesmos dados que fetchProfilePictureUrl() devolvia sozinho, so que
+     *  junto com o nome -- por isso substituiu o metodo antigo (mesmo custo de chamada, mais dado).
+     *  Contato "@lid" (identificador de privacidade de numero) as vezes tem pushName mesmo sem
+     *  numero de telefone real acessivel -- o WhatsApp esconde o numero de proposito nesses casos,
+     *  NAO tem API que devolva o numero de verdade por tras de um "@lid" alheio (nao e' bug nosso,
+     *  e' a propria funcao de privacidade do WhatsApp). Retorna null se a Evolution nao conhecer o
+     *  contato (nunca viu nenhuma mensagem/evento dele). */
+    public function fetchContact(string $jid): ?array
     {
-        $result = $this->request('POST', "/chat/fetchProfilePictureUrl/{$this->instance}", [
-            'number' => $this->normalizeNumber($to),
+        $result = $this->request('POST', "/chat/findContacts/{$this->instance}", [
+            'where' => ['remoteJid' => $jid],
         ]);
 
-        return $result['profilePictureUrl'] ?? null;
+        return $result[0] ?? null;
     }
 
     /** "Apagar para todos" de uma mensagem que EU mandei -- confirmado ao vivo (v2.3.7): DELETE
