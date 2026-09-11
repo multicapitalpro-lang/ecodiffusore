@@ -158,6 +158,22 @@ class ClickSignClient
         return $this->createRequirement($envelopeId, $documentId, $signerId, ['action' => 'provide_evidence', 'auth' => 'email']);
     }
 
+    /**
+     * Requirement de assinatura com auth=auto_signature em vez de um requirement de "agree" simples
+     * -- pro signatario que ja assinou o Termo de Assinatura Automatica (createAutoSignatureTerm()),
+     * fazendo a API aplicar a assinatura dele sozinha, sem precisar visitar um link nem passar por
+     * autenticacao por e-mail. AINDA NAO CONFIRMADO contra a API real -- documentacao do ClickSign
+     * (developers.clicksign.com/docs/assinatura-automatica) descreve o campo exatamente assim, mas
+     * este projeto testa tudo contra a API real antes de confiar (ver historico de
+     * addSignRequirement/addKycRequirements/addEmailAuthRequirement acima, todos ajustados depois de
+     * testes reais que contradisseram a doc). Substitui addSignRequirement() (nao usar os dois
+     * juntos no mesmo signatario).
+     */
+    public function addAutoSignatureRequirement(string $envelopeId, string $documentId, string $signerId): array
+    {
+        return $this->createRequirement($envelopeId, $documentId, $signerId, ['action' => 'agree', 'role' => 'sign', 'auth' => 'auto_signature']);
+    }
+
     private function createRequirement(string $envelopeId, string $documentId, string $signerId, array $attributes): array
     {
         $result = $this->request('POST', "/api/v3/envelopes/{$envelopeId}/requirements", [
