@@ -271,6 +271,7 @@ $router->get('/painel/whatsapp/conversas/{id}', [App\Controllers\WhatsAppInboxCo
 $router->get('/painel/whatsapp/conversas/{id}/poll', [App\Controllers\WhatsAppInboxController::class, 'poll']);
 $router->get('/painel/whatsapp/conversas/{id}/midia/{messageId}', [App\Controllers\WhatsAppInboxController::class, 'media']);
 $router->post('/painel/whatsapp/conversas/{id}/enviar', [App\Controllers\WhatsAppInboxController::class, 'send']);
+$router->post('/painel/whatsapp/conversas/{id}/enviar-midia', [App\Controllers\WhatsAppInboxController::class, 'sendMedia']);
 $router->post('/painel/whatsapp/conversas/{id}/lead', [App\Controllers\WhatsAppInboxController::class, 'linkLead']);
 $router->post('/painel/whatsapp/conversas/{id}/tags', [App\Controllers\WhatsAppInboxController::class, 'assignTag']);
 $router->post('/painel/whatsapp/conversas/{id}/tags/{tagId}/remover', [App\Controllers\WhatsAppInboxController::class, 'removeTag']);

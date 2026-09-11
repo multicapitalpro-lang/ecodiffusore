@@ -22,6 +22,7 @@ use App\Models\WhatsAppTag;
 class WhatsAppInboxController
 {
     private const ROLES = ['licenciado', 'gestor', 'vendedor'];
+    private const MAX_MEDIA_BYTES = 16 * 1024 * 1024;
 
     public function index(): void
     {
@@ -222,6 +223,92 @@ class WhatsAppInboxController
             }
         }
 
+        Router::redirect("/painel/whatsapp/conversas/{$id}");
+    }
+
+    /** Anexo (imagem/video/documento/audio, gravado ou escolhido de arquivo) -- endpoint unico,
+     *  classifica pelo mimetype real (finfo, nunca confia na extensao/Content-Type que o navegador
+     *  mandou) e escolhe o metodo certo da Evolution (sendAudio tem endpoint proprio, o resto usa
+     *  sendMedia com mediatype). Diferente da midia RECEBIDA (WhatsAppInboxController::media(),
+     *  que baixa sob demanda da Evolution), aqui o arquivo ja chega em maos --
+     *  guarda local direto no envio, nunca precisa de backfill depois. */
+    public function sendMedia(string $id): void
+    {
+        Auth::requireRole(self::ROLES);
+        $user = Auth::user();
+        SubscriptionGate::requireAccess($user);
+
+        $instance = $this->requireConnectedInstance($user);
+        $chat = $this->authorizeChat((int) $id, (int) $instance['id']);
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            $this->mediaError('Sessão expirada, recarregue a página.', $id);
+            return;
+        }
+
+        $file = $_FILES['file'] ?? null;
+        if (!$file || ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+            $this->mediaError('Nenhum arquivo selecionado.', $id);
+            return;
+        }
+        if ($file['error'] !== UPLOAD_ERR_OK) {
+            $this->mediaError('Falha no upload do arquivo.', $id);
+            return;
+        }
+        if ($file['size'] > self::MAX_MEDIA_BYTES) {
+            $this->mediaError('Arquivo maior que 16MB.', $id);
+            return;
+        }
+
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mime = finfo_file($finfo, $file['tmp_name']) ?: 'application/octet-stream';
+        finfo_close($finfo);
+
+        $caption = trim($_POST['caption'] ?? '');
+        $originalName = mb_substr(basename($file['name']), 0, 255);
+        $binary = file_get_contents($file['tmp_name']);
+        $base64 = base64_encode($binary);
+
+        $isAudio = str_starts_with($mime, 'audio/');
+        $isImage = str_starts_with($mime, 'image/');
+        $isVideo = str_starts_with($mime, 'video/');
+        $mediatype = $isImage ? 'image' : ($isVideo ? 'video' : 'document');
+        $messageType = $isAudio ? 'audioMessage' : ($isImage ? 'imageMessage' : ($isVideo ? 'videoMessage' : 'documentMessage'));
+
+        try {
+            $client = new EvolutionApiClient($instance['instance_name']);
+            $result = $isAudio
+                ? $client->sendAudio($chat['remote_jid'], $base64)
+                : $client->sendMedia($chat['remote_jid'], $mediatype, $mime, $base64, $originalName, $caption ?: null);
+
+            $waId = $result['key']['id'] ?? null;
+            $stored = FileUpload::storeWhatsAppMedia($binary, $mime);
+            $sentAt = date('Y-m-d H:i:s');
+            $body = $caption !== '' ? $caption : null;
+
+            $msgId = WhatsAppMessage::create(
+                (int) $chat['id'], $waId, 'out', $user['name'], $body, $messageType, $sentAt,
+                $mime, $originalName, (int) $file['size'], null
+            );
+            WhatsAppMessage::setMediaPath($msgId, $stored['stored_name'], $mime);
+            WhatsAppChat::touchLastMessage((int) $chat['id'], $body ?: '[mídia]', $sentAt, false);
+
+            if (Response::isAjax()) {
+                Response::json(['ok' => true]);
+            }
+        } catch (\Throwable $e) {
+            $this->mediaError('Falha ao enviar. Confira se o WhatsApp continua conectado.', $id);
+            return;
+        }
+
+        Router::redirect("/painel/whatsapp/conversas/{$id}");
+    }
+
+    private function mediaError(string $message, string $id): void
+    {
+        if (Response::isAjax()) {
+            Response::json(['ok' => false, 'error' => $message]);
+        }
         Router::redirect("/painel/whatsapp/conversas/{$id}");
     }
 

@@ -181,11 +181,46 @@ $mediaExtLabel = function (?string $mimetype) {
         <?php endif; ?>
     </div>
 
-    <form action="/painel/whatsapp/conversas/<?= (int) $activeChat['id'] ?>/enviar" method="post" class="wa-send-form" data-wa-send-form data-chat-id="<?= (int) $activeChat['id'] ?>">
-        <?= Csrf::field() ?>
-        <input type="text" name="text" placeholder="Digite uma mensagem..." autocomplete="off" required>
-        <button type="submit" class="wa-send-btn" aria-label="Enviar">
-            <svg viewBox="0 0 20 20" fill="currentColor"><path d="M2.5 2.5 17 10 2.5 17.5 5 10.8 12 10 5 9.2 2.5 2.5Z"/></svg>
-        </button>
-    </form>
+    <div class="wa-compose" data-wa-compose>
+        <div class="wa-recording-bar" data-wa-recording hidden>
+            <button type="button" class="wa-icon-btn wa-recording-cancel" data-wa-record-cancel aria-label="Cancelar gravação">
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 5h10v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5Z"/><path d="M3 5h14M8 5V3.5A1.5 1.5 0 0 1 9.5 2h1A1.5 1.5 0 0 1 12 3.5V5"/></svg>
+            </button>
+            <span class="wa-recording-dot"></span>
+            <span class="wa-recording-time" data-wa-record-time>0:00</span>
+            <span class="wa-recording-hint">Gravando áudio...</span>
+            <button type="button" class="wa-send-btn" data-wa-record-send aria-label="Enviar áudio">
+                <svg viewBox="0 0 20 20" fill="currentColor"><path d="M2.5 2.5 17 10 2.5 17.5 5 10.8 12 10 5 9.2 2.5 2.5Z"/></svg>
+            </button>
+        </div>
+
+        <form action="/painel/whatsapp/conversas/<?= (int) $activeChat['id'] ?>/enviar" method="post" class="wa-send-form" data-wa-send-form data-chat-id="<?= (int) $activeChat['id'] ?>">
+            <?= Csrf::field() ?>
+            <div class="wa-emoji-popover" data-wa-emoji-popover hidden></div>
+            <button type="button" class="wa-icon-btn wa-compose-icon" data-wa-emoji-toggle aria-label="Emoji" title="Emoji">
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7.5"/><path d="M7.2 8.2h.01M12.8 8.2h.01M6.8 12a4 4 0 0 0 6.4 0"/></svg>
+            </button>
+
+            <div class="wa-attach-menu" data-wa-attach-menu hidden>
+                <button type="button" data-wa-attach-kind="document">
+                    <span class="wa-attach-menu-icon" style="background:#7f66ff">📄</span> Documento
+                </button>
+                <button type="button" data-wa-attach-kind="media">
+                    <span class="wa-attach-menu-icon" style="background:#bf59cf">🖼️</span> Fotos e vídeos
+                </button>
+            </div>
+            <button type="button" class="wa-icon-btn wa-compose-icon" data-wa-attach-toggle aria-label="Anexar" title="Anexar">
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 6.5 8 12a2.5 2.5 0 1 0 3.5 3.5L17 10a4.5 4.5 0 1 0-6.5-6.5L4 10a1 1 0 0 0 1.5 1.5l6-6"/></svg>
+            </button>
+            <input type="file" data-wa-file-document hidden accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar,audio/*">
+            <input type="file" data-wa-file-media hidden accept="image/*,video/*">
+
+            <input type="text" name="text" placeholder="Digite uma mensagem..." autocomplete="off" data-wa-text-input>
+
+            <button type="button" class="wa-send-btn" data-wa-send-or-mic aria-label="Enviar">
+                <svg class="wa-icon-send" viewBox="0 0 20 20" fill="currentColor"><path d="M2.5 2.5 17 10 2.5 17.5 5 10.8 12 10 5 9.2 2.5 2.5Z"/></svg>
+                <svg class="wa-icon-mic" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3a2.5 2.5 0 0 0-2.5 2.5v4a2.5 2.5 0 0 0 5 0v-4A2.5 2.5 0 0 0 10 3Z"/><path d="M5.5 9v.5a4.5 4.5 0 0 0 9 0V9M10 14v3"/></svg>
+            </button>
+        </form>
+    </div>
 <?php endif; ?>
