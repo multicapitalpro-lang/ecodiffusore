@@ -159,19 +159,17 @@ class ClickSignClient
     }
 
     /**
-     * Requirement de assinatura com auth=auto_signature em vez de um requirement de "agree" simples
-     * -- pro signatario que ja assinou o Termo de Assinatura Automatica (createAutoSignatureTerm()),
-     * fazendo a API aplicar a assinatura dele sozinha, sem precisar visitar um link nem passar por
-     * autenticacao por e-mail. AINDA NAO CONFIRMADO contra a API real -- documentacao do ClickSign
-     * (developers.clicksign.com/docs/assinatura-automatica) descreve o campo exatamente assim, mas
-     * este projeto testa tudo contra a API real antes de confiar (ver historico de
-     * addSignRequirement/addKycRequirements/addEmailAuthRequirement acima, todos ajustados depois de
-     * testes reais que contradisseram a doc). Substitui addSignRequirement() (nao usar os dois
-     * juntos no mesmo signatario).
+     * Requirement de autenticacao auth=auto_signature (action=provide_evidence, igual ao padrao de
+     * addEmailAuthRequirement -- NAO combina com role=sign, que e' exclusivo do requirement de
+     * assinatura em si) -- pro signatario que ja assinou o Termo de Assinatura Automatica
+     * (createAutoSignatureTerm()), fazendo a API aplicar a assinatura dele sozinha, sem precisar
+     * visitar link nem autenticar por e-mail. Usar JUNTO com addSignRequirement() (o requirement de
+     * assinatura continua sendo action=agree+role=sign, sem auth) -- este aqui SUBSTITUI
+     * addEmailAuthRequirement() no mesmo signatario, nao o addSignRequirement().
      */
     public function addAutoSignatureRequirement(string $envelopeId, string $documentId, string $signerId): array
     {
-        return $this->createRequirement($envelopeId, $documentId, $signerId, ['action' => 'agree', 'role' => 'sign', 'auth' => 'auto_signature']);
+        return $this->createRequirement($envelopeId, $documentId, $signerId, ['action' => 'provide_evidence', 'auth' => 'auto_signature']);
     }
 
     private function createRequirement(string $envelopeId, string $documentId, string $signerId, array $attributes): array
