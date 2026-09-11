@@ -78,7 +78,9 @@
 
     wizard.querySelectorAll('.wizard-next').forEach(function (btn) {
         btn.addEventListener('click', function () {
-            if (!btn.disabled) goToStep(current + 1);
+            if (btn.disabled) return;
+            var goto_ = btn.dataset.goto;
+            goToStep(goto_ !== undefined ? parseInt(goto_, 10) : current + 1);
         });
     });
 
@@ -107,7 +109,7 @@
         }
 
         searchBtn.disabled = false;
-        goToStep(1);
+        goToStep(2);
     });
 
     // Marca -- campo de busca com sugestoes conforme digita. "Outra marca" abre um campo pra
@@ -284,6 +286,41 @@
         el.addEventListener('input', updateFinalSubmit);
     });
     updateFinalSubmit();
+
+    // Ramo maquina agricola (Fase 45) -- tipo de maquina (com "Outro" abrindo campo livre, mesmo
+    // padrao da "Outra marca" do ramo caminhao acima) e o envio final, que so libera quando as 3
+    // fotos obrigatorias estiverem selecionadas.
+    var machineTypeSelect = document.getElementById('wizard-machine-type');
+    var machineTypeCustomWrap = document.getElementById('wizard-machine-type-custom-wrap');
+    var machineTypeCustomInput = document.getElementById('wizard-machine-type-custom');
+    var machineTypeNextBtn = document.getElementById('wizard-machine-type-next');
+
+    function updateMachineTypeNext() {
+        var isOther = machineTypeSelect.value === 'outro';
+        machineTypeCustomWrap.style.display = isOther ? '' : 'none';
+        machineTypeNextBtn.disabled = isOther ? machineTypeCustomInput.value.trim() === '' : machineTypeSelect.value === '';
+    }
+
+    if (machineTypeSelect) {
+        machineTypeSelect.addEventListener('change', updateMachineTypeNext);
+        machineTypeCustomInput.addEventListener('input', updateMachineTypeNext);
+    }
+
+    var machinePhotoGeneral = document.getElementById('wizard-machine-photo-general');
+    var machinePhotoNameplate = document.getElementById('wizard-machine-photo-nameplate');
+    var machinePhotoHose = document.getElementById('wizard-machine-photo-hose');
+    var machineSubmitBtn = document.getElementById('wizard-machine-submit-btn');
+
+    function updateMachineSubmit() {
+        var ok = machinePhotoGeneral.files.length > 0 && machinePhotoNameplate.files.length > 0 && machinePhotoHose.files.length > 0;
+        machineSubmitBtn.disabled = !ok;
+    }
+
+    if (machineSubmitBtn) {
+        [machinePhotoGeneral, machinePhotoNameplate, machinePhotoHose].forEach(function (el) {
+            el.addEventListener('change', updateMachineSubmit);
+        });
+    }
 })();
 
 // Autocomplete de cidade (br_cities, mesma base que o GeoMatch usa pro roteamento por

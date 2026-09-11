@@ -67,6 +67,27 @@ class Notifier
         self::sendToSellerAndLicenciado((int) $quote['seller_id'], $subject, $title, $body);
     }
 
+    /** @param array $request precisa de id/machine_type/client_name/assigned_user_id (retorno de
+     *  MachineQuoteRequest::find()). So WhatsApp, sem e-mail -- evento interno estreito, mesmo
+     *  espirito de propostaComissaoCriada() (sem template editavel em /painel/configuracoes,
+     *  fora de escopo pra um alerta tao pontual). Avisa so' quem ficou responsavel (achado via
+     *  GeoMatch na hora da submissao) que precisa abrir as fotos, definir o preco manualmente
+     *  (Fase 45 -- ainda sem tabela de preco pra maquina agricola) e retornar pro cliente por
+     *  fora (WhatsApp/telefone, nao automatizado). */
+    public static function machineQuoteSolicitada(array $request): void
+    {
+        if (empty($request['assigned_user_id'])) {
+            return;
+        }
+
+        $assignee = User::find((int) $request['assigned_user_id']);
+        if ($assignee && !empty($assignee['whatsapp'])) {
+            $url = self::BASE_URL . '/painel/cotacoes-maquina/' . (int) $request['id'];
+            $text = "🚜 Nova cotação de máquina agrícola aguardando preço -- cliente {$request['client_name']}, tipo: {$request['machine_type']}. Confira as fotos e retorne o valor: {$url}";
+            self::sendWhatsApp($assignee['whatsapp'], $text);
+        }
+    }
+
     /** @param array $order precisa de id/seller_id/total_value/client_name */
     public static function pedidoRealizado(array $order): void
     {

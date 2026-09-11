@@ -7,6 +7,7 @@ use App\Core\CardPricing;
 use App\Core\Csrf;
 use App\Core\DataflowClient;
 use App\Core\EconomyCalculator;
+use App\Core\FileUpload;
 use App\Core\GeoMatch;
 use App\Core\Notifier;
 use App\Core\Pdf;
@@ -17,6 +18,7 @@ use App\Models\BrCity;
 use App\Models\Client;
 use App\Models\Lead;
 use App\Models\LeadRoutingSettings;
+use App\Models\MachineQuoteRequest;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\Product;
@@ -267,6 +269,110 @@ class PublicController
         $html = ob_get_clean();
 
         Pdf::download($html, 'orcamento-ecodiffusore-' . strtolower($result['plate']) . '.pdf', 'portrait');
+    }
+
+    /** Fase 45: cotacao de maquina agricola (sem placa) -- ramo alternativo do mesmo wizard de
+     *  /comprar (ver site/buy.php, passo "tipo de pedido"). Sem calculo de preco/economia (ainda
+     *  nao ha tabela pronta por tipo de maquina, pedido explicito do usuario) -- so' registra a
+     *  solicitacao com as 3 fotos exigidas e atribui pro Licenciado/vendedor mais proximo
+     *  (GeoMatch, mesmo criterio do fluxo de caminhao) precificar manualmente depois. */
+    public function submitMachineQuote(): void
+    {
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            Router::redirect('/comprar?erro=csrf');
+        }
+
+        if (empty($_SESSION['checkout_lead_id'])) {
+            Router::redirect('/comprar');
+        }
+
+        $machineType = trim($_POST['machine_type'] ?? '');
+        if ($machineType === 'outro') {
+            $machineType = trim($_POST['machine_type_custom'] ?? '');
+        }
+        $brand = trim($_POST['machine_brand'] ?? '');
+        $model = trim($_POST['machine_model'] ?? '');
+        $power = trim($_POST['machine_power'] ?? '');
+        $hoseMeasure = trim($_POST['machine_hose_measure'] ?? '');
+
+        if ($machineType === '') {
+            Router::redirect('/comprar?erro=1');
+        }
+
+        foreach (['machine_photo_general', 'machine_photo_nameplate', 'machine_photo_hose'] as $field) {
+            if (empty($_FILES[$field]['name'])) {
+                Router::redirect('/comprar?erro=foto');
+            }
+        }
+
+        try {
+            $general = FileUpload::storeMachineQuotePhoto($_FILES['machine_photo_general']);
+            $nameplate = FileUpload::storeMachineQuotePhoto($_FILES['machine_photo_nameplate']);
+            $hose = FileUpload::storeMachineQuotePhoto($_FILES['machine_photo_hose']);
+        } catch (\RuntimeException $e) {
+            Router::redirect('/comprar?erro=arquivo');
+        }
+
+        if (!$general || !$nameplate || !$hose) {
+            Router::redirect('/comprar?erro=foto');
+        }
+
+        $name = $_SESSION['checkout_name'] ?? '';
+        $whatsapp = $_SESSION['checkout_whatsapp'] ?? '';
+        $city = $_SESSION['checkout_city'] ?? '';
+
+        // Mesmo criterio de dono do fluxo de caminhao (submitOrcamento acima): vendedor mais
+        // proximo por GeoMatch, senao o Licenciado Central; WhatsApp ja cliente de outra pessoa
+        // tem prioridade sobre o palpite geografico.
+        $seller = GeoMatch::nearestSeller($city);
+        $ownerId = $seller['id'] ?? LeadRoutingSettings::centralLicenciadoId();
+
+        $existingClient = Client::findDuplicate(null, $whatsapp);
+        if ($existingClient && $existingClient['seller_id']) {
+            $ownerId = (int) $existingClient['seller_id'];
+        }
+
+        $currentLead = Lead::find((int) $_SESSION['checkout_lead_id']);
+        if ($ownerId && empty($currentLead['assigned_to_user_id'])) {
+            Lead::assignTo((int) $_SESSION['checkout_lead_id'], $ownerId);
+            Notifier::leadRoteado($currentLead, $ownerId);
+        }
+
+        $requestId = MachineQuoteRequest::create([
+            'lead_id' => (int) $_SESSION['checkout_lead_id'],
+            'assigned_user_id' => $ownerId,
+            'client_name' => $name,
+            'client_whatsapp' => $whatsapp,
+            'client_city' => $city,
+            'machine_type' => $machineType,
+            'brand' => $brand ?: null,
+            'model' => $model ?: null,
+            'power' => $power ?: null,
+            'hose_measure' => $hoseMeasure ?: null,
+            'photo_general_path' => $general['stored_name'],
+            'photo_nameplate_path' => $nameplate['stored_name'],
+            'photo_hose_path' => $hose['stored_name'],
+        ]);
+
+        $request = MachineQuoteRequest::find($requestId);
+        if ($request) {
+            Notifier::machineQuoteSolicitada($request);
+        }
+
+        $_SESSION['machine_quote_result'] = ['name' => $name, 'machine_type' => $machineType];
+
+        Router::redirect('/comprar/cotacao-maquina/recebida');
+    }
+
+    public function showMachineQuoteReceived(): void
+    {
+        if (empty($_SESSION['machine_quote_result'])) {
+            Router::redirect('/comprar');
+        }
+
+        View::render('site/machine_quote_received', [
+            'result' => $_SESSION['machine_quote_result'],
+        ], 'site');
     }
 
     /** Aceita tanto "12.000"/"12000" quanto "2,8"/"6,10" (formato BR com virgula decimal). */

@@ -46,7 +46,18 @@ $pendingApprovals = in_array($role, Roles::SUPERVISOR_ASSIGNMENT, true) ? \App\M
 $pendingWarranties = in_array($role, Roles::SUPERVISOR_ASSIGNMENT, true)
     ? \App\Models\WarrantyRequest::countPending($role === 'admin' ? null : \App\Models\User::nationalIds((int) $user['id']))
     : 0;
-$vendasOpen = $anyActive(['/painel/pedidos', '/painel/orcamentos', '/painel/produtos', '/painel/tabela-precos', '/painel/configuracoes/pagamento', '/painel/simulador', '/painel/materiais', '/painel/garantias', '/painel/entregas']);
+$pendingMachineQuotes = 0;
+if (in_array($role, Roles::STAFF, true)) {
+    $mqScope = match (true) {
+        $role === 'admin' => null,
+        $role === Roles::SELLER => [(int) $user['id']],
+        $role === 'supervisor' => \App\Models\User::supervisedIds((int) $user['id']),
+        $role === 'gerente' => \App\Models\User::nationalIds((int) $user['id']),
+        default => \App\Models\User::downlineIds((int) $user['id']),
+    };
+    $pendingMachineQuotes = \App\Models\MachineQuoteRequest::countPending($mqScope);
+}
+$vendasOpen = $anyActive(['/painel/pedidos', '/painel/orcamentos', '/painel/produtos', '/painel/tabela-precos', '/painel/configuracoes/pagamento', '/painel/simulador', '/painel/materiais', '/painel/garantias', '/painel/entregas', '/painel/cotacoes-maquina']);
 $leadsOpen = $anyActive(['/painel/leads', '/painel/clientes', '/painel/configuracoes/roteamento']);
 $financeiroOpen = $anyActive(['/painel/financeiro']);
 $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/desempenho/funil', '/painel/meu-ranking', '/painel/metas']);
@@ -114,6 +125,10 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/desempen
                         <?php if ($canScreen('orcamentos')): ?>
                             <a href="/painel/orcamentos" class="<?= $isActive('/painel/orcamentos') ? 'is-active' : '' ?>">Orçamentos</a>
                         <?php endif; ?>
+                        <a href="/painel/cotacoes-maquina" class="<?= $isActive('/painel/cotacoes-maquina') ? 'is-active' : '' ?>">
+                            Cotações de Máquina Agrícola
+                            <?php if ($pendingMachineQuotes > 0): ?><span class="nav-badge"><?= (int) $pendingMachineQuotes ?></span><?php endif; ?>
+                        </a>
                         <?php if ($canScreen('entregas')): ?>
                             <a href="/painel/entregas" class="<?= $isActive('/painel/entregas') ? 'is-active' : '' ?>">Acompanhar Entregas</a>
                         <?php endif; ?>

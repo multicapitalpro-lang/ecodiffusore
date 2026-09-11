@@ -38,10 +38,14 @@ use App\Core\View;
 <section class="buy-section alt" id="orcamento">
     <div class="site-container">
         <h2 style="text-align:center;">Peça seu orçamento</h2>
-        <p class="section-sub" style="text-align:center;">Informe a placa do seu veículo pra gente te dar um orçamento certeiro.</p>
+        <p class="section-sub" style="text-align:center;">Escolha o tipo de equipamento pra gente te dar um orçamento certeiro.</p>
 
         <?php if (isset($_GET['erro']) && $_GET['erro'] === 'csrf'): ?>
             <p class="form-msg" style="background:#fdeaea;color:#b3261e;max-width:560px;margin:0 auto 16px;">Sessão expirada, tente novamente.</p>
+        <?php elseif (isset($_GET['erro']) && $_GET['erro'] === 'foto'): ?>
+            <p class="form-msg" style="background:#fdeaea;color:#b3261e;max-width:560px;margin:0 auto 16px;">Envie as 3 fotos pedidas (todas obrigatórias).</p>
+        <?php elseif (isset($_GET['erro']) && $_GET['erro'] === 'arquivo'): ?>
+            <p class="form-msg" style="background:#fdeaea;color:#b3261e;max-width:560px;margin:0 auto 16px;">Não foi possível enviar um dos arquivos (verifique o tipo e o tamanho — máximo 5MB, PDF/JPG/PNG/WEBP).</p>
         <?php elseif (isset($_GET['erro'])): ?>
             <p class="form-msg" style="background:#fdeaea;color:#b3261e;max-width:560px;margin:0 auto 16px;">Preencha todos os campos obrigatórios.</p>
         <?php endif; ?>
@@ -50,26 +54,32 @@ use App\Core\View;
             <?= Csrf::field() ?>
 
             <div class="wizard-step is-active" data-step="0">
+                <label>Que tipo de equipamento você tem?</label>
+                <button type="button" class="btn btn-primary wizard-next" data-goto="1" style="width:100%;margin-top:10px;">🚛 Caminhão / Ônibus (tem placa)</button>
+                <button type="button" class="btn btn-outline wizard-next" data-goto="10" style="width:100%;margin-top:10px;">🚜 Máquina agrícola / equipamento sem placa</button>
+            </div>
+
+            <div class="wizard-step" data-step="1">
                 <label for="wizard-plate">Placa do veículo</label>
                 <input type="text" id="wizard-plate" name="plate" placeholder="ABC1D23" maxlength="8" style="text-transform:uppercase;">
                 <button type="button" class="btn btn-primary" id="wizard-search-btn" style="width:100%;margin-top:10px;">Buscar</button>
                 <p class="hint-text" id="wizard-search-status"></p>
             </div>
 
-            <div class="wizard-step" data-step="1">
+            <div class="wizard-step" data-step="2">
                 <p class="hint-text">Não encontramos sua placa automaticamente ainda — só mais alguns dados rápidos:</p>
                 <label for="wizard-name">Seu nome</label>
                 <input type="text" id="wizard-name" name="name" value="<?= View::e($checkoutName) ?>">
                 <button type="button" class="btn btn-primary wizard-next" style="width:100%;margin-top:10px;">Próximo</button>
             </div>
 
-            <div class="wizard-step" data-step="2">
+            <div class="wizard-step" data-step="3">
                 <label for="wizard-year">Ano modelo</label>
                 <input type="text" id="wizard-year" name="year" placeholder="Ex: 2020">
                 <button type="button" class="btn btn-primary wizard-next" style="width:100%;margin-top:10px;">Próximo</button>
             </div>
 
-            <div class="wizard-step" data-step="3">
+            <div class="wizard-step" data-step="4">
                 <label for="wizard-brand-search">Marca</label>
                 <div class="autocomplete-wrap">
                     <input type="text" id="wizard-brand-search" autocomplete="off" placeholder="Digite pra buscar...">
@@ -83,7 +93,7 @@ use App\Core\View;
                 <button type="button" class="btn btn-primary wizard-next" id="wizard-brand-next" style="width:100%;margin-top:10px;" disabled>Próximo</button>
             </div>
 
-            <div class="wizard-step" data-step="4">
+            <div class="wizard-step" data-step="5">
                 <div id="wizard-model-select-wrap">
                     <label for="wizard-model-select">Modelo</label>
                     <select id="wizard-model-select" disabled>
@@ -98,13 +108,13 @@ use App\Core\View;
                 <button type="button" class="btn btn-primary wizard-next" style="width:100%;margin-top:10px;">Próximo</button>
             </div>
 
-            <div class="wizard-step" data-step="5">
+            <div class="wizard-step" data-step="6">
                 <label for="wizard-power">Potência do motor</label>
                 <input type="text" id="wizard-power" name="power" placeholder="Ex: 460cv">
                 <button type="button" class="btn btn-primary wizard-next" style="width:100%;margin-top:10px;">Próximo</button>
             </div>
 
-            <div class="wizard-step" data-step="6">
+            <div class="wizard-step" data-step="7">
                 <label>O motor é original de fábrica ou reprogramado (chip)?</label>
                 <div class="buy-payment-methods">
                     <label><input type="radio" name="ecu_status" value="original" id="wizard-ecu-original"> Original</label>
@@ -117,7 +127,7 @@ use App\Core\View;
                 <button type="button" class="btn btn-primary wizard-next" id="wizard-ecu-next" style="width:100%;margin-top:10px;" disabled>Próximo</button>
             </div>
 
-            <div class="wizard-step" data-step="7">
+            <div class="wizard-step" data-step="8">
                 <label>O veículo possui sistema de ARLA?</label>
                 <div class="buy-payment-methods">
                     <label><input type="radio" name="has_arla" value="sim" id="wizard-arla-sim"> Sim</label>
@@ -132,7 +142,7 @@ use App\Core\View;
                 <button type="button" class="btn btn-primary wizard-next" id="wizard-arla-next-btn" style="width:100%;margin-top:10px;display:none;">Próximo</button>
             </div>
 
-            <div class="wizard-step" data-step="8">
+            <div class="wizard-step" data-step="9">
                 <p class="hint-text">Só mais um passo pra calcular sua economia estimada com o Ecodiffusore:</p>
                 <label for="wizard-km-mensal">Média de KM rodados por mês</label>
                 <input type="text" id="wizard-km-mensal" name="km_mensal" placeholder="Ex: 12000">
@@ -144,6 +154,55 @@ use App\Core\View;
                 <input type="text" id="wizard-preco-diesel" name="preco_diesel" value="6,10">
 
                 <button type="submit" class="btn btn-primary" id="wizard-submit-btn" style="width:100%;margin-top:10px;" disabled>Ver meu orçamento e minha economia</button>
+            </div>
+
+            <div class="wizard-step" data-step="10">
+                <label for="wizard-machine-type">Tipo de máquina</label>
+                <select id="wizard-machine-type" name="machine_type">
+                    <option value="">Selecione...</option>
+                    <option value="trator_agricola">Trator agrícola</option>
+                    <option value="trator_esteira">Trator de esteira</option>
+                    <option value="colheitadeira">Colheitadeira</option>
+                    <option value="escavadeira">Escavadeira</option>
+                    <option value="retroescavadeira">Retroescavadeira</option>
+                    <option value="pa_carregadeira">Pá carregadeira</option>
+                    <option value="motoniveladora">Motoniveladora</option>
+                    <option value="gerador">Gerador a diesel</option>
+                    <option value="outro">Outro</option>
+                </select>
+                <div id="wizard-machine-type-custom-wrap" style="display:none;">
+                    <label for="wizard-machine-type-custom">Qual o tipo da máquina?</label>
+                    <input type="text" id="wizard-machine-type-custom" name="machine_type_custom" placeholder="Digite o tipo">
+                </div>
+                <button type="button" class="btn btn-primary wizard-next" id="wizard-machine-type-next" style="width:100%;margin-top:10px;" disabled>Próximo</button>
+            </div>
+
+            <div class="wizard-step" data-step="11">
+                <label for="wizard-machine-brand">Marca (se souber)</label>
+                <input type="text" id="wizard-machine-brand" name="machine_brand" placeholder="Ex: John Deere, Valtra, Case...">
+                <label for="wizard-machine-model">Modelo (se souber)</label>
+                <input type="text" id="wizard-machine-model" name="machine_model" placeholder="Ex: 6605">
+                <label for="wizard-machine-power">Potência</label>
+                <input type="text" id="wizard-machine-power" name="machine_power" placeholder="Ex: 180cv">
+                <button type="button" class="btn btn-primary wizard-next" style="width:100%;margin-top:10px;">Próximo</button>
+            </div>
+
+            <div class="wizard-step" data-step="12">
+                <label for="wizard-machine-hose">Medida da mangueira</label>
+                <input type="text" id="wizard-machine-hose" name="machine_hose_measure" placeholder="Ex: 3/4 polegada, 2 metros">
+                <p class="hint-text">Se não souber exatamente, descreva como conseguir — isso ajuda a gente a calcular o custo certo pra sua máquina.</p>
+                <button type="button" class="btn btn-primary wizard-next" style="width:100%;margin-top:10px;">Próximo</button>
+            </div>
+
+            <div class="wizard-step" data-step="13">
+                <p class="hint-text">Últimas 3 fotos — com elas a gente consegue te dar um valor certeiro:</p>
+                <label for="wizard-machine-photo-general">Foto geral da máquina</label>
+                <input type="file" id="wizard-machine-photo-general" name="machine_photo_general" accept="image/jpeg,image/png,image/webp">
+                <label for="wizard-machine-photo-nameplate">Foto da plaqueta de identificação da máquina</label>
+                <input type="file" id="wizard-machine-photo-nameplate" name="machine_photo_nameplate" accept="image/jpeg,image/png,image/webp">
+                <label for="wizard-machine-photo-hose">Foto da mangueira</label>
+                <input type="file" id="wizard-machine-photo-hose" name="machine_photo_hose" accept="image/jpeg,image/png,image/webp">
+                <button type="submit" formaction="/comprar/orcamento-maquina" formenctype="multipart/form-data" class="btn btn-primary" id="wizard-machine-submit-btn" style="width:100%;margin-top:10px;" disabled>Enviar solicitação de cotação</button>
             </div>
         </form>
     </div>

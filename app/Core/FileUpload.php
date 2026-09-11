@@ -96,6 +96,13 @@ class FileUpload
         return self::store($file, 'warranties');
     }
 
+    /** Fotos da cotacao publica de maquina agricola (Fase 45) -- enviadas por visitante anonimo
+     *  em /comprar, sem sessao de painel. store() nao depende de auth, entao funciona igual. */
+    public static function storeMachineQuotePhoto(array $file): ?array
+    {
+        return self::store($file, 'machine_quotes');
+    }
+
     public static function path(string $subdir, string $storedName): string
     {
         return BASE_PATH . '/storage/uploads/' . $subdir . '/' . basename($storedName);

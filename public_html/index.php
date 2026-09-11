@@ -53,6 +53,13 @@ $router->post('/comprar/buscar-placa', [App\Controllers\PublicController::class,
 $router->post('/comprar/orcamento', [App\Controllers\PublicController::class, 'submitOrcamento']);
 $router->get('/comprar/orcamento', [App\Controllers\PublicController::class, 'showOrcamento']);
 $router->get('/comprar/orcamento/pdf', [App\Controllers\PublicController::class, 'downloadOrcamentoPdf']);
+$router->post('/comprar/orcamento-maquina', [App\Controllers\PublicController::class, 'submitMachineQuote']);
+$router->get('/comprar/cotacao-maquina/recebida', [App\Controllers\PublicController::class, 'showMachineQuoteReceived']);
+
+$router->get('/painel/cotacoes-maquina', [App\Controllers\MachineQuoteController::class, 'index']);
+$router->get('/painel/cotacoes-maquina/{id}', [App\Controllers\MachineQuoteController::class, 'show']);
+$router->post('/painel/cotacoes-maquina/{id}/responder', [App\Controllers\MachineQuoteController::class, 'respond']);
+$router->get('/painel/cotacoes-maquina/{id}/foto/{tipo}', [App\Controllers\MachineQuoteController::class, 'downloadPhoto']);
 
 // Autenticação
 $router->get('/painel/login', [App\Controllers\AuthController::class, 'showLogin']);
