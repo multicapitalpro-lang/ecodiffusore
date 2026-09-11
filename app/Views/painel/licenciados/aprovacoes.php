@@ -15,6 +15,8 @@ $erro = $_GET['erro'] ?? null;
     <p class="form-msg form-msg-erro">Informe o motivo da reprovação.</p>
 <?php elseif ($erro === '3'): ?>
     <p class="form-msg form-msg-erro">Não foi possível gerar um novo envelope no ClickSign agora. Tente de novo em alguns minutos.</p>
+<?php elseif ($erro === '4'): ?>
+    <p class="form-msg form-msg-erro">Não foi possível baixar o contrato assinado agora (instabilidade do ClickSign). Tente de novo em alguns minutos.</p>
 <?php elseif ($erro): ?>
     <p class="form-msg form-msg-erro">Não foi possível concluir a ação.</p>
 <?php endif; ?>
@@ -54,6 +56,12 @@ $erro = $_GET['erro'] ?? null;
             <a href="/painel/licenciados/documento/<?= (int) $l['id'] ?>/cartao_cnpj" target="_blank" rel="noopener" class="btn btn-outline">📄 Cartão CNPJ</a>
             <?php if (!empty($l['envelope']['signed_document_path'])): ?>
                 <a href="/painel/licenciados/contrato/<?= (int) $l['envelope']['id'] ?>" target="_blank" rel="noopener" class="btn btn-outline">📄 Contrato assinado</a>
+            <?php elseif (!empty($l['envelope']['id'])): ?>
+                <form action="/painel/envelopes/<?= (int) $l['envelope']['id'] ?>/baixar-contrato" method="post" class="inline-form" style="display:inline-flex;align-items:center;gap:8px;">
+                    <?= Csrf::field() ?>
+                    <button type="submit" class="btn btn-outline">🔄 Tentar baixar contrato assinado</button>
+                    <span class="hint-text">Ainda não baixado do ClickSign (pode ser instabilidade pontual da API).</span>
+                </form>
             <?php else: ?>
                 <span class="hint-text">Contrato assinado ainda não baixado do ClickSign.</span>
             <?php endif; ?>

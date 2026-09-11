@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Core\Auth;
+use App\Core\ClickSignClient;
 use App\Core\Csrf;
 use App\Core\Notifier;
 use App\Core\Roles;
@@ -102,6 +103,41 @@ class LicenciadoApprovalController
 
         User::setOnboardingStatus($id, 'aguardando_assinatura');
         AuditLog::record((int) $user['id'], 'licenciado_reenvio_assinatura', 'user', $id, [], []);
+
+        Router::redirect('/painel/licenciados/aprovacoes?sucesso=1');
+    }
+
+    /** Pro caso (confirmado acontecer ao vivo, 2026-09-11) do download do PDF assinado falhar de
+     *  forma transitoria tanto no webhook quanto no refreshStatus() do proprio Licenciado (API do
+     *  ClickSign instavel naquele momento, nao um erro permanente) -- so tenta baixar de novo o
+     *  documento do MESMO envelope ja fechado, sem gerar um envelope novo nem pedir assinatura de
+     *  novo (diferente de resendSignature()). */
+    public function retryDownloadContract(string $envelopeId): void
+    {
+        Auth::requireRole(Roles::SUPERVISOR_ASSIGNMENT);
+        $envelopeId = (int) $envelopeId;
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            Router::redirect('/painel/licenciados/aprovacoes?erro=1');
+        }
+
+        $envelope = LicenciadoEnvelope::find($envelopeId);
+        if (!$envelope) {
+            Router::redirect('/painel/licenciados/aprovacoes?erro=1');
+        }
+
+        try {
+            $content = (new ClickSignClient())->downloadSignedDocument($envelope['clicksign_envelope_id'], $envelope['clicksign_document_id']);
+            $storedName = bin2hex(random_bytes(16)) . '.pdf';
+            $dir = BASE_PATH . '/storage/uploads/licenciados';
+            if (!is_dir($dir)) {
+                mkdir($dir, 0750, true);
+            }
+            file_put_contents($dir . '/' . $storedName, $content);
+            LicenciadoEnvelope::attachSignedDocument($envelopeId, $storedName);
+        } catch (\Throwable $e) {
+            Router::redirect('/painel/licenciados/aprovacoes?erro=4');
+        }
 
         Router::redirect('/painel/licenciados/aprovacoes?sucesso=1');
     }
