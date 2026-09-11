@@ -71,6 +71,11 @@ class FileUpload
         return self::store($file, 'vehicle_docs');
     }
 
+    public static function storeCnhDocument(array $file): ?array
+    {
+        return self::store($file, 'cnh_docs');
+    }
+
     public static function storeLeadExtensionAttachment(array $file): ?array
     {
         return self::store($file, 'lead_extensions');

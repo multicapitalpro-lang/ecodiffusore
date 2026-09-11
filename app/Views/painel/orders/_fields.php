@@ -65,14 +65,27 @@ use App\Core\View;
     </div>
 </div>
 
-<label>Foto do documento do veículo (opcional)</label>
-<label class="file-drop" data-file-drop>
-    <span data-file-drop-label>Solte o arquivo aqui ou clique para adicionar (PDF, JPG, PNG — até 5MB)</span>
-    <input type="file" id="vehicle_document" name="vehicle_document" accept=".pdf,.jpg,.jpeg,.png,.webp">
-</label>
-<ul class="file-list" data-file-list></ul>
-<p class="hint-text">Guardado pra referência e futura análise automática do veículo.</p>
-<p class="field-error" data-error-for="vehicle_document"><?= View::e($errors['vehicle_document'] ?? '') ?></p>
+<div>
+    <label>Foto do documento do veículo</label>
+    <label class="file-drop" data-file-drop>
+        <span data-file-drop-label>Solte o arquivo aqui ou clique para adicionar (PDF, JPG, PNG — até 5MB)</span>
+        <input type="file" id="vehicle_document" name="vehicle_document" accept=".pdf,.jpg,.jpeg,.png,.webp">
+    </label>
+    <ul class="file-list" data-file-list></ul>
+    <p class="hint-text">Obrigatório antes de gerar a cobrança — a fábrica precisa do documento do veículo pra montar o pedido certo.</p>
+    <p class="field-error" data-error-for="vehicle_document"><?= View::e($errors['vehicle_document'] ?? '') ?></p>
+</div>
+
+<div>
+    <label>Foto da CNH do comprador</label>
+    <label class="file-drop" data-file-drop>
+        <span data-file-drop-label>Solte o arquivo aqui ou clique para adicionar (PDF, JPG, PNG — até 5MB)</span>
+        <input type="file" id="cnh_document" name="cnh_document" accept=".pdf,.jpg,.jpeg,.png,.webp">
+    </label>
+    <ul class="file-list" data-file-list></ul>
+    <p class="hint-text">Também obrigatório antes de gerar a cobrança.</p>
+    <p class="field-error" data-error-for="cnh_document"><?= View::e($errors['cnh_document'] ?? '') ?></p>
+</div>
 
 <h3 class="section-title">Produtos</h3>
 <?php if ($pricingTiers): ?>

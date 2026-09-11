@@ -39,6 +39,14 @@ class PaymentController
             Router::redirect("/painel/pedidos/{$id}?erro=1");
         }
 
+        // CNH + documento do veiculo sao obrigatorios antes de cobrar (Fase 40) -- a fabrica
+        // precisa do documento do veiculo pra montar o pedido certo, entao gerar a cobranca sem
+        // isso so criaria trabalho de cobrar de novo depois. Redireciona pro Pedido (nao segue com
+        // a cobranca) -- o staff anexa os documentos ali e clica em "Gerar cobranca" de novo.
+        if (!Order::hasRequiredDocuments($order)) {
+            Router::redirect("/painel/pedidos/{$id}?erro_documentos=1");
+        }
+
         try {
             $this->generateCharge('order', $id, (int) $order['client_id'], (float) $order['total_value'], "Pedido #{$id} — Ecodiffusore Brasil");
         } catch (\Throwable $e) {

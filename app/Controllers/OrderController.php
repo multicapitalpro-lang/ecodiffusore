@@ -187,6 +187,15 @@ class OrderController
             }
         }
 
+        $cnhDocument = null;
+        try {
+            $cnhDocument = FileUpload::storeCnhDocument($_FILES['cnh_document'] ?? []);
+        } catch (\RuntimeException $e) {
+            if (Response::isAjax()) {
+                Response::json(['ok' => false, 'errors' => ['cnh_document' => $e->getMessage()]]);
+            }
+        }
+
         $orderId = Order::create([
             'client_id' => (int) $_POST['client_id'],
             'seller_id' => $sellerId,
@@ -195,6 +204,7 @@ class OrderController
             'vehicle_type' => $_POST['vehicle_type'] ?? '',
             'vehicle_plate' => $_POST['vehicle_plate'] ?? '',
             'vehicle_document_path' => $vehicleDocument['stored_name'] ?? null,
+            'cnh_document_path' => $cnhDocument['stored_name'] ?? null,
         ], $items);
 
         if ($sellerId) {
@@ -322,6 +332,17 @@ class OrderController
             } catch (\RuntimeException $e) {
                 if (Response::isAjax()) {
                     Response::json(['ok' => false, 'errors' => ['vehicle_document' => $e->getMessage()]]);
+                }
+            }
+        }
+
+        if (!empty($_FILES['cnh_document']['name'])) {
+            try {
+                $cnhDocument = FileUpload::storeCnhDocument($_FILES['cnh_document']);
+                $orderData['cnh_document_path'] = $cnhDocument['stored_name'] ?? null;
+            } catch (\RuntimeException $e) {
+                if (Response::isAjax()) {
+                    Response::json(['ok' => false, 'errors' => ['cnh_document' => $e->getMessage()]]);
                 }
             }
         }
@@ -462,6 +483,31 @@ class OrderController
 
         header('Content-Type: ' . $mimeType);
         header('Content-Disposition: inline; filename="documento-veiculo-' . (int) $id . ($extension ? '.' . $extension : '') . '"');
+        header('Content-Length: ' . filesize($path));
+        readfile($path);
+        exit;
+    }
+
+    public function downloadCnhDocument(string $id): void
+    {
+        $order = $this->authorizeOrder((int) $id);
+
+        if (!$order['cnh_document_path']) {
+            http_response_code(404);
+            exit('Arquivo não encontrado.');
+        }
+
+        $path = FileUpload::path('cnh_docs', $order['cnh_document_path']);
+        if (!file_exists($path)) {
+            http_response_code(404);
+            exit('Arquivo não encontrado.');
+        }
+
+        $extension = pathinfo($order['cnh_document_path'], PATHINFO_EXTENSION);
+        $mimeType = mime_content_type($path) ?: 'application/octet-stream';
+
+        header('Content-Type: ' . $mimeType);
+        header('Content-Disposition: inline; filename="cnh-' . (int) $id . ($extension ? '.' . $extension : '') . '"');
         header('Content-Length: ' . filesize($path));
         readfile($path);
         exit;

@@ -223,8 +223,8 @@ class Order
 
         try {
             $stmt = $db->prepare(
-                'INSERT INTO orders (client_id, seller_id, status, order_date, total_value, notes, vehicle_type, vehicle_plate, vehicle_document_path)
-                 VALUES (:client_id, :seller_id, :status, :order_date, 0, :notes, :vehicle_type, :vehicle_plate, :vehicle_document_path)'
+                'INSERT INTO orders (client_id, seller_id, status, order_date, total_value, notes, vehicle_type, vehicle_plate, vehicle_document_path, cnh_document_path)
+                 VALUES (:client_id, :seller_id, :status, :order_date, 0, :notes, :vehicle_type, :vehicle_plate, :vehicle_document_path, :cnh_document_path)'
             );
             $stmt->execute([
                 'client_id' => $data['client_id'],
@@ -235,6 +235,7 @@ class Order
                 'vehicle_type' => !empty($data['vehicle_type']) ? $data['vehicle_type'] : null,
                 'vehicle_plate' => !empty($data['vehicle_plate']) ? $data['vehicle_plate'] : null,
                 'vehicle_document_path' => $data['vehicle_document_path'] ?? null,
+                'cnh_document_path' => $data['cnh_document_path'] ?? null,
             ]);
             $orderId = (int) $db->lastInsertId();
 
@@ -261,7 +262,9 @@ class Order
             $stmt = $db->prepare(
                 'UPDATE orders SET client_id = :client_id, seller_id = :seller_id,
                     order_date = :order_date, notes = :notes, vehicle_type = :vehicle_type,
-                    vehicle_plate = :vehicle_plate' . (isset($data['vehicle_document_path']) ? ', vehicle_document_path = :vehicle_document_path' : '') . '
+                    vehicle_plate = :vehicle_plate' .
+                    (isset($data['vehicle_document_path']) ? ', vehicle_document_path = :vehicle_document_path' : '') .
+                    (isset($data['cnh_document_path']) ? ', cnh_document_path = :cnh_document_path' : '') . '
                  WHERE id = :id'
             );
             $params = [
@@ -276,6 +279,9 @@ class Order
             if (isset($data['vehicle_document_path'])) {
                 $params['vehicle_document_path'] = $data['vehicle_document_path'];
             }
+            if (isset($data['cnh_document_path'])) {
+                $params['cnh_document_path'] = $data['cnh_document_path'];
+            }
             $stmt->execute($params);
 
             OrderItem::deleteForOrder($id);
@@ -289,6 +295,14 @@ class Order
             $db->rollBack();
             throw $e;
         }
+    }
+
+    /** CNH + documento do veiculo sao exigidos antes de gerar cobranca (Fase 40) -- a fabrica
+     *  precisa do documento do veiculo pra montar o pedido certo, e a CNH passa a ser coletada no
+     *  mesmo momento. Usado por PaymentController::generateForOrder() como trava. */
+    public static function hasRequiredDocuments(array $order): bool
+    {
+        return !empty($order['vehicle_document_path']) && !empty($order['cnh_document_path']);
     }
 
     public static function recalculateTotal(int $id): void

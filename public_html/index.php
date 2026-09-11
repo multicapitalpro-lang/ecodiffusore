@@ -210,6 +210,7 @@ $router->post('/painel/pedidos/{id}/status', [App\Controllers\OrderController::c
 $router->post('/painel/pedidos/{id}/reembolsar', [App\Controllers\OrderController::class, 'refundPayment']);
 $router->post('/painel/pedidos/{id}/rastreio', [App\Controllers\OrderController::class, 'updateTracking']);
 $router->get('/painel/pedidos/{id}/documento-veiculo', [App\Controllers\OrderController::class, 'downloadVehicleDocument']);
+$router->get('/painel/pedidos/{id}/cnh', [App\Controllers\OrderController::class, 'downloadCnhDocument']);
 $router->post('/painel/pedidos/{id}/cobranca', [App\Controllers\PaymentController::class, 'generateForOrder']);
 
 // Orcamentos
