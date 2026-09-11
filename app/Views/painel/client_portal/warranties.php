@@ -1,18 +1,20 @@
 <?php
 use App\Core\View;
-$statusLabels = ['aberta' => 'Aberta', 'em_analise' => 'Em análise', 'aprovada' => 'Aprovada', 'rejeitada' => 'Rejeitada', 'concluida' => 'Concluída'];
+$statusLabels = ['aberta' => 'Aguardando análise', 'em_analise' => 'Em análise', 'aprovada' => 'Instalação confirmada', 'rejeitada' => 'Pendência a corrigir', 'concluida' => 'Concluída'];
 $statusBadge = ['aberta' => 'novo', 'em_analise' => 'contatado', 'aprovada' => 'active', 'rejeitada' => 'inactive', 'concluida' => 'active'];
 $sucesso = isset($_GET['sucesso']);
 ?>
 <div class="page-header">
-    <h1>Minhas Garantias</h1>
+    <h1>Pós-venda de Instalação</h1>
     <?php if (count($eligibleOrders) === 1): ?>
-        <a href="/painel/minhas-garantias/nova?order_id=<?= (int) $eligibleOrders[0]['id'] ?>" class="btn btn-primary">Solicitar Garantia</a>
+        <a href="/painel/minhas-garantias/nova?order_id=<?= (int) $eligibleOrders[0]['id'] ?>" class="btn btn-primary">Confirmar Instalação</a>
     <?php endif; ?>
 </div>
 
+<p class="hint-text" style="margin-top:-6px;">Etapa obrigatória para o seu Ecodiffusore funcionar corretamente — confirme os dados da instalação assim que o pedido for confirmado.</p>
+
 <?php if ($sucesso): ?>
-    <p class="form-msg form-msg-ok">Solicitação enviada com sucesso.</p>
+    <p class="form-msg form-msg-ok">Confirmação enviada com sucesso.</p>
 <?php endif; ?>
 
 <?php if (count($eligibleOrders) > 1): ?>
@@ -22,10 +24,10 @@ $sucesso = isset($_GET['sucesso']);
                 <option value="<?= (int) $o['id'] ?>">Pedido #<?= (int) $o['id'] ?> — <?= View::e($o['product_names'] ?: 'produto') ?></option>
             <?php endforeach; ?>
         </select>
-        <button type="submit" class="btn btn-primary">Solicitar Garantia</button>
+        <button type="submit" class="btn btn-primary">Confirmar Instalação</button>
     </form>
 <?php elseif (!$eligibleOrders): ?>
-    <p class="hint-text">Você ainda não tem pedidos confirmados elegíveis pra solicitar garantia.</p>
+    <p class="hint-text">Você ainda não tem pedidos confirmados elegíveis pra essa etapa.</p>
 <?php endif; ?>
 
 <div class="table-scroll">
@@ -41,7 +43,7 @@ $sucesso = isset($_GET['sucesso']);
                 </tr>
             <?php endforeach; ?>
             <?php if (!$warranties): ?>
-                <tr><td colspan="4">Nenhuma solicitação de garantia ainda.</td></tr>
+                <tr><td colspan="4">Nenhuma confirmação de instalação ainda.</td></tr>
             <?php endif; ?>
         </tbody>
     </table>

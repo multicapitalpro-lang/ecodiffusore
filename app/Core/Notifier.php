@@ -417,9 +417,9 @@ class Notifier
     /** @param array $order precisa de id/verified_at/client_name/client_whatsapp/client_email
      *  (retorno de Order::pendingExtendedWarrantyReminders()). $tier: 1=dia1, 2=dia5, 3=dia10,
      *  4=dia15. Cobranca automatica (WhatsApp + e-mail) pro cliente que JA PAGOU mas ainda NAO
-     *  abriu a Garantia Estendida (90 dias, prazo de 15 dias pra pedir) -- tom escalando em
-     *  urgencia, pedido explicito do usuario. Nao muda em nada o fluxo de abrir garantia em si
-     *  (WarrantyRequest) -- so' cobra quem ainda nao pediu. */
+     *  concluiu o Pós-venda de Instalação obrigatório -- tom escalando em urgencia, pedido
+     *  explicito do usuario. Nao muda em nada o fluxo de confirmar instalacao em si
+     *  (WarrantyRequest) -- so' cobra quem ainda nao confirmou. */
     public static function garantiaEstendidaLembrete(array $order, int $tier): void
     {
         $diasRestantes = match ($tier) {
@@ -453,15 +453,15 @@ class Notifier
 
         if (!empty($order['client_email'])) {
             [$subject, $bodyHtml] = match ($tier) {
-                1 => ['Você já pode solicitar sua Garantia Estendida', 'Seu pedido #' . $orderId . ' foi confirmado! Você tem direito à <strong>Garantia Estendida</strong> do seu Ecodiffusore — são só 15 dias pra solicitar, então não deixa pra depois.'],
-                2 => ['Faltam 10 dias pra solicitar sua Garantia Estendida', 'Passando pra lembrar: restam <strong>10 dias</strong> pra você solicitar a Garantia Estendida do pedido #' . $orderId . '. É rápido, leva só alguns minutos.'],
-                3 => ['⏰ Faltam só 5 dias — Garantia Estendida', 'Atenção: faltam apenas <strong>5 dias</strong> pra solicitar a Garantia Estendida do seu pedido #' . $orderId . '. Depois desse prazo não será mais possível pedir.'],
-                default => ['🚨 Último dia pra solicitar sua Garantia Estendida', 'Hoje é o <strong>último dia</strong> pra solicitar a Garantia Estendida do seu pedido #' . $orderId . '. Não perca essa proteção extra — solicite agora.'],
+                1 => ['Confirme a instalação do seu Ecodiffusore', 'Seu pedido #' . $orderId . ' foi confirmado! A confirmação de <strong>Pós-venda de Instalação</strong> é obrigatória pro seu Ecodiffusore funcionar corretamente — são só 15 dias pra enviar, então não deixa pra depois.'],
+                2 => ['Faltam 10 dias pra confirmar a instalação', 'Passando pra lembrar: restam <strong>10 dias</strong> pra você confirmar a instalação (pós-venda obrigatório) do pedido #' . $orderId . '. É rápido, leva só alguns minutos.'],
+                3 => ['⏰ Faltam só 5 dias — Confirmação de Instalação', 'Atenção: faltam apenas <strong>5 dias</strong> pra confirmar a instalação obrigatória do seu pedido #' . $orderId . '. Sem essa confirmação o produto pode não funcionar corretamente.'],
+                default => ['🚨 Último dia pra confirmar a instalação', 'Hoje é o <strong>último dia</strong> pra confirmar a instalação obrigatória do pedido #' . $orderId . '. Não deixe pra depois — confirme agora.'],
             };
 
             $html = '<p>Olá, ' . self::esc((string) ($order['client_name'] ?? '')) . '!</p>'
                 . '<p>' . $bodyHtml . '</p>'
-                . self::button($url, 'Solicitar Garantia Estendida');
+                . self::button($url, 'Confirmar Instalação');
 
             Mailer::send($order['client_email'], $subject . ' - Ecodiffusore Brasil', self::template($subject, $html));
         }
@@ -485,9 +485,9 @@ class Notifier
      *  WarrantyRequest::find()). So WhatsApp, sem e-mail -- notifica quem vendeu o pedido, nao o
      *  cliente (mensagens pro cliente ficam pra fase seguinte). Notifica TAMBEM Admin/Gerente
      *  (quem realmente aprova, Roles::SUPERVISOR_ASSIGNMENT) -- pedido explicito do usuario:
-     *  quanto antes aprovar, mais chance do Termo de Garantia ja sair junto com o pedido pela
-     *  fabrica, entao quem aprova precisa saber na hora, nao so quando abrir o menu por conta
-     *  propria (ate agora so o vendedor/licenciado da venda eram avisados). */
+     *  quanto antes confirmar, mais chance do Comprovante de Pós-venda de Instalação ja sair
+     *  junto com o pedido pela fabrica, entao quem aprova precisa saber na hora, nao so quando
+     *  abrir o menu por conta propria (ate agora so o vendedor/licenciado da venda eram avisados). */
     public static function garantiaSolicitada(array $warranty): void
     {
         if (empty($warranty['seller_id'])) {
@@ -513,7 +513,7 @@ class Notifier
             self::sendWhatsApp($licenciado['whatsapp'], $waNetwork);
         }
 
-        $urgentText = "⚠️ Nova solicitação de Termo de Garantia aguardando aprovação -- cliente {$vars['cliente']}, pedido #{$vars['id']}. Quanto antes aprovar, mais rápido a fábrica recebe o Termo pra despachar junto. Analise aqui: {$vars['url']}";
+        $urgentText = "⚠️ Nova confirmação de Pós-venda de Instalação aguardando análise -- cliente {$vars['cliente']}, pedido #{$vars['id']}. Quanto antes analisar, mais rápido a fábrica recebe o comprovante pra despachar junto. Analise aqui: {$vars['url']}";
         foreach (array_merge(User::allByRole('admin'), User::allByRole('gerente')) as $approver) {
             if (!empty($approver['whatsapp'])) {
                 self::sendWhatsApp($approver['whatsapp'], $urgentText);

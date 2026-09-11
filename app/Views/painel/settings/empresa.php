@@ -7,7 +7,7 @@ $erro = isset($_GET['erro']);
 <div class="page-header">
     <h1>Dados da Empresa</h1>
 </div>
-<p class="hint-text" style="margin-top:-6px;">Usados no Termo de Garantia e em outros documentos oficiais gerados pelo sistema.</p>
+<p class="hint-text" style="margin-top:-6px;">Usados no Comprovante de Pós-venda de Instalação e em outros documentos oficiais gerados pelo sistema.</p>
 
 <?php if ($sucesso): ?>
     <p class="form-msg form-msg-ok">Atualizado com sucesso.</p>

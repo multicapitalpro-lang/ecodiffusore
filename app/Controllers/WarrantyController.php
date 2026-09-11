@@ -16,9 +16,10 @@ use App\Models\OrderItem;
 use App\Models\User;
 use App\Models\WarrantyRequest;
 
-/** Pagina de controle de Garantias -- so Admin e Gerente Geral decidem (aprovar/reprovar), mesmo
- *  escopo de acesso da aprovacao de cadastro de Licenciado (Roles::SUPERVISOR_ASSIGNMENT). Nao e'
- *  uma decisao regional/de comissao como Pedidos -- e' garantia do produto, decisao nacional. */
+/** Pagina de controle do Pós-venda de Instalação (ex-"Garantias") -- so Admin e Gerente Geral
+ *  decidem (confirmar/recusar), mesmo escopo de acesso da aprovacao de cadastro de Licenciado
+ *  (Roles::SUPERVISOR_ASSIGNMENT). Nao e' uma decisao regional/de comissao como Pedidos -- e'
+ *  confirmacao de instalacao do produto, decisao nacional. */
 class WarrantyController
 {
     public function index(): void
@@ -88,8 +89,9 @@ class WarrantyController
         exit;
     }
 
-    /** Termo de Garantia em PDF -- so pode ser gerado depois de aprovada (prova formal pro
-     *  comprador). Mesmo cliente tambem consegue baixar, ver ClientPortalController::downloadWarrantyTerm(). */
+    /** Comprovante de Pós-venda de Instalação em PDF -- so pode ser gerado depois de confirmada
+     *  (prova formal pro comprador). Mesmo cliente tambem consegue baixar, ver
+     *  ClientPortalController::downloadWarrantyTerm(). */
     public function downloadTerm(string $id): void
     {
         $warranty = $this->authorizeWarranty((int) $id);

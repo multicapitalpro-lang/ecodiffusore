@@ -8,7 +8,7 @@ $bloqueado = isset($_GET['bloqueado']);
 $statusLabels = ['pendente' => 'Aguardando pagamento', 'ativa' => 'Ativa', 'expirada' => 'Expirada', 'cancelada' => 'Cancelada'];
 
 $features = [
-    '📊 Relatórios completos' => 'Vendas por vendedor, garantias, fiscal, financeiro — tudo que sua rede vende, num só lugar.',
+    '📊 Relatórios completos' => 'Vendas por vendedor, pós-venda de instalação, fiscal, financeiro — tudo que sua rede vende, num só lugar.',
     '💰 Financeiro completo' => 'Caixas e Bancos, Contas a Pagar e a Receber, Controle Fiscal e Antecipações — controle total do dinheiro da sua operação.',
     '👥 Toda a sua equipe' => 'Seu Gestor e seus Vendedores ganham acesso às mesmas ferramentas — a assinatura é sua, mas libera pra rede toda.',
     '✅ Aceite digital de comissão' => 'Gestor e Vendedor recebem a proposta de comissão direto no WhatsApp e confirmam com um clique — tudo registrado no sistema.',

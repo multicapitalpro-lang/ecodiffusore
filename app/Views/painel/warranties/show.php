@@ -2,13 +2,13 @@
 use App\Core\Csrf;
 use App\Core\View;
 use App\Models\WarrantyRequest;
-$statusLabels = ['aberta' => 'Aberta', 'em_analise' => 'Em análise', 'aprovada' => 'Aprovada', 'rejeitada' => 'Rejeitada', 'concluida' => 'Concluída'];
+$statusLabels = ['aberta' => 'Aguardando análise', 'em_analise' => 'Em análise', 'aprovada' => 'Instalação confirmada', 'rejeitada' => 'Pendência a corrigir', 'concluida' => 'Concluída'];
 $statusBadge = ['aberta' => 'novo', 'em_analise' => 'contatado', 'aprovada' => 'active', 'rejeitada' => 'inactive', 'concluida' => 'active'];
 $sucesso = isset($_GET['sucesso']);
 ?>
 <div class="page-header">
-    <h1>Garantia — Pedido #<?= (int) $warranty['order_id'] ?></h1>
-    <a href="/painel/garantias" class="btn btn-outline">← Garantias</a>
+    <h1>Pós-venda de Instalação — Pedido #<?= (int) $warranty['order_id'] ?></h1>
+    <a href="/painel/garantias" class="btn btn-outline">← Pós-venda de Instalação</a>
 </div>
 
 <?php if ($sucesso): ?>
@@ -17,7 +17,7 @@ $sucesso = isset($_GET['sucesso']);
 
 <div class="order-summary">
     <p><strong>Cliente:</strong> <?= View::e($warranty['client_name']) ?></p>
-    <p><strong>Aberta em:</strong> <?= View::e(date('d/m/Y', strtotime($warranty['created_at']))) ?></p>
+    <p><strong>Enviada em:</strong> <?= View::e(date('d/m/Y', strtotime($warranty['created_at']))) ?></p>
     <p><strong>Status:</strong> <span class="status-badge status-<?= $statusBadge[$warranty['status']] ?? 'novo' ?>"><?= $statusLabels[$warranty['status']] ?? $warranty['status'] ?></span></p>
     <p><a href="/painel/pedidos/<?= (int) $warranty['order_id'] ?>" class="link-small">Ver pedido</a></p>
     <?php if ($attachments): ?>
@@ -34,7 +34,7 @@ $sucesso = isset($_GET['sucesso']);
         <p class="hint-text">Por <?= View::e($warranty['resolved_by_name'] ?? '—') ?> em <?= $warranty['resolved_at'] ? View::e(date('d/m/Y H:i', strtotime($warranty['resolved_at']))) : '—' ?></p>
     <?php endif; ?>
     <?php if (in_array($warranty['status'], ['aprovada', 'concluida'], true)): ?>
-        <p><a href="/painel/garantias/<?= (int) $warranty['id'] ?>/termo" target="_blank" rel="noopener" class="btn btn-outline">📄 Baixar Termo de Garantia</a></p>
+        <p><a href="/painel/garantias/<?= (int) $warranty['id'] ?>/termo" target="_blank" rel="noopener" class="btn btn-outline">📄 Baixar Comprovante de Instalação</a></p>
     <?php endif; ?>
 </div>
 
@@ -44,8 +44,8 @@ $sucesso = isset($_GET['sucesso']);
     <label for="status">Novo status</label>
     <select id="status" name="status">
         <option value="em_analise" <?= $warranty['status'] === 'em_analise' ? 'selected' : '' ?>>Em análise</option>
-        <option value="aprovada" <?= $warranty['status'] === 'aprovada' ? 'selected' : '' ?>>Aprovada</option>
-        <option value="rejeitada" <?= $warranty['status'] === 'rejeitada' ? 'selected' : '' ?>>Rejeitada</option>
+        <option value="aprovada" <?= $warranty['status'] === 'aprovada' ? 'selected' : '' ?>>Instalação confirmada</option>
+        <option value="rejeitada" <?= $warranty['status'] === 'rejeitada' ? 'selected' : '' ?>>Pendência a corrigir</option>
         <option value="concluida" <?= $warranty['status'] === 'concluida' ? 'selected' : '' ?>>Concluída</option>
     </select>
 

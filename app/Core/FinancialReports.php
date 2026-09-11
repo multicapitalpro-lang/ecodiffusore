@@ -13,7 +13,7 @@ class FinancialReports
         return [
             'Vendas e CRM' => [
                 'vendas_por_vendedor' => 'Relatório de Vendas por Vendedor',
-                'garantias' => 'Relatório de Garantias',
+                'garantias' => 'Relatório de Pós-venda de Instalação',
             ],
             'Caixas e Bancos' => [
                 'balancete' => 'Balancete (entradas x saídas)',
@@ -147,7 +147,7 @@ class FinancialReports
             return $createdTs >= $fromTs && $createdTs <= $toTs;
         });
 
-        $labels = ['aberta' => 'Aberta', 'em_analise' => 'Em análise', 'aprovada' => 'Aprovada', 'rejeitada' => 'Rejeitada', 'concluida' => 'Concluída'];
+        $labels = ['aberta' => 'Aguardando análise', 'em_analise' => 'Em análise', 'aprovada' => 'Instalação confirmada', 'rejeitada' => 'Pendência a corrigir', 'concluida' => 'Concluída'];
         $rows = array_map(fn ($w) => [
             '#' . $w['order_id'],
             $w['client_name'],
@@ -164,7 +164,7 @@ class FinancialReports
 
         return [
             'kind' => 'simple',
-            'columns' => ['Pedido', 'Cliente', 'Vendedor', 'Status', 'Aberta em'],
+            'columns' => ['Pedido', 'Cliente', 'Vendedor', 'Status', 'Enviada em'],
             'rows' => $rows,
             'totals' => array_map(fn ($v) => (string) $v, $countByStatus),
         ];

@@ -6,7 +6,8 @@ use App\Core\Database;
 
 class WarrantyRequest
 {
-    /** Tipos de documento exigidos pra abrir uma garantia (Fase 27c) -- 'foto' pode repetir ate 3x. */
+    /** Tipos de documento exigidos pra confirmar o Pós-venda de Instalação (Fase 27c/40) --
+     *  'foto' pode repetir ate 3x. */
     public const ATTACHMENT_TYPES = ['cnh', 'documento_veiculo', 'foto', 'telemetria'];
 
     public const ATTACHMENT_LABELS = [
@@ -17,8 +18,9 @@ class WarrantyRequest
     ];
 
     /** $driverName/$driverDocument: motorista do veiculo no momento da compra -- pedido do
-     *  usuario, precisa constar no Termo de Garantia final (ver term_pdf.php). Pode ser o proprio
-     *  cliente (PJ com motorista terceiro tambem e' comum nesse negocio). */
+     *  usuario, precisa constar no Comprovante de Pós-venda de Instalação final (ver
+     *  term_pdf.php). Pode ser o proprio cliente (PJ com motorista terceiro tambem e' comum
+     *  nesse negocio). */
     public static function create(int $orderId, int $clientId, string $driverName = '', string $driverDocument = ''): int
     {
         $stmt = Database::connection()->prepare(
@@ -75,7 +77,7 @@ class WarrantyRequest
         return $row ?: null;
     }
 
-    /** Todas as garantias de um cliente (portal do cliente). */
+    /** Todas as confirmações de Pós-venda de Instalação de um cliente (portal do cliente). */
     public static function forClient(int $clientId): array
     {
         $stmt = Database::connection()->prepare(
@@ -94,9 +96,10 @@ class WarrantyRequest
         return $stmt->fetchAll();
     }
 
-    /** Garantia aprovada/concluida (unica com Termo de Garantia disponivel pra download, ver
-     *  WarrantyController::downloadTerm()) de cada pedido em $orderIds -- usado pela tela da
-     *  fabrica pra saber, sem N+1, quais pedidos ja tem termo pra oferecer o link de download. */
+    /** Pós-venda de Instalação confirmado/concluido (unico com Comprovante disponivel pra
+     *  download, ver WarrantyController::downloadTerm()) de cada pedido em $orderIds -- usado
+     *  pela tela da fabrica pra saber, sem N+1, quais pedidos ja tem comprovante pra oferecer o
+     *  link de download. */
     public static function approvedTermByOrderIds(array $orderIds): array
     {
         if (!$orderIds) {
@@ -118,8 +121,9 @@ class WarrantyRequest
         return $result;
     }
 
-    /** Fila de garantias no escopo de staff -- $sellerIds: null = sem escopo (Admin), [] = nada no
-     *  escopo, senao filtra pelo vendedor do pedido. Mesmo espirito de Order/Client::all(). */
+    /** Fila de Pós-venda de Instalação no escopo de staff -- $sellerIds: null = sem escopo
+     *  (Admin), [] = nada no escopo, senao filtra pelo vendedor do pedido. Mesmo espirito de
+     *  Order/Client::all(). */
     public static function forScope(?array $sellerIds, ?string $status = null): array
     {
         $sql = 'SELECT w.*, o.order_date, o.seller_id, c.name AS client_name, u.name AS seller_name
@@ -154,8 +158,9 @@ class WarrantyRequest
         return $stmt->fetchAll();
     }
 
-    /** Quantidade de garantias aguardando analise (aberta/em_analise) no escopo -- usado pro
-     *  badge de pendencia no menu (Admin/Gerente), mesmo espirito de User::pendingApprovalCount(). */
+    /** Quantidade de confirmações de instalação aguardando analise (aberta/em_analise) no escopo
+     *  -- usado pro badge de pendencia no menu (Admin/Gerente), mesmo espirito de
+     *  User::pendingApprovalCount(). */
     public static function countPending(?array $sellerIds): int
     {
         $sql = "SELECT COUNT(*) FROM warranty_requests w JOIN orders o ON o.id = w.order_id

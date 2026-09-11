@@ -183,8 +183,8 @@ class ClientPortalController
         exit;
     }
 
-    /** Termo de Garantia em PDF -- so disponivel depois de aprovada. Mesmo conteudo que
-     *  WarrantyController::downloadTerm() gera pro staff. */
+    /** Comprovante de Pós-venda de Instalação em PDF -- so disponivel depois de confirmada. Mesmo
+     *  conteudo que WarrantyController::downloadTerm() gera pro staff. */
     public function downloadWarrantyTerm(string $id): void
     {
         Auth::requireRole(['cliente']);

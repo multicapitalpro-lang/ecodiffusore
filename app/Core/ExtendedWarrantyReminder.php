@@ -5,11 +5,13 @@ namespace App\Core;
 use App\Models\Order;
 
 /**
- * Cobranca urgente pro cliente que JA PAGOU mas ainda NAO solicitou a Garantia Estendida (90
- * dias) -- ele tem so 15 dias apos a confirmacao do pagamento pra pedir. Pedido explicito do
- * usuario: a solicitacao em si (WarrantyRequest, ja existente em /painel/minhas-garantias) NAO
- * muda -- isso aqui e' so o lembrete escalando em urgencia nos dias 1/5/10/15 (WhatsApp + e-mail).
- * Lazy-check (sem cron nesse plano Hostinger), mesmo padrao de QuoteLeadReminder.
+ * Cobranca urgente pro cliente que JA PAGOU mas ainda NAO confirmou o Pós-venda de Instalação
+ * obrigatório -- ele tem so 15 dias apos a confirmacao do pagamento pra confirmar. Pedido
+ * explicito do usuario (Fase 40): esse processo deixou de ser uma garantia opcional do
+ * comprador e passou a ser uma confirmação de instalação obrigatória pro produto funcionar --
+ * a solicitacao em si (WarrantyRequest, ja existente em /painel/minhas-garantias) NAO muda de
+ * mecanica -- isso aqui e' so o lembrete escalando em urgencia nos dias 1/5/10/15 (WhatsApp +
+ * e-mail). Lazy-check (sem cron nesse plano Hostinger), mesmo padrao de QuoteLeadReminder.
  */
 class ExtendedWarrantyReminder
 {

@@ -1,10 +1,10 @@
 <?php
 use App\Core\View;
-$statusLabels = ['aberta' => 'Aberta', 'em_analise' => 'Em análise', 'aprovada' => 'Aprovada', 'rejeitada' => 'Rejeitada', 'concluida' => 'Concluída'];
+$statusLabels = ['aberta' => 'Aguardando análise', 'em_analise' => 'Em análise', 'aprovada' => 'Instalação confirmada', 'rejeitada' => 'Pendência a corrigir', 'concluida' => 'Concluída'];
 $statusBadge = ['aberta' => 'novo', 'em_analise' => 'contatado', 'aprovada' => 'active', 'rejeitada' => 'inactive', 'concluida' => 'active'];
 ?>
 <div class="page-header">
-    <h1>Garantias</h1>
+    <h1>Pós-venda de Instalação</h1>
 </div>
 
 <form method="get" class="filter-bar">
@@ -31,7 +31,7 @@ $statusBadge = ['aberta' => 'novo', 'em_analise' => 'contatado', 'aprovada' => '
                 </tr>
             <?php endforeach; ?>
             <?php if (!$warranties): ?>
-                <tr><td colspan="6">Nenhuma garantia encontrada.</td></tr>
+                <tr><td colspan="6">Nenhuma confirmação de instalação encontrada.</td></tr>
             <?php endif; ?>
         </tbody>
     </table>

@@ -82,7 +82,7 @@ $methodLabels = ['PIX' => 'Pix', 'BOLETO' => 'Boleto', 'CREDIT_CARD' => 'Cartão
 <?php endforeach; ?>
 
 <?php if ($approvedWarranty): ?>
-    <a href="/painel/minhas-garantias/<?= (int) $approvedWarranty['id'] ?>/termo" target="_blank" rel="noopener" class="btn btn-outline" style="margin-top:16px">📄 Baixar Termo de Garantia</a>
+    <a href="/painel/minhas-garantias/<?= (int) $approvedWarranty['id'] ?>/termo" target="_blank" rel="noopener" class="btn btn-outline" style="margin-top:16px">📄 Baixar Comprovante de Instalação</a>
 <?php elseif ($order['status'] === 'verificado'): ?>
-    <a href="/painel/minhas-garantias/nova?order_id=<?= (int) $order['id'] ?>" class="btn btn-outline" style="margin-top:16px">Abrir solicitação de garantia</a>
+    <a href="/painel/minhas-garantias/nova?order_id=<?= (int) $order['id'] ?>" class="btn btn-outline" style="margin-top:16px">⚠️ Confirmar instalação do produto (obrigatório)</a>
 <?php endif; ?>

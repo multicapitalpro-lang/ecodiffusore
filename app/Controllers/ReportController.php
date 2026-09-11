@@ -28,7 +28,7 @@ class ReportController
     private const NATIONAL_ONLY_ROLES = ['admin', 'gerente'];
     private const NATIONAL_ONLY_GROUP = 'Fiscal e Antecipações';
 
-    /** "Vendas e CRM" (Relatorio de Vendas por Vendedor / Garantias) e' o unico grupo que TODO
+    /** "Vendas e CRM" (Relatorio de Vendas por Vendedor / Pós-venda de Instalação) e' o unico grupo que TODO
      *  STAFF ve, inclusive Supervisor e Vendedor -- que antes nao tinham NENHUM relatorio (so
      *  Roles::MANAGEMENT + gerente/Fiscal tinham acesso a Relatorios). Financeiro (Caixas/Contas/
      *  Comissoes/Fiscal) continua exatamente como sempre foi, sem mudanca de acesso. */

@@ -41,15 +41,15 @@ class WhatsAppEventTemplate
         'vendedor_inativo' => 'Alerta de vendedor inativo',
         'licenciado_pendente_aprovacao' => 'Novo Licenciado pendente de aprovação',
         'follow_up_lembrete' => 'Lembrete de follow-up',
-        'garantia_solicitada' => 'Solicitação de garantia aberta',
+        'garantia_solicitada' => 'Confirmação de instalação enviada',
         'acesso_portal_criado' => 'Acesso ao portal criado (cliente)',
         'pedido_atualizacao_entrega' => 'Atualização de entrega (cliente)',
         'cobranca_gerada' => 'Cobrança gerada (cliente)',
         'orcamento_lembrete_lead' => 'Lembrete de orçamento parado (lead/cliente)',
-        'garantia_estendida_lembrete_dia1' => 'Garantia Estendida — lembrete dia 1 (cliente)',
-        'garantia_estendida_lembrete_dia5' => 'Garantia Estendida — lembrete dia 5 (cliente)',
-        'garantia_estendida_lembrete_dia10' => 'Garantia Estendida — lembrete dia 10 (cliente)',
-        'garantia_estendida_lembrete_dia15' => 'Garantia Estendida — último dia (cliente)',
+        'garantia_estendida_lembrete_dia1' => 'Pós-venda de Instalação — lembrete dia 1 (cliente)',
+        'garantia_estendida_lembrete_dia5' => 'Pós-venda de Instalação — lembrete dia 5 (cliente)',
+        'garantia_estendida_lembrete_dia10' => 'Pós-venda de Instalação — lembrete dia 10 (cliente)',
+        'garantia_estendida_lembrete_dia15' => 'Pós-venda de Instalação — último dia (cliente)',
     ];
 
     /** Quais placeholders {chave} cada evento aceita -- so pra exibir dica na tela, nao valida nada. */

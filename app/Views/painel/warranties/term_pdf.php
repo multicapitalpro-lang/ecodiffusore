@@ -16,7 +16,7 @@ $vehicleLine = trim(implode(' ', array_filter([
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Termo de Garantia</title>
+<title>Comprovante de Pós-venda de Instalação</title>
 <style>
     @page { margin: 100px 42px 70px 42px; }
     body { font-family: 'DejaVu Sans', sans-serif; font-size: 10.5px; color: #2b2b2b; line-height: 1.45; }
@@ -73,9 +73,9 @@ $vehicleLine = trim(implode(' ', array_filter([
 <header>
     <div class="brand-bar"></div>
     <div class="letterhead-inner">
-        <div class="letterhead-doc"><strong>Termo #<?= (int) $warranty['id'] ?></strong>Pedido #<?= (int) $warranty['order_id'] ?></div>
+        <div class="letterhead-doc"><strong>Comprovante #<?= (int) $warranty['id'] ?></strong>Pedido #<?= (int) $warranty['order_id'] ?></div>
         <div class="letterhead-brand"><?= $e($company['razao_social'] ?? 'Ecodiffusore Brasil') ?></div>
-        <div class="letterhead-tag">Garantia Estendida do Produto</div>
+        <div class="letterhead-tag">Pós-venda de Instalação Obrigatório</div>
     </div>
 </header>
 
@@ -85,7 +85,7 @@ $vehicleLine = trim(implode(' ', array_filter([
     </div>
 </footer>
 
-<h1 class="doc-title">Termo de Garantia</h1>
+<h1 class="doc-title">Comprovante de Pós-venda de Instalação</h1>
 <p class="doc-subtitle">Emitido em <?= date('d/m/Y') ?> · Válido em todo o território nacional</p>
 
 <div class="section">
@@ -123,29 +123,23 @@ $vehicleLine = trim(implode(' ', array_filter([
         <tr><td class="label">Produto</td><td class="value"><?= $e($produtos) ?></td></tr>
         <tr><td class="label">Veículo</td><td class="value"><?= $e($vehicleLine ?: null) ?></td></tr>
         <tr><td class="label">Placa</td><td class="value"><?= $e($vehicle['plate'] ?? null) ?></td></tr>
-        <tr><td class="label">Garantia aprovada em</td><td class="value"><?= $warranty['resolved_at'] ? $e(date('d/m/Y', strtotime($warranty['resolved_at']))) : '—' ?></td></tr>
+        <tr><td class="label">Instalação confirmada em</td><td class="value"><?= $warranty['resolved_at'] ? $e(date('d/m/Y', strtotime($warranty['resolved_at']))) : '—' ?></td></tr>
     </table>
 </div>
 
 <div class="section terms-block">
-    <p class="section-title">Termo de garantia</p>
+    <p class="section-title">Confirmação de pós-venda de instalação</p>
     <p class="terms-text">
-        A <strong><?= $e($company['razao_social'] ?? 'Ecodiffusore Brasil') ?></strong> certifica que a solicitação de
-        garantia referente ao pedido acima foi analisada e <strong>aprovada</strong>, conforme os documentos e
-        informações apresentados pelo comprador. Este termo comprova a cobertura de Garantia Estendida do produto
-        adquirido, nos termos e condições estabelecidos a seguir.
-    </p>
-    <p class="terms-highlight">
-        <strong>Prazo de garantia:</strong> 90 (noventa) dias, contados da confirmação do pagamento, para casos de
-        arrependimento de compra, caso comprovadamente não haja economia do produto no veículo.
+        A <strong><?= $e($company['razao_social'] ?? 'Ecodiffusore Brasil') ?></strong> certifica que o processo
+        obrigatório de pós-venda de instalação referente ao pedido acima foi analisado e <strong>confirmado</strong>,
+        conforme os documentos e informações apresentados pelo comprador (dados do motorista, documento do veículo e
+        registro fotográfico/telemétrico da instalação). Este comprovante atesta que o equipamento foi instalado
+        seguindo o processo exigido pela fabricante para o correto funcionamento do produto.
     </p>
     <p class="terms-text">
-        Para efeitos de eventual pedido de revisão da economia, o motorista ou transportador deverá obrigatoriamente
-        ter anexado e comprovado na hora da compra o relatório de consumo e média ou telemetria dos últimos 180
-        (cento e oitenta) dias antes da data da compra, e também comprovar que, a partir da instalação do
-        equipamento, o veículo manteve os mesmos trajetos, peso de carga e motorista. O cliente somente poderá ser
-        reembolsado caso, na aferição, seja comprovado que a economia foi impreterivelmente menor do que 5% (cinco
-        por cento) na média mensal da frota.
+        O acompanhamento de consumo/telemetria informado nesta etapa é usado pela equipe técnica para validar que a
+        instalação foi realizada corretamente e para dar suporte ao comprador em caso de dúvida técnica sobre o
+        funcionamento do equipamento.
     </p>
     <?php if (!empty($warranty['resolution_note'])): ?>
     <p class="terms-text"><strong>Observações da análise:</strong> <?= nl2br($e($warranty['resolution_note'])) ?></p>
@@ -166,7 +160,7 @@ $vehicleLine = trim(implode(' ', array_filter([
         </div>
     </div>
     <div style="text-align:center;">
-        <span class="stamp">✔ Garantia aprovada</span>
+        <span class="stamp">✔ Instalação confirmada</span>
     </div>
 </div>
 

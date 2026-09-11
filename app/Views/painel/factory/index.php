@@ -47,7 +47,7 @@ $erro = isset($_GET['erro']);
                 <th>Código</th>
                 <th>Previsão</th>
                 <th>Nota Fiscal</th>
-                <th>Termo de Garantia</th>
+                <th>Comprovante de Instalação</th>
                 <th></th>
             </tr>
         </thead>

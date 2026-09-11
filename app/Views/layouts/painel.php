@@ -70,7 +70,7 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/desempen
 
             <?php if ($role === 'cliente'): ?>
                 <a href="/painel/meus-dados" class="<?= $isActive('/painel/meus-dados') ? 'is-active' : '' ?>"><?= $icon('gear') ?> Meus Dados</a>
-                <a href="/painel/minhas-garantias" class="<?= $isActive('/painel/minhas-garantias') ? 'is-active' : '' ?>"><?= $icon('box') ?> Minhas Garantias</a>
+                <a href="/painel/minhas-garantias" class="<?= $isActive('/painel/minhas-garantias') ? 'is-active' : '' ?>"><?= $icon('box') ?> Pós-venda de Instalação</a>
                 <a href="/painel/tutoriais" class="<?= $isActive('/painel/tutoriais') ? 'is-active' : '' ?>"><?= $icon('megaphone') ?> Vídeos Tutoriais</a>
             <?php endif; ?>
 
@@ -119,7 +119,7 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/desempen
                         <?php endif; ?>
                         <?php if (in_array($role, ['admin', 'gerente'], true)): ?>
                             <a href="/painel/garantias" class="<?= $isActive('/painel/garantias') ? 'is-active' : '' ?>">
-                                Garantias
+                                Pós-venda de Instalação
                                 <?php if ($pendingWarranties > 0): ?><span class="nav-badge"><?= (int) $pendingWarranties ?></span><?php endif; ?>
                             </a>
                         <?php endif; ?>

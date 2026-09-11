@@ -4,8 +4,9 @@ use App\Core\View;
 $erro = $_GET['erro'] ?? null;
 ?>
 <div class="page-header">
-    <h1>Solicitar Garantia — Pedido #<?= (int) $order['id'] ?></h1>
+    <h1>Confirmação de Instalação — Pedido #<?= (int) $order['id'] ?></h1>
 </div>
+<p class="hint-text" style="margin-top:-6px;">Etapa obrigatória: preencha os dados abaixo pra confirmar que a instalação do seu Ecodiffusore seguiu o processo correto — sem isso o produto não funciona como esperado.</p>
 
 <?php if ($erro === '1'): ?>
     <p class="form-msg form-msg-error">Descreva o problema antes de enviar.</p>
@@ -22,7 +23,7 @@ $erro = $_GET['erro'] ?? null;
     <input type="hidden" name="order_id" value="<?= (int) $order['id'] ?>">
 
     <h3 class="section-title" style="margin-top:0">Dados do motorista</h3>
-    <p class="hint-text" style="margin-top:0">Necessários pro Termo de Garantia — pode ser você mesmo ou o motorista responsável pelo veículo.</p>
+    <p class="hint-text" style="margin-top:0">Necessários pro Comprovante de Pós-venda de Instalação — pode ser você mesmo ou o motorista responsável pelo veículo.</p>
     <div class="form-grid-2">
         <div>
             <label for="driver_name">Nome completo do motorista</label>
@@ -65,5 +66,5 @@ $erro = $_GET['erro'] ?? null;
         </div>
     </div>
 
-    <button type="submit" class="btn btn-primary" style="margin-top:20px">Enviar solicitação</button>
+    <button type="submit" class="btn btn-primary" style="margin-top:20px">Confirmar Instalação</button>
 </form>
