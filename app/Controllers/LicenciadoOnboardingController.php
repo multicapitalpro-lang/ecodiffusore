@@ -195,6 +195,28 @@ class LicenciadoOnboardingController
         // de assinatura -- sem nenhum, falha com 422. email e' a unica opcao confirmada como
         // gratuita nessa conta (sms/whatsapp tambem deram 403).
         $client->addEmailAuthRequirement($envelope['id'], $document['id'], $signer['id']);
+
+        // Segundo signatario -- representante legal da Diferencial, com assinatura automatica
+        // (ja assinou o Termo de Assinatura Automatica, 2026-09-11). Sem isso, o Roberson tinha que
+        // assinar manualmente cada contrato de Licenciado novo. Falha isolada aqui (config ausente,
+        // termo nao mais valido etc) nao deve travar o Licenciado -- ele so perde a auto-assinatura
+        // e o contrato fica aguardando o Roberson assinar manualmente, como sempre foi.
+        $licencianteCfg = Config::get('clicksign', [])['licenciante_signer'] ?? [];
+        if (!empty($licencianteCfg['email']) && !empty($licencianteCfg['documentation']) && !empty($licencianteCfg['birthday'])) {
+            try {
+                $licencianteSigner = $client->addSigner($envelope['id'], [
+                    'name' => $licencianteCfg['name'],
+                    'email' => $licencianteCfg['email'],
+                    'documentation' => $licencianteCfg['documentation'],
+                    'birthday' => $licencianteCfg['birthday'],
+                ]);
+                $client->addSignRequirement($envelope['id'], $document['id'], $licencianteSigner['id']);
+                $client->addAutoSignatureRequirement($envelope['id'], $document['id'], $licencianteSigner['id']);
+            } catch (\Throwable $e) {
+                error_log('Falha ao adicionar signatario de assinatura automatica (Roberson) no envelope ' . $envelope['id'] . ': ' . $e->getMessage());
+            }
+        }
+
         $client->activateEnvelope($envelope['id']);
 
         // A API do ClickSign nao expoe uma "signing_url" pronta (confirmado contra a API real e a

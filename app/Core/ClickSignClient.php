@@ -105,16 +105,26 @@ class ClickSignClient
 
     public function addSigner(string $envelopeId, array $signer): array
     {
+        $attributes = [
+            'name' => $signer['name'],
+            'email' => $signer['email'],
+            'documentation' => $signer['documentation'],
+            'phone_number' => $signer['phone_number'] ?? null,
+            'has_documentation' => true,
+        ];
+        // birthday e' opcional aqui (o Licenciado normal nao manda) -- mas e' OBRIGATORIO pro
+        // signatario de assinatura automatica: confirmado contra a API real (2026-09-11) que sem
+        // birthday no SIGNER do envelope (mesmo com o Termo ja assinado com esse birthday), o
+        // requirement auth=auto_signature falha com 422 "signatario deve ter um termo assinado" --
+        // a API usa nome+email+documentation+birthday pra casar o signatario com o Termo.
+        if (!empty($signer['birthday'])) {
+            $attributes['birthday'] = $signer['birthday'];
+        }
+
         $result = $this->request('POST', "/api/v3/envelopes/{$envelopeId}/signers", [
             'data' => [
                 'type' => 'signers',
-                'attributes' => [
-                    'name' => $signer['name'],
-                    'email' => $signer['email'],
-                    'documentation' => $signer['documentation'],
-                    'phone_number' => $signer['phone_number'] ?? null,
-                    'has_documentation' => true,
-                ],
+                'attributes' => $attributes,
             ],
         ]);
 
