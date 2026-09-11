@@ -32,6 +32,20 @@ return [
         'api_key' => 'TROQUE_AQUI',
         'webhook_secret' => 'TROQUE_AQUI', // segredo por-webhook gerado no cadastro do webhook no ClickSign (HMAC-SHA256)
         'template_key' => 'TROQUE_AQUI', // chave do Modelo "Contrato Assinatura Diferencial" (Automação > Modelos no ClickSign)
+        // Fase 48: Assinatura Automatica -- e-mail/admin_email usados na chamada unica de
+        // ClickSignClient::createAutoSignatureTerm() (precisam ser os cadastrados em
+        // Configuracoes > API / Configuracoes > Informacoes no ClickSign, senao a API recusa
+        // com "e-mail de administrador nao e valido"). licenciante_signer e' reaproveitado
+        // sempre que um envelope novo precisar adicionar esse signatario com auth automatico
+        // (LicenciadoOnboardingController::createSigningEnvelope()).
+        'auto_signature_api_email' => 'TROQUE_AQUI',
+        'auto_signature_admin_email' => 'TROQUE_AQUI',
+        'licenciante_signer' => [
+            'name' => 'TROQUE_AQUI',
+            'email' => 'TROQUE_AQUI',
+            'documentation' => 'TROQUE_AQUI', // CPF formatado XXX.XXX.XXX-XX
+            'birthday' => 'TROQUE_AQUI', // AAAA-MM-DD
+        ],
     ],
 
     // Checkout Pro do Mercado Pago (Fase 32) -- App\Core\MercadoPagoClient. Assinatura do
