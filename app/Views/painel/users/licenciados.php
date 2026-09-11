@@ -135,7 +135,12 @@ $onboardingLabels = [
                                 <?php endforeach; ?>
                             </select>
                         </td>
-                        <td><a href="/painel/licenciados/<?= (int) $l['id'] ?>/perfil">Ver cadastro</a></td>
+                        <td>
+                            <a href="/painel/licenciados/<?= (int) $l['id'] ?>/perfil">Ver cadastro</a>
+                            <?php if (!in_array($status, ['aguardando_perfil', 'nao_aplicavel'], true)): ?>
+                                <br><a href="#" class="link-small row-resend-signature" data-id="<?= (int) $l['id'] ?>" title="Gera um contrato novo (com a assinatura automática do Roberson) e pede pra ele assinar de novo no próximo login">✍️ Forçar novo contrato</a>
+                            <?php endif; ?>
+                        </td>
                     </tr>
                 <?php endforeach; ?>
                 <?php if (!$licenciados): ?>
@@ -191,6 +196,22 @@ $onboardingLabels = [
             formData.set('csrf_token', csrfToken);
             formData.set('supervisor_id', select.value);
             fetch('/painel/licenciados/' + id + '/supervisor', { method: 'POST', body: formData })
+                .then(function () { window.location.href = '/painel/licenciados?sucesso=1'; })
+                .catch(function () { window.location.href = '/painel/licenciados?erro=1'; });
+        });
+    });
+
+    // Forcar novo contrato: mesmo padrao AJAX acima (sem form aninhado dentro do bulk-form).
+    document.querySelectorAll('.row-resend-signature').forEach(function (link) {
+        link.addEventListener('click', function (ev) {
+            ev.preventDefault();
+            if (!confirm('Gerar um novo contrato (já com a assinatura automática do Roberson) e pedir pra esse licenciado assinar de novo no próximo login?')) {
+                return;
+            }
+            var id = link.getAttribute('data-id');
+            var formData = new FormData();
+            formData.set('csrf_token', csrfToken);
+            fetch('/painel/licenciados/' + id + '/reenviar-assinatura', { method: 'POST', body: formData })
                 .then(function () { window.location.href = '/painel/licenciados?sucesso=1'; })
                 .catch(function () { window.location.href = '/painel/licenciados?erro=1'; });
         });
