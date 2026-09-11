@@ -88,5 +88,20 @@ class Auth
         if ($user['role_slug'] === Roles::SELLER && empty($user['training_completed_at'])) {
             Router::redirect('/painel/treinamento');
         }
+
+        // Gate central do onboarding obrigatorio do Licenciado (Fase 44) -- ate aqui o gate
+        // (Fase 18) so era checado em AuthController::login() e DashboardController::index(),
+        // ou seja, um Licenciado preso em aguardando_perfil/aguardando_assinatura/
+        // aguardando_aprovacao/assinatura_recusada/kyc_recusado conseguia navegar direto pra
+        // qualquer URL de funcao (Pedidos, Leads etc.) sem nunca assinar o contrato via
+        // ClickSign. Mesma logica de LicenciadoOnboardingController::showProfileForm()/
+        // showWaitingPage() (que usam so' requireLogin(), nunca requireRole() -- por isso ficam
+        // sempre acessiveis mesmo com esse gate aqui).
+        if ($user['role_slug'] === Roles::REGIONAL_OWNER && $user['licenciado_onboarding_status'] === 'aguardando_perfil') {
+            Router::redirect('/painel/licenciados/completar-perfil');
+        }
+        if ($user['role_slug'] === Roles::REGIONAL_OWNER && in_array($user['licenciado_onboarding_status'], ['aguardando_assinatura', 'aguardando_aprovacao', 'assinatura_recusada', 'kyc_recusado'], true)) {
+            Router::redirect('/painel/licenciados/aguardando-assinatura');
+        }
     }
 }
