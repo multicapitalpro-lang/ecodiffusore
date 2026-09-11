@@ -741,12 +741,33 @@ class Notifier
 
     /** Dispara uma mensagem de WhatsApp via Evolution API -- nunca lanca excecao pro chamador
      *  (mesmo espirito do Mailer::send, ver docblock da classe), so loga se falhar. */
+    /** Circuit breaker de escopo por requisicao (Fase 47): se a instancia Evolution estiver
+     *  desconectada/fora do ar, cada chamada trava ate uns 20s (timeout do curl em
+     *  EvolutionApiClient) antes de falhar -- eventos que notificam varios destinatarios em
+     *  sequencia (ex: machineQuoteSolicitada -- Licenciado+Supervisor+Gerente+Admin) podiam somar
+     *  tempo suficiente pra estourar o max_execution_time do PHP e derrubar a requisicao inteira
+     *  com 500, inclusive a operacao de negocio que disparou a notificacao (confirmado ao vivo:
+     *  POST /comprar/orcamento-maquina falhando com 500 por causa disso). Uma falha de CONEXAO
+     *  (curl_exec === false -- timeout/recusada/DNS, ver EvolutionApiClient::request()) liga o
+     *  disjuntor pro resto desta requisicao, pulando as chamadas seguintes na hora em vez de
+     *  tentar de novo contra uma instancia que ja provou estar fora do ar. Erro de API (numero
+     *  invalido etc.) nao liga o disjuntor -- so falha de conexao mesmo. */
+    private static bool $whatsappUnavailable = false;
+
     private static function sendWhatsApp(string $number, string $text): void
     {
+        if (self::$whatsappUnavailable) {
+            error_log('WhatsApp dispatch pulado (circuit breaker aberto nesta requisição) pra ' . $number);
+            return;
+        }
+
         try {
             (new EvolutionApiClient())->sendText($number, $text);
         } catch (\Throwable $e) {
             error_log('WhatsApp dispatch falhou: ' . $e->getMessage());
+            if (str_starts_with($e->getMessage(), 'Erro de conexão com o Evolution API')) {
+                self::$whatsappUnavailable = true;
+            }
         }
     }
 
