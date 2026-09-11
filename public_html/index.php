@@ -128,6 +128,7 @@ $router->get('/painel/licenciados/aprovacoes', [App\Controllers\LicenciadoApprov
 $router->get('/painel/licenciados/{id}/perfil', [App\Controllers\LicenciadoApprovalController::class, 'show']);
 $router->post('/painel/licenciados/{id}/aprovar', [App\Controllers\LicenciadoApprovalController::class, 'approve']);
 $router->post('/painel/licenciados/{id}/reprovar', [App\Controllers\LicenciadoApprovalController::class, 'reject']);
+$router->post('/painel/licenciados/{id}/reenviar-assinatura', [App\Controllers\LicenciadoApprovalController::class, 'resendSignature']);
 
 $router->get('/painel/leads', [App\Controllers\LeadController::class, 'index']);
 $router->post('/painel/leads/{id}/status', [App\Controllers\LeadController::class, 'updateStatus']);

@@ -72,6 +72,40 @@ class LicenciadoApprovalController
         Router::redirect('/painel/licenciados/aprovacoes?sucesso=1');
     }
 
+    /** Pra quando o contrato assinado nao aparece (falha ao baixar do ClickSign, envelope
+     *  recusado/expirado, ou qualquer motivo que deixe o Admin/Gerente sem provar a assinatura) --
+     *  gera um envelope NOVO no ClickSign reaproveitando os dados de perfil ja preenchidos (nao
+     *  precisa refazer o formulario) e volta o Licenciado pra 'aguardando_assinatura', que ja cai
+     *  automaticamente na tela de assinatura no proximo login dele (gate central em
+     *  Auth::requireRole(), Fase 44) -- satisfaz as duas opcoes pedidas ("enviar pra ele assinar
+     *  de novo" + "quando ele logar pedir assinatura") com a mesma acao. */
+    public function resendSignature(string $id): void
+    {
+        Auth::requireRole(Roles::SUPERVISOR_ASSIGNMENT);
+        $user = Auth::user();
+        $id = (int) $id;
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            Router::redirect('/painel/licenciados/aprovacoes?erro=1');
+        }
+
+        $target = User::find($id);
+        if (!$target || $target['role_slug'] !== 'licenciado') {
+            Router::redirect('/painel/licenciados/aprovacoes?erro=1');
+        }
+
+        try {
+            (new LicenciadoOnboardingController())->createSigningEnvelope($id);
+        } catch (\Throwable $e) {
+            Router::redirect('/painel/licenciados/aprovacoes?erro=3');
+        }
+
+        User::setOnboardingStatus($id, 'aguardando_assinatura');
+        AuditLog::record((int) $user['id'], 'licenciado_reenvio_assinatura', 'user', $id, [], []);
+
+        Router::redirect('/painel/licenciados/aprovacoes?sucesso=1');
+    }
+
     public function reject(string $id): void
     {
         Auth::requireRole(Roles::SUPERVISOR_ASSIGNMENT);

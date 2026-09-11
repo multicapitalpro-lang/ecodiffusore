@@ -13,6 +13,8 @@ $erro = $_GET['erro'] ?? null;
     <p class="form-msg form-msg-ok">Ação registrada com sucesso.</p>
 <?php elseif ($erro === '2'): ?>
     <p class="form-msg form-msg-erro">Informe o motivo da reprovação.</p>
+<?php elseif ($erro === '3'): ?>
+    <p class="form-msg form-msg-erro">Não foi possível gerar um novo envelope no ClickSign agora. Tente de novo em alguns minutos.</p>
 <?php elseif ($erro): ?>
     <p class="form-msg form-msg-erro">Não foi possível concluir a ação.</p>
 <?php endif; ?>
@@ -69,6 +71,10 @@ $erro = $_GET['erro'] ?? null;
                 <?= Csrf::field() ?>
                 <input type="text" name="reason" placeholder="Motivo da reprovação" style="min-width:260px;">
                 <button type="submit" class="btn btn-danger">Reprovar</button>
+            </form>
+            <form action="/painel/licenciados/<?= (int) $l['id'] ?>/reenviar-assinatura" method="post" class="inline-form" onsubmit="return confirm('Gerar um novo envelope de assinatura pro ClickSign e pedir pra ele assinar de novo no próximo login?');">
+                <?= Csrf::field() ?>
+                <button type="submit" class="btn btn-outline">✍️ Pedir nova assinatura</button>
             </form>
         </div>
     </div>

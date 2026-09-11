@@ -159,7 +159,10 @@ class LicenciadoOnboardingController
         Router::redirect('/painel/licenciados/aguardando-assinatura');
     }
 
-    private function createSigningEnvelope(int $userId): void
+    /** Publico de proposito -- reaproveitado por LicenciadoApprovalController::resendSignature()
+     *  pra gerar um envelope NOVO sem o Licenciado precisar refazer o formulario de perfil (os
+     *  dados ja salvos em User::completeOnboardingProfile() bastam). */
+    public function createSigningEnvelope(int $userId): void
     {
         $user = User::find($userId);
         $client = new ClickSignClient();
