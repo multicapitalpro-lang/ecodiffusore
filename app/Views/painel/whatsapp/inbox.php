@@ -150,10 +150,22 @@ $waTime = function (?string $dt) {
             var input = form.querySelector('[name=text]');
             var text = input.value.trim();
             if (!text) return;
-            input.value = '';
+            // FormData PRECISA ler o campo antes de limpar -- limpar antes fazia o form serializar
+            // texto vazio, entao nada era mandado pro servidor (nem pro WhatsApp) mesmo a caixa
+            // esvaziando na hora, dando a falsa impressao de que a mensagem foi enviada.
             var data = new FormData(form);
+            input.value = '';
             fetch(form.action, { method: 'POST', body: data, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-                .then(function () { loadChat(form.dataset.chatId, false); });
+                .then(function (r) { return r.json(); })
+                .then(function (result) {
+                    if (result && result.ok === false) {
+                        input.value = text;
+                        alert(result.error || 'Falha ao enviar. Confira se o WhatsApp continua conectado.');
+                        return;
+                    }
+                    loadChat(form.dataset.chatId, false);
+                })
+                .catch(function () { loadChat(form.dataset.chatId, false); });
         });
 
         var backLink = panel.querySelector('[data-wa-back]');
