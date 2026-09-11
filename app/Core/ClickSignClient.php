@@ -201,6 +201,41 @@ class ClickSignClient
     }
 
     /**
+     * Cria (e dispara pro signatario revisar/confirmar) o Termo de Assinatura Automatica --
+     * pre-requisito de uma unica vez pra um signatario RECORRENTE do nosso lado (ex: o
+     * representante legal da Diferencial) poder ter a assinatura aplicada automaticamente em
+     * todo envelope futuro, sem interacao manual. Endpoint fora do namespace /envelopes (nao e'
+     * por documento/envelope, e' por par signatario+operador). So' precisa ser chamado 1x por
+     * signatario -- chamar de novo com os mesmos dados devolve erro (codigo 100, "ja existe um
+     * termo... pra este signatario e operador"). $signer precisa de name/email/documentation
+     * (CPF)/birthday (AAAA-MM-DD).
+     */
+    public function createAutoSignatureTerm(array $signer, string $apiEmail, string $adminEmail): array
+    {
+        $result = $this->request('POST', '/api/v3/auto_signature/terms', [
+            'data' => [
+                'type' => 'auto_signature_terms',
+                'attributes' => [
+                    'signer' => [
+                        'name' => $signer['name'],
+                        'email' => $signer['email'],
+                        'documentation' => $signer['documentation'],
+                        'birthday' => $signer['birthday'],
+                    ],
+                    'api_email' => $apiEmail,
+                    'admin_email' => $adminEmail,
+                ],
+            ],
+        ]);
+
+        if (empty($result['data']['id'])) {
+            throw new \RuntimeException('Falha ao criar termo de assinatura automática no ClickSign: ' . json_encode($result));
+        }
+
+        return $result['data'];
+    }
+
+    /**
      * Confirmado contra a API real (2026-09-05): nao existe um endpoint "/download" separado
      * (da 404) -- a URL assinada (S3, expira em ~5min) vem dentro do proprio recurso do
      * documento, em data.links.files.signed (so aparece depois que o envelope fecha).
