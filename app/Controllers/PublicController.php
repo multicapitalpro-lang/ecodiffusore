@@ -357,6 +357,7 @@ class PublicController
         $request = MachineQuoteRequest::find($requestId);
         if ($request) {
             Notifier::machineQuoteSolicitada($request);
+            Notifier::machineQuoteRecebidaCliente($request);
         }
 
         $_SESSION['machine_quote_result'] = ['name' => $name, 'machine_type' => $machineType];

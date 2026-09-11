@@ -160,14 +160,14 @@ use App\Core\View;
                 <label for="wizard-machine-type">Tipo de máquina</label>
                 <select id="wizard-machine-type" name="machine_type">
                     <option value="">Selecione...</option>
-                    <option value="trator_agricola">Trator agrícola</option>
-                    <option value="trator_esteira">Trator de esteira</option>
-                    <option value="colheitadeira">Colheitadeira</option>
-                    <option value="escavadeira">Escavadeira</option>
-                    <option value="retroescavadeira">Retroescavadeira</option>
-                    <option value="pa_carregadeira">Pá carregadeira</option>
-                    <option value="motoniveladora">Motoniveladora</option>
-                    <option value="gerador">Gerador a diesel</option>
+                    <option value="Trator agrícola">Trator agrícola</option>
+                    <option value="Trator de esteira">Trator de esteira</option>
+                    <option value="Colheitadeira">Colheitadeira</option>
+                    <option value="Escavadeira">Escavadeira</option>
+                    <option value="Retroescavadeira">Retroescavadeira</option>
+                    <option value="Pá carregadeira">Pá carregadeira</option>
+                    <option value="Motoniveladora">Motoniveladora</option>
+                    <option value="Gerador a diesel">Gerador a diesel</option>
                     <option value="outro">Outro</option>
                 </select>
                 <div id="wizard-machine-type-custom-wrap" style="display:none;">

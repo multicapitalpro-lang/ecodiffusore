@@ -70,22 +70,73 @@ class Notifier
     /** @param array $request precisa de id/machine_type/client_name/assigned_user_id (retorno de
      *  MachineQuoteRequest::find()). So WhatsApp, sem e-mail -- evento interno estreito, mesmo
      *  espirito de propostaComissaoCriada() (sem template editavel em /painel/configuracoes,
-     *  fora de escopo pra um alerta tao pontual). Avisa so' quem ficou responsavel (achado via
-     *  GeoMatch na hora da submissao) que precisa abrir as fotos, definir o preco manualmente
-     *  (Fase 45 -- ainda sem tabela de preco pra maquina agricola) e retornar pro cliente por
-     *  fora (WhatsApp/telefone, nao automatizado). */
+     *  fora de escopo pra um alerta tao pontual). Pedido explicito do usuario (Fase 47): alcance
+     *  precisa cobrir Licenciado (achado via GeoMatch na hora da submissao) + Supervisor +
+     *  Gerente da REDE especifica desse Licenciado (mesma cadeia usada na comissao nacional, ver
+     *  Commission::createCascadeForOrder()) + TODO Admin (visao nacional, sempre) -- pra
+     *  qualquer um desses poder cotar a peca (ex: mangueira) com a fabrica e definir o preco. */
     public static function machineQuoteSolicitada(array $request): void
     {
         if (empty($request['assigned_user_id'])) {
             return;
         }
 
-        $assignee = User::find((int) $request['assigned_user_id']);
-        if ($assignee && !empty($assignee['whatsapp'])) {
-            $url = self::BASE_URL . '/painel/cotacoes-maquina/' . (int) $request['id'];
-            $text = "🚜 Nova cotação de máquina agrícola aguardando preço -- cliente {$request['client_name']}, tipo: {$request['machine_type']}. Confira as fotos e retorne o valor: {$url}";
-            self::sendWhatsApp($assignee['whatsapp'], $text);
+        $licenciado = User::find((int) $request['assigned_user_id']);
+        if (!$licenciado) {
+            return;
         }
+
+        $url = self::BASE_URL . '/painel/cotacoes-maquina/' . (int) $request['id'];
+        $text = "🚜 Nova cotação de máquina agrícola aguardando preço -- cliente {$request['client_name']}, tipo: {$request['machine_type']}. Confira as fotos e retorne o valor: {$url}";
+
+        $recipients = [];
+        if (!empty($licenciado['whatsapp'])) {
+            $recipients[(int) $licenciado['id']] = $licenciado['whatsapp'];
+        }
+
+        if (!empty($licenciado['supervisor_id'])) {
+            $supervisor = User::find((int) $licenciado['supervisor_id']);
+            if ($supervisor && !empty($supervisor['whatsapp'])) {
+                $recipients[(int) $supervisor['id']] = $supervisor['whatsapp'];
+            }
+            if ($supervisor && !empty($supervisor['manager_id'])) {
+                $gerente = User::find((int) $supervisor['manager_id']);
+                if ($gerente && $gerente['role_slug'] === 'gerente' && !empty($gerente['whatsapp'])) {
+                    $recipients[(int) $gerente['id']] = $gerente['whatsapp'];
+                }
+            }
+        }
+
+        foreach (User::allByRole('admin') as $admin) {
+            if (!empty($admin['whatsapp'])) {
+                $recipients[(int) $admin['id']] = $admin['whatsapp'];
+            }
+        }
+
+        foreach ($recipients as $whatsapp) {
+            self::sendWhatsApp($whatsapp, $text);
+        }
+    }
+
+    /** @param array $request precisa de client_whatsapp/client_name/machine_type. Confirmacao
+     *  imediata pro CLIENTE (nao pro staff) assim que ele envia a cotacao de maquina agricola --
+     *  pedido explicito do usuario: como nao tem preco automatico (cada maquina e' personalizada),
+     *  ele precisa saber na hora que o pedido foi recebido e que o retorno vem em breve, sem
+     *  ficar na duvida se funcionou. So WhatsApp (mesmo motivo de machineQuoteSolicitada() acima
+     *  -- fluxo publico, sem conta/e-mail do cliente nesse ponto). */
+    public static function machineQuoteRecebidaCliente(array $request): void
+    {
+        if (empty($request['client_whatsapp'])) {
+            return;
+        }
+
+        $nome = $request['client_name'] ?? '';
+        $tipo = $request['machine_type'] ?? 'sua máquina';
+        $text = "Olá" . ($nome ? ", {$nome}" : '') . "! ✅ Recebemos sua solicitação de cotação pra *{$tipo}*. "
+            . "Cada máquina é personalizada (peças/mangueira variam), então nossa equipe está analisando os dados com cuidado. "
+            . "Você recebe o retorno em breve, aqui mesmo pelo WhatsApp.";
+
+        self::sendWhatsApp($request['client_whatsapp'], $text);
     }
 
     /** @param array $order precisa de id/seller_id/total_value/client_name */
