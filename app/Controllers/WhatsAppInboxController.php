@@ -55,7 +55,7 @@ class WhatsAppInboxController
         // aberta (a lista de chats so trouxe a ULTIMA mensagem de cada, ver WhatsAppSync::pullChats).
         // Tambem puxa de novo (uma unica vez, self-healing) se houver midia importada antes da
         // Fase 34 sem o key gravado -- ver WhatsAppMessage::hasMediaMissingKey()/create().
-        if (!WhatsAppMessage::forChat((int) $chat['id'], 1) || WhatsAppMessage::hasMediaMissingKey((int) $chat['id'])) {
+        if (!WhatsAppMessage::forChat((int) $chat['id'], 1) || WhatsAppMessage::hasIncompleteMedia((int) $chat['id'])) {
             try {
                 WhatsAppSync::pullMessagesForChat((int) $chat['id'], $instance['instance_name'], $chat['remote_jid']);
             } catch (\Throwable $e) {

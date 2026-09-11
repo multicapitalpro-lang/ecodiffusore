@@ -48,20 +48,28 @@ class WhatsAppMessage
     ): int {
         if ($waMessageId !== null) {
             $stmt = Database::connection()->prepare(
-                'SELECT id, wa_key_json FROM whatsapp_messages WHERE chat_id = :chat_id AND wa_message_id = :wa_id'
+                'SELECT id, wa_key_json, media_mimetype FROM whatsapp_messages WHERE chat_id = :chat_id AND wa_message_id = :wa_id'
             );
             $stmt->execute(['chat_id' => $chatId, 'wa_id' => $waMessageId]);
             $existing = $stmt->fetch();
             if ($existing) {
                 // Backfill: mensagem de midia sincronizada ANTES da Fase 34 nao tinha wa_key_json
-                // gravado (coluna nao existia) -- se uma sincronizacao trouxer o key de novo pra essa
-                // mesma mensagem e a linha ainda estiver sem, completa agora. Sem isso, "Sincronizar"
-                // nunca resolveria midia antiga, so a que chegasse dai pra frente (ver
-                // WhatsAppMessage::hasMediaMissingKey(), usado por WhatsAppInboxController::show()
-                // pra saber quando vale a pena puxar de novo).
-                if ($waKeyJson !== null && empty($existing['wa_key_json'])) {
+                // gravado (coluna nao existia); alem disso, o payload do WEBHOOK ao vivo as vezes
+                // chega mais enxuto que o endpoint findMessages via REST (confirmado: um documento
+                // recebido ao vivo gravou o key mas sem mimetype/fileName/tamanho, que so vieram
+                // completos numa consulta posterior). Por isso o gatilho e' "falta mimetype", nao so
+                // "falta key" -- cobre os dois casos, sempre completando com o que a nova mensagem
+                // trouxer de mais informacao (COALESCE preserva o que ja tinha se o novo vier vazio).
+                // Ver WhatsAppMessage::hasIncompleteMedia(), usado por
+                // WhatsAppInboxController::show() pra saber quando vale a pena puxar de novo.
+                if (($mediaMimetype !== null || $waKeyJson !== null) && empty($existing['media_mimetype'])) {
                     $upd = Database::connection()->prepare(
-                        'UPDATE whatsapp_messages SET media_mimetype = :mime, media_filename = :fname, media_size_bytes = :size, wa_key_json = :key WHERE id = :id'
+                        'UPDATE whatsapp_messages SET
+                            media_mimetype = COALESCE(:mime, media_mimetype),
+                            media_filename = COALESCE(:fname, media_filename),
+                            media_size_bytes = COALESCE(:size, media_size_bytes),
+                            wa_key_json = COALESCE(:key, wa_key_json)
+                         WHERE id = :id'
                     );
                     $upd->execute([
                         'mime' => $mediaMimetype,
@@ -109,14 +117,16 @@ class WhatsAppMessage
         $stmt->execute(['path' => $storedName, 'mime' => $mimetype, 'id' => $id]);
     }
 
-    /** Existe midia importada antes da Fase 34 (sem o key guardado, logo sem como reconverter em
-     *  base64) nesse chat? Usado por WhatsAppInboxController::show() pra saber quando vale puxar as
-     *  mensagens de novo so pra backfillar -- uma vez preenchido, para de disparar sozinho. */
-    public static function hasMediaMissingKey(int $chatId): bool
+    /** Existe midia sem mimetype gravado nesse chat -- seja por ter sido importada antes da Fase 34
+     *  (sem key nenhum) ou por ter chegado via webhook com payload mais enxuto que o findMessages via
+     *  REST (key presente, mas sem mimetype/fileName/tamanho)? Usado por
+     *  WhatsAppInboxController::show() pra saber quando vale puxar as mensagens de novo so pra
+     *  backfillar -- uma vez completo, para de disparar sozinho (ver create()). */
+    public static function hasIncompleteMedia(int $chatId): bool
     {
         $stmt = Database::connection()->prepare(
             "SELECT 1 FROM whatsapp_messages
-             WHERE chat_id = :chat_id AND wa_key_json IS NULL
+             WHERE chat_id = :chat_id AND media_mimetype IS NULL
                AND message_type IN ('imageMessage','videoMessage','audioMessage','documentMessage','stickerMessage')
              LIMIT 1"
         );
