@@ -99,10 +99,17 @@ class WhatsAppChat
      *  lote pequeno a cada carga da tela (nunca todos de uma vez, a Evolution responde 1 por 1). */
     public static function chatsNeedingProfileInfo(int $instanceId, int $limit = 25): array
     {
+        // Foto expira em 7 dias; nome ausente tenta de novo depois de so 1 dia (mais barato de
+        // "esquecer" um nome que a Evolution ainda nao tinha capturado -- ela pode aprender o
+        // pushName de um contato depois, quando ele mandar mais mensagens/eventos).
         $stmt = Database::connection()->prepare(
             'SELECT id, remote_jid, name FROM whatsapp_chats
              WHERE instance_id = :instance_id AND is_group = 0
-               AND (profile_pic_checked_at IS NULL OR profile_pic_checked_at < DATE_SUB(NOW(), INTERVAL 7 DAY))
+               AND (
+                    profile_pic_checked_at IS NULL
+                    OR profile_pic_checked_at < DATE_SUB(NOW(), INTERVAL 7 DAY)
+                    OR (name IS NULL AND profile_pic_checked_at < DATE_SUB(NOW(), INTERVAL 1 DAY))
+               )
              ORDER BY last_message_at DESC
              LIMIT :limit'
         );
