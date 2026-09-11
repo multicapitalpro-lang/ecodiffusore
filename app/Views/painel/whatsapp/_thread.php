@@ -88,7 +88,10 @@ $mediaExtLabel = function (?string $mimetype) {
             <?php if ($activeChat['is_group']): ?>
                 <span class="wa-avatar wa-thread-avatar wa-avatar-group">👥</span>
             <?php else: ?>
-                <span class="wa-avatar wa-thread-avatar" style="background:<?= $avatarColor($activeChat['remote_jid']) ?>"><?= View::e($initialsOf($name)) ?></span>
+                <span class="wa-avatar wa-thread-avatar" style="background:<?= $avatarColor($activeChat['remote_jid']) ?>">
+                    <?= View::e($initialsOf($name)) ?>
+                    <?php if (!empty($activeChat['profile_pic_url'])): ?><img src="<?= View::e($activeChat['profile_pic_url']) ?>" alt="" class="wa-avatar-photo" onerror="this.remove()"><?php endif; ?>
+                </span>
             <?php endif; ?>
             <span class="wa-thread-identity">
                 <strong><?= View::e($name) ?></strong>
@@ -105,6 +108,9 @@ $mediaExtLabel = function (?string $mimetype) {
                     <?php endforeach; ?>
                 </select>
             </form>
+            <?php if (empty($activeChat['lead_id'])): ?>
+                <button type="button" class="wa-new-lead-btn" data-wa-new-lead data-wa-lead-name="<?= View::e($name) ?>">+ Criar lead</button>
+            <?php endif; ?>
             <span class="wa-thread-tags">
                 <?php $chatTagIds = array_column($activeChat['tags'] ?? [], 'id'); ?>
                 <?php foreach ($tags as $t): ?>
@@ -117,6 +123,7 @@ $mediaExtLabel = function (?string $mimetype) {
                         </button>
                     </form>
                 <?php endforeach; ?>
+                <button type="button" class="wa-tag wa-tag-new" data-wa-new-tag title="Nova tag">+ tag</button>
             </span>
         </div>
     </div>
@@ -138,8 +145,17 @@ $mediaExtLabel = function (?string $mimetype) {
             // mostra um aviso em vez do <img>/<video>/<audio> fadado a falhar.
             $mediaAvailable = !empty($m['wa_key_json']) || !empty($m['media_path']);
             ?>
-            <div class="wa-message wa-message-<?= $m['direction'] ?>">
+            <?php $canDelete = $m['direction'] === 'out' && (int) $m['is_deleted'] !== 1 && !empty($m['wa_message_id']); ?>
+            <div class="wa-message wa-message-<?= $m['direction'] ?>" data-wa-message-id="<?= (int) $m['id'] ?>">
                 <div class="wa-message-bubble <?= $m['message_type'] === 'stickerMessage' ? 'wa-bubble-sticker' : '' ?> <?= in_array($m['message_type'], ['imageMessage', 'videoMessage'], true) ? 'wa-bubble-media' : '' ?>">
+                    <?php if ($canDelete): ?>
+                        <button type="button" class="wa-msg-menu-btn" data-wa-msg-menu-toggle aria-label="Opções da mensagem">
+                            <svg viewBox="0 0 20 20" fill="currentColor"><circle cx="4" cy="10" r="1.6"/><circle cx="10" cy="10" r="1.6"/><circle cx="16" cy="10" r="1.6"/></svg>
+                        </button>
+                        <div class="wa-msg-menu" data-wa-msg-menu hidden>
+                            <button type="button" data-wa-msg-delete>🗑️ Apagar para todos</button>
+                        </div>
+                    <?php endif; ?>
                     <?php if ((int) $m['is_deleted'] === 1): ?>
                         <span class="wa-deleted">
                             <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7.5"/><path d="m6.5 6.5 7 7M13.5 6.5l-7 7"/></svg>

@@ -31,6 +31,7 @@ class WhatsAppInboxController
         SubscriptionGate::requireAccess($user);
 
         $instance = $this->requireConnectedInstance($user);
+        $this->refreshProfilePics($instance, 25);
 
         View::render('painel/whatsapp/inbox', [
             'user' => $user,
@@ -51,6 +52,7 @@ class WhatsAppInboxController
 
         $instance = $this->requireConnectedInstance($user);
         $chat = $this->authorizeChat((int) $id, (int) $instance['id']);
+        $this->ensureProfilePic($chat, $instance);
 
         // Lazy: so puxa o historico de mensagens da Evolution na primeira vez que a conversa e'
         // aberta (a lista de chats so trouxe a ULTIMA mensagem de cada, ver WhatsAppSync::pullChats).
@@ -358,6 +360,49 @@ class WhatsAppInboxController
         Router::redirect("/painel/whatsapp/conversas/{$id}");
     }
 
+    /** Cria um Lead novo DIRETO da conversa (sem precisar ir em Leads > Novo antes) e ja vincula os
+     *  dois -- pra quando o contato do WhatsApp ainda nao existe no CRM. Sempre atribuido a quem
+     *  esta criando (o dono da conversa). $whatsapp fica vazio pra contato "@lid" (identificador de
+     *  privacidade, nao e' telefone de verdade -- ver EvolutionApiClient::normalizeNumber()). */
+    public function createLead(string $id): void
+    {
+        Auth::requireRole(self::ROLES);
+        $user = Auth::user();
+        SubscriptionGate::requireAccess($user);
+
+        $instance = $this->requireConnectedInstance($user);
+        $chat = $this->authorizeChat((int) $id, (int) $instance['id']);
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            Router::redirect("/painel/whatsapp/conversas/{$id}?erro=1");
+        }
+
+        $name = trim($_POST['name'] ?? '');
+        if ($name === '') {
+            Router::redirect("/painel/whatsapp/conversas/{$id}?erro=1");
+        }
+
+        $leadId = Lead::create([
+            'name' => $name,
+            'whatsapp' => $this->phoneFromJid($chat['remote_jid']) ?? '',
+            'city' => null,
+            'truck_brand' => null,
+            'message' => null,
+            'source' => 'whatsapp_painel',
+        ]);
+        Lead::assignTo($leadId, (int) $user['id']);
+        WhatsAppChat::linkLead((int) $chat['id'], $leadId);
+
+        Router::redirect("/painel/whatsapp/conversas/{$id}");
+    }
+
+    /** Extrai um numero de telefone de verdade de um JID normal ("...@s.whatsapp.net") -- contato
+     *  "@lid" ou grupo "@g.us" nao tem telefone extraivel (ver normalizeNumber() do client). */
+    private function phoneFromJid(string $jid): ?string
+    {
+        return str_ends_with($jid, '@s.whatsapp.net') ? preg_replace('/\D/', '', $jid) : null;
+    }
+
     public function storeTag(): void
     {
         Auth::requireRole(self::ROLES);
@@ -417,6 +462,40 @@ class WhatsAppInboxController
         Router::redirect("/painel/whatsapp/conversas/{$id}");
     }
 
+    /** "Apagar para todos" de uma mensagem que EU enviei por aqui -- so aceita mensagem propria
+     *  (direction='out') com wa_message_id real (toda mensagem enviada pelo painel tem, ver
+     *  send()/sendMedia()). Sempre responde JSON: essa acao so existe via JS (menu de contexto na
+     *  bolha), sem fallback de formulario comum. */
+    public function deleteMessage(string $id, string $messageId): void
+    {
+        Auth::requireRole(self::ROLES);
+        $user = Auth::user();
+        SubscriptionGate::requireAccess($user);
+
+        $instance = $this->requireConnectedInstance($user);
+        $chat = $this->authorizeChat((int) $id, (int) $instance['id']);
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            Response::json(['ok' => false, 'error' => 'Sessão expirada, recarregue a página.']);
+            return;
+        }
+
+        $message = WhatsAppMessage::find((int) $messageId);
+        if (!$message || (int) $message['chat_id'] !== (int) $chat['id'] || $message['direction'] !== 'out' || empty($message['wa_message_id'])) {
+            Response::json(['ok' => false, 'error' => 'Não é possível apagar esta mensagem.']);
+            return;
+        }
+
+        try {
+            $client = new EvolutionApiClient($instance['instance_name']);
+            $client->deleteMessageForEveryone($chat['remote_jid'], $message['wa_message_id']);
+            WhatsAppMessage::markDeleted((int) $chat['id'], $message['wa_message_id']);
+            Response::json(['ok' => true]);
+        } catch (\Throwable $e) {
+            Response::json(['ok' => false, 'error' => 'Não foi possível apagar (mensagem antiga demais, ou o WhatsApp já não permite mais).']);
+        }
+    }
+
     private function requireConnectedInstance(array $user): array
     {
         $instance = WhatsAppInstance::forUser((int) $user['id']);
@@ -433,5 +512,45 @@ class WhatsAppInboxController
             Router::redirect('/painel/whatsapp/conversas');
         }
         return $chat;
+    }
+
+    /** Lote pequeno por carga de tela (a Evolution responde 1 contato por chamada, nao da pra
+     *  buscar em massa) -- ver WhatsAppChat::chatsNeedingProfilePic(). Best-effort: se a Evolution
+     *  falhar ou o contato nao tiver foto publica, so grava null e marca como verificado (evita
+     *  tentar de novo a cada carga, so depois de 7 dias). */
+    private function refreshProfilePics(array $instance, int $limit): void
+    {
+        $chats = WhatsAppChat::chatsNeedingProfilePic((int) $instance['id'], $limit);
+        if (!$chats) {
+            return;
+        }
+
+        $client = new EvolutionApiClient($instance['instance_name']);
+        foreach ($chats as $c) {
+            try {
+                $url = $client->fetchProfilePictureUrl($c['remote_jid']);
+            } catch (\Throwable $e) {
+                $url = null;
+            }
+            WhatsAppChat::setProfilePic((int) $c['id'], $url);
+        }
+    }
+
+    /** Prioriza a conversa que esta sendo aberta AGORA (fora do lote generico de refreshProfilePics,
+     *  que so cobre os N mais recentes) -- sem isso, abrir uma conversa mais antiga da lista nunca
+     *  puxaria a foto dela. */
+    private function ensureProfilePic(array $chat, array $instance): void
+    {
+        if ((int) $chat['is_group'] === 1 || $chat['profile_pic_checked_at'] !== null) {
+            return;
+        }
+
+        try {
+            $client = new EvolutionApiClient($instance['instance_name']);
+            $url = $client->fetchProfilePictureUrl($chat['remote_jid']);
+            WhatsAppChat::setProfilePic((int) $chat['id'], $url);
+        } catch (\Throwable $e) {
+            // Best-effort -- fica sem foto, tenta de novo na proxima vez que abrir essa conversa.
+        }
     }
 }

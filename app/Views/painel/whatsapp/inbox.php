@@ -78,7 +78,10 @@ $waTime = function (?string $dt) {
                     <?php if ($c['is_group']): ?>
                         <span class="wa-avatar wa-avatar-group">👥</span>
                     <?php else: ?>
-                        <span class="wa-avatar" style="background:<?= $avatarColor($c['remote_jid']) ?>"><?= View::e($initialsOf($name)) ?></span>
+                        <span class="wa-avatar" style="background:<?= $avatarColor($c['remote_jid']) ?>">
+                            <?= View::e($initialsOf($name)) ?>
+                            <?php if (!empty($c['profile_pic_url'])): ?><img src="<?= View::e($c['profile_pic_url']) ?>" alt="" class="wa-avatar-photo" loading="lazy" onerror="this.remove()"><?php endif; ?>
+                        </span>
                     <?php endif; ?>
                     <span class="wa-chat-info">
                         <span class="wa-chat-row-top">
@@ -132,6 +135,25 @@ $waTime = function (?string $dt) {
     </div>
 </dialog>
 
+<dialog class="modal" id="modal-wa-lead">
+    <div class="modal-header">
+        <h2>Criar lead a partir desta conversa</h2>
+        <button type="button" class="modal-close" data-modal-close aria-label="Fechar">&times;</button>
+    </div>
+    <div class="modal-body">
+        <form method="post" action="/painel/whatsapp/conversas/<?= $activeChat ? (int) $activeChat['id'] : '' ?>/lead-novo" class="panel-form" data-wa-lead-form>
+            <?= Csrf::field() ?>
+            <label for="wa-lead-name">Nome</label>
+            <input type="text" id="wa-lead-name" name="name" required>
+            <p class="hint-text" style="margin-top:0;">O lead já entra vinculado a esta conversa e atribuído a você.</p>
+            <div class="modal-form-actions">
+                <button type="submit" class="btn btn-primary">Criar lead</button>
+                <button type="button" class="btn btn-outline" data-modal-close>Cancelar</button>
+            </div>
+        </form>
+    </div>
+</dialog>
+
 <script>
 (function () {
     var inbox = document.querySelector('.wa-inbox');
@@ -151,7 +173,7 @@ $waTime = function (?string $dt) {
     ];
 
     function closePopovers() {
-        document.querySelectorAll('[data-wa-emoji-popover], [data-wa-attach-menu]').forEach(function (el) { el.hidden = true; });
+        document.querySelectorAll('[data-wa-emoji-popover], [data-wa-attach-menu], [data-wa-msg-menu]').forEach(function (el) { el.hidden = true; });
     }
     document.addEventListener('click', closePopovers);
 
@@ -212,6 +234,7 @@ $waTime = function (?string $dt) {
                     alert(result.error || 'Falha ao enviar arquivo.');
                     return;
                 }
+                updateChatListPreview(chatId, mediaPreviewLabel(file));
                 loadChat(chatId, false);
             })
             .catch(function () {
@@ -397,12 +420,14 @@ $waTime = function (?string $dt) {
                         alert(result.error || 'Falha ao enviar. Confira se o WhatsApp continua conectado.');
                         return;
                     }
+                    updateChatListPreview(form.dataset.chatId, text);
                     loadChat(form.dataset.chatId, false);
                 })
                 .catch(function () { loadChat(form.dataset.chatId, false); });
         });
 
         bindComposeExtras(form);
+        bindMessageMenus(form.dataset.chatId);
 
         var backLink = panel.querySelector('[data-wa-back]');
         if (backLink) {
@@ -412,6 +437,122 @@ $waTime = function (?string $dt) {
                 if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
             });
         }
+
+        var newLeadBtn = panel.querySelector('[data-wa-new-lead]');
+        if (newLeadBtn) {
+            newLeadBtn.addEventListener('click', function () {
+                openLeadModal(form.dataset.chatId, newLeadBtn.dataset.waLeadName);
+            });
+        }
+
+        var newTagBtn = panel.querySelector('[data-wa-new-tag]');
+        if (newTagBtn) {
+            newTagBtn.addEventListener('click', function () {
+                openTagModal(form.dataset.chatId);
+            });
+        }
+    }
+
+    // O gatilho de "Nova tag" no cabecalho da lista (persistente, nao e' trocado a cada conversa)
+    // ja abre o modal sozinho via o mecanismo generico [data-modal-open] do painel.js -- so precisa
+    // corrigir o campo "back" pra conversa ATUAL antes de abrir (senao fica preso na conversa que
+    // estava ativa no carregamento inicial da pagina, ja que o modal em si nunca e' re-renderizado).
+    var headerTagBtn = document.querySelector('[data-modal-open="modal-wa-tag"]');
+    if (headerTagBtn) {
+        headerTagBtn.addEventListener('click', function () {
+            var form = panel.querySelector('[data-wa-send-form]');
+            if (form) setTagModalBack(form.dataset.chatId);
+        });
+    }
+
+    function setTagModalBack(chatId) {
+        var modal = document.getElementById('modal-wa-tag');
+        var backInput = modal ? modal.querySelector('[name=back]') : null;
+        if (backInput) backInput.value = '/painel/whatsapp/conversas' + (chatId ? '/' + chatId : '');
+    }
+
+    function openTagModal(chatId) {
+        setTagModalBack(chatId);
+        var modal = document.getElementById('modal-wa-tag');
+        if (modal) { modal.showModal(); document.body.classList.add('modal-open'); }
+    }
+
+    function openLeadModal(chatId, defaultName) {
+        var modal = document.getElementById('modal-wa-lead');
+        if (!modal || !chatId) return;
+        var formEl = modal.querySelector('[data-wa-lead-form]');
+        var nameInput = modal.querySelector('[name=name]');
+        if (formEl) formEl.action = '/painel/whatsapp/conversas/' + chatId + '/lead-novo';
+        if (nameInput) nameInput.value = defaultName || '';
+        modal.showModal();
+        document.body.classList.add('modal-open');
+    }
+
+    // Atualiza a previa da conversa na lista da esquerda assim que uma mensagem e' enviada por
+    // aqui -- sem isso, a lista ficava presa mostrando a ULTIMA MENSAGEM RECEBIDA ate a pagina
+    // inteira recarregar (o servidor grava certinho, so o item da lista, ja renderizado, nunca
+    // era atualizado no DOM). Tambem move a conversa pro topo, como o WhatsApp de verdade faz.
+    function updateChatListPreview(chatId, previewText) {
+        var link = document.querySelector('[data-wa-chat-link][data-chat-id="' + chatId + '"]');
+        if (!link) return;
+        var previewEl = link.querySelector('.wa-chat-preview');
+        var timeEl = link.querySelector('.wa-chat-time');
+        if (previewEl) previewEl.textContent = previewText;
+        if (timeEl) timeEl.textContent = 'Agora';
+        var scroll = document.getElementById('wa-chat-scroll');
+        if (scroll && link.parentElement === scroll && scroll.firstElementChild !== link) {
+            scroll.insertBefore(link, scroll.firstElementChild);
+        }
+    }
+
+    function mediaPreviewLabel(file) {
+        var mime = file.type || '';
+        if (mime.indexOf('image/') === 0) return '📷 Foto';
+        if (mime.indexOf('video/') === 0) return '🎥 Vídeo';
+        if (mime.indexOf('audio/') === 0) return '🎵 Áudio';
+        return '📄 ' + file.name;
+    }
+
+    function bindMessageMenus(chatId) {
+        var list = panel.querySelector('[data-wa-messages]');
+        if (!list) return;
+        list.addEventListener('click', function (e) {
+            var toggleBtn = e.target.closest('[data-wa-msg-menu-toggle]');
+            if (toggleBtn) {
+                e.stopPropagation();
+                var menu = toggleBtn.parentElement.querySelector('[data-wa-msg-menu]');
+                if (!menu) return;
+                var wasHidden = menu.hidden;
+                closePopovers();
+                menu.hidden = !wasHidden;
+                return;
+            }
+            var deleteBtn = e.target.closest('[data-wa-msg-delete]');
+            if (deleteBtn) {
+                e.stopPropagation();
+                var msgEl = deleteBtn.closest('[data-wa-message-id]');
+                if (!msgEl) return;
+                if (!confirm('Apagar esta mensagem para todos? Essa ação não pode ser desfeita.')) return;
+                deleteMessage(chatId, msgEl.dataset.waMessageId, msgEl);
+            }
+        });
+    }
+
+    function deleteMessage(chatId, msgDbId, msgEl) {
+        var form = panel.querySelector('[data-wa-send-form]');
+        var csrfInput = form ? form.querySelector('[name=csrf_token]') : null;
+        var data = new FormData();
+        data.append('csrf_token', csrfInput ? csrfInput.value : '');
+        fetch('/painel/whatsapp/conversas/' + chatId + '/mensagens/' + msgDbId + '/apagar', { method: 'POST', body: data, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (r) { return r.json(); })
+            .then(function (result) {
+                if (result && result.ok === false) {
+                    alert(result.error || 'Não foi possível apagar.');
+                    return;
+                }
+                loadChat(chatId, false);
+            })
+            .catch(function () { alert('Falha ao apagar. Confira sua conexão.'); });
     }
 
     function scrollToBottom() {

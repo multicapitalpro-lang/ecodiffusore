@@ -117,6 +117,32 @@ class EvolutionApiClient
         ];
     }
 
+    /** URL da foto de perfil publica do contato, ou null se nao tiver/privacidade impedir --
+     *  confirmado ao vivo (v2.3.7): POST /chat/fetchProfilePictureUrl/{instance} {number}, devolve
+     *  {wuid, profilePictureUrl}. Aceita numero cru ou JID completo, mesma normalizacao de sendText. */
+    public function fetchProfilePictureUrl(string $to): ?string
+    {
+        $result = $this->request('POST', "/chat/fetchProfilePictureUrl/{$this->instance}", [
+            'number' => $this->normalizeNumber($to),
+        ]);
+
+        return $result['profilePictureUrl'] ?? null;
+    }
+
+    /** "Apagar para todos" de uma mensagem que EU mandei -- confirmado ao vivo (v2.3.7): DELETE
+     *  /chat/deleteMessageForEveryone/{instance} exige id/remoteJid/fromMe no corpo. So funciona
+     *  pra mensagem que a propria Evolution reconhece como enviada por essa instancia (mensagem
+     *  antiga demais ou que nunca passou por aqui falha -- deixa o RuntimeException subir, quem
+     *  chama decide a mensagem de erro pro usuario). */
+    public function deleteMessageForEveryone(string $remoteJid, string $messageId): array
+    {
+        return $this->request('DELETE', "/chat/deleteMessageForEveryone/{$this->instance}", [
+            'id' => $messageId,
+            'remoteJid' => $remoteJid,
+            'fromMe' => true,
+        ]);
+    }
+
     /** Converte uma mensagem de midia (imagem/video/audio/documento/figurinha) ja recebida pra
      *  base64 -- confirmado ao vivo (v2.3.7): POST /chat/getBase64FromMediaMessage/{instance} com
      *  {message:{key:{...}}, convertToMp4:false}, devolve {base64, mimetype, fileName, size,
@@ -227,7 +253,10 @@ class EvolutionApiClient
             CURLOPT_TIMEOUT => 20,
         ]);
 
-        if (in_array($method, ['POST', 'PUT'], true)) {
+        // DELETE precisa entrar aqui tambem -- /chat/deleteMessageForEveryone exige corpo (id/
+        // remoteJid/fromMe) mesmo sendo DELETE, confirmado ao vivo (sem isso a Evolution devolve
+        // 400 "instance requires property..." por nunca receber o corpo).
+        if (in_array($method, ['POST', 'PUT', 'DELETE'], true)) {
             curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
         }
 

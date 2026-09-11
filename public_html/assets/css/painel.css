@@ -767,8 +767,12 @@ dialog.modal-drawer .modal-body { flex: 1; min-height: 0; padding-bottom: 90px; 
 .wa-avatar {
     width: 46px; height: 46px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center;
     justify-content: center; font-weight: 800; font-size: .92rem; color: #fff; letter-spacing: .02em;
+    position: relative; overflow: hidden;
 }
 .wa-avatar-group { font-size: 1.25rem; background: var(--gray-bg) !important; color: var(--gray-text) !important; }
+/* Foto de perfil real (Fase 35) -- sobrepoe as iniciais; se a URL falhar (o link da Meta costuma
+   expirar), o onerror inline remove a img e as iniciais por baixo ficam visiveis de novo, sem JS. */
+.wa-avatar-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 
 .wa-chat-item {
     display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-bottom: 1px solid var(--border);
@@ -809,7 +813,16 @@ dialog.modal-drawer .modal-body { flex: 1; min-height: 0; padding-bottom: 90px; 
 .wa-thread-identity small { font-size: .74rem; color: var(--gray-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .wa-thread-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 16px; background: var(--gray-bg); border-top: 1px solid var(--border); }
 .wa-thread-toolbar select { border: 1px solid var(--border); border-radius: 999px; padding: 4px 12px; font-size: .76rem; background: #fff; font-family: inherit; max-width: 220px; }
-.wa-thread-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+.wa-thread-tags { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.wa-new-lead-btn {
+    border: 1.5px dashed var(--green); background: none; color: var(--green-dark); border-radius: 999px;
+    padding: 4px 12px; font-size: .76rem; font-weight: 700; cursor: pointer; font-family: inherit; white-space: nowrap;
+}
+.wa-new-lead-btn:hover { background: #eaf6de; }
+.wa-tag-new {
+    background: none; border: 1.5px dashed var(--border); color: var(--gray-text); cursor: pointer; font-family: inherit;
+}
+.wa-tag-new:hover { border-color: var(--green); color: var(--green-dark); }
 .wa-thread-back {
     display: none; flex-shrink: 0; color: var(--gray-text); text-decoration: none;
     width: 30px; height: 30px; border-radius: 50%; align-items: center; justify-content: center;
@@ -835,6 +848,26 @@ dialog.modal-drawer .modal-body { flex: 1; min-height: 0; padding-bottom: 90px; 
 .wa-message-out .wa-message-bubble { background: #d9fdd3; border-top-right-radius: 2px; }
 .wa-message-time { display: flex; align-items: center; justify-content: flex-end; gap: 3px; font-size: .68rem; color: rgba(0,0,0,.45); margin-top: 2px; float: right; margin-left: 8px; }
 .wa-tick { color: #53bdeb; }
+
+/* Menu de contexto (apagar) na propria mensagem -- botao discreto no canto, sempre visivel (em vez
+   de so no hover, que nao existe em touch) pra funcionar igual em desktop e celular. */
+.wa-msg-menu-btn {
+    position: absolute; top: 2px; right: 2px; width: 20px; height: 20px; border-radius: 50%;
+    border: none; background: rgba(0,0,0,.06); color: rgba(0,0,0,.5); display: flex; align-items: center;
+    justify-content: center; cursor: pointer; padding: 0;
+}
+.wa-msg-menu-btn:hover { background: rgba(0,0,0,.12); color: rgba(0,0,0,.75); }
+.wa-msg-menu-btn svg { width: 13px; height: 13px; }
+.wa-msg-menu {
+    position: absolute; top: 22px; right: 2px; background: #fff; border: 1px solid var(--border);
+    border-radius: 8px; box-shadow: var(--shadow-lg); z-index: 15; overflow: hidden; min-width: 160px;
+}
+.wa-msg-menu[hidden] { display: none; }
+.wa-msg-menu button {
+    display: block; width: 100%; border: none; background: none; text-align: left; padding: 9px 12px;
+    font-size: .82rem; font-weight: 600; color: #c53030; cursor: pointer; white-space: nowrap;
+}
+.wa-msg-menu button:hover { background: var(--gray-bg); }
 
 /* Separador "Hoje / Ontem / segunda-feira / 01/02/2026" entre blocos de mensagens de dias
    diferentes -- pilula cinza flutuando centralizada, como no WhatsApp de verdade. */

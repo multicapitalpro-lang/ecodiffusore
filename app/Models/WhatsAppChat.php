@@ -94,6 +94,32 @@ class WhatsAppChat
         $stmt->execute(['lead_id' => $leadId, 'id' => $chatId]);
     }
 
+    /** Contatos individuais (grupo nao tem foto de perfil "de pessoa") sem foto verificada ainda,
+     *  ou cuja verificacao ja passou de 7 dias -- WhatsAppInboxController::index() busca um lote
+     *  pequeno a cada carga da tela (nunca todos de uma vez, a Evolution responde 1 por 1). */
+    public static function chatsNeedingProfilePic(int $instanceId, int $limit = 25): array
+    {
+        $stmt = Database::connection()->prepare(
+            'SELECT id, remote_jid FROM whatsapp_chats
+             WHERE instance_id = :instance_id AND is_group = 0
+               AND (profile_pic_checked_at IS NULL OR profile_pic_checked_at < DATE_SUB(NOW(), INTERVAL 7 DAY))
+             ORDER BY last_message_at DESC
+             LIMIT :limit'
+        );
+        $stmt->bindValue('instance_id', $instanceId, \PDO::PARAM_INT);
+        $stmt->bindValue('limit', $limit, \PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    public static function setProfilePic(int $chatId, ?string $url): void
+    {
+        $stmt = Database::connection()->prepare(
+            'UPDATE whatsapp_chats SET profile_pic_url = :url, profile_pic_checked_at = NOW() WHERE id = :id'
+        );
+        $stmt->execute(['url' => $url, 'id' => $chatId]);
+    }
+
     private static function withParsedTags(array $chat): array
     {
         $chat['tags'] = [];

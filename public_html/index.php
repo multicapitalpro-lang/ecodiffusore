@@ -273,6 +273,8 @@ $router->get('/painel/whatsapp/conversas/{id}/midia/{messageId}', [App\Controlle
 $router->post('/painel/whatsapp/conversas/{id}/enviar', [App\Controllers\WhatsAppInboxController::class, 'send']);
 $router->post('/painel/whatsapp/conversas/{id}/enviar-midia', [App\Controllers\WhatsAppInboxController::class, 'sendMedia']);
 $router->post('/painel/whatsapp/conversas/{id}/lead', [App\Controllers\WhatsAppInboxController::class, 'linkLead']);
+$router->post('/painel/whatsapp/conversas/{id}/lead-novo', [App\Controllers\WhatsAppInboxController::class, 'createLead']);
+$router->post('/painel/whatsapp/conversas/{id}/mensagens/{messageId}/apagar', [App\Controllers\WhatsAppInboxController::class, 'deleteMessage']);
 $router->post('/painel/whatsapp/conversas/{id}/tags', [App\Controllers\WhatsAppInboxController::class, 'assignTag']);
 $router->post('/painel/whatsapp/conversas/{id}/tags/{tagId}/remover', [App\Controllers\WhatsAppInboxController::class, 'removeTag']);
 $router->post('/painel/whatsapp/sincronizar', [App\Controllers\WhatsAppInboxController::class, 'sync']);
