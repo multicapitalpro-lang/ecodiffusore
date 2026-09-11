@@ -48,12 +48,30 @@ class WhatsAppMessage
     ): int {
         if ($waMessageId !== null) {
             $stmt = Database::connection()->prepare(
-                'SELECT id FROM whatsapp_messages WHERE chat_id = :chat_id AND wa_message_id = :wa_id'
+                'SELECT id, wa_key_json FROM whatsapp_messages WHERE chat_id = :chat_id AND wa_message_id = :wa_id'
             );
             $stmt->execute(['chat_id' => $chatId, 'wa_id' => $waMessageId]);
-            $existing = $stmt->fetchColumn();
+            $existing = $stmt->fetch();
             if ($existing) {
-                return (int) $existing;
+                // Backfill: mensagem de midia sincronizada ANTES da Fase 34 nao tinha wa_key_json
+                // gravado (coluna nao existia) -- se uma sincronizacao trouxer o key de novo pra essa
+                // mesma mensagem e a linha ainda estiver sem, completa agora. Sem isso, "Sincronizar"
+                // nunca resolveria midia antiga, so a que chegasse dai pra frente (ver
+                // WhatsAppMessage::hasMediaMissingKey(), usado por WhatsAppInboxController::show()
+                // pra saber quando vale a pena puxar de novo).
+                if ($waKeyJson !== null && empty($existing['wa_key_json'])) {
+                    $upd = Database::connection()->prepare(
+                        'UPDATE whatsapp_messages SET media_mimetype = :mime, media_filename = :fname, media_size_bytes = :size, wa_key_json = :key WHERE id = :id'
+                    );
+                    $upd->execute([
+                        'mime' => $mediaMimetype,
+                        'fname' => $mediaFilename,
+                        'size' => $mediaSizeBytes,
+                        'key' => $waKeyJson,
+                        'id' => $existing['id'],
+                    ]);
+                }
+                return (int) $existing['id'];
             }
         }
 
@@ -89,6 +107,21 @@ class WhatsAppMessage
             'UPDATE whatsapp_messages SET media_path = :path, media_mimetype = COALESCE(:mime, media_mimetype) WHERE id = :id'
         );
         $stmt->execute(['path' => $storedName, 'mime' => $mimetype, 'id' => $id]);
+    }
+
+    /** Existe midia importada antes da Fase 34 (sem o key guardado, logo sem como reconverter em
+     *  base64) nesse chat? Usado por WhatsAppInboxController::show() pra saber quando vale puxar as
+     *  mensagens de novo so pra backfillar -- uma vez preenchido, para de disparar sozinho. */
+    public static function hasMediaMissingKey(int $chatId): bool
+    {
+        $stmt = Database::connection()->prepare(
+            "SELECT 1 FROM whatsapp_messages
+             WHERE chat_id = :chat_id AND wa_key_json IS NULL
+               AND message_type IN ('imageMessage','videoMessage','audioMessage','documentMessage','stickerMessage')
+             LIMIT 1"
+        );
+        $stmt->execute(['chat_id' => $chatId]);
+        return (bool) $stmt->fetchColumn();
     }
 
     /** Mensagem apagada pra todos (protocolMessage/REVOKE recebido via webhook ou sincronizacao) --

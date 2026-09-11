@@ -131,6 +131,12 @@ $mediaExtLabel = function (?string $mimetype) {
                 $lastDay = $day;
             }
             $mediaUrl = "/painel/whatsapp/conversas/{$activeChat['id']}/midia/{$m['id']}";
+            // Midia sincronizada antes da Fase 34 nao tem o key da Evolution guardado -- sem ele
+            // (e sem ja estar em cache local) nao tem como buscar o arquivo, e tentar mesmo assim so
+            // renderizava um icone de imagem quebrada. WhatsAppInboxController::show() ja tenta
+            // recuperar automaticamente (backfill) na proxima vez que a conversa e' aberta; ate la,
+            // mostra um aviso em vez do <img>/<video>/<audio> fadado a falhar.
+            $mediaAvailable = !empty($m['wa_key_json']) || !empty($m['media_path']);
             ?>
             <div class="wa-message wa-message-<?= $m['direction'] ?>">
                 <div class="wa-message-bubble <?= $m['message_type'] === 'stickerMessage' ? 'wa-bubble-sticker' : '' ?> <?= in_array($m['message_type'], ['imageMessage', 'videoMessage'], true) ? 'wa-bubble-media' : '' ?>">
@@ -138,6 +144,11 @@ $mediaExtLabel = function (?string $mimetype) {
                         <span class="wa-deleted">
                             <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7.5"/><path d="m6.5 6.5 7 7M13.5 6.5l-7 7"/></svg>
                             Mensagem apagada
+                        </span>
+                    <?php elseif (!$mediaAvailable && in_array($m['message_type'], ['imageMessage', 'videoMessage', 'audioMessage', 'documentMessage', 'stickerMessage'], true)): ?>
+                        <span class="wa-media-unavailable">
+                            <?= ['imageMessage' => '📷', 'videoMessage' => '🎥', 'audioMessage' => '🎵', 'documentMessage' => '📄', 'stickerMessage' => '🩹'][$m['message_type']] ?>
+                            Mídia antiga, indisponível pra recarregar
                         </span>
                     <?php elseif ($m['message_type'] === 'imageMessage'): ?>
                         <img class="wa-media-image" loading="lazy" src="<?= View::e($mediaUrl) ?>" alt="Imagem">
