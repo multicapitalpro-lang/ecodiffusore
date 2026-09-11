@@ -20,6 +20,58 @@ $initialsOf = function (string $name) {
     $last = count($parts) > 1 ? mb_substr(end($parts), 0, 1) : '';
     return mb_strtoupper($first . $last);
 };
+
+/** Rotulo do separador de data entre mensagens -- mesmo criterio do proprio WhatsApp: Hoje/Ontem,
+ *  dia da semana por extenso ate 6 dias atras, senao data cheia. */
+$weekdaysPt = [0 => 'domingo', 1 => 'segunda-feira', 2 => 'terça-feira', 3 => 'quarta-feira', 4 => 'quinta-feira', 5 => 'sexta-feira', 6 => 'sábado'];
+$dateSepLabel = function (string $day) use ($weekdaysPt) {
+    $ts = strtotime($day);
+    $today = date('Y-m-d');
+    if ($day === $today) {
+        return 'Hoje';
+    }
+    if ($day === date('Y-m-d', strtotime('-1 day'))) {
+        return 'Ontem';
+    }
+    $diffDays = (int) ((strtotime($today) - $ts) / 86400);
+    if ($diffDays > 0 && $diffDays < 7) {
+        return ucfirst($weekdaysPt[(int) date('w', $ts)]);
+    }
+    return date('d/m/Y', $ts);
+};
+
+/** Legenda real de foto/video -- extractBody() (WhatsAppSync) guarda o corpo com um icone de
+ *  prefixo (usado no preview da lista de conversas); aqui, dentro da bolha que ja mostra a midia de
+ *  verdade, esse prefixo e' descartado e o "sem legenda" (ex: "[imagem]") fica em branco. */
+$captionFor = function (?string $body) {
+    if (!$body) {
+        return null;
+    }
+    $stripped = preg_replace('/^\S+\s+/u', '', $body, 1);
+    $placeholders = ['[imagem]', '[vídeo]', '[áudio]', '[documento]', '[figurinha]'];
+    return in_array($stripped, $placeholders, true) ? null : $stripped;
+};
+
+$formatSize = function (?int $bytes) {
+    if (!$bytes) {
+        return '';
+    }
+    if ($bytes >= 1024 * 1024) {
+        return number_format($bytes / (1024 * 1024), 1, ',', '.') . ' MB';
+    }
+    return number_format($bytes / 1024, 0, ',', '.') . ' KB';
+};
+
+$mediaExtLabel = function (?string $mimetype) {
+    $map = [
+        'application/pdf' => 'PDF', 'application/msword' => 'DOC',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'DOCX',
+        'application/vnd.ms-excel' => 'XLS',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => 'XLSX',
+        'text/plain' => 'TXT',
+    ];
+    return $map[$mimetype ?? ''] ?? 'ARQ';
+};
 ?>
 <?php if (!$activeChat): ?>
     <div class="wa-thread-empty">
@@ -70,11 +122,46 @@ $initialsOf = function (string $name) {
     </div>
 
     <div class="wa-messages" data-wa-messages>
+        <?php $lastDay = null; ?>
         <?php foreach ($messages as $m): ?>
+            <?php
+            $day = date('Y-m-d', strtotime($m['sent_at']));
+            if ($day !== $lastDay) {
+                echo '<div class="wa-date-sep"><span>' . View::e($dateSepLabel($day)) . '</span></div>';
+                $lastDay = $day;
+            }
+            $mediaUrl = "/painel/whatsapp/conversas/{$activeChat['id']}/midia/{$m['id']}";
+            ?>
             <div class="wa-message wa-message-<?= $m['direction'] ?>">
-                <div class="wa-message-bubble">
-                    <?= nl2br(View::e($m['body'] ?: '[mensagem sem texto]')) ?>
-                    <span class="wa-message-time"><?= date('H:i', strtotime($m['sent_at'])) ?><?= $m['direction'] === 'out' ? ' <svg class="wa-tick" viewBox="0 0 16 11" width="14" height="10" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6l3 3 7-8"/></svg>' : '' ?></span>
+                <div class="wa-message-bubble <?= $m['message_type'] === 'stickerMessage' ? 'wa-bubble-sticker' : '' ?> <?= in_array($m['message_type'], ['imageMessage', 'videoMessage'], true) ? 'wa-bubble-media' : '' ?>">
+                    <?php if ((int) $m['is_deleted'] === 1): ?>
+                        <span class="wa-deleted">
+                            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7.5"/><path d="m6.5 6.5 7 7M13.5 6.5l-7 7"/></svg>
+                            Mensagem apagada
+                        </span>
+                    <?php elseif ($m['message_type'] === 'imageMessage'): ?>
+                        <img class="wa-media-image" loading="lazy" src="<?= View::e($mediaUrl) ?>" alt="Imagem">
+                        <?php if ($captionFor($m['body'])): ?><div class="wa-media-caption"><?= nl2br(View::e($captionFor($m['body']))) ?></div><?php endif; ?>
+                    <?php elseif ($m['message_type'] === 'stickerMessage'): ?>
+                        <img class="wa-media-sticker" loading="lazy" src="<?= View::e($mediaUrl) ?>" alt="Figurinha">
+                    <?php elseif ($m['message_type'] === 'videoMessage'): ?>
+                        <video class="wa-media-video" controls preload="none" src="<?= View::e($mediaUrl) ?>"></video>
+                        <?php if ($captionFor($m['body'])): ?><div class="wa-media-caption"><?= nl2br(View::e($captionFor($m['body']))) ?></div><?php endif; ?>
+                    <?php elseif ($m['message_type'] === 'audioMessage'): ?>
+                        <audio class="wa-media-audio" controls preload="none" src="<?= View::e($mediaUrl) ?>"></audio>
+                    <?php elseif ($m['message_type'] === 'documentMessage'): ?>
+                        <a class="wa-media-doc" href="<?= View::e($mediaUrl) ?>">
+                            <span class="wa-media-doc-icon"><?= View::e($mediaExtLabel($m['media_mimetype'])) ?></span>
+                            <span class="wa-media-doc-info">
+                                <span class="wa-media-doc-name"><?= View::e($m['media_filename'] ?: 'Documento') ?></span>
+                                <span class="wa-media-doc-size"><?= View::e($formatSize($m['media_size_bytes'] !== null ? (int) $m['media_size_bytes'] : null)) ?></span>
+                            </span>
+                            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M10 3v11M6 10l4 4 4-4M4 16.5h12"/></svg>
+                        </a>
+                    <?php else: ?>
+                        <?= nl2br(View::e($m['body'] ?: '[mensagem sem texto]')) ?>
+                    <?php endif; ?>
+                    <span class="wa-message-time"><?= date('H:i', strtotime($m['sent_at'])) ?><?= $m['direction'] === 'out' && (int) $m['is_deleted'] !== 1 ? ' <svg class="wa-tick" viewBox="0 0 16 11" width="14" height="10" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6l3 3 7-8"/></svg>' : '' ?></span>
                 </div>
             </div>
         <?php endforeach; ?>

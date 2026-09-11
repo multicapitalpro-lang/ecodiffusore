@@ -269,6 +269,7 @@ $router->post('/painel/whatsapp/desconectar', [App\Controllers\WhatsAppInstanceC
 $router->get('/painel/whatsapp/conversas', [App\Controllers\WhatsAppInboxController::class, 'index']);
 $router->get('/painel/whatsapp/conversas/{id}', [App\Controllers\WhatsAppInboxController::class, 'show']);
 $router->get('/painel/whatsapp/conversas/{id}/poll', [App\Controllers\WhatsAppInboxController::class, 'poll']);
+$router->get('/painel/whatsapp/conversas/{id}/midia/{messageId}', [App\Controllers\WhatsAppInboxController::class, 'media']);
 $router->post('/painel/whatsapp/conversas/{id}/enviar', [App\Controllers\WhatsAppInboxController::class, 'send']);
 $router->post('/painel/whatsapp/conversas/{id}/lead', [App\Controllers\WhatsAppInboxController::class, 'linkLead']);
 $router->post('/painel/whatsapp/conversas/{id}/tags', [App\Controllers\WhatsAppInboxController::class, 'assignTag']);

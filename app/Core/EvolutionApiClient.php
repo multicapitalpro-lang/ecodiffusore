@@ -117,6 +117,20 @@ class EvolutionApiClient
         ];
     }
 
+    /** Converte uma mensagem de midia (imagem/video/audio/documento/figurinha) ja recebida pra
+     *  base64 -- confirmado ao vivo (v2.3.7): POST /chat/getBase64FromMediaMessage/{instance} com
+     *  {message:{key:{...}}, convertToMp4:false}, devolve {base64, mimetype, fileName, size,
+     *  mediaType}. $key precisa ser o objeto key COMPLETO da mensagem original (id/fromMe/remoteJid/
+     *  participant p/ grupo) -- so o id sozinho nao basta, por isso WhatsAppMessage guarda o key
+     *  inteiro (wa_key_json) na hora de importar, nao so o wa_message_id. */
+    public function fetchMediaBase64(array $key): array
+    {
+        return $this->request('POST', "/chat/getBase64FromMediaMessage/{$this->instance}", [
+            'message' => ['key' => $key],
+            'convertToMp4' => false,
+        ]);
+    }
+
     /** Lanca RuntimeException se o envio falhar (numero invalido/nao existe no WhatsApp, instancia
      *  desconectada, etc) -- antes essa falha passava batido (a API devolve HTTP 400 mas o corpo
      *  json ainda decodifica normal, sem excecao). Quem chama (Notifier::sendWhatsApp) ja captura

@@ -95,4 +95,39 @@ class FileUpload
     {
         return BASE_PATH . '/storage/uploads/' . $subdir . '/' . basename($storedName);
     }
+
+    /** Guarda midia baixada do WhatsApp (base64 decodificado da Evolution API) -- diferente de
+     *  store(), nao vem de $_FILES/move_uploaded_file e nao restringe mimetype (fotos/videos/audios/
+     *  documentos de conversa tem um leque muito maior que os formularios do sistema; o risco de
+     *  servir de volta e' baixo, sempre com Content-Type/Content-Disposition corretos, nunca
+     *  executado). */
+    public static function storeWhatsAppMedia(string $binaryContent, string $mimeType): array
+    {
+        $dir = BASE_PATH . '/storage/uploads/whatsapp';
+        if (!is_dir($dir)) {
+            mkdir($dir, 0750, true);
+        }
+
+        $ext = self::extensionForMime($mimeType);
+        $storedName = bin2hex(random_bytes(16)) . ($ext ? '.' . $ext : '');
+        file_put_contents($dir . '/' . $storedName, $binaryContent);
+
+        return ['stored_name' => $storedName, 'size_bytes' => strlen($binaryContent)];
+    }
+
+    private static function extensionForMime(string $mime): ?string
+    {
+        $map = [
+            'image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp', 'image/gif' => 'gif',
+            'video/mp4' => 'mp4', 'video/3gpp' => '3gp', 'video/quicktime' => 'mov',
+            'audio/ogg' => 'ogg', 'audio/ogg; codecs=opus' => 'ogg', 'audio/mpeg' => 'mp3', 'audio/mp4' => 'm4a', 'audio/aac' => 'aac',
+            'application/pdf' => 'pdf',
+            'application/msword' => 'doc',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'docx',
+            'application/vnd.ms-excel' => 'xls',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => 'xlsx',
+            'text/plain' => 'txt',
+        ];
+        return $map[$mime] ?? null;
+    }
 }

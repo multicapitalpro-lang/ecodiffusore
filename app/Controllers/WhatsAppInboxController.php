@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Core\Auth;
 use App\Core\Csrf;
 use App\Core\EvolutionApiClient;
+use App\Core\FileUpload;
 use App\Core\Response;
 use App\Core\Router;
 use App\Core\SubscriptionGate;
@@ -117,6 +118,71 @@ class WhatsAppInboxController
         }
 
         echo json_encode(['messages' => WhatsAppMessage::forChat((int) $chat['id'])]);
+    }
+
+    /** Serve o arquivo de uma mensagem de midia -- usado como src/href direto no <img>/<video>/
+     *  <audio>/link de download da thread (ver _thread.php). Baixa da Evolution na primeira vez
+     *  (POST /chat/getBase64FromMediaMessage, ver EvolutionApiClient::fetchMediaBase64) e cacheia em
+     *  storage/uploads/whatsapp/ -- toda vez depois disso serve local, sem chamar a Evolution de
+     *  novo. Mesmo padrao de streaming autenticado ja usado em FinanceController::downloadAttachment
+     *  (nunca serve arquivo estatico direto, sempre passa por aqui pra checar dono da conversa). */
+    public function media(string $id, string $messageId): void
+    {
+        Auth::requireRole(self::ROLES);
+        $user = Auth::user();
+        SubscriptionGate::requireAccess($user);
+
+        $instance = $this->requireConnectedInstance($user);
+        $chat = $this->authorizeChat((int) $id, (int) $instance['id']);
+
+        $message = WhatsAppMessage::find((int) $messageId);
+        if (!$message || (int) $message['chat_id'] !== (int) $chat['id']) {
+            http_response_code(404);
+            exit;
+        }
+
+        if (empty($message['media_path'])) {
+            if (empty($message['wa_key_json'])) {
+                http_response_code(404);
+                exit;
+            }
+
+            try {
+                $client = new EvolutionApiClient($instance['instance_name']);
+                $key = json_decode((string) $message['wa_key_json'], true) ?: [];
+                $result = $client->fetchMediaBase64($key);
+                $binary = base64_decode((string) ($result['base64'] ?? ''), true);
+                if ($binary === false || $binary === '') {
+                    throw new \RuntimeException('Mídia vazia devolvida pela Evolution API.');
+                }
+                $mimetype = $result['mimetype'] ?? $message['media_mimetype'] ?? 'application/octet-stream';
+                $stored = FileUpload::storeWhatsAppMedia($binary, $mimetype);
+                WhatsAppMessage::setMediaPath((int) $message['id'], $stored['stored_name'], $mimetype);
+                $message['media_path'] = $stored['stored_name'];
+                $message['media_mimetype'] = $mimetype;
+            } catch (\Throwable $e) {
+                http_response_code(502);
+                header('Content-Type: text/plain; charset=utf-8');
+                echo 'Não foi possível carregar essa mídia agora. Tente novamente em instantes.';
+                exit;
+            }
+        }
+
+        $path = FileUpload::path('whatsapp', $message['media_path']);
+        if (!file_exists($path)) {
+            http_response_code(404);
+            exit;
+        }
+
+        header('Content-Type: ' . ($message['media_mimetype'] ?: 'application/octet-stream'));
+        header('Content-Length: ' . filesize($path));
+        header('Cache-Control: private, max-age=604800');
+        if ($message['message_type'] === 'documentMessage') {
+            $filename = $message['media_filename'] ?: 'documento';
+            header('Content-Disposition: attachment; filename="' . str_replace('"', '', $filename) . '"');
+        }
+        readfile($path);
+        exit;
     }
 
     public function send(string $id): void
