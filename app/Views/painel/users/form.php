@@ -89,9 +89,9 @@ $values = $editing ?? ($old ?? []);
             <label for="commission_pct">Comissão desta pessoa (%)</label>
             <input type="number" id="commission_pct" name="commission_pct" step="0.01" min="0" max="100"
                    value="<?= View::e((string) ($values['commission_pct'] ?? '')) ?>" placeholder="Ex: 15.00">
-            <p class="hint-text" data-commission-hint="gestor">% do pool que o Licenciado recebe da venda (ver "Faixas de preço negociável" acima) que será repassado a este Gestor.</p>
+            <p class="hint-text" data-commission-hint="gestor">% do TOTAL do pedido que será repassado a este Gestor (não é mais % do pool — sai do que sobra do seu pool, ver "Faixas de preço negociável" acima).</p>
             <p class="hint-text" data-commission-hint="nacional" hidden>% do total do pedido, pago direto pela Ecodiffusore — não sai do pool de ninguém.</p>
-            <p class="hint-text" data-commission-hint="vendedor" hidden>Comissão padrão deste Vendedor — só usada quando a venda cair numa faixa de preço SEM valor específico definido na tabela abaixo.</p>
+            <p class="hint-text" data-commission-hint="vendedor" hidden>Comissão padrão deste Vendedor — % do TOTAL do pedido (sai do que sobra do seu pool), só usada quando a venda cair numa faixa de preço SEM valor específico definido na tabela abaixo.</p>
         </div>
 
         <div id="licenciado-commission-note" style="display:none;">

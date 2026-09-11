@@ -24,7 +24,7 @@ $roleLabels = ['gestor' => 'Gestor', 'vendedor' => 'Vendedor'];
                 <div class="dash-card" style="margin:16px 0;">
                     <span>Sua comissão</span>
                     <strong><?= number_format((float) $target['commission_pct'], 2, ',', '.') ?>%</strong>
-                    <span class="hint-inline">do pool de comissão que o Licenciado recebe em cada venda da sua equipe.</span>
+                    <span class="hint-inline">do valor total de cada venda da sua equipe.</span>
                 </div>
             <?php elseif ($tierRows): ?>
                 <div class="table-scroll" style="margin:16px 0;">
@@ -52,6 +52,7 @@ $roleLabels = ['gestor' => 'Gestor', 'vendedor' => 'Vendedor'];
                 <div class="dash-card" style="margin:16px 0;">
                     <span>Sua comissão</span>
                     <strong><?= number_format((float) $target['commission_pct'], 2, ',', '.') ?>%</strong>
+                    <span class="hint-inline">do valor total de cada venda.</span>
                 </div>
             <?php endif; ?>
 

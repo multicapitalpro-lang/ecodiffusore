@@ -15,18 +15,25 @@ class Commission
      *    livremente dentro de um piso minimo validado na criacao do pedido/proposta) -- a % de
      *    comissao do Licenciado (o "pool") vem SEMPRE dessa faixa, nao e mais um commission_pct
      *    negociado por licenciado (esse campo continua existindo em users, mas so vale pra
-     *    Gestor/Supervisor/Gerente agora). A partir do pool, Gestor recebe o % que o Licenciado
-     *    configurou pra ele (commission_pct dele = % do pool, nao % do pedido). Vendedor tem DOIS
-     *    esquemas possiveis, escolhidos pelo Licenciado no cadastro:
+     *    Gestor/Vendedor/Supervisor/Gerente agora). O pool em si continua existindo so' como
+     *    REFERENCIA de quanto o Licenciado tem "pra trabalhar" -- a partir da Fase 43, o
+     *    commission_pct que o Licenciado configura pro Gestor/Vendedor e' % DO TOTAL DO PEDIDO
+     *    (nao mais % do pool -- pedido explicito do usuario: "a % do vendedor definida pelo
+     *    licenciado... deve ser pela % de venda do produto e nao a % sobre o valor da comissao do
+     *    licenciado"). Vendedor tem DOIS esquemas possiveis, escolhidos pelo Licenciado no
+     *    cadastro:
      *      a) Tabela por faixa (commission_type + user_commission_tiers): sai direto do valor da
      *         venda -- % da venda ou R$ fixo por unidade, conforme a MESMA faixa de preco que
-     *         definiu o pool. Ver vendorTierAmount(). Vem DO POOL (subtrai de $distribuido igual
-     *         aos outros).
+     *         definiu o pool. Ver vendorTierAmount(). Ja era % do TOTAL do pedido desde a Fase 31,
+     *         sem mudanca nesta fase.
      *      b) Sem commission_type configurado, ou sem valor pra essa faixa especifica: cai no
-     *         esquema antigo, commission_pct do Vendedor = % do pool, igual Gestor.
-     *    O que sobra do pool fica com o Licenciado. Pedido sem itens (quantidade zero) ou com preco
-     *    unitario medio abaixo do piso da faixa mais baixa (forPrice devolve null) nao gera pool
-     *    nenhum -- na pratica isso so aconteceria se algum preco escapasse da validacao de piso.
+     *         esquema simples, commission_pct do Vendedor = % do TOTAL DO PEDIDO, igual Gestor.
+     *    O que sobra do pool (pool menos as fatias de Gestor/Vendedor, nunca negativo -- se as
+     *    fatias configuradas ultrapassarem o pool, o Licenciado simplesmente fica sem sobra nesse
+     *    pedido, mas Gestor/Vendedor recebem o valor CHEIO que foi configurado pra eles, sem
+     *    corte) fica com o Licenciado. Pedido sem itens (quantidade zero) ou com preco unitario
+     *    medio abaixo do piso da faixa mais baixa (forPrice devolve null) nao gera pool nenhum --
+     *    na pratica isso so aconteceria se algum preco escapasse da validacao de piso.
      *
      * 2) Comissao nacional: se o Licenciado tiver um Supervisor atribuido (supervisor_id, definido
      *    pelo Gerente em /painel/licenciados), Supervisor e Gerente recebem um % do TOTAL do
@@ -80,7 +87,11 @@ class Commission
                     continue;
                 }
 
-                $amount = round($pool * $sharePct / 100, 2);
+                // Fase 43: commission_pct de Gestor/Vendedor (esquema simples, sem tabela por
+                // faixa) e' % do TOTAL DO PEDIDO, nao mais % do pool -- so' o que sobra do pool
+                // depois de subtrair essas fatias (nunca negativo, ver $restante abaixo) e' que
+                // continua sendo a comissao do Licenciado.
+                $amount = round($orderTotal * $sharePct / 100, 2);
                 $distribuido += $amount;
                 self::insertRow($orderId, $sellerId, (int) $p['id'], $p['role_slug'], $sharePct, $amount);
             }
@@ -137,9 +148,10 @@ class Commission
     /**
      * `percentage` guardado aqui significa coisas diferentes por papel: pro Licenciado e o % da
      * faixa de preco negociado (PricingTier) sobre o total do pedido; pro Gestor/Vendedor (esquema
-     * antigo) e o % do pool do Licenciado; pro Vendedor na tabela por faixa e o % EFETIVO sobre o
-     * pedido (calculado a partir do valor, so pra exibicao/relatorio); pro Supervisor/Gerente e o
-     * % do total do pedido pago direto pela Ecodiffusore (fora do pool).
+     * simples, Fase 43) e o % do TOTAL DO PEDIDO configurado pelo Licenciado; pro Vendedor na
+     * tabela por faixa e o % EFETIVO sobre o pedido (calculado a partir do valor, so pra
+     * exibicao/relatorio); pro Supervisor/Gerente e o % do total do pedido pago direto pela
+     * Ecodiffusore (fora do pool).
      */
     private static function insertRow(int $orderId, int $sellerId, int $beneficiaryId, string $roleSlug, float $percentage, float $amount): void
     {

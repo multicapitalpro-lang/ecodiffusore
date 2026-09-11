@@ -505,9 +505,10 @@ document.addEventListener('DOMContentLoaded', function () {
             var commissionHints = root.querySelectorAll('[data-commission-hint]');
 
             // O campo generico "Comissao desta pessoa (%)" significa uma coisa diferente por
-            // papel (Gestor: % do pool; Gerente/Supervisor: % do pedido pago pela empresa;
-            // Vendedor: comissao padrao de faixa) -- mostra so a frase relevante pro papel
-            // escolhido, em vez de listar as 3 juntas sempre (motivo real do "confuso" reportado).
+            // papel (Gestor/Vendedor: % do total do pedido, Fase 43; Gerente/Supervisor: % do
+            // pedido pago pela empresa; Vendedor: comissao padrao de faixa) -- mostra so a frase
+            // relevante pro papel escolhido, em vez de listar as 3 juntas sempre (motivo real do
+            // "confuso" reportado).
             var hintKeyByRole = { gestor: 'gestor', gerente: 'nacional', supervisor: 'nacional', vendedor: 'vendedor' };
 
             function update() {
