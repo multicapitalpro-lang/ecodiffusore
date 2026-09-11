@@ -213,6 +213,7 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/desempen
             <?php if (in_array($role, ['admin', 'gerente'], true)): ?>
                 <a href="/painel/configuracoes/whatsapp" class="<?= $isActive('/painel/configuracoes/whatsapp') ? 'is-active' : '' ?>"><?= $icon('gear') ?> Config. de WhatsApp</a>
                 <a href="/painel/configuracoes/tutoriais" class="<?= $isActive('/painel/configuracoes/tutoriais') ? 'is-active' : '' ?>"><?= $icon('gear') ?> Vídeos Tutoriais</a>
+                <a href="/painel/configuracoes/treinamento" class="<?= $isActive('/painel/configuracoes/treinamento') ? 'is-active' : '' ?>"><?= $icon('gear') ?> Treinamento do Vendedor</a>
             <?php endif; ?>
         </nav>
     </aside>

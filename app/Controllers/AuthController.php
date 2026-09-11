@@ -48,6 +48,9 @@ class AuthController
         if ($user['role_slug'] === 'licenciado' && in_array($user['licenciado_onboarding_status'], ['aguardando_assinatura', 'aguardando_aprovacao', 'assinatura_recusada', 'kyc_recusado'], true)) {
             Router::redirect('/painel/licenciados/aguardando-assinatura');
         }
+        if ($user['role_slug'] === 'vendedor' && empty($user['training_completed_at'])) {
+            Router::redirect('/painel/treinamento');
+        }
 
         Router::redirect('/painel');
     }

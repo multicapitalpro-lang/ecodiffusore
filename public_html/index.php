@@ -198,6 +198,12 @@ $router->post('/painel/configuracoes/tutoriais', [App\Controllers\TutorialContro
 $router->post('/painel/configuracoes/tutoriais/{id}/excluir', [App\Controllers\TutorialController::class, 'destroy']);
 $router->get('/painel/tutoriais', [App\Controllers\TutorialController::class, 'client']);
 
+$router->get('/painel/treinamento', [App\Controllers\SellerTrainingController::class, 'show']);
+$router->post('/painel/treinamento/progresso', [App\Controllers\SellerTrainingController::class, 'reportProgress']);
+$router->get('/painel/configuracoes/treinamento', [App\Controllers\SellerTrainingController::class, 'manage']);
+$router->post('/painel/configuracoes/treinamento', [App\Controllers\SellerTrainingController::class, 'storeVideo']);
+$router->post('/painel/configuracoes/treinamento/{id}/excluir', [App\Controllers\SellerTrainingController::class, 'destroyVideo']);
+
 // Pedidos
 $router->get('/painel/pedidos', [App\Controllers\OrderController::class, 'index']);
 $router->get('/painel/pedidos/novo', [App\Controllers\OrderController::class, 'create']);

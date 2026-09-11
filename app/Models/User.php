@@ -467,6 +467,15 @@ class User
         $stmt->execute(['id' => $id]);
     }
 
+    /** Libera o Vendedor do gate de treinamento obrigatorio (Fase 42) depois que
+     *  SellerTrainingProgress::hasCompletedAll() confirma que ele assistiu (>=90%) todo video
+     *  cadastrado. */
+    public static function markTrainingCompleted(int $id): void
+    {
+        $stmt = Database::connection()->prepare('UPDATE users SET training_completed_at = NOW() WHERE id = :id');
+        $stmt->execute(['id' => $id]);
+    }
+
     /**
      * Salva o perfil completo que o Licenciado preenche no primeiro acesso (pessoa juridica +
      * representante + comprovante) e avanca o onboarding pra "aguardando_assinatura". Metodo

@@ -78,5 +78,15 @@ class Auth
             require BASE_PATH . '/app/Views/errors/403.php';
             exit;
         }
+
+        // Gate central do treinamento obrigatorio (Fase 42) -- toda acao de verdade do painel
+        // passa por requireRole(), entao colocar a trava aqui (em vez de so' no login/Dashboard,
+        // como os outros gates de onboarding deste projeto) bloqueia de verdade mesmo se o
+        // Vendedor tentar navegar direto pra uma URL de funcao. A tela de treinamento em si usa
+        // so' requireLogin(), nunca requireRole(), entao fica sempre acessivel.
+        $user = self::user();
+        if ($user['role_slug'] === Roles::SELLER && empty($user['training_completed_at'])) {
+            Router::redirect('/painel/treinamento');
+        }
     }
 }
