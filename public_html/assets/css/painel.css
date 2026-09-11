@@ -727,7 +727,7 @@ dialog.modal-drawer .modal-body { flex: 1; min-height: 0; padding-bottom: 90px; 
     display: grid;
     grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
     gap: 16px;
-    height: calc(100vh - 220px);
+    height: calc(100vh - 160px);
     min-height: 420px;
 }
 .wa-chat-list {

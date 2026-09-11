@@ -137,22 +137,80 @@ class EvolutionApiClient
      *  e loga, entao isso so melhora a visibilidade do problema, nao muda o comportamento de fora. */
     public function sendText(string $to, string $text): array
     {
-        $digits = preg_replace('/\D/', '', $to);
-        if (strlen($digits) <= 11) {
-            $digits = '55' . $digits;
-        }
-
         $result = $this->request('POST', "/message/sendText/{$this->instance}", [
-            'number' => $digits,
+            'number' => $this->normalizeNumber($to),
             'text' => $text,
             'linkPreview' => false,
         ]);
 
         if (empty($result['key']['id'])) {
-            throw new \RuntimeException('Falha ao enviar WhatsApp pra ' . $digits . ': ' . json_encode($result));
+            throw new \RuntimeException('Falha ao enviar WhatsApp pra ' . $to . ': ' . json_encode($result));
         }
 
         return $result;
+    }
+
+    /** Imagem/video/documento -- $mediatype precisa ser exatamente "image"/"video"/"document"
+     *  (confirmado ao vivo: e' o que /message/sendMedia/{instance} exige). */
+    public function sendMedia(string $to, string $mediatype, string $mimetype, string $base64, ?string $fileName, ?string $caption): array
+    {
+        $payload = [
+            'number' => $this->normalizeNumber($to),
+            'mediatype' => $mediatype,
+            'mimetype' => $mimetype,
+            'media' => $base64,
+        ];
+        if ($fileName) {
+            $payload['fileName'] = $fileName;
+        }
+        if ($caption) {
+            $payload['caption'] = $caption;
+        }
+
+        $result = $this->request('POST', "/message/sendMedia/{$this->instance}", $payload);
+        if (empty($result['key']['id'])) {
+            throw new \RuntimeException('Falha ao enviar mídia pra ' . $to . ': ' . json_encode($result));
+        }
+
+        return $result;
+    }
+
+    /** Audio/nota de voz -- endpoint separado de sendMedia (confirmado ao vivo:
+     *  /message/sendWhatsAppAudio/{instance}, campo "audio" em vez de "media"). */
+    public function sendAudio(string $to, string $base64): array
+    {
+        $result = $this->request('POST', "/message/sendWhatsAppAudio/{$this->instance}", [
+            'number' => $this->normalizeNumber($to),
+            'audio' => $base64,
+        ]);
+        if (empty($result['key']['id'])) {
+            throw new \RuntimeException('Falha ao enviar áudio pra ' . $to . ': ' . json_encode($result));
+        }
+
+        return $result;
+    }
+
+    /** $to pode ser um JID completo (contato normal "...@s.whatsapp.net", contato com privacidade
+     *  de numero ativada "...@lid", ou grupo "...@g.us" -- ver WhatsAppInboxController, sempre manda
+     *  $chat['remote_jid']) ou um numero de telefone cru (Notifier::sendWhatsApp manda so digitos/
+     *  mascara). Extrair só os digitos de um JID já pronto CORROMPE o destino -- um contato "@lid"
+     *  (identificador interno opaco da funcao de privacidade de numero do WhatsApp, nao e' um
+     *  telefone de verdade) virava uma sequencia de digitos que nao correspondia a ninguem, e o
+     *  envio falhava sempre pra esses contatos. Confirmado ao vivo contra a Evolution API: o campo
+     *  "number" aceita o JID completo direto (ela mesma resolve/normaliza), entao so formata como
+     *  numero brasileiro quando NÃO for um JID (sem "@"). */
+    private function normalizeNumber(string $to): string
+    {
+        if (str_contains($to, '@')) {
+            return $to;
+        }
+
+        $digits = preg_replace('/\D/', '', $to);
+        if (strlen($digits) <= 11) {
+            $digits = '55' . $digits;
+        }
+
+        return $digits;
     }
 
     /** @param array|object $payload */

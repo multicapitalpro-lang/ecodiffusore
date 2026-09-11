@@ -36,12 +36,8 @@ $waTime = function (?string $dt) {
     return date('d/m/Y', $ts);
 };
 ?>
-<div class="page-header">
-    <h1>💬 Meu WhatsApp</h1>
-</div>
-
-<?php if ($sucesso): ?><p class="form-msg form-msg-ok">Sincronizado com sucesso.</p><?php endif; ?>
-<?php if ($erro === 'sync'): ?><p class="form-msg form-msg-erro">Não foi possível sincronizar agora. Tente de novo em instantes.</p><?php endif; ?>
+<?php if ($sucesso): ?><p class="form-msg form-msg-ok" style="margin:0 0 10px;">Sincronizado com sucesso.</p><?php endif; ?>
+<?php if ($erro === 'sync'): ?><p class="form-msg form-msg-erro" style="margin:0 0 10px;">Não foi possível sincronizar agora. Tente de novo em instantes.</p><?php endif; ?>
 
 <div class="wa-inbox">
     <div class="wa-chat-list">
