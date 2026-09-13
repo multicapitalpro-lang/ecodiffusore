@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Core\AsaasClient;
+use App\Core\BrazilStates;
 use App\Core\CardPricing;
 use App\Core\Csrf;
 use App\Core\DataflowClient;
@@ -32,10 +33,14 @@ class PublicController
     public function home(): void
     {
         $this->trackReferral();
+
+        $licensedStates = array_map(fn ($uf) => BrazilStates::NAMES[$uf] ?? $uf, User::activeLicensedStates());
+
         View::render('site/home', [
-            'seoTitle' => 'Economia de Diesel Patenteada — Ecodiffusore Brasil',
-            'seoDescription' => 'Reduza de 5% a 20% o consumo de diesel com o Ecodiffusore, sistema patenteado (INPI) que aumenta a performance de caminhões, máquinas agrícolas e geradores. Peça seu orçamento.',
+            'seoTitle' => 'Ecodiffusore Brasil — Original, Fabricação e Patente Nacional | Economia de Diesel',
+            'seoDescription' => 'Reduza de 5% a 20% o consumo de diesel com o Ecodiffusore, sistema patenteado (INPI) e fabricado no Brasil. Rede de licenciados autorizados, garantia nacional e suporte em português.',
             'seoPath' => '/',
+            'licensedStates' => $licensedStates,
         ], 'site');
     }
 

@@ -169,6 +169,19 @@ class User
         return $stmt->fetchAll();
     }
 
+    /** UFs distintas onde ja existe Licenciado ATIVO (nao so cadastrado -- passou pelo onboarding
+     *  completo) -- usado na LP publica pra mostrar cobertura real, sem inventar numero. */
+    public static function activeLicensedStates(): array
+    {
+        $stmt = Database::connection()->query(
+            "SELECT DISTINCT u.state FROM users u JOIN roles r ON r.id = u.role_id
+             WHERE r.slug = 'licenciado' AND u.status = 'active' AND u.licenciado_onboarding_status = 'ativo'
+                AND u.state IS NOT NULL AND u.state != ''
+             ORDER BY u.state"
+        );
+        return array_column($stmt->fetchAll(), 'state');
+    }
+
     /** Candidatos a "reporta para": todo mundo com papel gestor ou licenciado, exceto a propria pessoa */
     public static function managerCandidates(?int $exceptId = null): array
     {

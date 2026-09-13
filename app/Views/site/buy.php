@@ -5,7 +5,7 @@ use App\Core\View;
 <section class="buy-hero">
     <div class="site-container">
         <h1>Ecodiffusore — economia real de combustível</h1>
-        <p>Dispositivo patenteado (INPI) que reduz o consumo de diesel e aumenta a performance do seu veículo, máquina ou gerador.</p>
+        <p>Dispositivo patenteado (INPI) que reduz o consumo de diesel e aumenta a performance do seu veículo, máquina ou gerador. Fabricado no Brasil, com garantia nacional e suporte em português.</p>
     </div>
 </section>
 

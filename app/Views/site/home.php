@@ -31,6 +31,34 @@ $erro = isset($_GET['erro']);
     </div>
 </section>
 
+<section class="tecnologia" id="original">
+    <div class="site-container">
+        <span class="badge">Patente e Fabricação 100% Brasileiras</span>
+        <h2>Ecodiffusore Brasil: a original, feita e patenteada no Brasil</h2>
+        <p class="section-sub">Existem produtos parecidos vendidos fora do país. A Ecodiffusore Brasil é uma empresa brasileira, com fabricação nacional, patente própria registrada no INPI e uma rede de licenciados autorizados espalhada pelo Brasil — com nota fiscal, garantia e suporte em português.</p>
+        <div class="grid-2 tecnologia-grid">
+            <div class="tecnologia-card">
+                <h3>Por que comprar da Ecodiffusore Brasil</h3>
+                <ul class="check-list">
+                    <li>Patente de produto e de marca registradas no INPI (Instituto Nacional da Propriedade Industrial)</li>
+                    <li>Fabricação nacional — sem espera de importação nem risco de alfândega</li>
+                    <li>Nota fiscal, garantia de devolução e suporte técnico em português</li>
+                    <li>Rede de licenciados autorizados em expansão pelo Brasil</li>
+                </ul>
+            </div>
+            <div class="tecnologia-card">
+                <h3>Onde já estamos</h3>
+                <?php if ($licensedStates): ?>
+                    <p>Rede de licenciados autorizados ativa em <?= count($licensedStates) ?> estado<?= count($licensedStates) > 1 ? 's' : '' ?>: <strong><?= View::e(implode(', ', $licensedStates)) ?></strong> — e em expansão constante.</p>
+                <?php else: ?>
+                    <p>Rede de licenciados autorizados em expansão pelo Brasil.</p>
+                <?php endif; ?>
+                <p class="tecnologia-nota">Não encontrou um licenciado na sua região? Fale direto com a Ecodiffusore Brasil pelo WhatsApp que a gente atende você de qualquer lugar do Brasil.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
 <section class="publico">
     <div class="site-container">
         <h2>Para quem é o Ecodiffusore</h2>
@@ -297,33 +325,44 @@ $erro = isset($_GET['erro']);
     </div>
 </section>
 
+<?php
+$faqItems = [
+    ['O Ecodiffusore funciona em qualquer caminhão?', 'Sim. É compatível com a grande maioria dos caminhões movidos a diesel (Scania, Volvo, Iveco, Mercedes, DAF e outras marcas). Também atende máquinas agrícolas (tratores, colheitadeiras) e geradores a diesel. Nossa equipe confirma a compatibilidade antes do envio.'],
+    ['A instalação é difícil? Precisa de mecânico?', 'A instalação é simples, rápida e prática, e em muitos casos pode ser feita facilmente. Também oferecemos orientação profissional.'],
+    ['Quanto tempo leva para ver resultado?', 'Muitos clientes relatam melhora perceptível já nos primeiros abastecimentos, com redução no consumo de diesel e melhor desempenho do motor logo nos primeiros dias de uso.'],
+    ['Posso parcelar?', 'Sim, parcelamos em até 6x sem juros.'],
+    ['Existe garantia?', 'Sim. Se você não atingir o mínimo de 5% de economia garantido, devolvemos o seu investimento.'],
+    ['A Ecodiffusore Brasil fabrica o produto ou é revendedora?', 'A Ecodiffusore Brasil fabrica o produto no Brasil, com patente própria de produto e de marca registrada no INPI (Instituto Nacional da Propriedade Industrial) — não é uma importação nem uma revenda de produto estrangeiro.'],
+    ['Como sei que estou comprando o produto original da Ecodiffusore Brasil?', 'Compre direto pelo site oficial ecodiffusorebrasil.com.br, pelo WhatsApp oficial ou com um dos licenciados autorizados da nossa rede. Toda compra sai com nota fiscal e garantia nacional.'],
+    ['Quanto custa o Ecodiffusore?', 'O valor varia conforme o tipo de veículo ou máquina. Peça um orçamento personalizado em nossa página de compra — é rápido e sem compromisso.'],
+    ['Onde comprar o Ecodiffusore no Brasil?', 'Direto pelo site oficial ou com um licenciado autorizado da rede Ecodiffusore Brasil, presente em vários estados e em expansão constante.'],
+];
+?>
 <section id="faq" class="faq">
     <div class="site-container">
         <h2>Perguntas frequentes</h2>
         <div class="faq-list">
-            <details>
-                <summary>O Ecodiffusore funciona em qualquer caminhão?</summary>
-                <p>Sim. É compatível com a grande maioria dos caminhões movidos a diesel (Scania, Volvo, Iveco, Mercedes, DAF e outras marcas). Também atende máquinas agrícolas (tratores, colheitadeiras) e geradores a diesel. Nossa equipe confirma a compatibilidade antes do envio.</p>
-            </details>
-            <details>
-                <summary>A instalação é difícil? Precisa de mecânico?</summary>
-                <p>A instalação é simples, rápida e prática, e em muitos casos pode ser feita facilmente. Também oferecemos orientação profissional.</p>
-            </details>
-            <details>
-                <summary>Quanto tempo leva para ver resultado?</summary>
-                <p>Muitos clientes relatam melhora perceptível já nos primeiros abastecimentos, com redução no consumo de diesel e melhor desempenho do motor logo nos primeiros dias de uso.</p>
-            </details>
-            <details>
-                <summary>Posso parcelar?</summary>
-                <p>Sim, parcelamos em até 6x sem juros.</p>
-            </details>
-            <details>
-                <summary>Existe garantia?</summary>
-                <p>Sim. Se você não atingir o mínimo de 5% de economia garantido, devolvemos o seu investimento.</p>
-            </details>
+            <?php foreach ($faqItems as [$q, $a]): ?>
+                <details>
+                    <summary><?= View::e($q) ?></summary>
+                    <p><?= View::e($a) ?></p>
+                </details>
+            <?php endforeach; ?>
         </div>
     </div>
 </section>
+
+<script type="application/ld+json">
+<?= json_encode([
+    '@context' => 'https://schema.org',
+    '@type' => 'FAQPage',
+    'mainEntity' => array_map(fn ($item) => [
+        '@type' => 'Question',
+        'name' => $item[0],
+        'acceptedAnswer' => ['@type' => 'Answer', 'text' => $item[1]],
+    ], $faqItems),
+], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>
+</script>
 
 <section id="licenciado" class="licenciado">
     <div class="site-container licenciado-inner">
