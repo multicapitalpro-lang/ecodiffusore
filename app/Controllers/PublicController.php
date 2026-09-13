@@ -3,8 +3,10 @@
 namespace App\Controllers;
 
 use App\Core\AsaasClient;
+use App\Core\BlogPosts;
 use App\Core\BrazilStates;
 use App\Core\CardPricing;
+use App\Core\Config;
 use App\Core\Csrf;
 use App\Core\DataflowClient;
 use App\Core\EconomyCalculator;
@@ -29,6 +31,35 @@ use App\Models\User;
 class PublicController
 {
     private const REF_COOKIE = 'eco_ref';
+
+    /** Sitemap dinamico (Fase 52) -- substitui o public_html/sitemap.xml estatico, pra nunca
+     *  esquecer de incluir um post novo do blog (BlogPosts::POSTS e' a mesma fonte usada pelo
+     *  BlogController). So as paginas realmente publicas/indexaveis -- ver robots.txt pro resto. */
+    public function sitemap(): void
+    {
+        $baseUrl = rtrim(Config::get('app_url', 'https://ecodiffusorebrasil.com.br'), '/');
+
+        $urls = [
+            ['loc' => $baseUrl . '/', 'changefreq' => 'weekly', 'priority' => '1.0'],
+            ['loc' => $baseUrl . '/comprar', 'changefreq' => 'weekly', 'priority' => '0.9'],
+            ['loc' => $baseUrl . '/blog', 'changefreq' => 'weekly', 'priority' => '0.7'],
+        ];
+        foreach (BlogPosts::POSTS as $post) {
+            $urls[] = ['loc' => $baseUrl . '/blog/' . $post['slug'], 'lastmod' => $post['publishedAt'], 'changefreq' => 'monthly', 'priority' => '0.6'];
+        }
+
+        header('Content-Type: application/xml; charset=UTF-8');
+        echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+        echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
+        foreach ($urls as $u) {
+            echo "    <url>\n        <loc>" . htmlspecialchars($u['loc'], ENT_QUOTES, 'UTF-8') . "</loc>\n";
+            if (!empty($u['lastmod'])) {
+                echo "        <lastmod>{$u['lastmod']}</lastmod>\n";
+            }
+            echo "        <changefreq>{$u['changefreq']}</changefreq>\n        <priority>{$u['priority']}</priority>\n    </url>\n";
+        }
+        echo '</urlset>';
+    }
 
     public function home(): void
     {

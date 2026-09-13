@@ -9,7 +9,7 @@ use App\Core\View;
     </div>
 </section>
 
-<section class="buy-section">
+<section class="buy-section" id="documentacao">
     <div class="site-container">
         <h2>Documentação técnica e validação</h2>
         <p class="section-sub">Tecnologia registrada e testada — não é promessa vazia.</p>

@@ -44,6 +44,9 @@ $router = new Router();
 
 // Site público
 $router->get('/', [App\Controllers\PublicController::class, 'home']);
+$router->get('/sitemap.xml', [App\Controllers\PublicController::class, 'sitemap']);
+$router->get('/blog', [App\Controllers\BlogController::class, 'index']);
+$router->get('/blog/{slug}', [App\Controllers\BlogController::class, 'show']);
 $router->get('/cidades/buscar', [App\Controllers\CityController::class, 'search']);
 $router->post('/contato', [App\Controllers\PublicController::class, 'submitLead']);
 $router->get('/comprar', [App\Controllers\PublicController::class, 'buy']);

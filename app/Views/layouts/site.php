@@ -81,6 +81,7 @@ $canonicalUrl = $baseUrl . $seoPath;
             <a href="#beneficios">Benefícios</a>
             <a href="#depoimentos">Depoimentos</a>
             <a href="#faq">Dúvidas</a>
+            <a href="/blog">Blog</a>
             <a href="#licenciado">Seja Licenciado</a>
             <a href="/painel/login" class="site-nav-login">Meus Pedidos</a>
         </nav>
