@@ -23,6 +23,7 @@ $canonicalUrl = $baseUrl . $seoPath;
     <title><?= View::e($seoTitle) ?></title>
     <meta name="description" content="<?= View::e($seoDescription) ?>">
     <meta name="robots" content="index, follow">
+    <meta name="google-site-verification" content="NnB6on6oXgLLdw4SVIE1DX-Xk0B-NBq6egK5Kj1JlVM">
     <link rel="canonical" href="<?= View::e($canonicalUrl) ?>">
 
     <meta property="og:type" content="website">
