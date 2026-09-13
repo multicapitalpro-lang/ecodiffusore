@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+Allow: /comprar
+Disallow: /painel/
+Disallow: /webhooks/
+Disallow: /cidades/
+Disallow: /comprar/orcamento
+Disallow: /comprar/pagamento
+Disallow: /comprar/iniciar
+Disallow: /comprar/buscar-placa
+Disallow: /comprar/cotacao-maquina
+Disallow: /aceite-comissao/
+
+Sitemap: https://ecodiffusorebrasil.com.br/sitemap.xml

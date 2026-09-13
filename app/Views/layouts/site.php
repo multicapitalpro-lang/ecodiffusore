@@ -1,20 +1,77 @@
 <?php
+use App\Core\Config;
 use App\Core\Csrf;
 use App\Core\View;
 /** @var callable $content */
 $showPopup = $showPopup ?? false;
+
+// SEO por pagina -- cada controller pode sobrescrever passando seoTitle/seoDescription/seoPath no
+// array de dados do View::render(); sem isso, cai no default da home (mesmo texto que ja existia
+// aqui antes, so movido pra variavel). Nunca indexa querystring (?ref=, ?erro= etc): o canonical
+// sempre usa so' o path base, pra nao espalhar a autoridade de uma mesma pagina em varias URLs.
+$baseUrl = rtrim(Config::get('app_url', 'https://ecodiffusorebrasil.com.br'), '/');
+$seoTitle = $seoTitle ?? 'Ecodiffusore Brasil — Economia de Diesel e Combustível | Sistema Patenteado';
+$seoDescription = $seoDescription ?? 'Reduza até 20% do consumo de diesel e combustível com o Ecodiffusore, sistema patenteado (INPI) que aumenta a performance de caminhões, máquinas agrícolas e geradores. Economia real, payback rápido.';
+$seoPath = $seoPath ?? '/';
+$seoImage = $seoImage ?? $baseUrl . View::asset('/assets/img/beneficio-economia.jpg');
+$canonicalUrl = $baseUrl . $seoPath;
 ?><!doctype html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Ecodiffusore Brasil — Economize Diesel e Eleve a Performance</title>
-    <meta name="description" content="Sistema patenteado (INPI) que reduz o consumo de diesel e aumenta a performance de caminhões, máquinas agrícolas e geradores. Economia real, payback rápido.">
+    <title><?= View::e($seoTitle) ?></title>
+    <meta name="description" content="<?= View::e($seoDescription) ?>">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="<?= View::e($canonicalUrl) ?>">
+
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="pt_BR">
+    <meta property="og:site_name" content="Ecodiffusore Brasil">
+    <meta property="og:title" content="<?= View::e($seoTitle) ?>">
+    <meta property="og:description" content="<?= View::e($seoDescription) ?>">
+    <meta property="og:url" content="<?= View::e($canonicalUrl) ?>">
+    <meta property="og:image" content="<?= View::e($seoImage) ?>">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="<?= View::e($seoTitle) ?>">
+    <meta name="twitter:description" content="<?= View::e($seoDescription) ?>">
+    <meta name="twitter:image" content="<?= View::e($seoImage) ?>">
+
     <link rel="icon" href="<?= View::asset('/assets/img/favicon.svg') ?>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="<?= View::asset('/assets/css/site.css') ?>">
+
+    <script type="application/ld+json">
+    <?= json_encode([
+        '@context' => 'https://schema.org',
+        '@type' => 'Organization',
+        'name' => 'Ecodiffusore Brasil',
+        'url' => $baseUrl,
+        'logo' => $baseUrl . View::asset('/assets/img/logo-full-navy.png'),
+        'description' => 'Distribuidora do sistema patenteado Ecodiffusore, que reduz o consumo de diesel e combustível e aumenta a performance de caminhões, máquinas agrícolas e geradores.',
+        'address' => [
+            '@type' => 'PostalAddress',
+            'streetAddress' => 'Rua Goiás, 1530, Bairro Country',
+            'addressLocality' => 'Cascavel',
+            'addressRegion' => 'PR',
+            'addressCountry' => 'BR',
+        ],
+        'contactPoint' => [
+            '@type' => 'ContactPoint',
+            'telephone' => '+55-45-99102-1551',
+            'contactType' => 'sales',
+            'areaServed' => 'BR',
+            'availableLanguage' => 'Portuguese',
+        ],
+        'sameAs' => [
+            'https://www.instagram.com/ecodiffusorebrasil',
+            'https://www.facebook.com/EcodiffusoreBrasil',
+            'https://www.youtube.com/@EcodiffusoreBrasil',
+        ],
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>
+    </script>
 </head>
 <body>
 <header class="site-header">

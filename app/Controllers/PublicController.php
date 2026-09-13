@@ -32,7 +32,11 @@ class PublicController
     public function home(): void
     {
         $this->trackReferral();
-        View::render('site/home', [], 'site');
+        View::render('site/home', [
+            'seoTitle' => 'Economia de Diesel Patenteada — Ecodiffusore Brasil',
+            'seoDescription' => 'Reduza de 5% a 20% o consumo de diesel com o Ecodiffusore, sistema patenteado (INPI) que aumenta a performance de caminhões, máquinas agrícolas e geradores. Peça seu orçamento.',
+            'seoPath' => '/',
+        ], 'site');
     }
 
     public function submitLead(): void
@@ -87,6 +91,9 @@ class PublicController
             'vehicleCatalog' => VehicleCatalog::all(),
             'ref' => $ref,
             'erro' => $_GET['erro'] ?? null,
+            'seoTitle' => 'Comprar Economizador de Diesel — Orçamento Ecodiffusore',
+            'seoDescription' => 'Peça seu orçamento do Ecodiffusore, sistema patenteado que reduz o consumo de diesel de caminhões, máquinas agrícolas e geradores. Laudos técnicos, patente INPI e atendimento por WhatsApp.',
+            'seoPath' => '/comprar',
         ], 'site');
     }
 
