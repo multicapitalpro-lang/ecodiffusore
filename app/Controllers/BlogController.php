@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Core\BlogPosts;
+use App\Core\Config;
 use App\Core\Router;
 use App\Core\View;
 
@@ -25,11 +26,14 @@ class BlogController
             Router::redirect('/blog');
         }
 
+        $baseUrl = rtrim(Config::get('app_url', 'https://ecodiffusorebrasil.com.br'), '/');
+
         View::render('site/blog/' . $slug, [
             'post' => $post,
             'seoTitle' => $post['title'] . ' | Ecodiffusore Brasil',
             'seoDescription' => $post['description'],
             'seoPath' => '/blog/' . $slug,
+            'seoImage' => !empty($post['image']) ? $baseUrl . View::asset($post['image']) : null,
         ], 'site');
     }
 }

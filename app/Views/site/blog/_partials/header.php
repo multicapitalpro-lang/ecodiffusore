@@ -11,6 +11,9 @@ $baseUrl = rtrim(Config::get('app_url', 'https://ecodiffusorebrasil.com.br'), '/
     <div class="site-container">
         <time datetime="<?= View::e($post['publishedAt']) ?>"><?= View::e(date('d/m/Y', strtotime($post['publishedAt']))) ?></time>
         <h1><?= View::e($post['title']) ?></h1>
+        <?php if (!empty($post['image'])): ?>
+            <img src="<?= View::asset($post['image']) ?>" alt="<?= View::e($post['imageAlt'] ?? $post['title']) ?>" class="blog-article-image" loading="eager">
+        <?php endif; ?>
     </div>
 </header>
 <script type="application/ld+json">
