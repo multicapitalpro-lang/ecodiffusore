@@ -8,6 +8,7 @@ use App\Core\BrazilStates;
 use App\Core\CardPricing;
 use App\Core\Config;
 use App\Core\Csrf;
+use App\Core\LocalPages;
 use App\Core\DataflowClient;
 use App\Core\EconomyCalculator;
 use App\Core\FileUpload;
@@ -47,6 +48,9 @@ class PublicController
         foreach (BlogPosts::POSTS as $post) {
             $urls[] = ['loc' => $baseUrl . '/blog/' . $post['slug'], 'lastmod' => $post['publishedAt'], 'changefreq' => 'monthly', 'priority' => '0.6'];
         }
+        foreach (LocalPages::PAGES as $page) {
+            $urls[] = ['loc' => $baseUrl . '/' . $page['slug'], 'changefreq' => 'monthly', 'priority' => '0.7'];
+        }
 
         header('Content-Type: application/xml; charset=UTF-8');
         echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
@@ -65,7 +69,14 @@ class PublicController
     {
         $this->trackReferral();
 
-        $licensedStates = array_map(fn ($uf) => BrazilStates::NAMES[$uf] ?? $uf, User::activeLicensedStates());
+        $localPageByUf = [];
+        foreach (LocalPages::PAGES as $page) {
+            $localPageByUf[$page['stateUf']] = '/' . $page['slug'];
+        }
+        $licensedStates = array_map(fn ($uf) => [
+            'name' => BrazilStates::NAMES[$uf] ?? $uf,
+            'url' => $localPageByUf[$uf] ?? null,
+        ], User::activeLicensedStates());
 
         View::render('site/home', [
             'seoTitle' => 'Ecodiffusore Brasil — Original, Fabricação e Patente Nacional | Economia de Diesel',

@@ -182,6 +182,20 @@ class User
         return array_column($stmt->fetchAll(), 'state');
     }
 
+    /** Cidades com Licenciado ATIVO dentro de UM estado -- usado nas paginas locais de SEO (Fase 55),
+     *  pra listar presenca real por cidade sem inventar dado. */
+    public static function activeLicensedCitiesInState(string $stateUf): array
+    {
+        $stmt = Database::connection()->prepare(
+            "SELECT DISTINCT u.city FROM users u JOIN roles r ON r.id = u.role_id
+             WHERE r.slug = 'licenciado' AND u.status = 'active' AND u.licenciado_onboarding_status = 'ativo'
+                AND u.state = :state AND u.city IS NOT NULL AND u.city != ''
+             ORDER BY u.city"
+        );
+        $stmt->execute(['state' => $stateUf]);
+        return array_column($stmt->fetchAll(), 'city');
+    }
+
     /** Candidatos a "reporta para": todo mundo com papel gestor ou licenciado, exceto a propria pessoa */
     public static function managerCandidates(?int $exceptId = null): array
     {

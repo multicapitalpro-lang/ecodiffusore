@@ -49,7 +49,11 @@ $erro = isset($_GET['erro']);
             <div class="tecnologia-card">
                 <h3>Onde já estamos</h3>
                 <?php if ($licensedStates): ?>
-                    <p>Rede de licenciados autorizados ativa em <?= count($licensedStates) ?> estado<?= count($licensedStates) > 1 ? 's' : '' ?>: <strong><?= View::e(implode(', ', $licensedStates)) ?></strong> — e em expansão constante.</p>
+                    <p>Rede de licenciados autorizados ativa em <?= count($licensedStates) ?> estado<?= count($licensedStates) > 1 ? 's' : '' ?>:
+                        <strong>
+                        <?php foreach ($licensedStates as $i => $s): ?><?= $i > 0 ? ', ' : '' ?><?php if ($s['url']): ?><a href="<?= View::e($s['url']) ?>"><?= View::e($s['name']) ?></a><?php else: ?><?= View::e($s['name']) ?><?php endif; ?><?php endforeach; ?>
+                        </strong>
+                        — e em expansão constante.</p>
                 <?php else: ?>
                     <p>Rede de licenciados autorizados em expansão pelo Brasil.</p>
                 <?php endif; ?>
