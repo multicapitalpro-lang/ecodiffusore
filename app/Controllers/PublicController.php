@@ -78,7 +78,15 @@ class PublicController
             'url' => $localPageByUf[$uf] ?? null,
         ], User::activeLicensedStates());
 
+        // Link direto pra alguns posts na home (a pagina mais forte do site em autoridade) -- sem
+        // isso o blog so era alcancavel via /blog, nunca direto da home, o que atrasa a indexacao/
+        // ranking dos artigos (a home "empresta" pouca forca pra eles). So os 3 mais estrategicos,
+        // nao a lista toda -- confirma slug contra BlogPosts::POSTS.
+        $featuredBlogSlugs = ['ecodiffusore-e-confiavel-patente-fabricacao-garantia', 'por-que-o-diesel-so-sobe-no-brasil', 'economizador-de-combustivel-vale-a-pena-payback'];
+        $featuredPosts = array_values(array_filter(BlogPosts::POSTS, fn ($p) => in_array($p['slug'], $featuredBlogSlugs, true)));
+
         View::render('site/home', [
+            'featuredPosts' => $featuredPosts,
             'seoTitle' => 'Ecodiffusore Brasil — Original, Fabricação e Patente Nacional | Economia de Diesel',
             'seoDescription' => 'Reduza de 5% a 20% o consumo de diesel com o Ecodiffusore, sistema patenteado (INPI) e fabricado no Brasil. Rede de licenciados autorizados, garantia nacional e suporte em português.',
             'seoPath' => '/',

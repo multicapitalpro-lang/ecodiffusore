@@ -368,6 +368,28 @@ $faqItems = [
 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>
 </script>
 
+<?php if ($featuredPosts): ?>
+<section class="blog-list-section">
+    <div class="site-container">
+        <h2>Do nosso blog</h2>
+        <p class="section-sub">Conteúdo sobre economia de diesel, combustível e o Ecodiffusore.</p>
+        <div class="blog-grid">
+            <?php foreach ($featuredPosts as $post): ?>
+                <article class="blog-card">
+                    <?php if (!empty($post['image'])): ?>
+                        <a href="/blog/<?= View::e($post['slug']) ?>"><img src="<?= View::asset($post['image']) ?>" alt="<?= View::e($post['imageAlt'] ?? $post['title']) ?>" class="blog-card-image" loading="lazy"></a>
+                    <?php endif; ?>
+                    <h2><a href="/blog/<?= View::e($post['slug']) ?>"><?= View::e($post['title']) ?></a></h2>
+                    <p><?= View::e($post['description']) ?></p>
+                    <a href="/blog/<?= View::e($post['slug']) ?>" class="link-small">Ler artigo →</a>
+                </article>
+            <?php endforeach; ?>
+        </div>
+        <p style="text-align:center;margin-top:24px;"><a href="/blog" class="btn btn-outline">Ver todos os artigos</a></p>
+    </div>
+</section>
+<?php endif; ?>
+
 <section id="licenciado" class="licenciado">
     <div class="site-container licenciado-inner">
         <h2>Seja um Licenciado Ecodiffusore Brasil</h2>
