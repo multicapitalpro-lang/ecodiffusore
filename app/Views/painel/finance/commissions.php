@@ -2,7 +2,7 @@
 use App\Core\Csrf;
 use App\Core\View;
 $statusLabels = ['pendente' => 'Pendente', 'pago' => 'Pago'];
-$roleLabels = ['licenciado' => 'Licenciado', 'gestor' => 'Gestor', 'vendedor' => 'Vendedor', 'gerente' => 'Gerente', 'supervisor' => 'Supervisor'];
+$roleLabels = ['licenciado' => 'Licenciado', 'gestor' => 'Gestor', 'vendedor' => 'Vendedor', 'gerente' => 'Gerente', 'supervisor' => 'Supervisor', 'influenciador' => 'Influenciador'];
 $sucesso = isset($_GET['sucesso']);
 $period = $period ?? [];
 

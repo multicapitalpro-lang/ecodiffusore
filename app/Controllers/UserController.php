@@ -154,6 +154,12 @@ class UserController
 
         $vendorType = $this->vendorCommissionType($user, $createdRoleSlug, $_POST);
 
+        // Fase 56: comissao fixa do Influenciador -- so' admin define, R$100 default (pedido
+        // explicito do usuario) se ele nao digitar um valor customizado.
+        $influencerCommissionValue = $createdRoleSlug === Roles::INFLUENCER
+            ? ($user['role_slug'] === 'admin' && ($_POST['influencer_commission_value'] ?? '') !== '' ? $_POST['influencer_commission_value'] : 100)
+            : null;
+
         $newUserId = User::create([
             'role_id' => (int) $_POST['role_id'],
             'manager_id' => $managerId,
@@ -165,6 +171,7 @@ class UserController
             'password' => $_POST['password'],
             'status' => $_POST['status'] ?? 'active',
             'commission_pct' => $commissionPct,
+            'influencer_commission_value' => $influencerCommissionValue,
             'commission_type' => $vendorType,
             'must_change_password' => true,
             'licenciado_onboarding_status' => $createdRoleSlug === 'licenciado' ? 'aguardando_perfil' : 'nao_aplicavel',
@@ -293,6 +300,12 @@ class UserController
 
         $vendorType = $this->vendorCommissionType($user, $editedRoleSlug, $_POST);
 
+        // Fase 56: so' admin edita a comissao fixa do Influenciador -- qualquer outro editor
+        // (ou o campo ausente do POST) preserva o valor que ja estava salvo, nunca zera.
+        $influencerCommissionValue = $user['role_slug'] === 'admin' && ($_POST['influencer_commission_value'] ?? '') !== ''
+            ? $_POST['influencer_commission_value']
+            : ($before['influencer_commission_value'] ?? null);
+
         User::update($id, [
             'role_id' => (int) $_POST['role_id'],
             'manager_id' => $managerId,
@@ -303,6 +316,7 @@ class UserController
             'state' => trim($_POST['state'] ?? ''),
             'status' => $_POST['status'] ?? 'active',
             'commission_pct' => $commissionPct,
+            'influencer_commission_value' => $influencerCommissionValue,
             'commission_type' => $vendorType,
             'discount_limit_pct' => $discountLimitPct,
         ]);

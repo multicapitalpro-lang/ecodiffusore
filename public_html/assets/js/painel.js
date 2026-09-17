@@ -501,6 +501,7 @@ document.addEventListener('DOMContentLoaded', function () {
             var vendedorWrap = root.querySelector('#vendedor-commission-wrap');
             var commissionPctWrap = root.querySelector('#commission-pct-wrap');
             var licenciadoNote = root.querySelector('#licenciado-commission-note');
+            var influencerWrap = root.querySelector('#influencer-commission-wrap');
             var screensWrap = root.querySelector('#screens-permissions-wrap');
             var commissionHints = root.querySelectorAll('[data-commission-hint]');
 
@@ -516,8 +517,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 var slug = opt ? opt.dataset.slug : null;
                 if (supervisorWrap) supervisorWrap.style.display = slug === 'licenciado' ? '' : 'none';
                 if (vendedorWrap) vendedorWrap.style.display = slug === 'vendedor' ? '' : 'none';
-                if (commissionPctWrap) commissionPctWrap.style.display = slug === 'licenciado' ? 'none' : '';
+                if (commissionPctWrap) commissionPctWrap.style.display = (slug === 'licenciado' || slug === 'influenciador') ? 'none' : '';
                 if (licenciadoNote) licenciadoNote.style.display = slug === 'licenciado' ? '' : 'none';
+                if (influencerWrap) influencerWrap.style.display = slug === 'influenciador' ? '' : 'none';
                 if (screensWrap) screensWrap.style.display = (slug === 'gestor' || slug === 'vendedor') ? '' : 'none';
 
                 var activeHintKey = hintKeyByRole[slug] || null;

@@ -183,13 +183,14 @@ class Quote
 
         try {
             $stmt = $db->prepare(
-                'INSERT INTO quotes (client_id, lead_id, seller_id, status, quote_date, valid_until, total_value, notes)
-                 VALUES (:client_id, :lead_id, :seller_id, :status, :quote_date, :valid_until, 0, :notes)'
+                'INSERT INTO quotes (client_id, lead_id, seller_id, influencer_id, status, quote_date, valid_until, total_value, notes)
+                 VALUES (:client_id, :lead_id, :seller_id, :influencer_id, :status, :quote_date, :valid_until, 0, :notes)'
             );
             $stmt->execute([
                 'client_id' => $data['client_id'],
                 'lead_id' => $data['lead_id'] ?? null,
                 'seller_id' => $data['seller_id'] ?: null,
+                'influencer_id' => $data['influencer_id'] ?? null,
                 'status' => $data['status'] ?? 'aberto',
                 'quote_date' => $data['quote_date'],
                 'valid_until' => $data['valid_until'] ?: null,
@@ -269,6 +270,7 @@ class Quote
         $orderId = Order::create([
             'client_id' => $quote['client_id'],
             'seller_id' => $quote['seller_id'],
+            'influencer_id' => $quote['influencer_id'] ?? null,
             'order_date' => date('Y-m-d'),
             'notes' => 'Convertido do orçamento #' . $quoteId,
         ], array_map(fn ($i) => [

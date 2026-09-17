@@ -652,7 +652,7 @@ class FinanceController
 
         $filters = array_merge($this->commissionFilters($user), $this->periodFilters());
 
-        $roleLabels = ['licenciado' => 'Licenciado', 'gestor' => 'Gestor', 'vendedor' => 'Vendedor', 'gerente' => 'Gerente', 'supervisor' => 'Supervisor'];
+        $roleLabels = ['licenciado' => 'Licenciado', 'gestor' => 'Gestor', 'vendedor' => 'Vendedor', 'gerente' => 'Gerente', 'supervisor' => 'Supervisor', 'influenciador' => 'Influenciador'];
 
         $rows = array_map(fn ($c) => [
             $c['order_id'],

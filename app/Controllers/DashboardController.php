@@ -55,6 +55,10 @@ class DashboardController
             Router::redirect('/painel/fabrica');
         }
 
+        if ($user['role_slug'] === Roles::INFLUENCER) {
+            Router::redirect('/painel/influenciador');
+        }
+
         if ($user['role_slug'] === 'licenciado' && $user['licenciado_onboarding_status'] === 'aguardando_perfil') {
             Router::redirect('/painel/licenciados/completar-perfil');
         }

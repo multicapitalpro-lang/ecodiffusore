@@ -205,10 +205,11 @@ class Order
     {
         $stmt = Database::connection()->prepare(
             'SELECT o.*, c.name AS client_name, c.whatsapp AS client_whatsapp, c.city AS client_city, c.state AS client_state,
-                    u.name AS seller_name
+                    u.name AS seller_name, inf.name AS influencer_name
              FROM orders o
              JOIN clients c ON c.id = o.client_id
              LEFT JOIN users u ON u.id = o.seller_id
+             LEFT JOIN users inf ON inf.id = o.influencer_id
              WHERE o.id = :id'
         );
         $stmt->execute(['id' => $id]);
@@ -223,12 +224,13 @@ class Order
 
         try {
             $stmt = $db->prepare(
-                'INSERT INTO orders (client_id, seller_id, status, order_date, total_value, notes, vehicle_type, vehicle_plate, vehicle_document_path, cnh_document_path)
-                 VALUES (:client_id, :seller_id, :status, :order_date, 0, :notes, :vehicle_type, :vehicle_plate, :vehicle_document_path, :cnh_document_path)'
+                'INSERT INTO orders (client_id, seller_id, influencer_id, status, order_date, total_value, notes, vehicle_type, vehicle_plate, vehicle_document_path, cnh_document_path)
+                 VALUES (:client_id, :seller_id, :influencer_id, :status, :order_date, 0, :notes, :vehicle_type, :vehicle_plate, :vehicle_document_path, :cnh_document_path)'
             );
             $stmt->execute([
                 'client_id' => $data['client_id'],
                 'seller_id' => $data['seller_id'] ?: null,
+                'influencer_id' => $data['influencer_id'] ?? null,
                 'status' => $data['status'] ?? 'em_andamento',
                 'order_date' => $data['order_date'],
                 'notes' => $data['notes'] ?: null,

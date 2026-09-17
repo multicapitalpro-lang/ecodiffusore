@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Core\Database;
+use App\Core\Roles;
 
 class Commission
 {
@@ -97,6 +98,25 @@ class Commission
             }
 
             $restante = max(0, round($pool - $distribuido, 2));
+
+            // Fase 56: indicacao de Influenciador -- comissao FIXA (nao %, valor configurado por
+            // admin em users.influencer_commission_value, R$100 default), descontada do que SOBRA
+            // pro Licenciado (nao do pool inteiro nem do total do pedido -- pedido explicito do
+            // usuario, com o exemplo "dos R$900 do licenciado, desconta R$100 pro influenciador").
+            // min() com $restante evita comissao negativa se a sobra do licenciado for menor que o
+            // valor do influenciador nesse pedido especifico.
+            $order = Order::find($orderId);
+            if ($order && !empty($order['influencer_id'])) {
+                $influencer = User::find((int) $order['influencer_id']);
+                if ($influencer && $influencer['role_slug'] === Roles::INFLUENCER) {
+                    $influencerValue = min($restante, (float) ($influencer['influencer_commission_value'] ?? 100));
+                    if ($influencerValue > 0) {
+                        self::insertRow($orderId, $sellerId, (int) $influencer['id'], Roles::INFLUENCER, 0, $influencerValue);
+                        $restante = max(0, round($restante - $influencerValue, 2));
+                    }
+                }
+            }
+
             if ($restante > 0) {
                 self::insertRow($orderId, $sellerId, (int) $licenciado['id'], 'licenciado', (float) $tier['licenciado_commission_pct'], $restante);
             }

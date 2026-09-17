@@ -46,6 +46,9 @@ $situation = $order['payment_situation'] ?? ['label' => '—', 'badge' => 'novo'
     <?php endif; ?>
     <p><strong>Cidade:</strong> <?= View::e($order['client_city'] ?: '—') ?><?= $order['client_state'] ? '/' . View::e($order['client_state']) : '' ?></p>
     <p><strong>Vendedor:</strong> <?= View::e($order['seller_name'] ?: 'Sem vendedor') ?></p>
+    <?php if (!empty($order['influencer_name'])): ?>
+        <p><strong>Origem:</strong> venda indicada pelo influenciador <?= View::e($order['influencer_name']) ?> — a comissão dele nesta venda é descontada da comissão do Licenciado (ver Comissões).</p>
+    <?php endif; ?>
     <p><strong>Data:</strong> <?= View::e(date('d/m/Y', strtotime($order['order_date']))) ?></p>
     <p><strong>Situação do pedido:</strong> <span class="status-badge status-<?= $order['status'] === 'verificado' ? 'active' : ($order['status'] === 'cancelado' ? 'inactive' : 'novo') ?>"><?= $statusLabels[$order['status']] ?? $order['status'] ?></span></p>
     <p><strong>Situação do pagamento:</strong> <span class="status-badge status-<?= View::e($situation['badge']) ?>"><?= View::e($situation['label']) ?></span></p>

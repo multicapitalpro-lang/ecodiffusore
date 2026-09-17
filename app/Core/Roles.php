@@ -43,4 +43,11 @@ class Roles
      *  hierarquia comercial (sem manager_id/comissao/downline), de proposito fora de STAFF/
      *  MANAGEMENT -- so ve/atualiza rastreio dos proprios pedidos verificados. */
     public const FACTORY = 'fabrica';
+
+    /** Influenciador (Fase 56) -- divulga um link pessoal (?inf=<id>), sem entrar na cadeia de
+     *  venda/atendimento (o roteamento por raio de 100km continua 100% geografico, o influenciador
+     *  e' so uma etiqueta de origem). Ator separado, fora de STAFF/MANAGEMENT (mesmo tratamento de
+     *  FACTORY) -- so ve o proprio painel com os leads/vendas que vieram do link dele. So o admin
+     *  cadastra e so o admin edita o valor fixo de comissao por venda (users.influencer_commission_value). */
+    public const INFLUENCER = 'influenciador';
 }

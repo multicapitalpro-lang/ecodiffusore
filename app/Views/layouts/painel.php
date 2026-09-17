@@ -13,6 +13,7 @@ $roleLabels = [
     'supervisor' => 'Supervisor',
     'cliente' => 'Cliente',
     'fabrica' => 'Fábrica',
+    'influenciador' => 'Influenciador',
 ];
 $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
 $isActive = fn (string $prefix) => $path === $prefix || str_starts_with($path, $prefix . '/');
@@ -88,6 +89,10 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/desempen
             <?php if ($role === Roles::FACTORY): ?>
                 <a href="/painel/fabrica" class="<?= $isActive('/painel/fabrica') ? 'is-active' : '' ?>"><?= $icon('box') ?> Pedidos pra Despachar</a>
                 <a href="/painel/fabrica/rede" class="<?= $isActive('/painel/fabrica/rede') ? 'is-active' : '' ?>"><?= $icon('users') ?> Consultar Rede</a>
+            <?php endif; ?>
+
+            <?php if ($role === Roles::INFLUENCER): ?>
+                <a href="/painel/influenciador" class="<?= $isActive('/painel/influenciador') ? 'is-active' : '' ?>"><?= $icon('megaphone') ?> Meu Painel</a>
             <?php endif; ?>
 
             <?php if (in_array($role, $staffRoles, true)): ?>

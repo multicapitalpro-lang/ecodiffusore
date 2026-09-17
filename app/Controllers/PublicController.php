@@ -9,6 +9,7 @@ use App\Core\CardPricing;
 use App\Core\Config;
 use App\Core\Csrf;
 use App\Core\LocalPages;
+use App\Core\Roles;
 use App\Core\DataflowClient;
 use App\Core\EconomyCalculator;
 use App\Core\FileUpload;
@@ -32,6 +33,7 @@ use App\Models\User;
 class PublicController
 {
     private const REF_COOKIE = 'eco_ref';
+    private const INF_COOKIE = 'eco_inf';
 
     /** Sitemap dinamico (Fase 52) -- substitui o public_html/sitemap.xml estatico, pra nunca
      *  esquecer de incluir um post novo do blog (BlogPosts::POSTS e' a mesma fonte usada pelo
@@ -68,6 +70,7 @@ class PublicController
     public function home(): void
     {
         $this->trackReferral();
+        $this->trackInfluencer();
 
         $localPageByUf = [];
         foreach (LocalPages::PAGES as $page) {
@@ -137,6 +140,7 @@ class PublicController
     public function buy(): void
     {
         $ref = $this->trackReferral();
+        $this->trackInfluencer();
 
         View::render('site/buy', [
             'showPopup' => empty($_SESSION['checkout_lead_id']),
@@ -270,6 +274,7 @@ class PublicController
                 'client_id' => $clientId,
                 'lead_id' => (int) $_SESSION['checkout_lead_id'],
                 'seller_id' => $ownerId,
+                'influencer_id' => $currentLead['influencer_id'] ?? null,
                 'status' => 'aberto',
                 'quote_date' => date('Y-m-d'),
                 'valid_until' => date('Y-m-d', strtotime('+7 days')),
@@ -474,6 +479,7 @@ class PublicController
         }
 
         $ref = $this->trackReferral();
+        $inf = $this->trackInfluencer();
 
         // Mesmo WhatsApp que ja preencheu o popup antes reaproveita o Lead existente (com o dono
         // que ja tinha, se tiver) em vez de criar outro -- "nao podemos ter o mesmo lead em dois
@@ -495,6 +501,9 @@ class PublicController
 
         if ($ref) {
             Lead::assignTo($leadId, $ref);
+        }
+        if ($inf) {
+            Lead::setInfluencer($leadId, $inf);
         }
 
         $_SESSION['checkout_lead_id'] = $leadId;
@@ -529,6 +538,7 @@ class PublicController
         }
 
         $ref = $this->trackReferral();
+        $inf = $this->trackInfluencer();
 
         $documentDigits = preg_replace('/\D/', '', $document);
 
@@ -547,6 +557,7 @@ class PublicController
         $orderId = Order::create([
             'client_id' => $clientId,
             'seller_id' => $ref,
+            'influencer_id' => $inf,
             'order_date' => date('Y-m-d'),
             'notes' => 'Pedido via checkout público' . ($ref ? " (indicação #{$ref})" : ''),
         ], [
@@ -630,6 +641,29 @@ class PublicController
 
         if (isset($_GET['ref'])) {
             setcookie(self::REF_COOKIE, (string) $user['id'], time() + 30 * 86400, '/');
+        }
+
+        return (int) $user['id'];
+    }
+
+    /** Le/grava o cookie de indicacao de Influenciador (?inf=<id>, Fase 56) -- MESMO padrao de
+     *  trackReferral(), mas completamente independente dele: nunca afeta seller_id/roteamento
+     *  geografico (isso continua 100% GeoMatch/Licenciado Central), so marca de onde o
+     *  Lead/Orcamento/Pedido veio pra fins de estatistica/comissao do influenciador. */
+    private function trackInfluencer(): ?int
+    {
+        $candidate = $_GET['inf'] ?? $_COOKIE[self::INF_COOKIE] ?? null;
+        if (!$candidate || !ctype_digit((string) $candidate)) {
+            return null;
+        }
+
+        $user = User::find((int) $candidate);
+        if (!$user || $user['role_slug'] !== Roles::INFLUENCER || $user['status'] !== 'active') {
+            return null;
+        }
+
+        if (isset($_GET['inf'])) {
+            setcookie(self::INF_COOKIE, (string) $user['id'], time() + 30 * 86400, '/');
         }
 
         return (int) $user['id'];

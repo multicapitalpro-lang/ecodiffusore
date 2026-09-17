@@ -218,6 +218,37 @@ class Lead
         $stmt->execute(['uid' => $userId, 'exp' => $expiresAt, 'id' => $id]);
     }
 
+    /** Marca de qual Influenciador esse Lead veio (Fase 56, ?inf=<id> -- nunca afeta o dono/
+     *  vendedor do Lead, so' pra estatistica/comissao do influenciador). Mesmo padrao de
+     *  assignTo(): sempre reatribui quando um link novo e' clicado (ultimo clique vale, igual
+     *  a atribuicao por ?ref= de Licenciado/Vendedor ja funciona). */
+    public static function setInfluencer(int $id, ?int $influencerId): void
+    {
+        $stmt = Database::connection()->prepare('UPDATE leads SET influencer_id = :inf WHERE id = :id');
+        $stmt->execute(['inf' => $influencerId, 'id' => $id]);
+    }
+
+    /** Leads/orcamentos/vendas originados do link de UM Influenciador -- usado no painel dele
+     *  (Fase 56). Junta ate a Venda (via quotes.converted_order_id) e a comissao dele nessa
+     *  venda especifica, pra ele ver nome/telefone/orcamento/venda/comissao numa linha so. */
+    public static function forInfluencer(int $influencerId): array
+    {
+        $stmt = Database::connection()->prepare(
+            "SELECT l.id, l.name, l.whatsapp, l.city, l.created_at,
+                    q.id AS quote_id, q.total_value AS quote_value, q.status AS quote_status,
+                    o.id AS order_id, o.status AS order_status, o.total_value AS order_value,
+                    comm.amount AS commission_amount, comm.status AS commission_status
+             FROM leads l
+             LEFT JOIN quotes q ON q.lead_id = l.id
+             LEFT JOIN orders o ON o.id = q.converted_order_id
+             LEFT JOIN commissions comm ON comm.order_id = o.id AND comm.beneficiary_id = l.influencer_id
+             WHERE l.influencer_id = :inf
+             ORDER BY l.created_at DESC"
+        );
+        $stmt->execute(['inf' => $influencerId]);
+        return $stmt->fetchAll();
+    }
+
     /** Lead com um Vendedor ha mais de 30 dias sem converter/descartar volta pro Licenciado da
      *  MESMA rede (nunca fica "sem responsavel" global -- isso vazaria pra outras redes, mesmo
      *  problema que a Fase 35 corrigiu pro orcamento sem Vendedor no raio). Lazy-check (sem cron

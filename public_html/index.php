@@ -106,6 +106,8 @@ $router->get('/painel/fabrica/rede', [App\Controllers\FactoryController::class, 
 $router->post('/painel/fabrica/{id}/entrega', [App\Controllers\FactoryController::class, 'updateDelivery']);
 $router->post('/painel/fabrica/{id}/entregue', [App\Controllers\FactoryController::class, 'markDelivered']);
 $router->get('/painel/fabrica/{id}/termo-garantia', [App\Controllers\FactoryController::class, 'downloadWarrantyTerm']);
+
+$router->get('/painel/influenciador', [App\Controllers\InfluencerController::class, 'dashboard']);
 $router->get('/painel/entregas', [App\Controllers\OrderController::class, 'deliveries']);
 $router->get('/painel/garantias/{id}/anexo/{attachmentId}', [App\Controllers\WarrantyController::class, 'downloadAttachment']);
 $router->get('/painel/garantias/{id}/termo', [App\Controllers\WarrantyController::class, 'downloadTerm']);

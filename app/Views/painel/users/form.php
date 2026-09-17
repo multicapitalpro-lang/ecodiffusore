@@ -129,6 +129,15 @@ $values = $editing ?? ($old ?? []);
         </div>
     <?php endif; ?>
 
+    <?php if ($user['role_slug'] === 'admin'): ?>
+        <div id="influencer-commission-wrap" style="display:none;">
+            <label for="influencer_commission_value">Comissão fixa por venda (R$)</label>
+            <input type="number" id="influencer_commission_value" name="influencer_commission_value" step="0.01" min="0"
+                   value="<?= View::e((string) ($values['influencer_commission_value'] ?? '')) ?>" placeholder="Ex: 100.00">
+            <p class="hint-text">Valor fixo (não %) pago a este Influenciador em cada venda originada pelo link dele — descontado da comissão do Licenciado da venda. Padrão R$100,00 se deixar em branco num cadastro novo. Só o Admin define/altera este valor.</p>
+        </div>
+    <?php endif; ?>
+
     <?php
     $allowedScreens = $allowedScreens ?? null;
     $checkedScreens = $allowedScreens === null ? array_keys(ScreenPermissions::SCREENS) : $allowedScreens;
