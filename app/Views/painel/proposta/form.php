@@ -140,7 +140,7 @@ $pricingTiers = $pricingTiers ?? [];
             <p class="hint-text" id="proposta-price-bands" style="margin-top:0;"></p>
             <p class="hint-text" id="proposta-price-preview"></p>
 
-            <button type="submit" class="btn btn-primary">Gerar proposta</button>
+            <button type="submit" class="btn btn-primary" id="proposta-submit-btn">Gerar proposta</button>
         </form>
 <?php endif; ?>
 

@@ -589,9 +589,21 @@ document.addEventListener('DOMContentLoaded', function () {
                     return match;
                 };
 
+                // Fase 57c: Vendedor pedindo abaixo do piso proprio (R$4.290) -- o botao muda de
+                // rotulo assim que ele digita um preco baixo, pra deixar claro ANTES de enviar
+                // que isso vira uma solicitacao de liberacao, nao uma proposta pronta (o servidor
+                // e' quem realmente decide/cria a pendencia -- isso aqui e' so' a dica visual).
+                var submitBtn = root.querySelector('#proposta-submit-btn');
+
                 var updatePreview = function () {
                     var qty = parseInt(qtyInput.value, 10) || 1;
                     var price = parseFloat((priceInput.value || '').replace(/\./g, '').replace(',', '.')) || 0;
+
+                    if (submitBtn && isVendedor) {
+                        var belowFloor = price > 0 && price < vendorFloor;
+                        submitBtn.textContent = belowFloor ? '🔓 Solicitar liberação de preço' : 'Gerar proposta';
+                    }
+
                     if (!price) {
                         pricePreview.textContent = '';
                         return;
