@@ -235,7 +235,11 @@ class AuthController
         $email = trim($_POST['email'] ?? '');
         $user = $email !== '' ? User::findByEmail($email) : null;
 
-        if ($user && $user['role_slug'] === 'cliente' && $user['status'] === 'active') {
+        // Antes so' funcionava pra Cliente -- Licenciado/Vendedor/etc tambem logam com e-mail+senha
+        // por aqui e precisam do mesmo "esqueci minha senha" (bug real, ver Lucinei Lucion: o
+        // formulario aceitava o codigo/senha nova sem avisar que nao ia fazer nada, so' dava
+        // "codigo invalido" na hora de confirmar).
+        if ($user && $user['status'] === 'active') {
             $code = (string) random_int(100000, 999999);
             PasswordReset::createCode((int) $user['id'], $code);
 
@@ -285,7 +289,7 @@ class AuthController
         }
 
         $user = User::findByEmail($email);
-        $validCode = $user && $user['role_slug'] === 'cliente' && $code !== ''
+        $validCode = $user && $code !== ''
             && PasswordReset::verifyCode((int) $user['id'], $code);
 
         if (!$validCode) {

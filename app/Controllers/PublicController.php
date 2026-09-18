@@ -499,8 +499,25 @@ class PublicController
             ]);
         }
 
+        // Fase 60: sem isso, um Lead que so preenche esse popup (Nome/WhatsApp/Cidade) e nunca
+        // termina o fluxo de placa (submitOrcamento(), mais abaixo) ficava sem dono ate' alguem
+        // completar o orcamento -- nesse meio tempo aparecia pra TODO Licenciado do pais no Kanban
+        // de Leads (LeadController::scopedLeads() mostra "sem responsavel" pra qualquer um), mesmo
+        // vazamento entre redes que ja tinha sido corrigido em submitOrcamento() (comentario ali:
+        // "antes ficava sem responsavel e aparecia pra QUALQUER Licenciado do pais"), so' que ainda
+        // nao cobria essa entrada mais cedo do funil.
         if ($ref) {
             Lead::assignTo($leadId, $ref);
+        } else {
+            $currentLead = Lead::find($leadId);
+            if (empty($currentLead['assigned_to_user_id'])) {
+                $seller = $city !== '' ? GeoMatch::nearestSeller($city) : null;
+                $ownerId = $seller['id'] ?? LeadRoutingSettings::centralLicenciadoId();
+                if ($ownerId) {
+                    Lead::assignTo($leadId, $ownerId);
+                    Notifier::leadRoteado($currentLead, $ownerId);
+                }
+            }
         }
         if ($inf) {
             Lead::setInfluencer($leadId, $inf);
