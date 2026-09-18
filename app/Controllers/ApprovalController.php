@@ -13,12 +13,21 @@ class ApprovalController
 {
     public function decide(string $id): void
     {
-        Auth::requireRole(Roles::MANAGEMENT);
+        // Fase 57: quem decide agora depende do papel de quem pediu (Approval::canDecide()) --
+        // o gate aqui so garante que e' alguem da equipe interna, a autorizacao fina roda abaixo.
+        Auth::requireRole(Roles::STAFF);
         $id = (int) $id;
 
         $approval = Approval::find($id);
         if (!$approval) {
             Router::redirect('/painel');
+        }
+
+        $user = Auth::user();
+        if (!Approval::canDecide($approval, $user)) {
+            http_response_code(403);
+            require BASE_PATH . '/app/Views/errors/403.php';
+            exit;
         }
 
         $returnTo = $approval['approvable_type'] === 'order'
@@ -34,7 +43,6 @@ class ApprovalController
             Router::redirect($returnTo);
         }
 
-        $user = Auth::user();
         Approval::decide($id, $decision, (int) $user['id']);
 
         AuditLog::record(
@@ -42,7 +50,7 @@ class ApprovalController
             "aprovacao_desconto_{$decision}",
             $approval['approvable_type'],
             (int) $approval['approvable_id'],
-            ['status' => 'pendente', 'desconto_pct' => $approval['requested_discount_pct']],
+            ['status' => 'pendente', 'preco_solicitado' => $approval['requested_price'] ?? $approval['requested_discount_pct']],
             ['status' => $decision]
         );
 

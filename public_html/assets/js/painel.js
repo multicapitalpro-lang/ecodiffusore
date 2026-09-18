@@ -559,15 +559,23 @@ document.addEventListener('DOMContentLoaded', function () {
                 // "nao importa pro vendedor, so pro licenciado, pro vendedor nao crescer o olho").
                 // So o piso minimo (precisa pra negociar) fica visivel pra todo mundo.
                 var showCommission = form.dataset.showCommission === '1';
+                // Fase 57: Vendedor trabalha a partir do preco padrao (R$4.290) -- abaixo disso
+                // precisa de aprovacao do Gestor/Licenciado. Gestor/Licenciado/Admin continuam
+                // vendo o piso ABSOLUTO das faixas (mais baixo, negociavel com aprovacao de
+                // Gerente/Supervisor/Admin). Validacao de verdade e' sempre no servidor.
+                var isVendedor = form.dataset.isVendedor === '1';
+                var vendorFloor = parseFloat(form.dataset.vendorFloor || '0');
 
                 if (bandsHint && tiers.length) {
                     var floor = tiers.reduce(function (min, t) { return t.min_price < min ? t.min_price : min; }, tiers[0].min_price);
-                    if (showCommission) {
+                    if (isVendedor) {
+                        bandsHint.textContent = 'Preço padrão de venda: ' + fmt(vendorFloor) + '. Vender abaixo disso fica pendente de aprovação do seu Gestor ou Licenciado.';
+                    } else if (showCommission) {
                         var parts = tiers.map(function (t) {
                             var range = t.max_price !== null ? fmt(t.min_price) + '–' + fmt(t.max_price) : fmt(t.min_price) + ' acima';
                             return range + ' = ' + t.licenciado_commission_pct + '%';
                         });
-                        bandsHint.textContent = 'Preço mínimo negociável: ' + fmt(floor) + '. Faixas de comissão do Licenciado: ' + parts.join(' · ') + '.';
+                        bandsHint.textContent = 'Preço mínimo negociável: ' + fmt(floor) + '. Faixas de comissão do Licenciado: ' + parts.join(' · ') + '. Vender abaixo de ' + fmt(vendorFloor) + ' precisa de aprovação de Gerente, Supervisor ou Admin.';
                     } else {
                         bandsHint.textContent = 'Preço mínimo negociável: ' + fmt(floor) + '.';
                     }

@@ -14,6 +14,12 @@ use App\Core\Database;
  */
 class PricingTier
 {
+    /** Fase 57: preco padrao do Vendedor -- ele so vende abaixo disso com aprovacao do Gestor/
+     *  Licenciado da propria rede (ver App\Models\Approval). Gestor/Licenciado podem negociar
+     *  livremente abaixo desse valor (com aprovacao de Gerente/Supervisor/Admin), ate o piso
+     *  absoluto de PricingTier::forPrice() -- esse continua igual pra todo mundo, nao mudou. */
+    public const VENDOR_STANDARD_PRICE = 4290.00;
+
     public static function all(): array
     {
         return Database::connection()->query('SELECT * FROM pricing_tiers ORDER BY min_price ASC')->fetchAll();

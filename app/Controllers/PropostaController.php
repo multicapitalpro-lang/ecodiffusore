@@ -11,6 +11,7 @@ use App\Core\Response;
 use App\Core\Roles;
 use App\Core\Router;
 use App\Core\View;
+use App\Models\Approval;
 use App\Models\AuditLog;
 use App\Models\Client;
 use App\Models\Lead;
@@ -187,6 +188,11 @@ class PropostaController
             ], [
                 ['product_id' => $product['id'], 'quantity' => $qty, 'unit_price' => $unitPrice],
             ]);
+
+            // Fase 57: Proposta Facil e' o caminho mais usado pelo Vendedor -- sem essa chamada,
+            // a regra nova de piso por papel (Vendedor a partir de R$4.290) nunca seria checada
+            // aqui, so no Pedido/Orcamento manual.
+            Approval::checkAndRequest('quote', $quoteId, [['product_id' => $product['id'], 'quantity' => $qty, 'unit_price' => $unitPrice]], $sellerId, $sellerId);
         }
 
         $_SESSION['proposta_result'] = [

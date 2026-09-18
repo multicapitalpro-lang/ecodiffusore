@@ -50,7 +50,11 @@ use App\Core\View;
 
 <h3 class="section-title">Produtos</h3>
 <?php if ($pricingTiers): ?>
-    <p class="hint-text" style="margin-top:0;">Preço negociado livremente (piso R$ <?= number_format((float) $pricingTiers[0]['min_price'], 2, ',', '.') ?>) — a faixa de preço define a % de comissão do Licenciado: <?php foreach ($pricingTiers as $i => $t): ?><?= $i > 0 ? ' · ' : '' ?>R$ <?= number_format((float) $t['min_price'], 2, ',', '.') ?><?= $t['max_price'] !== null ? '–' . number_format((float) $t['max_price'], 2, ',', '.') : ' acima' ?> = <?= number_format((float) $t['licenciado_commission_pct'], 2, ',', '.') ?>%<?php endforeach; ?>.</p>
+    <?php if ($isVendedor): ?>
+        <p class="hint-text" style="margin-top:0;">Preço padrão de venda: <strong>R$ <?= number_format(\App\Models\PricingTier::VENDOR_STANDARD_PRICE, 2, ',', '.') ?></strong>. Pra vender abaixo disso, o orçamento fica pendente de aprovação do seu Gestor ou Licenciado antes de poder ser convertido em pedido.</p>
+    <?php else: ?>
+        <p class="hint-text" style="margin-top:0;">Preço negociado livremente (piso R$ <?= number_format((float) $pricingTiers[0]['min_price'], 2, ',', '.') ?>) — a faixa de preço define a % de comissão do Licenciado: <?php foreach ($pricingTiers as $i => $t): ?><?= $i > 0 ? ' · ' : '' ?>R$ <?= number_format((float) $t['min_price'], 2, ',', '.') ?><?= $t['max_price'] !== null ? '–' . number_format((float) $t['max_price'], 2, ',', '.') : ' acima' ?> = <?= number_format((float) $t['licenciado_commission_pct'], 2, ',', '.') ?>%<?php endforeach; ?>. Vender abaixo de R$ <?= number_format(\App\Models\PricingTier::VENDOR_STANDARD_PRICE, 2, ',', '.') ?> precisa de aprovação de Gerente, Supervisor ou Admin.</p>
+    <?php endif; ?>
 <?php endif; ?>
 <div class="table-scroll">
     <table class="data-table" id="qitems-table">
