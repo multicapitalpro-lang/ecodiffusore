@@ -18,6 +18,7 @@ use App\Models\Lead;
 use App\Models\PricingTier;
 use App\Models\Product;
 use App\Models\Quote;
+use App\Models\QuoteItem;
 
 /**
  * "Proposta Fácil": ferramenta interna pro Vendedor/Licenciado gerar um orçamento completo do
@@ -289,8 +290,17 @@ class PropostaController
         // Fase 57: mesmo bloqueio ja aplicado em QuoteController::convert() -- essa era uma
         // SEGUNDA porta de conversao (Concluir Venda na Proposta Facil) que nao tinha a
         // checagem, deixando a aprovacao de preco sem efeito nesse caminho especifico.
-        if (Approval::pendingFor('quote', $quoteId)) {
-            Router::redirect('/painel/proposta-facil/resultado?erro_concluir=' . urlencode('Esse orçamento está com o preço aguardando aprovação — não é possível concluir a venda até aprovar ou recusar.'));
+        // Fase 58: tambem bloqueia se a ultima decisao foi RECUSADA no mesmo preco ainda vigente
+        // (ver Approval::blocksCompletion) -- sem isso, uma recusa parava de valer assim que
+        // decidida, deixando concluir a venda no preco recusado.
+        $items = QuoteItem::forQuote($quoteId);
+        $lowestPrice = $items ? (float) min(array_column($items, 'unit_price')) : 0.0;
+        $block = Approval::blocksCompletion('quote', $quoteId, $lowestPrice);
+        if ($block) {
+            $msg = $block['status'] === 'recusado'
+                ? 'A liberação de preço desse orçamento foi recusada. Ajuste o preço ou peça uma nova liberação.'
+                : 'Esse orçamento está com o preço aguardando aprovação — não é possível concluir a venda até aprovar ou recusar.';
+            Router::redirect('/painel/proposta-facil/resultado?erro_concluir=' . urlencode($msg));
         }
 
         Client::updateDocument((int) $quote['client_id'], $document);

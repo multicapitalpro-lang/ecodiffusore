@@ -1,6 +1,7 @@
 <?php
 use App\Core\Csrf;
 use App\Core\View;
+use App\Models\Approval;
 use App\Models\PricingTier;
 /** @var array $result */
 /** @var array|null $pendingApproval */
@@ -20,13 +21,14 @@ $isModal = $isModal ?? false;
     <!-- Fase 57c: pedido do usuario -- preco abaixo do piso do Vendedor nem chega a mostrar a
          proposta completa (economia/parcelas/PDF/WhatsApp com o preco baixo pro cliente) antes
          de aprovado. So essa confirmacao curta ate o Gestor/Licenciado decidir. -->
+    <?php $statusLabel = Approval::statusLabel($pendingApproval); ?>
     <div class="form-msg" style="background:#fff4dc;color:#b7791f;max-width:560px;">
-        <strong>⏳ Solicitação de liberação enviada</strong>
+        <strong>⏳ <?= View::e($statusLabel) ?></strong>
         <p style="margin:6px 0 0;">
             Você pediu <strong>R$ <?= number_format((float) $pendingApproval['requested_price'], 2, ',', '.') ?></strong> pro cliente <?= View::e($result['name']) ?>
             — abaixo do preço padrão de R$ <?= number_format(PricingTier::VENDOR_STANDARD_PRICE, 2, ',', '.') ?>.
         </p>
-        <p style="margin:6px 0 0;">Seu Gestor ou Licenciado já foi avisado no WhatsApp e no painel dele. Assim que aprovar, recarregue esta mesma página (ou abra o orçamento pelo link "Ver no CRM" abaixo) que a proposta completa libera — <strong>não crie uma proposta nova</strong>, senão vira outro pedido de liberação do zero.</p>
+        <p style="margin:6px 0 0;">Você recebe um aviso no WhatsApp a cada etapa decidida. Recarregue esta mesma página (ou abra o orçamento pelo link "Ver no CRM" abaixo, ou confira em "Liberação de Preço" no menu) pra ver o status mais atual. Assim que a liberação for concluída, a proposta completa libera — <strong>não crie uma proposta nova</strong>, senão vira outro pedido de liberação do zero.</p>
     </div>
 
     <div class="proposta-actions" style="margin-top:18px;">
@@ -38,6 +40,7 @@ $isModal = $isModal ?? false;
         <?php if ($result['quote_id']): ?>
             <a href="/painel/orcamentos/<?= (int) $result['quote_id'] ?>" class="btn btn-outline">Ver no CRM</a>
         <?php endif; ?>
+        <a href="/painel/liberacoes" class="btn btn-outline">Ver status da liberação</a>
     </div>
 <?php else: ?>
     <?php

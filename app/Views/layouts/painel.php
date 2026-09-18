@@ -62,6 +62,10 @@ $pendingPriceApprovals = 0;
 if (in_array($role, ['gestor', 'licenciado', 'gerente', 'supervisor', 'admin'], true)) {
     $pendingPriceApprovals = \App\Models\Approval::countPendingForUser($user);
 }
+$myPendingPriceRequests = 0;
+if (in_array($role, ['vendedor', 'gestor', 'licenciado'], true)) {
+    $myPendingPriceRequests = \App\Models\Approval::countMyPendingRequests((int) $user['id']);
+}
 $vendasOpen = $anyActive(['/painel/pedidos', '/painel/orcamentos', '/painel/produtos', '/painel/tabela-precos', '/painel/configuracoes/pagamento', '/painel/simulador', '/painel/materiais', '/painel/garantias', '/painel/entregas', '/painel/cotacoes-maquina', '/painel/liberacoes']);
 $leadsOpen = $anyActive(['/painel/leads', '/painel/clientes', '/painel/configuracoes/roteamento']);
 $financeiroOpen = $anyActive(['/painel/financeiro']);
@@ -134,10 +138,11 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/desempen
                         <?php if ($canScreen('orcamentos')): ?>
                             <a href="/painel/orcamentos" class="<?= $isActive('/painel/orcamentos') ? 'is-active' : '' ?>">Orçamentos</a>
                         <?php endif; ?>
-                        <?php if (in_array($role, ['gestor', 'licenciado', 'gerente', 'supervisor', 'admin'], true)): ?>
+                        <?php if (in_array($role, ['vendedor', 'gestor', 'licenciado', 'gerente', 'supervisor', 'admin'], true)): ?>
                             <a href="/painel/liberacoes" class="<?= $isActive('/painel/liberacoes') ? 'is-active' : '' ?>">
                                 Liberação de Preço
-                                <?php if ($pendingPriceApprovals > 0): ?><span class="nav-badge"><?= (int) $pendingPriceApprovals ?></span><?php endif; ?>
+                                <?php $liberacaoBadge = $pendingPriceApprovals + $myPendingPriceRequests; ?>
+                                <?php if ($liberacaoBadge > 0): ?><span class="nav-badge"><?= (int) $liberacaoBadge ?></span><?php endif; ?>
                             </a>
                         <?php endif; ?>
                         <a href="/painel/cotacoes-maquina" class="<?= $isActive('/painel/cotacoes-maquina') ? 'is-active' : '' ?>">

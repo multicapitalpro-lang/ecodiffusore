@@ -14,6 +14,11 @@ use App\Core\Roles;
  * ponto de bloqueio (Order::markVerifiedWithCommission()/Quote::convert()) -- so mudou o
  * gatilho (preco, nao %) e quem pode decidir (depende do papel de quem pediu, nao mais um bloco
  * fixo de papeis).
+ * Fase 58: quando quem pediu foi VENDEDOR, a aprovacao do Gestor/Licenciado (nivel 1) NAO e' mais
+ * a decisao final -- pedido explicito do usuario ("ambos precisam da aprovacao do admin"). Depois
+ * do nivel 1, a pendencia continua "pendente" (coluna `status` nao muda) mas passa a depender de
+ * Gerente, Supervisor OU Admin (nivel 2), registrado em `level1_approved_by`/`level1_approved_at`.
+ * Pedido de Gestor/Licenciado pra si mesmo continua de 1 nivel so (direto pro nivel 2).
  */
 class Approval
 {
@@ -70,7 +75,8 @@ class Approval
         $stmt->execute(['type' => $type, 'id' => $id, 'dpct' => $discountPct, 'price' => $lowestPrice, 'role' => $seller['role_slug'], 'by' => $requestedBy]);
 
         // Notifica so na CRIACAO (nao a cada reenvio do mesmo formulario com o mesmo preco baixo)
-        // -- WhatsApp pra quem pode decidir essa pendencia especifica.
+        // -- WhatsApp pra quem pode decidir essa pendencia especifica (nivel 1, ou direto nivel 2
+        // se quem pediu ja' foi Gestor/Licenciado).
         $new = self::find((int) Database::connection()->lastInsertId());
         if ($new) {
             \App\Core\Notifier::liberacaoDescontoSolicitada($new);
@@ -78,28 +84,33 @@ class Approval
     }
 
     /**
-     * Vendedor e aprovado pelo Gestor OU Licenciado da PROPRIA rede dele (nunca por um gestor/
-     * licenciado de outra rede -- escopo via User::managerChain()). Gestor/Licenciado sao
-     * aprovados por Gerente, Supervisor OU Admin -- qualquer um dos tres, sem precisar ser
-     * especificamente responsavel por aquela rede (mesmo espirito ja usado pra aprovacao de
-     * cadastro de Licenciado). Pendencia antiga (de antes da Fase 57, sem requester_role
-     * gravado) cai no comportamento antigo -- Admin/Gestor/Licenciado genericos decidem, pra
-     * nao travar pendencia ja existente no ar quando essa mudanca entrar no ar.
+     * Vendedor e' aprovado, em 2 etapas: primeiro pelo Gestor OU Licenciado da PROPRIA rede dele
+     * (nunca de outra rede -- escopo via User::managerChain()); so' depois disso a pendencia
+     * (que continua com status='pendente') passa a exigir Gerente, Supervisor OU Admin (qualquer
+     * um dos tres). Gestor/Licenciado pedindo pra SI MESMO pula direto pra essa segunda etapa.
+     * Pendencia antiga (de antes da Fase 57, sem requester_role gravado) cai no comportamento
+     * antigo -- Admin/Gestor/Licenciado genericos decidem, pra nao travar pendencia ja existente
+     * no ar quando essa mudanca entrar no ar.
      */
     public static function canDecide(array $approval, array $user): bool
     {
         $requesterRole = $approval['requester_role'] ?? null;
 
         if ($requesterRole === 'vendedor') {
-            if (!in_array($user['role_slug'], ['gestor', 'licenciado'], true)) {
-                return false;
+            if (empty($approval['level1_approved_by'])) {
+                if (!in_array($user['role_slug'], ['gestor', 'licenciado'], true)) {
+                    return false;
+                }
+                $seller = self::sellerFor($approval);
+                if (!$seller) {
+                    return false;
+                }
+                $chainIds = array_map(fn ($p) => (int) $p['id'], User::managerChain((int) $seller['id']));
+                return in_array((int) $user['id'], $chainIds, true);
             }
-            $seller = self::sellerFor($approval);
-            if (!$seller) {
-                return false;
-            }
-            $chainIds = array_map(fn ($p) => (int) $p['id'], User::managerChain((int) $seller['id']));
-            return in_array((int) $user['id'], $chainIds, true);
+
+            // Nivel 2: ja passou pelo Gestor/Licenciado -- so falta a rede nacional.
+            return in_array($user['role_slug'], ['gerente', 'supervisor', 'admin'], true);
         }
 
         if (in_array($requesterRole, ['gestor', 'licenciado'], true)) {
@@ -107,6 +118,32 @@ class Approval
         }
 
         return in_array($user['role_slug'], Roles::MANAGEMENT, true);
+    }
+
+    /** Texto pronto pra exibir em qualquer tela (lista, banner, "minhas solicitacoes") -- unica
+     *  fonte de verdade pro rotulo de status, inclusive a etapa intermediaria (nivel 1 aprovado,
+     *  aguardando nivel 2) que nao tem um valor proprio na coluna `status`. */
+    public static function statusLabel(array $approval): string
+    {
+        if ($approval['status'] === 'aprovado') {
+            return 'Aprovado';
+        }
+        if ($approval['status'] === 'recusado') {
+            return 'Recusado';
+        }
+
+        $requesterRole = $approval['requester_role'] ?? null;
+        if ($requesterRole === 'vendedor') {
+            if (!empty($approval['level1_approved_by'])) {
+                return 'Aprovado pelo Gestor/Licenciado — aguardando aprovação final (Gerente, Supervisor ou Admin)';
+            }
+            return 'Aguardando aprovação do Gestor ou Licenciado';
+        }
+        if (in_array($requesterRole, ['gestor', 'licenciado'], true)) {
+            return 'Aguardando aprovação do Gerente, Supervisor ou Admin';
+        }
+
+        return 'Aguardando aprovação';
     }
 
     private static function sellerFor(array $approval): ?array
@@ -126,6 +163,22 @@ class Approval
         $count = 0;
         foreach ($rows as $row) {
             if (self::canDecide($row, $user)) {
+                $count++;
+            }
+        }
+        return $count;
+    }
+
+    /** Quantas solicitacoes do PROPRIO usuario (ele e' quem vendeu, nao quem decide) ainda estao
+     *  em andamento -- badge do menu pro Vendedor/Gestor/Licenciado acompanharem sem precisar abrir
+     *  cada Pedido/Orcamento pra saber se ja foi decidido. */
+    public static function countMyPendingRequests(int $userId): int
+    {
+        $rows = Database::connection()->query("SELECT * FROM approvals WHERE status = 'pendente'")->fetchAll();
+        $count = 0;
+        foreach ($rows as $row) {
+            $seller = self::sellerFor($row);
+            if ($seller && (int) $seller['id'] === $userId) {
                 $count++;
             }
         }
@@ -159,6 +212,37 @@ class Approval
         return $rows;
     }
 
+    /** "Minhas solicitacoes" -- tudo (qualquer status/etapa) em que o PROPRIO usuario e' quem
+     *  vendeu (Vendedor pedindo liberacao, ou Gestor/Licenciado pedindo pra si mesmo), mais
+     *  recente primeiro. Pedido explicito do usuario: ele precisa acompanhar o status em tempo
+     *  real sem depender de alguem te avisar por fora. */
+    public static function forOwnRequests(int $userId, int $limit = 100): array
+    {
+        $stmt = Database::connection()->query(
+            'SELECT a.* FROM approvals a ORDER BY a.created_at DESC, a.id DESC LIMIT 500'
+        );
+        $rows = $stmt->fetchAll();
+
+        $mine = [];
+        foreach ($rows as $row) {
+            $seller = self::sellerFor($row);
+            if (!$seller || (int) $seller['id'] !== $userId) {
+                continue;
+            }
+            $record = $row['approvable_type'] === 'order' ? Order::find((int) $row['approvable_id']) : Quote::find((int) $row['approvable_id']);
+            $row['client_name'] = $record['client_name'] ?? '—';
+            $row['url'] = $row['approvable_type'] === 'order'
+                ? '/painel/pedidos/' . (int) $row['approvable_id']
+                : '/painel/orcamentos/' . (int) $row['approvable_id'];
+            $mine[] = $row;
+            if (count($mine) >= $limit) {
+                break;
+            }
+        }
+
+        return $mine;
+    }
+
     public static function pendingFor(string $type, int $id): ?array
     {
         $stmt = Database::connection()->prepare(
@@ -168,6 +252,43 @@ class Approval
         $stmt->execute(['type' => $type, 'id' => $id]);
         $row = $stmt->fetch();
         return $row ?: null;
+    }
+
+    /** Ultima linha registrada pra esse pedido/orcamento, seja qual for o status -- diferente de
+     *  pendingFor() (so' pendente), usada pra saber se uma RECUSA ainda deve continuar bloqueando. */
+    public static function latestFor(string $type, int $id): ?array
+    {
+        $stmt = Database::connection()->prepare(
+            'SELECT * FROM approvals WHERE approvable_type = :type AND approvable_id = :id ORDER BY id DESC LIMIT 1'
+        );
+        $stmt->execute(['type' => $type, 'id' => $id]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
+    /** Ainda bloqueia mesmo depois de "decidida" quando a ultima decisao foi RECUSADA e o preco
+     *  atual dos itens continua sendo o mesmo que foi recusado -- sem isso, assim que a decisao
+     *  cai (aprovada OU recusada) pendingFor() para de bloquear (so' olha status='pendente'),
+     *  deixando concluir a venda no preco recusado. Se o preco foi corrigido depois (qualquer
+     *  edicao roda checkAndRequest() de novo), o preco atual nao bate mais com o que foi recusado
+     *  e a recusa antiga para de valer -- so' um preco novo "libera" de verdade, nunca so' o tempo
+     *  passando. */
+    public static function blocksCompletion(string $type, int $id, float $currentLowestPrice): ?array
+    {
+        $latest = self::latestFor($type, $id);
+        if (!$latest) {
+            return null;
+        }
+        if ($latest['status'] === 'pendente') {
+            return $latest;
+        }
+        if ($latest['status'] === 'recusado'
+            && $latest['requested_price'] !== null
+            && abs((float) $latest['requested_price'] - $currentLowestPrice) < 0.01
+        ) {
+            return $latest;
+        }
+        return null;
     }
 
     public static function clearPendingFor(string $type, int $id): void
@@ -186,11 +307,54 @@ class Approval
         return $row ?: null;
     }
 
-    public static function decide(int $id, string $status, int $decidedBy): void
+    /** @return array A linha ja' atualizada, pra quem chamou poder registrar auditoria/notificar
+     *  com o estado real (inclusive a etapa intermediaria de nivel 1). */
+    public static function decide(int $id, string $decision, int $decidedBy): array
     {
+        $approval = self::find($id);
+        if (!$approval || $approval['status'] !== 'pendente') {
+            return $approval ?? [];
+        }
+
+        $decidedByUser = User::find($decidedBy);
+
+        if ($decision === 'recusado') {
+            $stmt = Database::connection()->prepare(
+                'UPDATE approvals SET status = "recusado", decided_by = :by, decided_at = NOW() WHERE id = :id'
+            );
+            $stmt->execute(['by' => $decidedBy, 'id' => $id]);
+            $updated = self::find($id);
+            \App\Core\Notifier::liberacaoDescontoDecidida($updated ?? $approval, 'Recusado', $decidedByUser);
+            return $updated ?? $approval;
+        }
+
+        // decision === 'aprovado'
+        $needsLevel2 = ($approval['requester_role'] ?? null) === 'vendedor' && empty($approval['level1_approved_by']);
+
+        if ($needsLevel2) {
+            $stmt = Database::connection()->prepare(
+                'UPDATE approvals SET level1_approved_by = :by, level1_approved_at = NOW() WHERE id = :id'
+            );
+            $stmt->execute(['by' => $decidedBy, 'id' => $id]);
+            $updated = self::find($id);
+
+            \App\Core\Notifier::liberacaoDescontoDecidida(
+                $updated ?? $approval,
+                'Aprovado pelo Gestor/Licenciado — aguardando aprovação final',
+                $decidedByUser
+            );
+            \App\Core\Notifier::liberacaoNivel2Necessaria($updated ?? $approval);
+
+            return $updated ?? $approval;
+        }
+
         $stmt = Database::connection()->prepare(
-            'UPDATE approvals SET status = :status, decided_by = :by, decided_at = NOW() WHERE id = :id'
+            'UPDATE approvals SET status = "aprovado", decided_by = :by, decided_at = NOW() WHERE id = :id'
         );
-        $stmt->execute(['status' => $status, 'by' => $decidedBy, 'id' => $id]);
+        $stmt->execute(['by' => $decidedBy, 'id' => $id]);
+        $updated = self::find($id);
+        \App\Core\Notifier::liberacaoDescontoDecidida($updated ?? $approval, 'Aprovado', $decidedByUser);
+
+        return $updated ?? $approval;
     }
 }

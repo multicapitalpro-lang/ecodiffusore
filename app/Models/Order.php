@@ -568,7 +568,12 @@ class Order
             return false;
         }
 
-        if (Approval::pendingFor('order', $id)) {
+        // Fase 58: tambem bloqueia se a ultima decisao foi RECUSADA no mesmo preco que continua
+        // nos itens hoje -- antes so' checava 'pendente', o que liberava a comissao/verificacao
+        // assim que a decisao caia, mesmo tendo sido uma recusa (ver Approval::blocksCompletion).
+        $items = OrderItem::forOrder($id);
+        $lowestPrice = $items ? (float) min(array_column($items, 'unit_price')) : 0.0;
+        if (Approval::blocksCompletion('order', $id, $lowestPrice)) {
             return false;
         }
 

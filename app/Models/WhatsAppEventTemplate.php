@@ -32,6 +32,7 @@ class WhatsAppEventTemplate
         'garantia_estendida_lembrete_dia15',
         'licenciado_contrato_pendente',
         'liberacao_desconto_solicitada',
+        'liberacao_desconto_decidida',
     ];
 
     public const LABELS = [
@@ -54,6 +55,7 @@ class WhatsAppEventTemplate
         'garantia_estendida_lembrete_dia15' => 'Pós-venda de Instalação — último dia (cliente)',
         'licenciado_contrato_pendente' => 'Contrato pendente de assinatura (licenciado)',
         'liberacao_desconto_solicitada' => 'Solicitação de liberação de preço',
+        'liberacao_desconto_decidida' => 'Status da liberação de preço (quem pediu)',
     ];
 
     /** Quais placeholders {chave} cada evento aceita -- so pra exibir dica na tela, nao valida nada. */
@@ -77,13 +79,14 @@ class WhatsAppEventTemplate
         'garantia_estendida_lembrete_dia15' => ['cliente', 'pedido', 'dias_restantes', 'url'],
         'licenciado_contrato_pendente' => ['nome', 'url'],
         'liberacao_desconto_solicitada' => ['vendedor', 'cliente', 'regiao', 'quantidade', 'preco_original', 'preco_solicitado', 'url'],
+        'liberacao_desconto_decidida' => ['cliente', 'preco_solicitado', 'status', 'decidido_por', 'url'],
     ];
 
     /** Eventos que so usam UM dos dois textos (o outro fica sempre null/nao editavel). */
     public const SELF_ONLY = [
         'follow_up_lembrete', 'acesso_portal_criado', 'pedido_atualizacao_entrega', 'cobranca_gerada', 'orcamento_lembrete_lead',
         'garantia_estendida_lembrete_dia1', 'garantia_estendida_lembrete_dia5', 'garantia_estendida_lembrete_dia10', 'garantia_estendida_lembrete_dia15',
-        'licenciado_contrato_pendente',
+        'licenciado_contrato_pendente', 'liberacao_desconto_decidida',
     ];
     public const NETWORK_ONLY = ['vendedor_inativo', 'licenciado_pendente_aprovacao', 'liberacao_desconto_solicitada'];
 
@@ -107,6 +110,7 @@ class WhatsAppEventTemplate
         'garantia_estendida_lembrete_dia10' => 'Cliente (dono do pedido)',
         'garantia_estendida_lembrete_dia15' => 'Cliente (dono do pedido)',
         'licenciado_contrato_pendente' => 'Licenciado (dono do contrato)',
+        'liberacao_desconto_decidida' => 'Vendedor/Gestor/Licenciado (quem pediu a liberação)',
     ];
 
     public const NETWORK_LABELS = [

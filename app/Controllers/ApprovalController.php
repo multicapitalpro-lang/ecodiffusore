@@ -29,6 +29,7 @@ class ApprovalController
         View::render('painel/approvals/index', [
             'user' => $user,
             'pending' => $pending,
+            'mine' => Approval::forOwnRequests((int) $user['id']),
         ]);
     }
 
@@ -64,15 +65,15 @@ class ApprovalController
             Router::redirect($returnTo);
         }
 
-        Approval::decide($id, $decision, (int) $user['id']);
+        $updated = Approval::decide($id, $decision, (int) $user['id']);
 
         AuditLog::record(
             (int) $user['id'],
             "aprovacao_desconto_{$decision}",
             $approval['approvable_type'],
             (int) $approval['approvable_id'],
-            ['status' => 'pendente', 'preco_solicitado' => $approval['requested_price'] ?? $approval['requested_discount_pct']],
-            ['status' => $decision]
+            ['status' => Approval::statusLabel($approval)],
+            ['status' => Approval::statusLabel($updated ?: $approval)]
         );
 
         Router::redirect($returnTo . '?sucesso=1');

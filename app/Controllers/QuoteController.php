@@ -392,7 +392,12 @@ class QuoteController
             Router::redirect("/painel/orcamentos/{$id}");
         }
 
-        if (Approval::pendingFor('quote', $id)) {
+        // Fase 58: bloqueia tambem se a ultima decisao foi RECUSADA no mesmo preco que continua
+        // nos itens hoje -- antes so' checava 'pendente', o que deixava concluir no preco
+        // recusado assim que a decisao caia (ver Approval::blocksCompletion).
+        $items = QuoteItem::forQuote($id);
+        $lowestPrice = $items ? (float) min(array_column($items, 'unit_price')) : 0.0;
+        if (Approval::blocksCompletion('quote', $id, $lowestPrice)) {
             Router::redirect("/painel/orcamentos/{$id}?erro=3");
         }
 

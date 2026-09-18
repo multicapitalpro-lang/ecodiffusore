@@ -114,9 +114,13 @@ class PaymentController
             Order::markVerifiedWithCommission($orderId);
         } elseif ($payment['payable_type'] === 'quote') {
             $quote = Quote::find((int) $payment['payable_id']);
-            if ($quote && $quote['status'] !== 'convertido' && !Approval::pendingFor('quote', (int) $payment['payable_id'])) {
-                $orderId = Quote::convertToOrder((int) $payment['payable_id']);
-                Order::markVerifiedWithCommission($orderId);
+            if ($quote && $quote['status'] !== 'convertido') {
+                $items = QuoteItem::forQuote((int) $payment['payable_id']);
+                $lowestPrice = $items ? (float) min(array_column($items, 'unit_price')) : 0.0;
+                if (!Approval::blocksCompletion('quote', (int) $payment['payable_id'], $lowestPrice)) {
+                    $orderId = Quote::convertToOrder((int) $payment['payable_id']);
+                    Order::markVerifiedWithCommission($orderId);
+                }
             }
         }
 

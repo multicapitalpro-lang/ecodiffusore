@@ -414,6 +414,85 @@ class Notifier
         }
     }
 
+    /** Fase 58: quando o Gestor/Licenciado aprova o NIVEL 1 de uma solicitacao feita por um
+     *  Vendedor, a liberacao final ainda depende de Gerente, Supervisor ou Admin -- avisa esse
+     *  grupo assim que isso acontece (mesma audiencia/template ja usado pro nivel 2 direto de
+     *  Gestor/Licenciado, so' reaproveitado aqui pra nao duplicar texto editavel). */
+    public static function liberacaoNivel2Necessaria(array $approval): void
+    {
+        $isOrder = $approval['approvable_type'] === 'order';
+        $record = $isOrder ? Order::find((int) $approval['approvable_id']) : Quote::find((int) $approval['approvable_id']);
+        if (!$record || empty($record['seller_id'])) {
+            return;
+        }
+
+        $seller = User::find((int) $record['seller_id']);
+        if (!$seller) {
+            return;
+        }
+
+        $items = $isOrder ? OrderItem::forOrder((int) $approval['approvable_id']) : QuoteItem::forQuote((int) $approval['approvable_id']);
+        $quantidade = array_sum(array_column($items, 'quantity'));
+        $regiao = trim(($record['client_city'] ?? '') . (!empty($record['client_state']) ? '/' . $record['client_state'] : ''));
+
+        $vars = [
+            'vendedor' => $seller['name'] ?? '—',
+            'cliente' => $record['client_name'] ?? '—',
+            'regiao' => $regiao !== '' ? $regiao : '—',
+            'quantidade' => (string) $quantidade,
+            'preco_original' => 'R$ ' . number_format(PricingTier::VENDOR_STANDARD_PRICE, 2, ',', '.'),
+            'preco_solicitado' => 'R$ ' . number_format((float) $approval['requested_price'], 2, ',', '.'),
+            'url' => self::BASE_URL . '/painel/liberacoes',
+        ];
+
+        [, $text] = self::waTexts('liberacao_desconto_solicitada', $vars);
+        if (!$text) {
+            return;
+        }
+
+        foreach (['gerente', 'supervisor', 'admin'] as $role) {
+            foreach (User::allByRole($role) as $p) {
+                if (!empty($p['whatsapp'])) {
+                    self::sendWhatsApp($p['whatsapp'], $text);
+                }
+            }
+        }
+    }
+
+    /** Fase 58: avisa quem PEDIU (o Vendedor, ou o proprio Gestor/Licenciado quando pediram pra
+     *  si mesmos) o resultado de cada etapa da decisao -- nivel 1 aprovado (ainda falta o nivel
+     *  2), aprovado de vez, ou recusado (encerra ali, em qualquer etapa). Pedido explicito do
+     *  usuario: "no painel do vendedor... pra ele saber o status" em tempo real, sem precisar
+     *  perguntar pra alguem. So' WhatsApp, so' pro dono da venda (SELF_ONLY).
+     *  @param array $approval linha de approvals (approvable_type/id, requested_price)
+     *  @param string $status rotulo curto ja pronto pro placeholder {status} (ver Approval::decide) */
+    public static function liberacaoDescontoDecidida(array $approval, string $status, ?array $decidedByUser = null): void
+    {
+        $isOrder = $approval['approvable_type'] === 'order';
+        $record = $isOrder ? Order::find((int) $approval['approvable_id']) : Quote::find((int) $approval['approvable_id']);
+        if (!$record || empty($record['seller_id'])) {
+            return;
+        }
+
+        $seller = User::find((int) $record['seller_id']);
+        if (!$seller || empty($seller['whatsapp'])) {
+            return;
+        }
+
+        $vars = [
+            'cliente' => $record['client_name'] ?? '—',
+            'preco_solicitado' => 'R$ ' . number_format((float) $approval['requested_price'], 2, ',', '.'),
+            'status' => $status,
+            'decidido_por' => $decidedByUser['name'] ?? '—',
+            'url' => self::BASE_URL . ($isOrder ? '/painel/pedidos/' . (int) $approval['approvable_id'] : '/painel/orcamentos/' . (int) $approval['approvable_id']),
+        ];
+
+        [$text] = self::waTexts('liberacao_desconto_decidida', $vars);
+        if ($text) {
+            self::sendWhatsApp($seller['whatsapp'], $text);
+        }
+    }
+
     /** @param array $licenciado precisa de id/name/email */
     public static function cadastroAprovado(array $licenciado): void
     {

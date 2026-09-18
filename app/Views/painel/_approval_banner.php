@@ -11,10 +11,11 @@ if (!$approval) {
 $canDecide = Approval::canDecide($approval, $user);
 $requesterRole = $approval['requester_role'] ?? null;
 $requesterLabels = ['vendedor' => 'Vendedor', 'gestor' => 'Gestor', 'licenciado' => 'Licenciado'];
+$statusLabel = Approval::statusLabel($approval);
 ?>
 <div class="approval-banner">
     <div>
-        <strong>Aguardando aprovação de preço</strong>
+        <strong><?= View::e($statusLabel) ?></strong>
         <?php if (!empty($approval['requested_price'])): ?>
             <p>
                 Preço solicitado: <strong>R$ <?= number_format((float) $approval['requested_price'], 2, ',', '.') ?></strong>
