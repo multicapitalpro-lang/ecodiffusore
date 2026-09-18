@@ -245,10 +245,13 @@ class PropostaController
             Router::redirect('/painel/proposta-facil');
         }
 
+        $result = $_SESSION['proposta_result'];
+
         View::render('painel/proposta/resultado', [
             'user' => Auth::user(),
-            'result' => $_SESSION['proposta_result'],
+            'result' => $result,
             'isModal' => $isFragment,
+            'pendingApproval' => !empty($result['quote_id']) ? Approval::pendingFor('quote', (int) $result['quote_id']) : null,
         ], $isFragment ? null : 'painel');
     }
 

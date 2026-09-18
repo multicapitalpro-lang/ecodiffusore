@@ -68,6 +68,13 @@ class Approval
              VALUES (:type, :id, :dpct, :price, :role, "pendente", :by)'
         );
         $stmt->execute(['type' => $type, 'id' => $id, 'dpct' => $discountPct, 'price' => $lowestPrice, 'role' => $seller['role_slug'], 'by' => $requestedBy]);
+
+        // Notifica so na CRIACAO (nao a cada reenvio do mesmo formulario com o mesmo preco baixo)
+        // -- WhatsApp pra quem pode decidir essa pendencia especifica.
+        $new = self::find((int) Database::connection()->lastInsertId());
+        if ($new) {
+            \App\Core\Notifier::liberacaoDescontoSolicitada($new);
+        }
     }
 
     /**
@@ -109,6 +116,47 @@ class Approval
             : (Quote::find((int) $approval['approvable_id'])['seller_id'] ?? null);
 
         return $sellerId ? User::find((int) $sellerId) : null;
+    }
+
+    /** Quantas pendencias ESSE usuario pode decidir agora -- badge do menu (mesmo padrao de
+     *  MachineQuoteRequest::countPending()/pendingWarranties, computado direto no layout). */
+    public static function countPendingForUser(array $user): int
+    {
+        $rows = Database::connection()->query("SELECT * FROM approvals WHERE status = 'pendente'")->fetchAll();
+        $count = 0;
+        foreach ($rows as $row) {
+            if (self::canDecide($row, $user)) {
+                $count++;
+            }
+        }
+        return $count;
+    }
+
+    /** Todas as pendencias em aberto, com contexto (cliente/vendedor/link) pra listar na tela
+     *  central /painel/liberacoes -- o controller filtra por canDecide() pra cada usuario. */
+    public static function allPending(): array
+    {
+        $stmt = Database::connection()->query(
+            "SELECT a.*, req.name AS requested_by_name
+             FROM approvals a
+             LEFT JOIN users req ON req.id = a.requested_by
+             WHERE a.status = 'pendente'
+             ORDER BY a.created_at DESC"
+        );
+        $rows = $stmt->fetchAll();
+
+        foreach ($rows as &$row) {
+            $seller = self::sellerFor($row);
+            $record = $row['approvable_type'] === 'order' ? Order::find((int) $row['approvable_id']) : Quote::find((int) $row['approvable_id']);
+            $row['seller_name'] = $seller['name'] ?? '—';
+            $row['client_name'] = $record['client_name'] ?? '—';
+            $row['url'] = $row['approvable_type'] === 'order'
+                ? '/painel/pedidos/' . (int) $row['approvable_id']
+                : '/painel/orcamentos/' . (int) $row['approvable_id'];
+        }
+        unset($row);
+
+        return $rows;
     }
 
     public static function pendingFor(string $type, int $id): ?array

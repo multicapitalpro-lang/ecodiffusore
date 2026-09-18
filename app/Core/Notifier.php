@@ -5,8 +5,11 @@ namespace App\Core;
 use App\Models\Client;
 use App\Models\EmailEventTemplate;
 use App\Models\EmailTemplateSettings;
+use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Payment;
+use App\Models\PricingTier;
+use App\Models\Quote;
 use App\Models\QuoteItem;
 use App\Models\User;
 use App\Models\WhatsAppEventTemplate;
@@ -347,6 +350,67 @@ class Notifier
         [$text] = self::waTexts('licenciado_contrato_pendente', $vars);
         if ($text) {
             self::sendWhatsApp($licenciado['whatsapp'], $text);
+        }
+    }
+
+    /**
+     * Fase 57b: avisa por WhatsApp quem PODE decidir uma pendencia de preco abaixo do piso, na
+     * hora que ela e' criada (App\Models\Approval::checkAndRequest()) -- pedido explicito do
+     * usuario, "ja criar a automacao no zap pra envio de notificacao solicitando liberacao".
+     * @param array $approval linha de approvals (approvable_type/id, requester_role, requested_price)
+     */
+    public static function liberacaoDescontoSolicitada(array $approval): void
+    {
+        $isOrder = $approval['approvable_type'] === 'order';
+        $record = $isOrder ? Order::find((int) $approval['approvable_id']) : Quote::find((int) $approval['approvable_id']);
+        if (!$record || empty($record['seller_id'])) {
+            return;
+        }
+
+        $seller = User::find((int) $record['seller_id']);
+        if (!$seller) {
+            return;
+        }
+
+        $items = $isOrder ? OrderItem::forOrder((int) $approval['approvable_id']) : QuoteItem::forQuote((int) $approval['approvable_id']);
+        $quantidade = array_sum(array_column($items, 'quantity'));
+
+        $regiao = trim(($record['client_city'] ?? '') . (!empty($record['client_state']) ? '/' . $record['client_state'] : ''));
+
+        $vars = [
+            'vendedor' => $seller['name'] ?? '—',
+            'cliente' => $record['client_name'] ?? '—',
+            'regiao' => $regiao !== '' ? $regiao : '—',
+            'quantidade' => (string) $quantidade,
+            'preco_original' => 'R$ ' . number_format(PricingTier::VENDOR_STANDARD_PRICE, 2, ',', '.'),
+            'preco_solicitado' => 'R$ ' . number_format((float) $approval['requested_price'], 2, ',', '.'),
+            'url' => self::BASE_URL . '/painel/liberacoes',
+        ];
+
+        [, $text] = self::waTexts('liberacao_desconto_solicitada', $vars);
+        if (!$text) {
+            return;
+        }
+
+        $recipients = [];
+        if (($approval['requester_role'] ?? null) === 'vendedor') {
+            foreach (User::managerChain((int) $seller['id']) as $p) {
+                if (in_array($p['role_slug'], ['gestor', 'licenciado'], true)) {
+                    self::addRecipient($recipients, $p, 'network');
+                }
+            }
+        } elseif (in_array($approval['requester_role'] ?? null, ['gestor', 'licenciado'], true)) {
+            foreach (['gerente', 'supervisor', 'admin'] as $role) {
+                foreach (User::allByRole($role) as $p) {
+                    self::addRecipient($recipients, $p, 'network');
+                }
+            }
+        }
+
+        foreach ($recipients as $r) {
+            if (!empty($r['whatsapp'])) {
+                self::sendWhatsApp($r['whatsapp'], $text);
+            }
         }
     }
 

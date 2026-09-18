@@ -58,7 +58,11 @@ if (in_array($role, Roles::STAFF, true)) {
     };
     $pendingMachineQuotes = \App\Models\MachineQuoteRequest::countPending($mqScope);
 }
-$vendasOpen = $anyActive(['/painel/pedidos', '/painel/orcamentos', '/painel/produtos', '/painel/tabela-precos', '/painel/configuracoes/pagamento', '/painel/simulador', '/painel/materiais', '/painel/garantias', '/painel/entregas', '/painel/cotacoes-maquina']);
+$pendingPriceApprovals = 0;
+if (in_array($role, ['gestor', 'licenciado', 'gerente', 'supervisor', 'admin'], true)) {
+    $pendingPriceApprovals = \App\Models\Approval::countPendingForUser($user);
+}
+$vendasOpen = $anyActive(['/painel/pedidos', '/painel/orcamentos', '/painel/produtos', '/painel/tabela-precos', '/painel/configuracoes/pagamento', '/painel/simulador', '/painel/materiais', '/painel/garantias', '/painel/entregas', '/painel/cotacoes-maquina', '/painel/liberacoes']);
 $leadsOpen = $anyActive(['/painel/leads', '/painel/clientes', '/painel/configuracoes/roteamento']);
 $financeiroOpen = $anyActive(['/painel/financeiro']);
 $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/desempenho/funil', '/painel/meu-ranking', '/painel/metas']);
@@ -129,6 +133,12 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/desempen
                         <?php endif; ?>
                         <?php if ($canScreen('orcamentos')): ?>
                             <a href="/painel/orcamentos" class="<?= $isActive('/painel/orcamentos') ? 'is-active' : '' ?>">Orçamentos</a>
+                        <?php endif; ?>
+                        <?php if (in_array($role, ['gestor', 'licenciado', 'gerente', 'supervisor', 'admin'], true)): ?>
+                            <a href="/painel/liberacoes" class="<?= $isActive('/painel/liberacoes') ? 'is-active' : '' ?>">
+                                Liberação de Preço
+                                <?php if ($pendingPriceApprovals > 0): ?><span class="nav-badge"><?= (int) $pendingPriceApprovals ?></span><?php endif; ?>
+                            </a>
                         <?php endif; ?>
                         <a href="/painel/cotacoes-maquina" class="<?= $isActive('/painel/cotacoes-maquina') ? 'is-active' : '' ?>">
                             Cotações de Máquina Agrícola

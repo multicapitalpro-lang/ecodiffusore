@@ -6,11 +6,32 @@ use App\Core\Auth;
 use App\Core\Csrf;
 use App\Core\Roles;
 use App\Core\Router;
+use App\Core\View;
 use App\Models\AuditLog;
 use App\Models\Approval;
 
 class ApprovalController
 {
+    /** Fase 57b: painel central de liberacoes -- antes so' dava pra ver a pendencia entrando no
+     *  Pedido/Orcamento especifico (banner). Lista so' as pendencias que ESSE usuario pode
+     *  decidir (Approval::canDecide() por linha -- volume baixo, filtro em PHP e' suficiente,
+     *  evita duplicar a regra de autorizacao numa query SQL separada). */
+    public function index(): void
+    {
+        Auth::requireRole(Roles::STAFF);
+        $user = Auth::user();
+
+        $pending = array_values(array_filter(
+            Approval::allPending(),
+            fn ($a) => Approval::canDecide($a, $user)
+        ));
+
+        View::render('painel/approvals/index', [
+            'user' => $user,
+            'pending' => $pending,
+        ]);
+    }
+
     public function decide(string $id): void
     {
         // Fase 57: quem decide agora depende do papel de quem pediu (Approval::canDecide()) --

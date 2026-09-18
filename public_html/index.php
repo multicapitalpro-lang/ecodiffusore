@@ -263,6 +263,7 @@ $router->post('/painel/proposta-facil/concluir', [App\Controllers\PropostaContro
 $router->get('/painel/auditoria', [App\Controllers\AuditController::class, 'index']);
 
 // Aprovacao de desconto
+$router->get('/painel/liberacoes', [App\Controllers\ApprovalController::class, 'index']);
 $router->post('/painel/aprovacoes/{id}/decidir', [App\Controllers\ApprovalController::class, 'decide']);
 
 // Webhook Asaas (publico)

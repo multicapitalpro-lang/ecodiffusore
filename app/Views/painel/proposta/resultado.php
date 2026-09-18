@@ -119,7 +119,13 @@ $message = "Olá, {$result['name']}! Segue a proposta do Ecodiffusore que prepar
     </div>
 <?php endif; ?>
 
-<?php if ($result['quote_id'] && $result['product_price']): ?>
+<?php if (!empty($pendingApproval)): ?>
+    <h3>Concluir pedido</h3>
+    <div class="form-msg" style="background:#fff4dc;color:#b7791f;">
+        <strong>⏳ Aguardando liberação de preço</strong>
+        <p style="margin:6px 0 0;">Você pediu R$ <?= number_format((float) $pendingApproval['requested_price'], 2, ',', '.') ?> — abaixo do preço padrão de R$ <?= number_format(\App\Models\PricingTier::VENDOR_STANDARD_PRICE, 2, ',', '.') ?>. Seu Gestor ou Licenciado já foi avisado no WhatsApp e no painel dele — assim que aprovar, volte aqui pra concluir a venda.</p>
+    </div>
+<?php elseif ($result['quote_id'] && $result['product_price']): ?>
     <h3>Concluir pedido</h3>
     <p class="hint-text" style="margin-top:0;">Depois que o cliente decidir como vai pagar, conclua aqui — já cria o Pedido de verdade e gera a cobrança já na forma escolhida (Pix, Boleto ou Cartão com as parcelas certas), pronta pra mandar pro cliente.</p>
     <form action="/painel/proposta-facil/concluir" method="post" class="charge-form panel-form-wide">

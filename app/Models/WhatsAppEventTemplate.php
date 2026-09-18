@@ -31,6 +31,7 @@ class WhatsAppEventTemplate
         'garantia_estendida_lembrete_dia10',
         'garantia_estendida_lembrete_dia15',
         'licenciado_contrato_pendente',
+        'liberacao_desconto_solicitada',
     ];
 
     public const LABELS = [
@@ -52,6 +53,7 @@ class WhatsAppEventTemplate
         'garantia_estendida_lembrete_dia10' => 'Pós-venda de Instalação — lembrete dia 10 (cliente)',
         'garantia_estendida_lembrete_dia15' => 'Pós-venda de Instalação — último dia (cliente)',
         'licenciado_contrato_pendente' => 'Contrato pendente de assinatura (licenciado)',
+        'liberacao_desconto_solicitada' => 'Solicitação de liberação de preço',
     ];
 
     /** Quais placeholders {chave} cada evento aceita -- so pra exibir dica na tela, nao valida nada. */
@@ -74,6 +76,7 @@ class WhatsAppEventTemplate
         'garantia_estendida_lembrete_dia10' => ['cliente', 'pedido', 'dias_restantes', 'url'],
         'garantia_estendida_lembrete_dia15' => ['cliente', 'pedido', 'dias_restantes', 'url'],
         'licenciado_contrato_pendente' => ['nome', 'url'],
+        'liberacao_desconto_solicitada' => ['vendedor', 'cliente', 'regiao', 'quantidade', 'preco_original', 'preco_solicitado', 'url'],
     ];
 
     /** Eventos que so usam UM dos dois textos (o outro fica sempre null/nao editavel). */
@@ -82,7 +85,7 @@ class WhatsAppEventTemplate
         'garantia_estendida_lembrete_dia1', 'garantia_estendida_lembrete_dia5', 'garantia_estendida_lembrete_dia10', 'garantia_estendida_lembrete_dia15',
         'licenciado_contrato_pendente',
     ];
-    public const NETWORK_ONLY = ['vendedor_inativo', 'licenciado_pendente_aprovacao'];
+    public const NETWORK_ONLY = ['vendedor_inativo', 'licenciado_pendente_aprovacao', 'liberacao_desconto_solicitada'];
 
     /** Quem de fato recebe cada variante, POR EVENTO -- o alcance da "rede" varia bastante entre
      *  eventos (lead roteado so tem o Licenciado; pedido tem a cadeia inteira), entao um rotulo
@@ -115,6 +118,7 @@ class WhatsAppEventTemplate
         'vendedor_inativo' => 'Rede responsável (licenciado/supervisor/gerente/admin)',
         'licenciado_pendente_aprovacao' => 'Admin e Gerente Geral',
         'garantia_solicitada' => 'Licenciado da rede',
+        'liberacao_desconto_solicitada' => 'Quem pode aprovar (Gestor/Licenciado, ou Gerente/Supervisor/Admin conforme quem pediu)',
     ];
 
     public static function all(): array
