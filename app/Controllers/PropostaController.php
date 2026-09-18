@@ -283,6 +283,13 @@ class PropostaController
             Router::redirect('/painel/proposta-facil/resultado?erro_concluir=' . urlencode('Orçamento não encontrado ou já concluído.'));
         }
 
+        // Fase 57: mesmo bloqueio ja aplicado em QuoteController::convert() -- essa era uma
+        // SEGUNDA porta de conversao (Concluir Venda na Proposta Facil) que nao tinha a
+        // checagem, deixando a aprovacao de preco sem efeito nesse caminho especifico.
+        if (Approval::pendingFor('quote', $quoteId)) {
+            Router::redirect('/painel/proposta-facil/resultado?erro_concluir=' . urlencode('Esse orçamento está com o preço aguardando aprovação — não é possível concluir a venda até aprovar ou recusar.'));
+        }
+
         Client::updateDocument((int) $quote['client_id'], $document);
 
         $orderId = Quote::convertToOrder($quoteId);
