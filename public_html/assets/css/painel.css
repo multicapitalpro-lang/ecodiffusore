@@ -330,6 +330,23 @@ a { text-decoration: none; color: inherit; }
 .status-aguardando-aprovacao { background: #dbeafe; color: #1d4ed8; }
 .status-recusado { background: #fde8e8; color: #c53030; }
 
+/* Badge de Papel (tela de Usuarios) -- cor propria por slug, pra diferenciar visualmente numa
+   lista com muitos papeis misturados (antes era so texto plano, dificil de escanear a lista). */
+.role-badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 20px; font-size: .76rem; font-weight: 700; white-space: nowrap; }
+.role-admin { background: #1f2937; color: #fff; }
+.role-gerente { background: #ede9fe; color: #6d28d9; }
+.role-supervisor { background: #e0e7ff; color: #4338ca; }
+.role-gestor { background: #ccfbf1; color: #0f766e; }
+.role-licenciado { background: #e5f6e0; color: var(--green-dark); }
+.role-vendedor { background: #cffafe; color: #0e7490; }
+.role-influenciador { background: #fce7f3; color: #be185d; }
+.role-fabrica { background: #fef3c7; color: #92400e; }
+.role-cliente { background: #f1f2f5; color: #6b7280; }
+
+/* Padroniza nome/cidade da lista de Usuarios em maiusculo -- so na exibicao (text-transform),
+   o dado salvo no banco continua como foi digitado no cadastro. */
+.text-standardized { text-transform: uppercase; }
+
 /* Forms */
 .panel-form { max-width: 480px; display: flex; flex-direction: column; gap: 4px; }
 .panel-form label { font-weight: 700; font-size: .85rem; margin-top: 12px; }

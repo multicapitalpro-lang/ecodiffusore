@@ -101,9 +101,9 @@ $erroLabels = [
                 <?php foreach ($users as $u): ?>
                     <tr>
                         <td><input type="checkbox" name="ids[]" value="<?= (int) $u['id'] ?>" class="row-select-user" <?= $u['role_slug'] === 'admin' ? 'disabled' : '' ?>></td>
-                        <td><?= View::e($u['name']) ?></td>
+                        <td class="text-standardized"><?= View::e($u['name']) ?></td>
                         <td><?= View::e($u['email']) ?></td>
-                        <td><?= View::e($u['role_name']) ?></td>
+                        <td><span class="role-badge role-<?= View::e($u['role_slug']) ?>"><?= View::e($u['role_name']) ?></span></td>
                         <td><span class="status-badge status-<?= View::e($u['status']) ?>"><?= $u['status'] === 'active' ? 'Ativo' : 'Inativo' ?></span></td>
                         <td>
                             <?php if (($u['licenciado_onboarding_status'] ?? 'nao_aplicavel') !== 'nao_aplicavel'): ?>
@@ -124,7 +124,7 @@ $erroLabels = [
                                 —
                             <?php endif; ?>
                         </td>
-                        <td><?= $u['city'] ? View::e($u['city']) . ($u['state'] ? '/' . View::e($u['state']) : '') : '—' ?></td>
+                        <td class="text-standardized"><?= $u['city'] ? View::e($u['city']) . ($u['state'] ? '/' . View::e($u['state']) : '') : '—' ?></td>
                         <td>
                             <?php if ($u['responsavel']): ?>
                                 <?= View::e($u['responsavel']['name']) ?>
