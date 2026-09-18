@@ -243,6 +243,38 @@ class Approval
         return $mine;
     }
 
+    /** "Decisões que você tomou" -- diferente de forOwnRequests() (onde o usuario e' quem VENDEU):
+     *  aqui e' onde o usuario decidiu algo, no nivel 1 (Gestor/Licenciado) ou no nivel 2/decisao
+     *  final (Gerente/Supervisor/Admin, ou Gestor/Licenciado decidindo pra si mesmo). Sem isso,
+     *  depois de decidir uma pendencia ela simplesmente sumia da tela de quem decidiu -- pedido
+     *  explicito do usuario: "depois que aprovei no gerente tbm nao consta". */
+    public static function forDecisionsBy(int $userId, int $limit = 100): array
+    {
+        $stmt = Database::connection()->prepare(
+            'SELECT * FROM approvals WHERE decided_by = :id1 OR level1_approved_by = :id2
+             ORDER BY COALESCE(decided_at, level1_approved_at, created_at) DESC LIMIT 500'
+        );
+        $stmt->execute(['id1' => $userId, 'id2' => $userId]);
+        $rows = $stmt->fetchAll();
+
+        $decided = [];
+        foreach ($rows as $row) {
+            $seller = self::sellerFor($row);
+            $record = $row['approvable_type'] === 'order' ? Order::find((int) $row['approvable_id']) : Quote::find((int) $row['approvable_id']);
+            $row['seller_name'] = $seller['name'] ?? '—';
+            $row['client_name'] = $record['client_name'] ?? '—';
+            $row['url'] = $row['approvable_type'] === 'order'
+                ? '/painel/pedidos/' . (int) $row['approvable_id']
+                : '/painel/orcamentos/' . (int) $row['approvable_id'];
+            $decided[] = $row;
+            if (count($decided) >= $limit) {
+                break;
+            }
+        }
+
+        return $decided;
+    }
+
     public static function pendingFor(string $type, int $id): ?array
     {
         $stmt = Database::connection()->prepare(

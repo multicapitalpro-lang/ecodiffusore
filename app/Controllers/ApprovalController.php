@@ -30,6 +30,7 @@ class ApprovalController
             'user' => $user,
             'pending' => $pending,
             'mine' => Approval::forOwnRequests((int) $user['id']),
+            'decided' => Approval::forDecisionsBy((int) $user['id']),
         ]);
     }
 

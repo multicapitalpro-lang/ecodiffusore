@@ -6,6 +6,7 @@ use App\Models\PricingTier;
 $sucesso = isset($_GET['sucesso']);
 $requesterLabels = ['vendedor' => 'Vendedor', 'gestor' => 'Gestor', 'licenciado' => 'Licenciado'];
 $mine = $mine ?? [];
+$decided = $decided ?? [];
 ?>
 <div class="page-header">
     <h1>Liberação de Preço</h1>
@@ -76,6 +77,43 @@ $mine = $mine ?? [];
             <div>
                 <p><strong>Preço solicitado:</strong> R$ <?= number_format((float) $a['requested_price'], 2, ',', '.') ?></p>
                 <p><strong>Status:</strong> <span style="color:<?= $badgeColor ?>;font-weight:700;"><?= View::e($label) ?></span></p>
+            </div>
+        </div>
+        <div style="margin-top:10px;">
+            <a href="<?= View::e($a['url']) ?>" class="btn btn-outline">Ver <?= $a['approvable_type'] === 'order' ? 'pedido' : 'orçamento' ?></a>
+        </div>
+    </div>
+<?php endforeach; ?>
+
+<div class="page-header" style="margin-top:32px;">
+    <h2>Decisões que você tomou</h2>
+</div>
+<p class="section-sub">Liberações de preço em que você decidiu algo (primeira etapa ou etapa final) — acompanhe se já foi concluída ou ainda depende de mais alguém.</p>
+
+<?php if (!$decided): ?>
+    <p class="hint-text">Você ainda não decidiu nenhuma liberação de preço.</p>
+<?php endif; ?>
+
+<?php foreach ($decided as $a):
+    $label = Approval::statusLabel($a);
+    $badgeColor = $a['status'] === 'aprovado' ? '#2f855a' : ($a['status'] === 'recusado' ? '#c53030' : '#b7791f');
+    $suaParte = (int) ($a['level1_approved_by'] ?? 0) === (int) $user['id'] && $a['status'] === 'pendente'
+        ? 'Você aprovou o nível 1 — agora falta a decisão final de outra pessoa.'
+        : null;
+?>
+    <div class="buy-checkout-box" style="max-width:none;margin-bottom:14px;">
+        <div class="form-grid-2">
+            <div>
+                <p><strong>Tipo:</strong> <?= $a['approvable_type'] === 'order' ? 'Pedido' : 'Orçamento' ?> #<?= (int) $a['approvable_id'] ?></p>
+                <p><strong>Vendedor:</strong> <?= View::e($a['seller_name']) ?></p>
+                <p><strong>Cliente:</strong> <?= View::e($a['client_name']) ?></p>
+                <?php if ($suaParte): ?>
+                    <p class="hint-text" style="margin:2px 0 0;"><?= View::e($suaParte) ?></p>
+                <?php endif; ?>
+            </div>
+            <div>
+                <p><strong>Preço solicitado:</strong> R$ <?= number_format((float) $a['requested_price'], 2, ',', '.') ?></p>
+                <p><strong>Status atual:</strong> <span style="color:<?= $badgeColor ?>;font-weight:700;"><?= View::e($label) ?></span></p>
             </div>
         </div>
         <div style="margin-top:10px;">
