@@ -351,11 +351,10 @@ class PropostaController
             $errors['year'] = 'Informe o ano.';
         }
 
-        $ecuStatus = $post['ecu_status'] ?? '';
-        if (!in_array($ecuStatus, ['original', 'reprogramado'], true)) {
+        // Potencia reprogramada e' opcional (pedido do usuario: "se souber, poe") -- so exige
+        // que a pessoa diga se o motor e' original ou reprogramado, nao o valor exato do chip.
+        if (!in_array($post['ecu_status'] ?? '', ['original', 'reprogramado'], true)) {
             $errors['ecu_status'] = 'Selecione uma opção.';
-        } elseif ($ecuStatus === 'reprogramado' && trim($post['reprogrammed_power'] ?? '') === '') {
-            $errors['reprogrammed_power'] = 'Informe a potência reprogramada.';
         }
 
         if (!in_array($post['has_arla'] ?? '', ['sim', 'nao'], true)) {
