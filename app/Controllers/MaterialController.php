@@ -54,9 +54,27 @@ class MaterialController
             ],
         ];
 
+        // Calculadoras interativas (HTML autonomo, sem PHP -- o vendedor/licenciado abre e usa na
+        // hora com o cliente, sem precisar fazer login em nada, so o link).
+        $calculators = [
+            [
+                'title' => 'Calculadora de Economia de Diesel',
+                'description' => 'Simula a economia de combustível do cliente e o payback do investimento -- pra usar na conversa com o comprador.',
+                'file' => '/assets/tools/calculadora-economia-diesel.html',
+                'icon' => '🧮',
+            ],
+            [
+                'title' => 'Calculadora do Licenciado (sem mensalidades)',
+                'description' => 'Simula o retorno de virar Licenciado Ecodiffusore -- pra usar na conversa com quem está pensando em se tornar licenciado.',
+                'file' => '/assets/tools/calculadora-licenciado.html',
+                'icon' => '📊',
+            ],
+        ];
+
         View::render('painel/materials/index', [
             'user' => $user,
             'materials' => $materials,
+            'calculators' => $calculators,
             'scripts' => SalesScript::all(),
             'testimonials' => Testimonial::all(),
             'canManage' => in_array($user['role_slug'], Roles::SUPERVISOR_ASSIGNMENT, true),
