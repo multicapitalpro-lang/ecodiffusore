@@ -48,6 +48,7 @@ $erro = isset($_GET['erro']);
                 <th>Previsão</th>
                 <th>Nota Fiscal</th>
                 <th>Comprovante de Instalação</th>
+                <th>Documentos do veículo</th>
                 <th></th>
             </tr>
         </thead>
@@ -124,6 +125,13 @@ $erro = isset($_GET['erro']);
                         <?php endif; ?>
                     </td>
                     <td>
+                        <?php foreach (['vehicle_document_path' => 'Documento', 'cnh_document_path' => 'CNH', 'photo1_path' => 'Foto 1', 'photo2_path' => 'Foto 2', 'photo3_path' => 'Foto 3', 'telemetry_path' => 'Telemetria'] as $field => $label): ?>
+                            <?php if (!empty($o[$field])): ?>
+                                <a href="/painel/fabrica/<?= (int) $o['id'] ?>/arquivo/<?= $field ?>" target="_blank" rel="noopener" class="link-small">📄 <?= $label ?></a><br>
+                            <?php endif; ?>
+                        <?php endforeach; ?>
+                    </td>
+                    <td>
                         <button form="<?= $formId ?>" type="submit" class="btn btn-outline">Salvar</button>
                         <form method="post" action="/painel/fabrica/<?= (int) $o['id'] ?>/entregue" class="inline-form" onsubmit="return confirm('Marcar este pedido como entregue?');">
                             <?= Csrf::field() ?>
@@ -133,7 +141,7 @@ $erro = isset($_GET['erro']);
                 </tr>
             <?php endforeach; ?>
             <?php if (!$orders): ?>
-                <tr><td colspan="11">Nenhum pedido pago aguardando despacho no momento.</td></tr>
+                <tr><td colspan="12">Nenhum pedido pago aguardando despacho no momento.</td></tr>
             <?php endif; ?>
         </tbody>
     </table>

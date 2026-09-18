@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Core\Auth;
 use App\Core\Csrf;
 use App\Core\CorreiosClient;
+use App\Core\FileUpload;
 use App\Core\Notifier;
 use App\Core\Pdf;
 use App\Core\Roles;
@@ -74,6 +75,37 @@ class FactoryController
         $html = ob_get_clean();
 
         Pdf::download($html, 'termo-garantia-pedido-' . $orderId . '.pdf', 'portrait');
+    }
+
+    /** Fase 61: CNH/documento do veiculo/fotos/telemetria enviados pelo cliente -- a fabrica
+     *  precisa ver pra montar a peca certa. So libera pedido JA' pago (mesma checagem de
+     *  updateDelivery()/markDelivered()) -- Fabrica fica fora da hierarquia de vendedor/
+     *  licenciado, entao nao reaproveita OrderController::authorizeOrder(). */
+    public function downloadDocument(string $id, string $field): void
+    {
+        Auth::requireRole([Roles::FACTORY]);
+        $id = (int) $id;
+
+        $order = Order::find($id);
+        if (!$order || $order['status'] !== 'verificado' || !array_key_exists($field, Order::VEHICLE_FILE_SUBDIRS) || empty($order[$field])) {
+            http_response_code(404);
+            exit('Arquivo não encontrado.');
+        }
+
+        $path = FileUpload::path(Order::VEHICLE_FILE_SUBDIRS[$field], $order[$field]);
+        if (!file_exists($path)) {
+            http_response_code(404);
+            exit('Arquivo não encontrado.');
+        }
+
+        $extension = pathinfo($order[$field], PATHINFO_EXTENSION);
+        $mimeType = mime_content_type($path) ?: 'application/octet-stream';
+
+        header('Content-Type: ' . $mimeType);
+        header('Content-Disposition: inline; filename="' . $field . '-pedido-' . $id . ($extension ? '.' . $extension : '') . '"');
+        header('Content-Length: ' . filesize($path));
+        readfile($path);
+        exit;
     }
 
     /** Consulta (Fase 39): a Fabrica confere se quem apareceu direto com ela (fora do fluxo normal

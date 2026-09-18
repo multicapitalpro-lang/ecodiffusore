@@ -61,8 +61,14 @@ $situation = $order['payment_situation'] ?? ['label' => '—', 'badge' => 'novo'
     <?php if (!empty($order['cnh_document_path'])): ?>
         <p><a href="/painel/pedidos/<?= (int) $order['id'] ?>/cnh" target="_blank" rel="noopener" class="link-small">📄 Ver CNH do comprador</a></p>
     <?php endif; ?>
-    <?php if (empty($order['vehicle_document_path']) || empty($order['cnh_document_path'])): ?>
-        <p class="hint-inline" style="color:#b3790f;">⚠️ Falta <?= empty($order['vehicle_document_path']) && empty($order['cnh_document_path']) ? 'a CNH e o documento do veículo' : (empty($order['vehicle_document_path']) ? 'o documento do veículo' : 'a CNH') ?> — obrigatório antes de enviar pra fabricação (a fábrica só vê pedidos pagos com os 2 documentos anexados). O cliente pode enviar direto pelo painel dele, em "Meus Pedidos".<?php if (!$isViewOnly && $order['status'] === 'em_andamento'): ?> <a href="/painel/pedidos/<?= (int) $order['id'] ?>/editar" class="link-small">Anexar agora</a><?php endif; ?></p>
+    <?php foreach (['photo1_path' => 'Foto 1 do veículo', 'photo2_path' => 'Foto 2 do veículo', 'photo3_path' => 'Foto 3 do veículo', 'telemetry_path' => 'Telemetria'] as $field => $label): ?>
+        <?php if (!empty($order[$field])): ?>
+            <p><a href="/painel/pedidos/<?= (int) $order['id'] ?>/arquivo/<?= $field ?>" target="_blank" rel="noopener" class="link-small">📄 Ver <?= $label ?></a></p>
+        <?php endif; ?>
+    <?php endforeach; ?>
+    <?php $missing = \App\Models\Order::missingDocumentLabels($order); ?>
+    <?php if ($missing): ?>
+        <p class="hint-inline" style="color:#b3790f;">⚠️ Falta <?= View::e(implode(', ', $missing)) ?> — obrigatório antes de enviar pra fabricação (a fábrica só vê pedidos pagos com o cadastro do veículo completo). O cliente pode enviar direto pelo painel dele, em "Meus Pedidos".<?php if (!$isViewOnly && $order['status'] === 'em_andamento'): ?> <a href="/painel/pedidos/<?= (int) $order['id'] ?>/editar" class="link-small">Anexar agora</a><?php endif; ?></p>
     <?php endif; ?>
     <?php if ($order['notes']): ?><p><strong>Obs.:</strong> <?= nl2br(View::e($order['notes'])) ?></p><?php endif; ?>
 </div>

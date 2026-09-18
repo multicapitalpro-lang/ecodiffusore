@@ -107,6 +107,7 @@ $router->get('/painel/fabrica/rede', [App\Controllers\FactoryController::class, 
 $router->post('/painel/fabrica/{id}/entrega', [App\Controllers\FactoryController::class, 'updateDelivery']);
 $router->post('/painel/fabrica/{id}/entregue', [App\Controllers\FactoryController::class, 'markDelivered']);
 $router->get('/painel/fabrica/{id}/termo-garantia', [App\Controllers\FactoryController::class, 'downloadWarrantyTerm']);
+$router->get('/painel/fabrica/{id}/arquivo/{field}', [App\Controllers\FactoryController::class, 'downloadDocument']);
 
 $router->get('/painel/influenciador', [App\Controllers\InfluencerController::class, 'dashboard']);
 $router->get('/painel/entregas', [App\Controllers\OrderController::class, 'deliveries']);
@@ -240,6 +241,7 @@ $router->post('/painel/pedidos/{id}/reembolsar', [App\Controllers\OrderControlle
 $router->post('/painel/pedidos/{id}/rastreio', [App\Controllers\OrderController::class, 'updateTracking']);
 $router->get('/painel/pedidos/{id}/documento-veiculo', [App\Controllers\OrderController::class, 'downloadVehicleDocument']);
 $router->get('/painel/pedidos/{id}/cnh', [App\Controllers\OrderController::class, 'downloadCnhDocument']);
+$router->get('/painel/pedidos/{id}/arquivo/{field}', [App\Controllers\OrderController::class, 'downloadOrderFile']);
 $router->post('/painel/pedidos/{id}/cobranca', [App\Controllers\PaymentController::class, 'generateForOrder']);
 
 // Orcamentos

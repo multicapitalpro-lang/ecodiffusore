@@ -16,13 +16,25 @@ $methodLabels = ['PIX' => 'Pix', 'BOLETO' => 'Boleto', 'CREDIT_CARD' => 'Cartão
     <p class="form-msg form-msg-erro"><?= $_GET['erro_docs'] === '1' ? 'Sessão expirada, tente de novo.' : View::e($_GET['erro_docs']) ?></p>
 <?php endif; ?>
 
-<?php if (!Order::hasRequiredDocuments($order)): ?>
-    <div class="form-msg" style="background:#fff4dc;color:#b7791f;max-width:560px;margin-bottom:18px;">
-        <strong>📎 Falta enviar a CNH e o documento do veículo</strong>
-        <p style="margin:6px 0 0;">Sem isso, seu pedido não segue pra fabricação — envie assim que puder.</p>
+<?php $missing = Order::missingDocumentLabels($order); ?>
+<?php if ($missing): ?>
+    <div class="form-msg" style="background:#fff4dc;color:#b7791f;max-width:640px;margin-bottom:18px;">
+        <strong>📎 Cadastro do veículo pendente</strong>
+        <p style="margin:6px 0 0;">O seu Ecodiffusore <strong>só vai pra fabricação depois que você enviar tudo abaixo</strong> — sem isso a peça não é confeccionada.</p>
+        <ul style="margin:10px 0;padding-left:20px;">
+            <?php foreach (Order::REQUIRED_VEHICLE_FIELDS as $field => $label): ?>
+                <li><?= empty($order[$field]) ? '❌' : '✅' ?> <?= View::e($label) ?></li>
+            <?php endforeach; ?>
+        </ul>
         <form action="/painel/meus-pedidos/<?= (int) $order['id'] ?>/documentos" method="post" enctype="multipart/form-data" class="panel-form" style="margin-top:12px;">
             <?= Csrf::field() ?>
             <div class="form-grid-2">
+                <?php if (empty($order['vehicle_plate'])): ?>
+                    <div>
+                        <label for="client-vehicle-plate">Placa do veículo</label>
+                        <input type="text" id="client-vehicle-plate" name="vehicle_plate" maxlength="10" style="text-transform:uppercase">
+                    </div>
+                <?php endif; ?>
                 <?php if (empty($order['vehicle_document_path'])): ?>
                     <div>
                         <label for="client-vehicle-document">Documento do veículo (CRLV)</label>
@@ -35,10 +47,36 @@ $methodLabels = ['PIX' => 'Pix', 'BOLETO' => 'Boleto', 'CREDIT_CARD' => 'Cartão
                         <input type="file" id="client-cnh-document" name="cnh_document" accept="image/*,.pdf">
                     </div>
                 <?php endif; ?>
+                <?php if (empty($order['photo1_path'])): ?>
+                    <div>
+                        <label for="client-photo1">Foto 1 do veículo</label>
+                        <input type="file" id="client-photo1" name="photo1" accept="image/*">
+                    </div>
+                <?php endif; ?>
+                <?php if (empty($order['photo2_path'])): ?>
+                    <div>
+                        <label for="client-photo2">Foto 2 do veículo</label>
+                        <input type="file" id="client-photo2" name="photo2" accept="image/*">
+                    </div>
+                <?php endif; ?>
+                <?php if (empty($order['photo3_path'])): ?>
+                    <div>
+                        <label for="client-photo3">Foto 3 do veículo</label>
+                        <input type="file" id="client-photo3" name="photo3" accept="image/*">
+                    </div>
+                <?php endif; ?>
+                <?php if (empty($order['telemetry_path'])): ?>
+                    <div>
+                        <label for="client-telemetry">Telemetria (foto do painel/rastreador)</label>
+                        <input type="file" id="client-telemetry" name="telemetry" accept="image/*,.pdf">
+                    </div>
+                <?php endif; ?>
             </div>
-            <button type="submit" class="btn btn-primary" style="margin-top:12px;">Enviar documentos</button>
+            <button type="submit" class="btn btn-primary" style="margin-top:12px;">Enviar</button>
         </form>
     </div>
+<?php else: ?>
+    <p class="form-msg form-msg-ok" style="max-width:640px;">✅ Cadastro do veículo completo — seu pedido já está liberado pra fabricação.</p>
 <?php endif; ?>
 
 <div class="order-summary">

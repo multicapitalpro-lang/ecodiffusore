@@ -193,6 +193,28 @@ class Notifier
         }
     }
 
+    /** Fase 61: assim que o pagamento confirma (Order::markVerifiedWithCommission()), avisa o
+     *  PROPRIO CLIENTE que falta completar o cadastro do veiculo -- pedido explicito do usuario,
+     *  "de imediato ele precisa receber uma notificacao pra que ele entre no painel". So dispara
+     *  se ainda faltar algo (ver Order::hasRequiredDocuments()) -- sem sentido avisar quem ja
+     *  mandou tudo. So WhatsApp, so pro cliente (mesma excecao de acessoPortalCriado/
+     *  pedidoAtualizacaoEntrega). @param array $order precisa de id/client_name/client_whatsapp */
+    public static function pagamentoConfirmadoCliente(array $order): void
+    {
+        if (empty($order['client_whatsapp'])) {
+            return;
+        }
+
+        $vars = [
+            'nome' => $order['client_name'] ?? '—',
+            'url' => self::BASE_URL . '/painel/meus-pedidos/' . (int) $order['id'],
+        ];
+        [$text] = self::waTexts('pagamento_confirmado_cliente', $vars);
+        if ($text) {
+            self::sendWhatsApp($order['client_whatsapp'], $text);
+        }
+    }
+
     /** @param array $order precisa de id/seller_id/client_name (mesmas chaves de pedidoVars) --
      *  so WhatsApp, sem e-mail (nao pedido pelo usuario pra esse evento). */
     public static function pedidoCancelado(array $order): void

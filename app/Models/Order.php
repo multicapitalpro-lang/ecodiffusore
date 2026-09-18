@@ -299,30 +299,71 @@ class Order
         }
     }
 
-    /** CNH + documento do veiculo (Fase 40). Ate a Fase 60 travavam a geracao da COBRANCA -- agora
-     *  so travam o pedido de aparecer pra fabrica (ver forFactory()), pra nao atrasar o fechamento
-     *  da venda esperando documento. */
+    /** Lista unica de campos exigidos antes de liberar o pedido pra fabrica (Fase 61: placa + CNH
+     *  + documento do veiculo + 3 fotos + telemetria -- pedido explicito do usuario, cadastro
+     *  completo do veiculo). Reaproveitada por hasRequiredDocuments()/forFactory()/
+     *  paidMissingDocuments()/missingDocumentLabels() pra nunca desalinhar uma da outra. */
+    public const REQUIRED_VEHICLE_FIELDS = [
+        'vehicle_plate' => 'Placa do veículo',
+        'vehicle_document_path' => 'Documento do veículo',
+        'cnh_document_path' => 'CNH',
+        'photo1_path' => 'Foto 1 do veículo',
+        'photo2_path' => 'Foto 2 do veículo',
+        'photo3_path' => 'Foto 3 do veículo',
+        'telemetry_path' => 'Telemetria',
+    ];
+
+    /** Subpasta de storage de cada campo de arquivo (vehicle_plate fica de fora, e' texto, nao
+     *  arquivo) -- usado pelos downloads genericos (OrderController::downloadOrderFile(),
+     *  FactoryController::downloadDocument()) pra nunca desalinhar campo x pasta. */
+    public const VEHICLE_FILE_SUBDIRS = [
+        'vehicle_document_path' => 'vehicle_docs',
+        'cnh_document_path' => 'cnh_docs',
+        'photo1_path' => 'vehicle_photos',
+        'photo2_path' => 'vehicle_photos',
+        'photo3_path' => 'vehicle_photos',
+        'telemetry_path' => 'telemetry',
+    ];
+
+    /** Ate a Fase 60 travava a geracao da COBRANCA -- agora so trava o pedido de aparecer pra
+     *  fabrica (ver forFactory()), pra nao atrasar o fechamento da venda esperando documento. */
     public static function hasRequiredDocuments(array $order): bool
     {
-        return !empty($order['vehicle_document_path']) && !empty($order['cnh_document_path']);
+        foreach (array_keys(self::REQUIRED_VEHICLE_FIELDS) as $field) {
+            if (empty($order[$field])) {
+                return false;
+            }
+        }
+        return true;
     }
 
-    /** Upload feito pelo proprio CLIENTE no painel dele (ClientPortalController::
-     *  uploadOrderDocuments) -- update parcial, so mexe no campo que veio preenchido (mesmo
+    /** Rotulos dos campos que ainda faltam nesse pedido especifico -- usado no aviso pro cliente/
+     *  staff saberem exatamente o que falta, sem adivinhar. */
+    public static function missingDocumentLabels(array $order): array
+    {
+        $missing = [];
+        foreach (self::REQUIRED_VEHICLE_FIELDS as $field => $label) {
+            if (empty($order[$field])) {
+                $missing[] = $label;
+            }
+        }
+        return $missing;
+    }
+
+    /** Upload/preenchimento feito pelo proprio CLIENTE no painel dele (ClientPortalController::
+     *  uploadOrderDocuments) -- update parcial, so mexe nos campos que vieram preenchidos (mesmo
      *  espirito de updateHeaderAndItems, mas sem tocar em client_id/seller_id/itens, que o cliente
-     *  nao tem permissao de alterar). */
-    public static function updateDocuments(int $id, ?string $vehicleDocumentPath, ?string $cnhDocumentPath): void
+     *  nao tem permissao de alterar). $fields aceita qualquer chave de REQUIRED_VEHICLE_FIELDS. */
+    public static function updateDocuments(int $id, array $fields): void
     {
         $sets = [];
         $params = ['id' => $id];
 
-        if ($vehicleDocumentPath !== null) {
-            $sets[] = 'vehicle_document_path = :vehicle_document_path';
-            $params['vehicle_document_path'] = $vehicleDocumentPath;
-        }
-        if ($cnhDocumentPath !== null) {
-            $sets[] = 'cnh_document_path = :cnh_document_path';
-            $params['cnh_document_path'] = $cnhDocumentPath;
+        foreach (array_keys(self::REQUIRED_VEHICLE_FIELDS) as $field) {
+            if (array_key_exists($field, $fields) && $fields[$field] !== null && $fields[$field] !== '') {
+                $sets[] = "{$field} = :{$field}";
+                $params[$field] = $fields[$field];
+            }
         }
         if (!$sets) {
             return;
@@ -435,6 +476,8 @@ class Order
             "SELECT o.id, o.order_date, o.tracking_carrier, o.tracking_code, o.prazo_entrega,
                     o.tracking_status, o.tracking_status_date,
                     o.nfe_status, o.nfe_pdf_url, o.notes, o.vehicle_type, o.vehicle_plate,
+                    o.vehicle_document_path, o.cnh_document_path,
+                    o.photo1_path, o.photo2_path, o.photo3_path, o.telemetry_path,
                     c.name AS client_name, c.whatsapp AS client_whatsapp, c.document AS client_document,
                     c.email AS client_email,
                     c.zip_code, c.street, c.number, c.complement, c.neighborhood, c.city, c.state,
@@ -442,21 +485,30 @@ class Order
                      FROM order_items oi JOIN products p ON p.id = oi.product_id WHERE oi.order_id = o.id) AS produtos
              FROM orders o JOIN clients c ON c.id = o.client_id
              WHERE o.status = 'verificado' AND o.delivered_at IS NULL
+                AND o.vehicle_plate IS NOT NULL AND o.vehicle_plate <> ''
                 AND o.vehicle_document_path IS NOT NULL AND o.cnh_document_path IS NOT NULL
+                AND o.photo1_path IS NOT NULL AND o.photo2_path IS NOT NULL AND o.photo3_path IS NOT NULL
+                AND o.telemetry_path IS NOT NULL
              ORDER BY o.order_date DESC"
         )->fetchAll();
     }
 
-    /** Pagos mas ainda SEM CNH/documento do veiculo -- ficam de fora de forFactory() de proposito
-     *  (Fase 60: "caso nao seja enviado o produto nao sera enviado pra confeccao"). Usado pra dar
-     *  visibilidade ao staff de quanto pedido pago esta preso nessa espera. */
+    /** Pagos mas ainda com algum campo de REQUIRED_VEHICLE_FIELDS faltando -- ficam de fora de
+     *  forFactory() de proposito (Fase 60/61: "caso nao seja enviado o produto nao sera enviado
+     *  pra confeccao"). Usado pra dar visibilidade ao staff de quanto pedido pago esta preso
+     *  nessa espera. */
     public static function paidMissingDocuments(): array
     {
         return Database::connection()->query(
             "SELECT o.id, o.order_date, c.name AS client_name, o.seller_id
              FROM orders o JOIN clients c ON c.id = o.client_id
              WHERE o.status = 'verificado' AND o.delivered_at IS NULL
-                AND (o.vehicle_document_path IS NULL OR o.cnh_document_path IS NULL)
+                AND (
+                    o.vehicle_plate IS NULL OR o.vehicle_plate = ''
+                    OR o.vehicle_document_path IS NULL OR o.cnh_document_path IS NULL
+                    OR o.photo1_path IS NULL OR o.photo2_path IS NULL OR o.photo3_path IS NULL
+                    OR o.telemetry_path IS NULL
+                )
              ORDER BY o.order_date DESC"
         )->fetchAll();
     }
@@ -632,6 +684,15 @@ class Order
 
         Notifier::pedidoAprovado($order);
         Notifier::novoPedidoPagoFabrica($order);
+
+        // Fase 61: pagamento confirmado e' o gatilho pro cliente saber, na hora, que falta
+        // completar o cadastro do veiculo -- sem isso a peca nao vai pra fabricacao. So se ainda
+        // faltar algo (self::find() de novo pega o estado mais atual, nao o $order de antes do
+        // UPDATE de status).
+        $freshOrder = self::find($id);
+        if ($freshOrder && !self::hasRequiredDocuments($freshOrder)) {
+            Notifier::pagamentoConfirmadoCliente($freshOrder);
+        }
 
         return true;
     }

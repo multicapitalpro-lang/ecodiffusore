@@ -513,6 +513,34 @@ class OrderController
         exit;
     }
 
+    /** Fase 61: mesmo padrao dos 2 downloads acima, generico pros campos novos (fotos +
+     *  telemetria) enviados pelo proprio cliente -- todo STAFF com acesso ao pedido (Vendedor,
+     *  Gestor, Licenciado, Supervisor, Gerente, Admin) consegue ver, via a mesma tela do Pedido. */
+    public function downloadOrderFile(string $id, string $field): void
+    {
+        $order = $this->authorizeOrder((int) $id);
+
+        if (!array_key_exists($field, Order::VEHICLE_FILE_SUBDIRS) || empty($order[$field])) {
+            http_response_code(404);
+            exit('Arquivo não encontrado.');
+        }
+
+        $path = FileUpload::path(Order::VEHICLE_FILE_SUBDIRS[$field], $order[$field]);
+        if (!file_exists($path)) {
+            http_response_code(404);
+            exit('Arquivo não encontrado.');
+        }
+
+        $extension = pathinfo($order[$field], PATHINFO_EXTENSION);
+        $mimeType = mime_content_type($path) ?: 'application/octet-stream';
+
+        header('Content-Type: ' . $mimeType);
+        header('Content-Disposition: inline; filename="' . $field . '-pedido-' . (int) $id . ($extension ? '.' . $extension : '') . '"');
+        header('Content-Length: ' . filesize($path));
+        readfile($path);
+        exit;
+    }
+
     private function authorizeOrder(int $id): array
     {
         Auth::requireRole(Roles::STAFF);

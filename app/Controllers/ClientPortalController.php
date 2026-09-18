@@ -48,10 +48,11 @@ class ClientPortalController
         ]);
     }
 
-    /** Fase 60: CNH + documento do veiculo deixaram de ser exigidos ANTES da venda (pedido
-     *  explicito do usuario, "facilitando a compra") -- agora o proprio cliente envia aqui, no
-     *  painel dele, depois de já ter comprado. Sem os 2 documentos o pedido pago fica de fora de
-     *  Order::forFactory() (nunca é enviado pra fábrica) até completar. */
+    /** Fase 60/61: CNH, documento do veiculo, placa, 3 fotos e telemetria deixaram de ser
+     *  exigidos ANTES da venda (pedido explicito do usuario, "facilitando a compra") -- agora o
+     *  proprio cliente envia tudo aqui, no painel dele, depois de já ter comprado. Sem o cadastro
+     *  completo (Order::REQUIRED_VEHICLE_FIELDS) o pedido pago fica de fora de Order::forFactory()
+     *  (nunca é enviado pra fábrica) até completar -- ver Order::hasRequiredDocuments(). */
     public function uploadOrderDocuments(string $id): void
     {
         Auth::requireRole(['cliente']);
@@ -67,24 +68,48 @@ class ClientPortalController
             Router::redirect("/painel/meus-pedidos/{$id}?erro_docs=1");
         }
 
-        $vehicleDocument = null;
-        $cnhDocument = null;
+        $fields = [];
+
+        $plate = strtoupper(trim($_POST['vehicle_plate'] ?? ''));
+        if ($plate !== '') {
+            $fields['vehicle_plate'] = $plate;
+        }
+
         try {
             $vehicleDocument = FileUpload::storeVehicleDocument($_FILES['vehicle_document'] ?? []);
             $cnhDocument = FileUpload::storeCnhDocument($_FILES['cnh_document'] ?? []);
+            $photo1 = FileUpload::storeVehiclePhoto($_FILES['photo1'] ?? []);
+            $photo2 = FileUpload::storeVehiclePhoto($_FILES['photo2'] ?? []);
+            $photo3 = FileUpload::storeVehiclePhoto($_FILES['photo3'] ?? []);
+            $telemetry = FileUpload::storeTelemetryFile($_FILES['telemetry'] ?? []);
         } catch (\RuntimeException $e) {
             Router::redirect("/painel/meus-pedidos/{$id}?erro_docs=" . urlencode($e->getMessage()));
         }
 
-        if (!$vehicleDocument && !$cnhDocument) {
-            Router::redirect("/painel/meus-pedidos/{$id}?erro_docs=" . urlencode('Selecione pelo menos um arquivo.'));
+        if ($vehicleDocument) {
+            $fields['vehicle_document_path'] = $vehicleDocument['stored_name'];
+        }
+        if ($cnhDocument) {
+            $fields['cnh_document_path'] = $cnhDocument['stored_name'];
+        }
+        if ($photo1) {
+            $fields['photo1_path'] = $photo1['stored_name'];
+        }
+        if ($photo2) {
+            $fields['photo2_path'] = $photo2['stored_name'];
+        }
+        if ($photo3) {
+            $fields['photo3_path'] = $photo3['stored_name'];
+        }
+        if ($telemetry) {
+            $fields['telemetry_path'] = $telemetry['stored_name'];
         }
 
-        Order::updateDocuments(
-            $id,
-            $vehicleDocument['stored_name'] ?? null,
-            $cnhDocument['stored_name'] ?? null
-        );
+        if (!$fields) {
+            Router::redirect("/painel/meus-pedidos/{$id}?erro_docs=" . urlencode('Selecione pelo menos um arquivo ou preencha a placa.'));
+        }
+
+        Order::updateDocuments($id, $fields);
 
         $updatedOrder = Order::find($id);
         if ($updatedOrder && Order::hasRequiredDocuments($updatedOrder)) {

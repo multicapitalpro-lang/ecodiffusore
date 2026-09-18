@@ -93,8 +93,8 @@ $situacaoPagamento = $situacaoPagamento ?? null;
                     <td><?= View::e($o['payment_method'] ?: '—') ?></td>
                     <td>
                         <span class="status-badge status-<?= View::e($situation['badge']) ?>"><?= View::e($situation['label']) ?></span>
-                        <?php if ($o['status'] === 'verificado' && (empty($o['vehicle_document_path']) || empty($o['cnh_document_path']))): ?>
-                            <br><small class="hint-text" style="color:#b3790f;">⚠️ Docs pendentes p/ fábrica</small>
+                        <?php if ($o['status'] === 'verificado' && !\App\Models\Order::hasRequiredDocuments($o)): ?>
+                            <br><small class="hint-text" style="color:#b3790f;">⚠️ Cadastro do veículo pendente p/ fábrica</small>
                         <?php endif; ?>
                     </td>
                     <td>
