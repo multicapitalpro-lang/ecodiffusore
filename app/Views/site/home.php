@@ -335,21 +335,24 @@ $faqItems = [
     ['A instalação é difícil? Precisa de mecânico?', 'A instalação é simples, rápida e prática, e em muitos casos pode ser feita facilmente. Também oferecemos orientação profissional.'],
     ['Quanto tempo leva para ver resultado?', 'Muitos clientes relatam melhora perceptível já nos primeiros abastecimentos, com redução no consumo de diesel e melhor desempenho do motor logo nos primeiros dias de uso.'],
     ['Posso parcelar?', 'Sim, parcelamos em até 6x sem juros.'],
-    ['Existe garantia?', 'Sim. Se você não atingir o mínimo de 5% de economia garantido, devolvemos o seu investimento.'],
+    ['Existe garantia?', 'Sim. Você tem a garantia legal de 90 dias prevista no Código de Defesa do Consumidor (CDC) para produtos duráveis, e o Ecodiffusore tem durabilidade de até 25 anos. Além disso, se você não atingir o mínimo de 5% de economia garantido, devolvemos o seu investimento.'],
     ['A Ecodiffusore Brasil fabrica o produto ou é revendedora?', 'A Ecodiffusore Brasil fabrica o produto no Brasil, com patente própria de produto e de marca registrada no INPI (Instituto Nacional da Propriedade Industrial) — não é uma importação nem uma revenda de produto estrangeiro.'],
     ['Como sei que estou comprando o produto original da Ecodiffusore Brasil?', 'Compre direto pelo site oficial ecodiffusorebrasil.com.br, pelo WhatsApp oficial ou com um dos licenciados autorizados da nossa rede. Toda compra sai com nota fiscal e garantia nacional.'],
-    ['Quanto custa o Ecodiffusore?', 'O valor varia conforme o tipo de veículo ou máquina. Peça um orçamento personalizado em nossa página de compra — é rápido e sem compromisso.'],
-    ['Onde comprar o Ecodiffusore no Brasil?', 'Direto pelo site oficial ou com um licenciado autorizado da rede Ecodiffusore Brasil, presente em vários estados e em expansão constante.'],
+    ['Quanto custa o Ecodiffusore?', 'O valor varia conforme o tipo de veículo ou máquina. Peça um orçamento personalizado em nossa página de compra — é rápido e sem compromisso.', ['url' => '/comprar', 'label' => 'Pedir meu orçamento →']],
+    ['Onde comprar o Ecodiffusore no Brasil?', 'Direto pelo site oficial ou com um licenciado autorizado da rede Ecodiffusore Brasil, presente em vários estados e em expansão constante.', ['url' => '/comprar', 'label' => 'Ir para a página de compra →']],
 ];
 ?>
 <section id="faq" class="faq">
     <div class="site-container">
         <h2>Perguntas frequentes</h2>
         <div class="faq-list">
-            <?php foreach ($faqItems as [$q, $a]): ?>
+            <?php foreach ($faqItems as $item): [$q, $a] = $item; $link = $item[2] ?? null; ?>
                 <details>
                     <summary><?= View::e($q) ?></summary>
                     <p><?= View::e($a) ?></p>
+                    <?php if ($link): ?>
+                        <p><a href="<?= View::e($link['url']) ?>" class="link-small"><?= View::e($link['label']) ?></a></p>
+                    <?php endif; ?>
                 </details>
             <?php endforeach; ?>
         </div>
