@@ -48,6 +48,52 @@ class ClientPortalController
         ]);
     }
 
+    /** Fase 60: CNH + documento do veiculo deixaram de ser exigidos ANTES da venda (pedido
+     *  explicito do usuario, "facilitando a compra") -- agora o proprio cliente envia aqui, no
+     *  painel dele, depois de já ter comprado. Sem os 2 documentos o pedido pago fica de fora de
+     *  Order::forFactory() (nunca é enviado pra fábrica) até completar. */
+    public function uploadOrderDocuments(string $id): void
+    {
+        Auth::requireRole(['cliente']);
+        $client = Client::findByUserId((int) Auth::user()['id']);
+        $id = (int) $id;
+        $order = $client ? Order::find($id) : null;
+
+        if (!$order || (int) $order['client_id'] !== (int) $client['id']) {
+            Router::redirect('/painel');
+        }
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            Router::redirect("/painel/meus-pedidos/{$id}?erro_docs=1");
+        }
+
+        $vehicleDocument = null;
+        $cnhDocument = null;
+        try {
+            $vehicleDocument = FileUpload::storeVehicleDocument($_FILES['vehicle_document'] ?? []);
+            $cnhDocument = FileUpload::storeCnhDocument($_FILES['cnh_document'] ?? []);
+        } catch (\RuntimeException $e) {
+            Router::redirect("/painel/meus-pedidos/{$id}?erro_docs=" . urlencode($e->getMessage()));
+        }
+
+        if (!$vehicleDocument && !$cnhDocument) {
+            Router::redirect("/painel/meus-pedidos/{$id}?erro_docs=" . urlencode('Selecione pelo menos um arquivo.'));
+        }
+
+        Order::updateDocuments(
+            $id,
+            $vehicleDocument['stored_name'] ?? null,
+            $cnhDocument['stored_name'] ?? null
+        );
+
+        $updatedOrder = Order::find($id);
+        if ($updatedOrder && Order::hasRequiredDocuments($updatedOrder)) {
+            Notifier::pedidoDocumentosEnviados($updatedOrder);
+        }
+
+        Router::redirect("/painel/meus-pedidos/{$id}?docs_sucesso=1");
+    }
+
     public function warranties(): void
     {
         Auth::requireRole(['cliente']);

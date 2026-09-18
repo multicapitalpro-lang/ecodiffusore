@@ -154,12 +154,13 @@ $isModal = $isModal ?? false;
     <?php if ($result['quote_id'] && $result['product_price']): ?>
         <h3>Concluir pedido</h3>
         <p class="hint-text" style="margin-top:0;">Depois que o cliente decidir como vai pagar, conclua aqui — já cria o Pedido de verdade e gera a cobrança já na forma escolhida (Pix, Boleto ou Cartão com as parcelas certas), pronta pra mandar pro cliente.</p>
+        <p class="hint-text" style="margin-top:0;">CPF/CNPJ é opcional aqui — se não informar agora, o cliente completa depois em "Meus Dados", no painel dele, e você gera a cobrança quando ele preencher.</p>
         <form action="/painel/proposta-facil/concluir" method="post" class="charge-form panel-form-wide">
             <?= Csrf::field() ?>
             <div class="form-grid-2">
                 <div>
-                    <label for="proposta-document">CPF ou CNPJ do cliente</label>
-                    <input type="text" id="proposta-document" name="document" required placeholder="Só números">
+                    <label for="proposta-document">CPF ou CNPJ do cliente (opcional)</label>
+                    <input type="text" id="proposta-document" name="document" placeholder="Só números — pode deixar em branco">
                 </div>
                 <div>
                     <label for="proposta-billing-type">Forma de pagamento escolhida</label>

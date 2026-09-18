@@ -39,14 +39,11 @@ class PaymentController
             Router::redirect("/painel/pedidos/{$id}?erro=1");
         }
 
-        // CNH + documento do veiculo sao obrigatorios antes de cobrar (Fase 40) -- a fabrica
-        // precisa do documento do veiculo pra montar o pedido certo, entao gerar a cobranca sem
-        // isso so criaria trabalho de cobrar de novo depois. Redireciona pro Pedido (nao segue com
-        // a cobranca) -- o staff anexa os documentos ali e clica em "Gerar cobranca" de novo.
-        if (!Order::hasRequiredDocuments($order)) {
-            Router::redirect("/painel/pedidos/{$id}?erro_documentos=1");
-        }
-
+        // Fase 60: CNH + documento do veiculo deixaram de bloquear a COBRANCA (pedido explicito
+        // do usuario: "facilitando a compra") -- continuam obrigatorios, so que mais tarde, pra
+        // liberar o pedido PAGO pra fabrica (ver Order::forFactory(), que agora exige os 2
+        // documentos alem de status='verificado'). O cliente envia pelo proprio painel dele
+        // (ClientPortalController::uploadOrderDocuments) assim que tiver em maos.
         try {
             $this->generateCharge('order', $id, (int) $order['client_id'], (float) $order['total_value'], "Pedido #{$id} — Ecodiffusore Brasil");
         } catch (\Throwable $e) {

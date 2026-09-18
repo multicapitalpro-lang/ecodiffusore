@@ -299,12 +299,37 @@ class Order
         }
     }
 
-    /** CNH + documento do veiculo sao exigidos antes de gerar cobranca (Fase 40) -- a fabrica
-     *  precisa do documento do veiculo pra montar o pedido certo, e a CNH passa a ser coletada no
-     *  mesmo momento. Usado por PaymentController::generateForOrder() como trava. */
+    /** CNH + documento do veiculo (Fase 40). Ate a Fase 60 travavam a geracao da COBRANCA -- agora
+     *  so travam o pedido de aparecer pra fabrica (ver forFactory()), pra nao atrasar o fechamento
+     *  da venda esperando documento. */
     public static function hasRequiredDocuments(array $order): bool
     {
         return !empty($order['vehicle_document_path']) && !empty($order['cnh_document_path']);
+    }
+
+    /** Upload feito pelo proprio CLIENTE no painel dele (ClientPortalController::
+     *  uploadOrderDocuments) -- update parcial, so mexe no campo que veio preenchido (mesmo
+     *  espirito de updateHeaderAndItems, mas sem tocar em client_id/seller_id/itens, que o cliente
+     *  nao tem permissao de alterar). */
+    public static function updateDocuments(int $id, ?string $vehicleDocumentPath, ?string $cnhDocumentPath): void
+    {
+        $sets = [];
+        $params = ['id' => $id];
+
+        if ($vehicleDocumentPath !== null) {
+            $sets[] = 'vehicle_document_path = :vehicle_document_path';
+            $params['vehicle_document_path'] = $vehicleDocumentPath;
+        }
+        if ($cnhDocumentPath !== null) {
+            $sets[] = 'cnh_document_path = :cnh_document_path';
+            $params['cnh_document_path'] = $cnhDocumentPath;
+        }
+        if (!$sets) {
+            return;
+        }
+
+        $stmt = Database::connection()->prepare('UPDATE orders SET ' . implode(', ', $sets) . ' WHERE id = :id');
+        $stmt->execute($params);
     }
 
     public static function recalculateTotal(int $id): void
@@ -416,7 +441,23 @@ class Order
                     (SELECT GROUP_CONCAT(p.name, ' (x', oi.quantity, ')' SEPARATOR ', ')
                      FROM order_items oi JOIN products p ON p.id = oi.product_id WHERE oi.order_id = o.id) AS produtos
              FROM orders o JOIN clients c ON c.id = o.client_id
-             WHERE o.status = 'verificado' AND o.delivered_at IS NULL ORDER BY o.order_date DESC"
+             WHERE o.status = 'verificado' AND o.delivered_at IS NULL
+                AND o.vehicle_document_path IS NOT NULL AND o.cnh_document_path IS NOT NULL
+             ORDER BY o.order_date DESC"
+        )->fetchAll();
+    }
+
+    /** Pagos mas ainda SEM CNH/documento do veiculo -- ficam de fora de forFactory() de proposito
+     *  (Fase 60: "caso nao seja enviado o produto nao sera enviado pra confeccao"). Usado pra dar
+     *  visibilidade ao staff de quanto pedido pago esta preso nessa espera. */
+    public static function paidMissingDocuments(): array
+    {
+        return Database::connection()->query(
+            "SELECT o.id, o.order_date, c.name AS client_name, o.seller_id
+             FROM orders o JOIN clients c ON c.id = o.client_id
+             WHERE o.status = 'verificado' AND o.delivered_at IS NULL
+                AND (o.vehicle_document_path IS NULL OR o.cnh_document_path IS NULL)
+             ORDER BY o.order_date DESC"
         )->fetchAll();
     }
 

@@ -493,6 +493,42 @@ class Notifier
         }
     }
 
+    /** Fase 60: avisa Vendedor + Licenciado quando o CLIENTE termina de enviar CNH + documento do
+     *  veiculo pelo proprio painel dele -- so dispara quando os 2 ja estao completos (nao a cada
+     *  arquivo isolado), pra sinalizar "pode gerar a cobranca/mandar pra fabrica agora" de verdade.
+     *  So WhatsApp, mesmo padrao ja usado em liberacaoDescontoSolicitada. */
+    public static function pedidoDocumentosEnviados(array $order): void
+    {
+        if (empty($order['seller_id'])) {
+            return;
+        }
+        $seller = User::find((int) $order['seller_id']);
+        if (!$seller) {
+            return;
+        }
+
+        $vars = [
+            'cliente' => $order['client_name'] ?? '—',
+            'pedido' => (string) $order['id'],
+            'url' => self::BASE_URL . '/painel/pedidos/' . (int) $order['id'],
+        ];
+        [$waSelf, $waNetwork] = self::waTexts('pedido_documentos_enviados', $vars);
+
+        $recipients = [];
+        self::addRecipient($recipients, $seller, 'self');
+        $licenciado = User::licenciadoFor((int) $seller['id']);
+        if ($licenciado) {
+            self::addRecipient($recipients, $licenciado, 'network');
+        }
+
+        foreach ($recipients as $r) {
+            $text = $r['bucket'] === 'self' ? $waSelf : $waNetwork;
+            if ($text && !empty($r['whatsapp'])) {
+                self::sendWhatsApp($r['whatsapp'], $text);
+            }
+        }
+    }
+
     /** @param array $licenciado precisa de id/name/email */
     public static function cadastroAprovado(array $licenciado): void
     {

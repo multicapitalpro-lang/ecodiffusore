@@ -36,7 +36,7 @@ $situation = $order['payment_situation'] ?? ['label' => '—', 'badge' => 'novo'
 <?php elseif ($erro === '2'): ?>
     <p class="form-msg form-msg-erro">Só é possível editar pedidos em andamento.</p>
 <?php elseif (isset($_GET['erro_documentos'])): ?>
-    <p class="form-msg form-msg-erro">Anexe a CNH e o documento do veículo antes de gerar a cobrança — a fábrica precisa do documento do veículo pra montar o pedido certo.</p>
+    <p class="form-msg form-msg-erro">Anexe a CNH e o documento do veículo, ou peça pro cliente enviar no painel dele — a fábrica precisa do documento do veículo pra montar o pedido certo.</p>
 <?php endif; ?>
 
 <div class="order-summary">
@@ -62,7 +62,7 @@ $situation = $order['payment_situation'] ?? ['label' => '—', 'badge' => 'novo'
         <p><a href="/painel/pedidos/<?= (int) $order['id'] ?>/cnh" target="_blank" rel="noopener" class="link-small">📄 Ver CNH do comprador</a></p>
     <?php endif; ?>
     <?php if (empty($order['vehicle_document_path']) || empty($order['cnh_document_path'])): ?>
-        <p class="hint-inline" style="color:#b3790f;">⚠️ Falta <?= empty($order['vehicle_document_path']) && empty($order['cnh_document_path']) ? 'a CNH e o documento do veículo' : (empty($order['vehicle_document_path']) ? 'o documento do veículo' : 'a CNH') ?> — obrigatório antes de gerar a cobrança.<?php if (!$isViewOnly && $order['status'] === 'em_andamento'): ?> <a href="/painel/pedidos/<?= (int) $order['id'] ?>/editar" class="link-small">Anexar agora</a><?php endif; ?></p>
+        <p class="hint-inline" style="color:#b3790f;">⚠️ Falta <?= empty($order['vehicle_document_path']) && empty($order['cnh_document_path']) ? 'a CNH e o documento do veículo' : (empty($order['vehicle_document_path']) ? 'o documento do veículo' : 'a CNH') ?> — obrigatório antes de enviar pra fabricação (a fábrica só vê pedidos pagos com os 2 documentos anexados). O cliente pode enviar direto pelo painel dele, em "Meus Pedidos".<?php if (!$isViewOnly && $order['status'] === 'em_andamento'): ?> <a href="/painel/pedidos/<?= (int) $order['id'] ?>/editar" class="link-small">Anexar agora</a><?php endif; ?></p>
     <?php endif; ?>
     <?php if ($order['notes']): ?><p><strong>Obs.:</strong> <?= nl2br(View::e($order['notes'])) ?></p><?php endif; ?>
 </div>

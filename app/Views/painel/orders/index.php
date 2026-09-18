@@ -91,7 +91,12 @@ $situacaoPagamento = $situacaoPagamento ?? null;
                     <td><?= View::e(date('d/m/Y', strtotime($o['order_date']))) ?></td>
                     <td>R$ <?= number_format((float) $o['total_value'], 2, ',', '.') ?></td>
                     <td><?= View::e($o['payment_method'] ?: '—') ?></td>
-                    <td><span class="status-badge status-<?= View::e($situation['badge']) ?>"><?= View::e($situation['label']) ?></span></td>
+                    <td>
+                        <span class="status-badge status-<?= View::e($situation['badge']) ?>"><?= View::e($situation['label']) ?></span>
+                        <?php if ($o['status'] === 'verificado' && (empty($o['vehicle_document_path']) || empty($o['cnh_document_path']))): ?>
+                            <br><small class="hint-text" style="color:#b3790f;">⚠️ Docs pendentes p/ fábrica</small>
+                        <?php endif; ?>
+                    </td>
                     <td>
                         <button type="button" class="link-button" data-view-order="<?= (int) $o['id'] ?>">Ver</button>
                         <?php if ($o['status'] === 'em_andamento' && !$isViewOnly): ?>

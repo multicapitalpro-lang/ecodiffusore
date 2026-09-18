@@ -1,5 +1,7 @@
 <?php
+use App\Core\Csrf;
 use App\Core\View;
+use App\Models\Order;
 $statusLabels = ['em_andamento' => 'Em andamento', 'atendido' => 'Atendido', 'verificado' => 'Confirmado', 'cancelado' => 'Cancelado'];
 $methodLabels = ['PIX' => 'Pix', 'BOLETO' => 'Boleto', 'CREDIT_CARD' => 'Cartão'];
 ?>
@@ -7,6 +9,37 @@ $methodLabels = ['PIX' => 'Pix', 'BOLETO' => 'Boleto', 'CREDIT_CARD' => 'Cartão
     <h1>Pedido #<?= (int) $order['id'] ?></h1>
     <a href="/painel" class="btn btn-outline">← Meus pedidos</a>
 </div>
+
+<?php if (isset($_GET['docs_sucesso'])): ?>
+    <p class="form-msg form-msg-ok">Documentos enviados! Assim que confirmarmos, seu pedido segue pra fabricação.</p>
+<?php elseif (!empty($_GET['erro_docs'])): ?>
+    <p class="form-msg form-msg-erro"><?= $_GET['erro_docs'] === '1' ? 'Sessão expirada, tente de novo.' : View::e($_GET['erro_docs']) ?></p>
+<?php endif; ?>
+
+<?php if (!Order::hasRequiredDocuments($order)): ?>
+    <div class="form-msg" style="background:#fff4dc;color:#b7791f;max-width:560px;margin-bottom:18px;">
+        <strong>📎 Falta enviar a CNH e o documento do veículo</strong>
+        <p style="margin:6px 0 0;">Sem isso, seu pedido não segue pra fabricação — envie assim que puder.</p>
+        <form action="/painel/meus-pedidos/<?= (int) $order['id'] ?>/documentos" method="post" enctype="multipart/form-data" class="panel-form" style="margin-top:12px;">
+            <?= Csrf::field() ?>
+            <div class="form-grid-2">
+                <?php if (empty($order['vehicle_document_path'])): ?>
+                    <div>
+                        <label for="client-vehicle-document">Documento do veículo (CRLV)</label>
+                        <input type="file" id="client-vehicle-document" name="vehicle_document" accept="image/*,.pdf">
+                    </div>
+                <?php endif; ?>
+                <?php if (empty($order['cnh_document_path'])): ?>
+                    <div>
+                        <label for="client-cnh-document">CNH</label>
+                        <input type="file" id="client-cnh-document" name="cnh_document" accept="image/*,.pdf">
+                    </div>
+                <?php endif; ?>
+            </div>
+            <button type="submit" class="btn btn-primary" style="margin-top:12px;">Enviar documentos</button>
+        </form>
+    </div>
+<?php endif; ?>
 
 <div class="order-summary">
     <p><strong>Data:</strong> <?= View::e(date('d/m/Y', strtotime($order['order_date']))) ?></p>

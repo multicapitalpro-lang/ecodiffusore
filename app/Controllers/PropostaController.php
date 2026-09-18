@@ -277,9 +277,15 @@ class PropostaController
             Router::redirect('/painel/proposta-facil/resultado?erro_concluir=' . urlencode('Sessão expirada, tente de novo.'));
         }
 
+        // Fase 60: CPF/CNPJ deixou de ser obrigatorio pra concluir a venda (pedido explicito do
+        // usuario: "facilitando a compra") -- se informado, precisa ser valido; se vazio, segue
+        // sem documento e o cliente completa depois em "Meus Dados" (Client::updateOwnProfile(),
+        // ja existente). generateForOrder() ja trata com clareza o caso de cobranca sem CPF/CNPJ
+        // (AsaasClient::createOrFindCustomer() lanca RuntimeException, capturada la e mostrada
+        // como erro_cobranca -- o Pedido fica criado normalmente, so a cobranca fica pendente).
         $document = preg_replace('/\D/', '', (string) ($_POST['document'] ?? ''));
-        if (!in_array(strlen($document), [11, 14], true)) {
-            Router::redirect('/painel/proposta-facil/resultado?erro_concluir=' . urlencode('Informe um CPF (11 dígitos) ou CNPJ (14 dígitos) válido.'));
+        if ($document !== '' && !in_array(strlen($document), [11, 14], true)) {
+            Router::redirect('/painel/proposta-facil/resultado?erro_concluir=' . urlencode('CPF precisa ter 11 dígitos ou CNPJ 14 dígitos (ou deixe em branco).'));
         }
 
         $quote = Quote::find($quoteId);
@@ -303,7 +309,9 @@ class PropostaController
             Router::redirect('/painel/proposta-facil/resultado?erro_concluir=' . urlencode($msg));
         }
 
-        Client::updateDocument((int) $quote['client_id'], $document);
+        if ($document !== '') {
+            Client::updateDocument((int) $quote['client_id'], $document);
+        }
 
         $orderId = Quote::convertToOrder($quoteId);
         AuditLog::record((int) $user['id'], 'orcamento_convertido', 'quote', $quoteId, ['status' => $quote['status']], ['order_id' => $orderId]);
