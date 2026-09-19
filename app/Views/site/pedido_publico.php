@@ -9,6 +9,7 @@ use App\Models\Order;
 /** @var array $payments */
 /** @var string $termsText */
 /** @var int $maxInstallments */
+/** @var array $feeSettings */
 
 $token = $order['public_token'];
 $statusLabels = ['em_andamento' => 'Em andamento', 'atendido' => 'Atendido', 'verificado' => 'Pago', 'cancelado' => 'Cancelado'];
@@ -16,7 +17,6 @@ $methodLabels = ['PIX' => 'Pix', 'BOLETO' => 'Boleto', 'CREDIT_CARD' => 'Cartão
 
 $termsAccepted = !empty($order['terms_accepted_at']);
 $hasPayment = (bool) $payments;
-$hasPendingPayment = (bool) array_filter($payments, fn ($p) => $p['status'] === 'pendente');
 $isPaid = $order['status'] === 'verificado';
 
 $basePrice = (float) $order['total_value'];
@@ -28,6 +28,14 @@ if ($basePrice > 0) {
 }
 
 $missing = Order::missingDocumentLabels($order);
+
+// Fase 64: transparencia total de taxa -- o cliente pediu explicitamente pra "discriminar" (nao
+// esconder) a taxa de cartao/antecipacao embutida no valor, nunca so mostrar um numero maior sem
+// explicar o porque. Pix/Boleto nao tem taxa nenhuma repassada (ver CardPricing).
+$feeAvista = (float) ($feeSettings['card_fee_avista_pct'] ?? 0);
+$antAvista = (float) ($feeSettings['antecipacao_avista_mensal_pct'] ?? 0);
+$feeParcelado = (float) ($feeSettings['card_fee_parcelado_pct'] ?? 0);
+$antParcelado = (float) ($feeSettings['antecipacao_parcelado_mensal_pct'] ?? 0);
 ?><!doctype html>
 <html lang="pt-BR">
 <head>
@@ -70,6 +78,19 @@ input[type=checkbox]{width:18px;height:18px;flex-shrink:0}
 .accept-row{display:flex;gap:10px;align-items:flex-start;margin-top:12px}
 .pix-code{width:100%;font-size:.75rem;padding:8px;border-radius:8px;border:1px solid var(--line);margin-top:8px;word-break:break-all}
 footer{text-align:center;color:var(--muted);font-size:.78rem;padding:20px 16px 0}
+.trust-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 16px}
+.trust-item{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px;font-size:.76rem;text-align:center;color:var(--muted)}
+.trust-item strong{display:block;font-size:1.3rem;margin-bottom:2px}
+.fee-note{background:var(--amber-bg);color:var(--amber);border-radius:10px;padding:10px 12px;font-size:.8rem;margin-top:10px}
+.fee-table{margin-top:10px}
+.fee-table .row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line);font-size:.85rem}
+.fee-table .row:last-child{border-bottom:none}
+.overlay{display:none;position:fixed;inset:0;background:rgba(13,47,85,.72);z-index:999;align-items:flex-end;justify-content:center;padding:0}
+.overlay-box{background:#fff;border-radius:18px 18px 0 0;padding:22px 20px 26px;max-width:560px;width:100%;text-align:center}
+.overlay-box .emoji{font-size:2.2rem}
+.overlay-box h3{margin:8px 0 6px;font-size:1.15rem}
+.overlay-box p{color:var(--muted);font-size:.9rem;margin:0 0 6px}
+@media (min-width:601px){.overlay{align-items:center}.overlay-box{border-radius:18px}}
 </style>
 </head>
 <body>
@@ -104,7 +125,10 @@ footer{text-align:center;color:var(--muted);font-size:.78rem;padding:20px 16px 0
 
     <div class="card">
         <h2>Resumo</h2>
-        <p style="margin:0 0 10px;"><strong><?= View::e($order['client_name']) ?></strong></p>
+        <p style="margin:0 0 4px;"><strong><?= View::e($order['client_name']) ?></strong></p>
+        <?php if (!empty($order['seller_name'])): ?>
+            <p class="hint" style="margin:0 0 10px;">Atendido por <?= View::e($order['seller_name']) ?></p>
+        <?php endif; ?>
         <table>
             <thead><tr><th>Produto</th><th>Qtd.</th><th>Subtotal</th></tr></thead>
             <tbody>
@@ -125,6 +149,15 @@ footer{text-align:center;color:var(--muted);font-size:.78rem;padding:20px 16px 0
         <?php endif; ?>
     </div>
 
+    <?php if (!$isPaid): ?>
+        <div class="trust-grid">
+            <div class="trust-item"><strong>🔒</strong>Pagamento processado com segurança pela Asaas</div>
+            <div class="trust-item"><strong>📜</strong>Produto com patente e marca registradas no INPI</div>
+            <div class="trust-item"><strong>🛡️</strong>Garantia de 90 dias + devolução se não atingir 5% de economia</div>
+            <div class="trust-item"><strong>🇧🇷</strong>Fabricado no Brasil, sob encomenda</div>
+        </div>
+    <?php endif; ?>
+
     <?php if (!$termsAccepted): ?>
         <div class="card">
             <h2>📋 Termos de Compra</h2>
@@ -143,6 +176,7 @@ footer{text-align:center;color:var(--muted);font-size:.78rem;padding:20px 16px 0
         <?php if (!$hasPayment): ?>
             <div class="card">
                 <h2>Forma de pagamento</h2>
+                <p class="hint">Pix e Boleto não têm nenhuma taxa — o valor é o mesmo de tabela. No cartão, a taxa de processamento (e a de antecipação, se parcelar) já vem embutida no total, sem pegadinha — veja o detalhamento abaixo.</p>
                 <form action="/pedido/<?= View::e($token) ?>/cobranca" method="post" id="charge-form">
                     <?= Csrf::field() ?>
                     <?php if (empty($order['client_document'])): ?>
@@ -151,8 +185,8 @@ footer{text-align:center;color:var(--muted);font-size:.78rem;padding:20px 16px 0
                     <?php endif; ?>
                     <label for="billing_type">Como você quer pagar?</label>
                     <select id="billing_type" name="billing_type">
-                        <option value="PIX">Pix</option>
-                        <option value="BOLETO">Boleto</option>
+                        <option value="PIX">Pix — sem taxa</option>
+                        <option value="BOLETO">Boleto — sem taxa</option>
                         <option value="CREDIT_CARD">Cartão de crédito</option>
                     </select>
                     <div id="installments-wrap" style="display:none;">
@@ -162,6 +196,14 @@ footer{text-align:center;color:var(--muted);font-size:.78rem;padding:20px 16px 0
                                 <option value="<?= $row['n'] ?>"><?= $row['n'] ?>x de R$ <?= number_format($row['parcela'], 2, ',', '.') ?><?= $row['n'] === 1 ? ' (à vista)' : ' — total R$ ' . number_format($row['total'], 2, ',', '.') ?></option>
                             <?php endforeach; ?>
                         </select>
+                        <div class="fee-note">
+                            💳 <?= number_format($feeAvista, 2, ',', '.') ?>% de taxa de cartão à vista (+ <?= number_format($antAvista, 2, ',', '.') ?>% de antecipação) ou <?= number_format($feeParcelado, 2, ',', '.') ?>% parcelado (+ <?= number_format($antParcelado, 2, ',', '.') ?>% de antecipação por mês de parcela) — por isso o total cresce um pouco a cada parcela a mais. Esse valor já é o que a Asaas cobra da Ecodiffusore pra antecipar seu dinheiro; não é uma margem escondida.
+                        </div>
+                        <div class="fee-table">
+                            <?php foreach ($installmentsTable as $row): ?>
+                                <div class="row"><span><?= $row['n'] ?>x</span><span>R$ <?= number_format($row['parcela'], 2, ',', '.') ?>/mês — total R$ <?= number_format($row['total'], 2, ',', '.') ?></span></div>
+                            <?php endforeach; ?>
+                        </div>
                     </div>
                     <button type="submit" class="btn btn-primary">Gerar cobrança</button>
                 </form>
@@ -244,14 +286,55 @@ footer{text-align:center;color:var(--muted);font-size:.78rem;padding:20px 16px 0
     <footer>ECODIFFUSORE BRASIL · Ecologia · Potência · Economia</footer>
 </div>
 
+<?php if (!$isPaid): ?>
+<div class="overlay" id="exit-overlay">
+    <div class="overlay-box">
+        <div class="emoji">⏳</div>
+        <h3>Antes de você sair...</h3>
+        <p>O Ecodiffusore se paga sozinho em até 2 meses com a economia de diesel. Depois disso, todo abastecimento vira economia direto no seu bolso — é dinheiro que fica com você.</p>
+        <button type="button" class="btn btn-primary" id="exit-overlay-close">Continuar minha compra</button>
+    </div>
+</div>
+<?php endif; ?>
+
 <script>
 (function () {
     var billing = document.getElementById('billing_type');
     var wrap = document.getElementById('installments-wrap');
-    if (!billing || !wrap) return;
-    function sync() { wrap.style.display = billing.value === 'CREDIT_CARD' ? 'block' : 'none'; }
-    billing.addEventListener('change', sync);
-    sync();
+    if (billing && wrap) {
+        var sync = function () { wrap.style.display = billing.value === 'CREDIT_CARD' ? 'block' : 'none'; };
+        billing.addEventListener('change', sync);
+        sync();
+    }
+})();
+
+(function () {
+    // Fase 64: remarketing suave de saida -- nao oferece desconto, so relembra o payback do
+    // produto. Desktop: deteta o mouse indo em direcao a aba/fechar. Mobile: intercepta o botao
+    // "voltar" (nao ha "mouseleave" confiavel em touch). Mostra so 1 vez por visita.
+    var overlay = document.getElementById('exit-overlay');
+    if (!overlay) return;
+    var shown = false;
+    function showOverlay() {
+        if (shown) return;
+        shown = true;
+        overlay.style.display = 'flex';
+    }
+    document.addEventListener('mouseleave', function (e) {
+        if (e.clientY <= 0) showOverlay();
+    });
+    try {
+        history.pushState({ exitGuard: true }, '');
+        window.addEventListener('popstate', function () {
+            if (!shown) {
+                showOverlay();
+                history.pushState({ exitGuard: true }, '');
+            }
+        });
+    } catch (e) {}
+    document.getElementById('exit-overlay-close')?.addEventListener('click', function () {
+        overlay.style.display = 'none';
+    });
 })();
 </script>
 </body>

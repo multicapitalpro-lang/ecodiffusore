@@ -14,6 +14,7 @@ use App\Models\CompanySettings;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Payment;
+use App\Models\PaymentSettings;
 
 /**
  * Fase 63: pagina publica do Pedido (sem login) -- o vendedor manda esse link direto pro
@@ -42,6 +43,7 @@ class PublicOrderController
             'payments' => Payment::forPayable('order', (int) $order['id']),
             'termsText' => CompanySettings::current()['terms_text'] ?? '',
             'maxInstallments' => CardPricing::maxInstallments(),
+            'feeSettings' => PaymentSettings::current(),
         ], null);
     }
 
