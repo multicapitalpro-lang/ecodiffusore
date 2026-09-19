@@ -585,6 +585,12 @@ class Notifier
         if ($text) {
             self::sendWhatsApp($seller['whatsapp'], $text);
         }
+        self::sendPush(
+            (int) $seller['id'],
+            'Pagamento pendente há mais de 1h',
+            "Cliente {$vars['cliente']} ainda não pagou o Pedido #{$vars['pedido']}.",
+            ['type' => 'order', 'order_id' => (int) $order['id']]
+        );
     }
 
     /** @param array $licenciado precisa de id/name/email */
@@ -1173,7 +1179,15 @@ class Notifier
     private static function dispatch(array $recipients, string $subject, string $title, string $body, ?string $waSelf = null, ?string $waNetwork = null): void
     {
         $html = self::template($title, $body);
-        foreach ($recipients as $r) {
+        // Fase 77: push pra todo evento que passa pelo dispatch central (leadRoteado,
+        // orcamentoRealizado, pedidoRealizado, pedidoAprovado, cadastroAprovado etc) -- mesmo
+        // texto curto do e-mail, so tira o HTML. So dispara pra quem tem token registrado.
+        $pushBody = trim(preg_replace('/\s+/', ' ', strip_tags($body)));
+        if (mb_strlen($pushBody) > 160) {
+            $pushBody = mb_substr($pushBody, 0, 157) . '...';
+        }
+
+        foreach ($recipients as $id => $r) {
             if (!empty($r['email'])) {
                 Mailer::send($r['email'], $subject . ' - Ecodiffusore Brasil', $html);
             }
@@ -1181,6 +1195,7 @@ class Notifier
             if ($waText && !empty($r['whatsapp'])) {
                 self::sendWhatsApp($r['whatsapp'], $waText);
             }
+            self::sendPush((int) $id, $title, $pushBody);
         }
     }
 
