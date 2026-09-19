@@ -621,14 +621,14 @@ class FinanceController
         $pricingTiersRef = null;
         $vendorOwnTiers = null;
         if (in_array($user['role_slug'], ['licenciado', 'gestor'], true)) {
-            $pricingTiersRef = PricingTier::all();
+            $pricingTiersRef = PricingTier::visible();
         } elseif ($user['role_slug'] === Roles::SELLER) {
             $tierValues = UserCommissionTier::forUser((int) $user['id']);
             $vendorOwnTiers = array_map(fn ($t) => [
                 'min_price' => $t['min_price'],
                 'max_price' => $t['max_price'],
                 'value' => $tierValues[$t['id']] ?? null,
-            ], PricingTier::all());
+            ], PricingTier::visible());
         }
 
         View::render('painel/finance/commissions', [

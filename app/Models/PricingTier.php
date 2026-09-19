@@ -17,12 +17,26 @@ class PricingTier
     /** Fase 57: preco padrao do Vendedor -- ele so vende abaixo disso com aprovacao do Gestor/
      *  Licenciado da propria rede (ver App\Models\Approval). Gestor/Licenciado podem negociar
      *  livremente abaixo desse valor (com aprovacao de Gerente/Supervisor/Admin), ate o piso
-     *  absoluto de PricingTier::forPrice() -- esse continua igual pra todo mundo, nao mudou. */
-    public const VENDOR_STANDARD_PRICE = 4290.00;
+     *  absoluto de PricingTier::forPrice() -- esse continua igual pra todo mundo, nao mudou.
+     *  Fase 75 (tabela oficial 18/09): atualizado de R$4.290 pra R$4.240 -- e' exatamente a
+     *  fronteira entre a faixa de 15% (precisa de autorizacao) e a de 20% (livre). */
+    public const VENDOR_STANDARD_PRICE = 4240.00;
 
     public static function all(): array
     {
         return Database::connection()->query('SELECT * FROM pricing_tiers ORDER BY min_price ASC')->fetchAll();
+    }
+
+    /** Fase 75: so as faixas LIVRES (>= VENDOR_STANDARD_PRICE) -- as faixas abaixo disso exigem
+     *  autorizacao (ver Approval) e, por pedido explicito do usuario, ficam "ocultas" nas telas
+     *  onde o Vendedor/Gestor/Licenciado veem sua propria referencia de comissao por faixa
+     *  (Dashboard, Financeiro > Comissoes, pagina publica de aceite de comissao) -- nao faz
+     *  sentido mostrar como "opcao disponivel" uma faixa que na pratica precisa de aprovacao caso
+     *  a caso. A tela de administracao das faixas (PricingTierController) continua mostrando
+     *  TODAS, ja que e' la que Admin gerencia (inclusive) as faixas ocultas. */
+    public static function visible(): array
+    {
+        return array_values(array_filter(self::all(), fn ($t) => (float) $t['min_price'] >= self::VENDOR_STANDARD_PRICE));
     }
 
     public static function find(int $id): ?array

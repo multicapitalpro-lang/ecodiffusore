@@ -27,7 +27,7 @@ class AcceptanceController
                 'min_price' => $t['min_price'],
                 'max_price' => $t['max_price'],
                 'value' => $values[$t['id']] ?? null,
-            ], PricingTier::all());
+            ], PricingTier::visible());
         }
 
         View::render('site/aceite_comissao', [

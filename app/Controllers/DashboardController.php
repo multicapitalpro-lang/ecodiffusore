@@ -207,7 +207,7 @@ class DashboardController
             // comissao configurada, sem a % do Licenciado -- "nao importa pro vendedor, pro
             // vendedor nao crescer o olho", pedido explicito do usuario).
             if (in_array($role, ['licenciado', 'gestor'], true)) {
-                $data['pricingTiersRef'] = PricingTier::all();
+                $data['pricingTiersRef'] = PricingTier::visible();
             }
             if ($role === Roles::SELLER) {
                 $tierValues = UserCommissionTier::forUser((int) $user['id']);
@@ -215,7 +215,7 @@ class DashboardController
                     'min_price' => $t['min_price'],
                     'max_price' => $t['max_price'],
                     'value' => $tierValues[$t['id']] ?? null,
-                ], PricingTier::all());
+                ], PricingTier::visible());
                 $data['vendorCommissionType'] = $user['commission_type'] ?? null;
             }
         }
