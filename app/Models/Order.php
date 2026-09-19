@@ -601,6 +601,25 @@ class Order
         )->fetchAll();
     }
 
+    /** Fase 71: "Consulta de Pedidos" pra Fabrica -- diferente de forFactory() (so' a fila de
+     *  despacho: pago + documentos completos), essa aqui e' um lookup mais amplo, pra quando um
+     *  cliente liga perguntando do pedido dele mesmo antes/depois de estar na fila. Nunca inclui
+     *  valor/comissao/vendedor (pedido original da Fase 28, continua valendo aqui). */
+    public static function forFactoryOverview(int $limit = 500): array
+    {
+        $stmt = Database::connection()->prepare(
+            "SELECT o.id, o.order_date, o.prazo_entrega, o.status,
+                    c.name AS client_name, c.city AS client_city, c.state AS client_state,
+                    (SELECT GROUP_CONCAT(p.name SEPARATOR ', ')
+                     FROM order_items oi JOIN products p ON p.id = oi.product_id WHERE oi.order_id = o.id) AS product_names
+             FROM orders o JOIN clients c ON c.id = o.client_id
+             WHERE o.status != 'cancelado'
+             ORDER BY o.order_date DESC LIMIT " . (int) $limit
+        );
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
     /** Grava o resultado da emissao de NF-e (App\Core\AsaasClient::createInvoice()/getInvoice())
      *  -- $status e' o texto cru da Asaas (SCHEDULED/SYNCHRONIZED/AUTHORIZED/PROCESSING/CANCELLED/
      *  ERROR), $pdfUrl geralmente so vem preenchido depois da aprovacao municipal (ver

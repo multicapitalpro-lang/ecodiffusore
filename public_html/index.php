@@ -112,6 +112,8 @@ $router->post('/painel/garantias/{id}/status', [App\Controllers\WarrantyControll
 
 $router->get('/painel/fabrica', [App\Controllers\FactoryController::class, 'index']);
 $router->get('/painel/fabrica/rede', [App\Controllers\FactoryController::class, 'rede']);
+$router->get('/painel/fabrica/pedidos', [App\Controllers\FactoryController::class, 'consultaPedidos']);
+$router->get('/painel/fabrica/leads', [App\Controllers\FactoryController::class, 'leads']);
 $router->post('/painel/fabrica/{id}/entrega', [App\Controllers\FactoryController::class, 'updateDelivery']);
 $router->post('/painel/fabrica/{id}/entregue', [App\Controllers\FactoryController::class, 'markDelivered']);
 $router->get('/painel/fabrica/{id}/termo-garantia', [App\Controllers\FactoryController::class, 'downloadWarrantyTerm']);

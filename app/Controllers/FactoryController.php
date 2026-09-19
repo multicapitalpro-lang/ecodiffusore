@@ -14,6 +14,7 @@ use App\Core\View;
 use App\Core\Config;
 use App\Models\CompanySettings;
 use App\Models\Lead;
+use App\Models\LeadStage;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\User;
@@ -106,6 +107,39 @@ class FactoryController
         header('Content-Length: ' . filesize($path));
         readfile($path);
         exit;
+    }
+
+    /** Fase 71: "Consulta de Pedidos" -- pedido explicito do usuario, pra fabrica conseguir
+     *  responder um cliente que liga perguntando do pedido dele (nome, modelo(s), cidade, prazo
+     *  de entrega vendido), mesmo fora da fila de despacho (Order::forFactory(), so' pedidos
+     *  pagos com documento completo). Nunca mostra valor/comissao/vendedor. */
+    public function consultaPedidos(): void
+    {
+        Auth::requireRole([Roles::FACTORY]);
+
+        View::render('painel/factory/consulta_pedidos', [
+            'user' => Auth::user(),
+            'orders' => Order::forFactoryOverview(),
+        ]);
+    }
+
+    /** Fase 71: visao passiva do funil de Leads/interessados -- so' nome, cidade e etapa (nunca
+     *  telefone/e-mail), pedido explicito do usuario pra a fabrica acompanhar volume sem poder
+     *  negociar direto com quem aparece ali (ver Lead::forFactoryOverview()). */
+    public function leads(): void
+    {
+        Auth::requireRole([Roles::FACTORY]);
+
+        $stageNames = [];
+        foreach (LeadStage::all() as $stage) {
+            $stageNames[$stage['slug']] = $stage['name'];
+        }
+
+        View::render('painel/factory/leads', [
+            'user' => Auth::user(),
+            'leads' => Lead::forFactoryOverview(),
+            'stageNames' => $stageNames,
+        ]);
     }
 
     /** Consulta (Fase 39): a Fabrica confere se quem apareceu direto com ela (fora do fluxo normal

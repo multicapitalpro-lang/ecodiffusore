@@ -33,6 +33,19 @@ class Lead
             ->fetchAll();
     }
 
+    /** Fase 71: visao pra Fabrica acompanhar volume de contatos/negociacoes em andamento -- so'
+     *  nome, cidade e etapa (nunca telefone/e-mail/mensagem), pedido explicito do usuario: "sem
+     *  ter acesso ao lead ou contato, pra que nao efetuem vendas diretas". A query nem seleciona
+     *  os campos de contato, entao nao tem como vazar por engano numa view futura. */
+    public static function forFactoryOverview(int $limit = 500): array
+    {
+        $stmt = Database::connection()->prepare(
+            'SELECT id, name, city, status, created_at FROM leads ORDER BY created_at DESC LIMIT ' . (int) $limit
+        );
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
     public static function forUser(int $userId): array
     {
         $stmt = Database::connection()->prepare(
