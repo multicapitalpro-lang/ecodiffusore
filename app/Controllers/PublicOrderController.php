@@ -304,15 +304,12 @@ class PublicOrderController
             Lead::advanceCheckoutStage($leadId, 'pagamento_gerado');
         }
 
-        // Fase 72: Cartao vai DIRETO pro invoiceUrl da Asaas, sem passar pela nossa tela de
-        // "cobranca gerada" primeiro -- pedido explicito do usuario ("nao deveria nem ser o print
-        // 2 e nem o 3... deveria aparecer tudo na mesma tela", ou seja, o mais perto disso que da
-        // pra chegar sem colocar dado de cartao no nosso servidor e' tirar o passo intermediario
-        // nosso do meio). Pix/Boleto continuam voltando pra nossa pagina, onde ja ficam completos.
-        if ($billingType === 'CREDIT_CARD' && $checkoutUrl) {
-            Router::redirect($checkoutUrl);
-        }
-
+        // Fase 73: volta a passar pela nossa tela de "cobranca gerada" antes do Cartao ir pra
+        // Asaas (revertido o pulo direto da Fase 72) -- sem como embutir o formulario de cartao
+        // de verdade na Asaas (ver conversa: precisaria de outro gateway, decisao em aberto), o
+        // usuario preferiu manter esse passo intermediario nosso (com marca/selos/redirecionamento
+        // automatico via JS, ver pedido_publico.php) em vez de pular direto -- "volte pra
+        // configuracao anterior que ja estava boa".
         Router::redirect("/pedido/{$token}?cobranca_ok=1");
     }
 }
