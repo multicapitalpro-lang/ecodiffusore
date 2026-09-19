@@ -551,6 +551,31 @@ class Notifier
         }
     }
 
+    /** Fase 65: cobranca gerada mas o comprador nao pagou em Order::STALE_PAYMENT_MINUTES --
+     *  avisa o vendedor pra fazer a cutucada manual (WhatsApp/ligacao). Disparado por
+     *  Order::flagStalePaymentPending(), so' na transicao real pra "pagamento_pendente" (nao a
+     *  cada carga do Kanban). So WhatsApp, so pro vendedor (self). */
+    public static function pagamentoPendenteAviso(array $order): void
+    {
+        if (empty($order['seller_id'])) {
+            return;
+        }
+        $seller = User::find((int) $order['seller_id']);
+        if (!$seller || empty($seller['whatsapp'])) {
+            return;
+        }
+
+        $vars = [
+            'cliente' => $order['client_name'] ?? '—',
+            'pedido' => (string) $order['id'],
+            'url' => self::BASE_URL . '/painel/pedidos/' . (int) $order['id'],
+        ];
+        [$text] = self::waTexts('pagamento_pendente_aviso', $vars);
+        if ($text) {
+            self::sendWhatsApp($seller['whatsapp'], $text);
+        }
+    }
+
     /** @param array $licenciado precisa de id/name/email */
     public static function cadastroAprovado(array $licenciado): void
     {

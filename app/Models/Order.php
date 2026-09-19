@@ -448,6 +448,55 @@ class Order
         return Database::connection()->exec($sql);
     }
 
+    /** Fase 65: cobranca gerada (no checkout publico ou pelo staff) mas o comprador nao pagou em
+     *  STALE_PAYMENT_MINUTES -- move o card do Lead pra "Pagamento Pendente" e avisa o vendedor
+     *  por WhatsApp, pedido explicito do usuario ("caso esse comprador nao tenha concluido o
+     *  pagamento apos um determinado tempo... o vendedor recebe uma notificacao"). Chamado de
+     *  forma preguicosa (mesmo padrao de expireStalePending()/Lead::expireStaleAssignments()) a
+     *  cada carga do Kanban de Leads -- sem cron nesse plano Hostinger. So' considera a cobranca
+     *  MAIS RECENTE de cada pedido (se o vendedor gerou de novo, o timer reinicia). A checagem de
+     *  "ja esta em pagamento_gerado" (nao so' o SQL de tempo) fica dentro de
+     *  Lead::advanceCheckoutStage(), que so' dispara a MUDANCA (e por isso a notificacao, chamada
+     *  so' quando ela realmente acontece) na primeira vez que a pendencia e' detectada -- rodar
+     *  esse metodo de novo com o mesmo pedido parado nao manda WhatsApp repetido. */
+    private const STALE_PAYMENT_MINUTES = 60;
+
+    public static function flagStalePaymentPending(): void
+    {
+        $sql = "SELECT o.id
+                FROM orders o
+                INNER JOIN (
+                    SELECT payable_id, MAX(created_at) AS max_created
+                    FROM payments
+                    WHERE payable_type = 'order'
+                    GROUP BY payable_id
+                ) latest ON latest.payable_id = o.id
+                INNER JOIN payments p ON p.payable_id = latest.payable_id AND p.created_at = latest.max_created AND p.payable_type = 'order'
+                WHERE o.status NOT IN ('verificado', 'cancelado')
+                  AND p.status = 'pendente'
+                  AND p.created_at < (NOW() - INTERVAL " . self::STALE_PAYMENT_MINUTES . " MINUTE)";
+
+        $orderIds = Database::connection()->query($sql)->fetchAll(\PDO::FETCH_COLUMN);
+
+        foreach ($orderIds as $orderId) {
+            $leadId = self::leadIdFor((int) $orderId);
+            if (!$leadId) {
+                continue;
+            }
+            $lead = Lead::find($leadId);
+            // So' dispara a notificacao na transicao real (lead ainda em "aguardando pagamento")
+            // -- evita mandar WhatsApp de novo a cada carga do Kanban enquanto o pedido continuar parado.
+            if (!$lead || $lead['status'] !== 'pagamento_gerado') {
+                continue;
+            }
+            Lead::advanceCheckoutStage($leadId, 'pagamento_pendente');
+            $order = self::find((int) $orderId);
+            if ($order) {
+                Notifier::pagamentoPendenteAviso($order);
+            }
+        }
+    }
+
     public static function updateStatus(int $id, string $status): void
     {
         $stmt = Database::connection()->prepare('UPDATE orders SET status = :status WHERE id = :id');
@@ -577,6 +626,20 @@ class Order
      *  gerou este Pedido (fluxo Proposta Facil / orcamento por placa, que captura o veiculo
      *  completo -- potencia, original/reprogramado, ARLA, telemetria, km/mes, km/litro, preco do
      *  diesel -- no Lead, nao no Pedido). Usado no Termo de Garantia e na tela da Fabrica. */
+    /** Fase 65: acha o Lead que originou esse Pedido (via Quote -> Lead, o unico jeito que existe
+     *  hoje de ligar as 2 pontas -- orders nao guarda lead_id direto). Pedido criado fora desse
+     *  caminho (Pedido manual em /painel/pedidos, checkout publico antigo da Fase 13) nao tem
+     *  Lead nenhum pra mover -- retorna null e quem chamou so' nao atualiza nenhum card. */
+    public static function leadIdFor(int $orderId): ?int
+    {
+        $stmt = Database::connection()->prepare(
+            'SELECT q.lead_id FROM quotes q WHERE q.converted_order_id = :order_id AND q.lead_id IS NOT NULL LIMIT 1'
+        );
+        $stmt->execute(['order_id' => $orderId]);
+        $leadId = $stmt->fetchColumn();
+        return $leadId ? (int) $leadId : null;
+    }
+
     public static function vehicleInfoFor(int $orderId): array
     {
         $empty = [
@@ -731,6 +794,13 @@ class Order
         $freshOrder = self::find($id);
         if ($freshOrder && !self::hasRequiredDocuments($freshOrder)) {
             Notifier::pagamentoConfirmadoCliente($freshOrder);
+        }
+
+        // Fase 65: pagamento confirmado -- o card do Lead (se existir) anda sozinho pra
+        // "Convertido" no Kanban, sem o vendedor precisar arrastar.
+        $leadId = self::leadIdFor($id);
+        if ($leadId) {
+            Lead::advanceCheckoutStage($leadId, 'convertido');
         }
 
         return true;

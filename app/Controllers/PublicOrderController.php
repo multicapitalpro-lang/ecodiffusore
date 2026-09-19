@@ -11,6 +11,7 @@ use App\Core\Router;
 use App\Core\View;
 use App\Models\Client;
 use App\Models\CompanySettings;
+use App\Models\Lead;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Payment;
@@ -37,6 +38,14 @@ class PublicOrderController
             exit;
         }
 
+        // Fase 65: o card do Lead anda sozinho no Kanban conforme o comprador avanca aqui --
+        // idempotente (Lead::advanceCheckoutStage so' avanca pra frente), entao chamar em toda
+        // visita (nao so' a primeira) e' seguro e simples.
+        $leadId = Order::leadIdFor((int) $order['id']);
+        if ($leadId) {
+            Lead::advanceCheckoutStage($leadId, 'checkout_acessado');
+        }
+
         View::render('site/pedido_publico', [
             'order' => $order,
             'items' => OrderItem::forOrder((int) $order['id']),
@@ -61,6 +70,11 @@ class PublicOrderController
 
         if (empty($order['terms_accepted_at'])) {
             Order::acceptTerms((int) $order['id'], CompanySettings::current()['terms_text'] ?? '');
+        }
+
+        $leadId = Order::leadIdFor((int) $order['id']);
+        if ($leadId) {
+            Lead::advanceCheckoutStage($leadId, 'termos_aceitos');
         }
 
         Router::redirect("/pedido/{$token}?termos_ok=1");
@@ -210,6 +224,11 @@ class PublicOrderController
             ]);
         } catch (\Throwable $e) {
             Router::redirect("/pedido/{$token}?erro_cobranca=" . urlencode($e->getMessage()));
+        }
+
+        $leadId = Order::leadIdFor($id);
+        if ($leadId) {
+            Lead::advanceCheckoutStage($leadId, 'pagamento_gerado');
         }
 
         Router::redirect("/pedido/{$token}?cobranca_ok=1");

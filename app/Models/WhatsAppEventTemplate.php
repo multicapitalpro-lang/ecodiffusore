@@ -35,6 +35,7 @@ class WhatsAppEventTemplate
         'liberacao_desconto_decidida',
         'pedido_documentos_enviados',
         'pagamento_confirmado_cliente',
+        'pagamento_pendente_aviso',
     ];
 
     public const LABELS = [
@@ -60,6 +61,7 @@ class WhatsAppEventTemplate
         'liberacao_desconto_decidida' => 'Status da liberação de preço (quem pediu)',
         'pedido_documentos_enviados' => 'Cliente enviou CNH + documento do veículo',
         'pagamento_confirmado_cliente' => 'Pagamento confirmado — pedir documentos (cliente)',
+        'pagamento_pendente_aviso' => 'Pagamento pendente há muito tempo (vendedor)',
     ];
 
     /** Quais placeholders {chave} cada evento aceita -- so pra exibir dica na tela, nao valida nada. */
@@ -86,6 +88,7 @@ class WhatsAppEventTemplate
         'liberacao_desconto_decidida' => ['cliente', 'preco_solicitado', 'status', 'decidido_por', 'url'],
         'pedido_documentos_enviados' => ['cliente', 'pedido', 'url'],
         'pagamento_confirmado_cliente' => ['nome', 'url'],
+        'pagamento_pendente_aviso' => ['cliente', 'pedido', 'url'],
     ];
 
     /** Eventos que so usam UM dos dois textos (o outro fica sempre null/nao editavel). */
@@ -93,6 +96,7 @@ class WhatsAppEventTemplate
         'follow_up_lembrete', 'acesso_portal_criado', 'pedido_atualizacao_entrega', 'cobranca_gerada', 'orcamento_lembrete_lead',
         'garantia_estendida_lembrete_dia1', 'garantia_estendida_lembrete_dia5', 'garantia_estendida_lembrete_dia10', 'garantia_estendida_lembrete_dia15',
         'licenciado_contrato_pendente', 'liberacao_desconto_decidida', 'pagamento_confirmado_cliente',
+        'pagamento_pendente_aviso',
     ];
     public const NETWORK_ONLY = ['vendedor_inativo', 'licenciado_pendente_aprovacao', 'liberacao_desconto_solicitada'];
 
@@ -119,6 +123,7 @@ class WhatsAppEventTemplate
         'liberacao_desconto_decidida' => 'Vendedor/Gestor/Licenciado (quem pediu a liberação)',
         'pedido_documentos_enviados' => 'Vendedor (dono do pedido)',
         'pagamento_confirmado_cliente' => 'Cliente (dono do pedido)',
+        'pagamento_pendente_aviso' => 'Vendedor (dono do pedido)',
     ];
 
     public const NETWORK_LABELS = [

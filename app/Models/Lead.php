@@ -77,6 +77,47 @@ class Lead
         $stmt->execute(['status' => $status, 'id' => $id]);
     }
 
+    /** Fase 65: ordem das etapas AUTOMATICAS do checkout publico (App\Controllers\
+     *  PublicOrderController/PaymentController/Order::markVerifiedWithCommission) -- so' usada
+     *  por advanceCheckoutStage(), nunca pra bloquear o Kanban manual (staff continua podendo
+     *  arrastar o card pra qualquer coluna, inclusive uma dessas, a qualquer momento). */
+    private const CHECKOUT_STAGE_RANK = [
+        'checkout_acessado' => 1,
+        'termos_aceitos' => 2,
+        'pagamento_gerado' => 3,
+        'pagamento_pendente' => 3,
+        'convertido' => 4,
+    ];
+
+    /** Move o card do Lead sozinho, conforme o comprador avanca no checkout publico -- pedido
+     *  explicito do usuario ("o proprio CRM se auto-atualiza... pra que nao haja necessidade do
+     *  vendedor ficar atualizando toda vez"). So' avanca pra FRENTE (nunca reverte uma etapa) e
+     *  NUNCA mexe num lead que o staff ja moveu manualmente pra um estado final ('descartado' ou
+     *  'convertido') -- um card descartado ou ja fechado nao deve "ressuscitar" sozinho so' porque
+     *  o comprador reabriu o link antigo. 'pagamento_pendente' e' um caso especial: so' entra a
+     *  partir de 'pagamento_gerado' (ver Order::flagStalePaymentPending()), no MESMO nivel dele,
+     *  entao nao cabe no ranking crescente comum. */
+    public static function advanceCheckoutStage(int $leadId, string $newStage): void
+    {
+        $lead = self::find($leadId);
+        if (!$lead || in_array($lead['status'], ['descartado', 'convertido'], true)) {
+            return;
+        }
+
+        if ($newStage === 'pagamento_pendente') {
+            if ($lead['status'] === 'pagamento_gerado') {
+                self::updateStatus($leadId, $newStage);
+            }
+            return;
+        }
+
+        $currentRank = self::CHECKOUT_STAGE_RANK[$lead['status']] ?? 0;
+        $newRank = self::CHECKOUT_STAGE_RANK[$newStage] ?? 0;
+        if ($newRank > $currentRank) {
+            self::updateStatus($leadId, $newStage);
+        }
+    }
+
     /** Grava os dados do veiculo (e reconfirma o nome) capturados no wizard de orcamento em /comprar
      *  ou na Proposta Facil -- km_mensal/km_litro/preco_diesel sao os numeros que alimentam o
      *  EconomyCalculator na hora da proposta, mas ate aqui so viviam em $_SESSION (perdidos depois);

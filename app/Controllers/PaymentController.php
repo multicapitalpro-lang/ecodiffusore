@@ -12,6 +12,7 @@ use App\Core\Roles;
 use App\Core\Router;
 use App\Models\Approval;
 use App\Models\Client;
+use App\Models\Lead;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Payment;
@@ -230,6 +231,16 @@ class PaymentController
         $produtos = $items
             ? implode(', ', array_map(fn ($i) => $i['product_name'] . ' (x' . (int) $i['quantity'] . ')', $items))
             : null;
+
+        // Fase 65: mesmo card do Kanban avanca sozinho tambem quando e' o STAFF (nao o comprador
+        // no checkout publico) quem gera a cobranca -- o estado real ("aguardando pagamento") e'
+        // o mesmo independente de quem clicou.
+        if ($payableType === 'order') {
+            $leadId = Order::leadIdFor($payableId);
+            if ($leadId) {
+                Lead::advanceCheckoutStage($leadId, 'pagamento_gerado');
+            }
+        }
 
         Notifier::cobrancaGerada($client, [
             'method' => $billingType,

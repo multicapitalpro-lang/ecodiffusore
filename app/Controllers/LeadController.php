@@ -14,6 +14,7 @@ use App\Models\Lead;
 use App\Models\LeadNote;
 use App\Models\LeadRoutingSettings;
 use App\Models\LeadStage;
+use App\Models\Order;
 use App\Models\Quote;
 use App\Models\User;
 
@@ -32,6 +33,9 @@ class LeadController
         // Sem cron nesse plano Hostinger -- lazy check a cada carga da tela de Leads, mesmo
         // padrao ja usado em Order::expireStalePending()/ReportScheduler::processDue().
         Lead::expireStaleAssignments();
+        // Fase 65: pedido gerado no checkout publico mas nao pago a tempo -- move o card sozinho
+        // pra "Pagamento Pendente" e avisa o vendedor (so na transicao, ver Order::flagStalePaymentPending()).
+        Order::flagStalePaymentPending();
 
         $leads = $this->scopedLeads($user);
         $stages = LeadStage::all();
