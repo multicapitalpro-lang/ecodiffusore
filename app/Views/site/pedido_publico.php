@@ -32,14 +32,6 @@ if ($basePrice > 0) {
 }
 
 $missing = Order::missingDocumentLabels($order);
-
-// Fase 64: transparencia total de taxa -- o cliente pediu explicitamente pra "discriminar" (nao
-// esconder) a taxa de cartao/antecipacao embutida no valor, nunca so mostrar um numero maior sem
-// explicar o porque. Pix/Boleto nao tem taxa nenhuma repassada (ver CardPricing).
-$feeAvista = (float) ($feeSettings['card_fee_avista_pct'] ?? 0);
-$antAvista = (float) ($feeSettings['antecipacao_avista_mensal_pct'] ?? 0);
-$feeParcelado = (float) ($feeSettings['card_fee_parcelado_pct'] ?? 0);
-$antParcelado = (float) ($feeSettings['antecipacao_parcelado_mensal_pct'] ?? 0);
 ?><!doctype html>
 <html lang="pt-BR">
 <head>
@@ -85,10 +77,6 @@ footer{text-align:center;color:var(--muted);font-size:.78rem;padding:20px 16px 0
 .trust-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 16px}
 .trust-item{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px;font-size:.76rem;text-align:center;color:var(--muted)}
 .trust-item strong{display:block;font-size:1.3rem;margin-bottom:2px}
-.fee-note{background:var(--amber-bg);color:var(--amber);border-radius:10px;padding:10px 12px;font-size:.8rem;margin-top:10px}
-.fee-table{margin-top:10px}
-.fee-table .row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line);font-size:.85rem}
-.fee-table .row:last-child{border-bottom:none}
 .overlay{display:none;position:fixed;inset:0;background:rgba(13,47,85,.72);z-index:999;align-items:flex-end;justify-content:center;padding:0}
 .overlay-box{background:#fff;border-radius:18px 18px 0 0;padding:22px 20px 26px;max-width:560px;width:100%;text-align:center}
 .overlay-box .emoji{font-size:2.2rem}
@@ -183,7 +171,7 @@ footer{text-align:center;color:var(--muted);font-size:.78rem;padding:20px 16px 0
         <?php if (!$hasPayment): ?>
             <div class="card">
                 <h2>Forma de pagamento</h2>
-                <p class="hint">Pix e Boleto não têm nenhuma taxa — o valor é o mesmo de tabela. No cartão, a taxa de processamento (e a de antecipação, se parcelar) já vem embutida no total, sem pegadinha — veja o detalhamento abaixo.</p>
+                <p class="hint">Pix e Boleto saem pelo mesmo preço de tabela. No cartão, o valor já é o total certinho pra cada opção de parcelas.</p>
                 <form action="/pedido/<?= View::e($token) ?>/cobranca" method="post" id="charge-form">
                     <?= Csrf::field() ?>
                     <?php if (empty($order['client_document'])): ?>
@@ -203,14 +191,6 @@ footer{text-align:center;color:var(--muted);font-size:.78rem;padding:20px 16px 0
                                 <option value="<?= $row['n'] ?>"><?= $row['n'] ?>x de R$ <?= number_format($row['parcela'], 2, ',', '.') ?><?= $row['n'] === 1 ? ' (à vista)' : ' — total R$ ' . number_format($row['total'], 2, ',', '.') ?></option>
                             <?php endforeach; ?>
                         </select>
-                        <div class="fee-note">
-                            💳 <?= number_format($feeAvista, 2, ',', '.') ?>% de taxa de cartão à vista (+ <?= number_format($antAvista, 2, ',', '.') ?>% de antecipação) ou <?= number_format($feeParcelado, 2, ',', '.') ?>% parcelado (+ <?= number_format($antParcelado, 2, ',', '.') ?>% de antecipação por mês de parcela) — por isso o total cresce um pouco a cada parcela a mais. Esse valor já é o que a Asaas cobra da Ecodiffusore pra antecipar seu dinheiro; não é uma margem escondida.
-                        </div>
-                        <div class="fee-table">
-                            <?php foreach ($installmentsTable as $row): ?>
-                                <div class="row"><span><?= $row['n'] ?>x</span><span>R$ <?= number_format($row['parcela'], 2, ',', '.') ?>/mês — total R$ <?= number_format($row['total'], 2, ',', '.') ?></span></div>
-                            <?php endforeach; ?>
-                        </div>
                     </div>
                     <button type="submit" class="btn btn-primary">Gerar cobrança</button>
                 </form>
