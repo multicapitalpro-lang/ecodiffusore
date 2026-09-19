@@ -98,6 +98,7 @@ $router->get('/api/v1/garantias/{id}', [App\Controllers\Api\WarrantyController::
 $router->post('/api/v1/garantias/{id}/status', [App\Controllers\Api\WarrantyController::class, 'updateStatus']);
 $router->get('/api/v1/rede', [App\Controllers\Api\UserController::class, 'index']);
 $router->post('/api/v1/device-token', [App\Controllers\Api\DeviceTokenController::class, 'register']);
+$router->get('/api/v1/desempenho/equipe', [App\Controllers\Api\PerformanceController::class, 'team']);
 
 // Autenticação
 $router->get('/painel/login', [App\Controllers\AuthController::class, 'showLogin']);
