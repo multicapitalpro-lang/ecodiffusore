@@ -92,6 +92,11 @@ $router->get('/api/v1/clientes/{id}', [App\Controllers\Api\ClientController::cla
 $router->get('/api/v1/orcamentos', [App\Controllers\Api\QuoteController::class, 'index']);
 $router->get('/api/v1/orcamentos/{id}', [App\Controllers\Api\QuoteController::class, 'show']);
 $router->get('/api/v1/materiais', [App\Controllers\Api\MaterialController::class, 'index']);
+$router->get('/api/v1/entregas', [App\Controllers\Api\OrderController::class, 'deliveries']);
+$router->get('/api/v1/garantias', [App\Controllers\Api\WarrantyController::class, 'index']);
+$router->get('/api/v1/garantias/{id}', [App\Controllers\Api\WarrantyController::class, 'show']);
+$router->post('/api/v1/garantias/{id}/status', [App\Controllers\Api\WarrantyController::class, 'updateStatus']);
+$router->get('/api/v1/rede', [App\Controllers\Api\UserController::class, 'index']);
 
 // Autenticação
 $router->get('/painel/login', [App\Controllers\AuthController::class, 'showLogin']);

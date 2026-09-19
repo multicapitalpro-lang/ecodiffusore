@@ -104,6 +104,31 @@ class OrderController
         ]);
     }
 
+    /** Fase 76h: Acompanhar Entregas -- mesma consulta de OrderController::deliveries() (so
+     *  pedidos verificados, mesmo escopo por hierarquia), devolvendo JSON. */
+    public function deliveries(): void
+    {
+        $user = ApiAuth::requireUser();
+        if (!in_array($user['role_slug'], Roles::STAFF, true)) {
+            ApiResponse::error('Papel sem acesso a Entregas.', 403);
+        }
+
+        $filters = array_merge(['status' => 'verificado'], $this->scopeFilters($user));
+        $orders = Order::all($filters);
+
+        ApiResponse::json(['orders' => array_map(fn ($o) => [
+            'id' => (int) $o['id'],
+            'order_date' => $o['order_date'],
+            'client_name' => $o['client_name'],
+            'client_city' => $o['client_city'],
+            'client_state' => $o['client_state'],
+            'product_names' => $o['product_names'],
+            'tracking_carrier' => $o['tracking_carrier'] ?? null,
+            'tracking_code' => $o['tracking_code'] ?? null,
+            'prazo_entrega' => $o['prazo_entrega'] ?? null,
+        ], $orders)]);
+    }
+
     private function scopeFilters(array $user): array
     {
         if ($user['role_slug'] === 'admin') {
