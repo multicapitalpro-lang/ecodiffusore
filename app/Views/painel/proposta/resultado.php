@@ -59,6 +59,15 @@ $isModal = $isModal ?? false;
         . ($result['product_price'] ? 'Investimento: R$ ' . number_format((float) $result['product_price'], 2, ',', '.') . "\n" : '')
         . $economyLine . "\n"
         . 'Qualquer dúvida, me chama por aqui — ' . $result['seller_name'];
+
+    // Fase 68: Pedido ja registrado -- link publico do checkout (/pedido/{token}) pronto pra
+    // mandar, em vez do resumo informal acima. O comprador escolhe a forma de pagamento sozinho
+    // por la (Fase 63/64), nao mais o vendedor aqui.
+    $isConcluded = !empty($result['order_id']);
+    $publicLink = $isConcluded && !empty($result['public_token']) ? 'https://ecodiffusorebrasil.com.br/pedido/' . $result['public_token'] : null;
+    $concludedMessage = $publicLink
+        ? "Olá, {$result['name']}! Sua proposta do Ecodiffusore ficou pronta. Pra confirmar e escolher a forma de pagamento (Pix, Boleto ou Cartão), acesse: {$publicLink}"
+        : $message;
     ?>
     <p class="hint-text" style="margin-top:0;">Gerada agora — pronta pra compartilhar com o cliente.</p>
 
@@ -151,49 +160,49 @@ $isModal = $isModal ?? false;
         </div>
     <?php endif; ?>
 
-    <?php if ($result['quote_id'] && $result['product_price']): ?>
+    <?php if ($isConcluded): ?>
+        <div class="form-msg" style="background:#e5f6e0;color:#1f7a33;max-width:640px;">
+            <strong>✅ Pedido #<?= (int) $result['order_id'] ?> criado!</strong>
+            <p style="margin:6px 0 0;">Agora é só mandar o link abaixo pro cliente — ele escolhe a forma de pagamento (Pix, Boleto ou Cartão) e paga direto por lá, sem precisar de login.</p>
+            <?php if ($publicLink): ?>
+                <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:12px;">
+                    <input type="text" id="proposta-public-link" readonly value="<?= View::e($publicLink) ?>" style="flex:1; min-width:220px; font-size:.82rem; padding:8px 10px; border-radius:6px; border:1px solid var(--border);">
+                    <button type="button" class="btn btn-outline btn-sm" id="proposta-public-link-copy">Copiar link</button>
+                </div>
+            <?php endif; ?>
+        </div>
+        <script>
+        document.getElementById('proposta-public-link-copy')?.addEventListener('click', function () {
+            var input = document.getElementById('proposta-public-link');
+            input.select();
+            navigator.clipboard?.writeText(input.value);
+            this.textContent = 'Copiado!';
+            setTimeout(() => { this.textContent = 'Copiar link'; }, 2000);
+        });
+        </script>
+    <?php elseif ($result['quote_id'] && $result['product_price']): ?>
         <h3>Concluir pedido</h3>
-        <p class="hint-text" style="margin-top:0;">Depois que o cliente decidir como vai pagar, conclua aqui — já cria o Pedido de verdade e gera a cobrança já na forma escolhida (Pix, Boleto ou Cartão com as parcelas certas), pronta pra mandar pro cliente.</p>
-        <p class="hint-text" style="margin-top:0;">CPF/CNPJ é opcional aqui — se não informar agora, o cliente completa depois em "Meus Dados", no painel dele, e você gera a cobrança quando ele preencher.</p>
-        <form action="/painel/proposta-facil/concluir" method="post" class="charge-form panel-form-wide">
+        <p class="hint-text" style="margin-top:0;">Registra o Pedido de verdade e libera o link de pagamento pra você mandar pro cliente — ele escolhe Pix, Boleto ou Cartão sozinho, no checkout dele.</p>
+        <p class="hint-text" style="margin-top:0;">CPF/CNPJ é opcional aqui — se não informar agora, o cliente completa depois em "Meus Dados" ou direto no checkout, no painel dele.</p>
+        <form action="/painel/proposta-facil/concluir" method="post" class="panel-form-wide">
             <?= Csrf::field() ?>
-            <div class="form-grid-2">
-                <div>
-                    <label for="proposta-document">CPF ou CNPJ do cliente (opcional)</label>
-                    <input type="text" id="proposta-document" name="document" placeholder="Só números — pode deixar em branco">
-                </div>
-                <div>
-                    <label for="proposta-billing-type">Forma de pagamento escolhida</label>
-                    <select id="proposta-billing-type" name="billing_type" class="charge-billing-type">
-                        <option value="PIX">Pix</option>
-                        <option value="BOLETO">Boleto</option>
-                        <option value="CREDIT_CARD">Cartão de crédito</option>
-                    </select>
-                </div>
-            </div>
-            <div style="margin-top:10px;">
-                <label for="proposta-installments">Parcelas combinadas com o cliente</label>
-                <select id="proposta-installments" name="installments" class="charge-installments" style="display:none;">
-                    <?php foreach ($result['installments'] as $row): ?>
-                        <option value="<?= $row['n'] ?>">
-                            <?= $row['n'] ?>x de R$ <?= number_format($row['parcela'], 2, ',', '.') ?><?= $row['n'] === 1 ? ' (à vista)' : ' — total R$ ' . number_format($row['total'], 2, ',', '.') ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-            <button type="submit" class="btn btn-primary" style="margin-top:14px;">Concluir pedido e gerar cobrança</button>
+            <label for="proposta-document">CPF ou CNPJ do cliente (opcional)</label>
+            <input type="text" id="proposta-document" name="document" placeholder="Só números — pode deixar em branco">
+            <button type="submit" class="btn btn-primary" style="margin-top:14px;">Concluir pedido</button>
         </form>
     <?php endif; ?>
 
     <div class="proposta-actions">
-        <a href="https://wa.me/<?= $whatsappNumber ?>?text=<?= rawurlencode($message) ?>" target="_blank" rel="noopener" class="btn btn-whatsapp">💬 Compartilhar por WhatsApp</a>
+        <a href="https://wa.me/<?= $whatsappNumber ?>?text=<?= rawurlencode($concludedMessage) ?>" target="_blank" rel="noopener" class="btn btn-whatsapp"><?= $isConcluded ? '💬 Enviar link por WhatsApp' : '💬 Compartilhar por WhatsApp' ?></a>
         <a href="/painel/proposta-facil/pdf" target="_blank" class="btn btn-outline">📄 Baixar PDF</a>
         <?php if ($isModal): ?>
             <button type="button" id="btn-proposta-nova" class="btn btn-outline">+ Nova proposta</button>
         <?php else: ?>
             <a href="/painel/proposta-facil" class="btn btn-outline">+ Nova proposta</a>
         <?php endif; ?>
-        <?php if ($result['quote_id']): ?>
+        <?php if ($isConcluded): ?>
+            <a href="/painel/pedidos/<?= (int) $result['order_id'] ?>" class="btn btn-outline">Ver no CRM</a>
+        <?php elseif ($result['quote_id']): ?>
             <a href="/painel/orcamentos/<?= (int) $result['quote_id'] ?>" class="btn btn-outline">Ver no CRM</a>
         <?php endif; ?>
     </div>

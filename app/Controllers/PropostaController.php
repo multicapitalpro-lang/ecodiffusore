@@ -15,6 +15,7 @@ use App\Models\Approval;
 use App\Models\AuditLog;
 use App\Models\Client;
 use App\Models\Lead;
+use App\Models\Order;
 use App\Models\PricingTier;
 use App\Models\Product;
 use App\Models\Quote;
@@ -257,10 +258,11 @@ class PropostaController
     }
 
     /** "Concluir Pedido": converte o orcamento gerado pela Proposta Facil (sessao) em Pedido de
-     *  verdade e ja gera a cobranca na Asaas na forma de pagamento que o vendedor escolheu com o
-     *  cliente (Pix/Boleto/Cartao + parcelas) -- em vez do cliente escolher de novo na pagina da
-     *  Asaas. Reaproveita PaymentController::generateForOrder() (mesmo "Gerar cobranca" do Pedido)
-     *  pra nao duplicar a logica de cobranca -- ela mesma redireciona pro Pedido criado. */
+     *  verdade. Fase 68: PAROU de gerar a cobranca aqui -- pedido explicito do usuario, "a forma
+     *  de pagamento, o ideal e' que o comprador escolha no checkout dele" (Fase 63/64). O vendedor
+     *  so registra o pedido (+ CPF/CNPJ opcional); a tela de resultado passa a mostrar o link
+     *  publico do pedido (/pedido/{token}) pronto pra copiar/mandar por WhatsApp -- o comprador
+     *  escolhe Pix/Boleto/Cartao sozinho por la. */
     public function conclude(): void
     {
         Auth::requireRole(Roles::STAFF);
@@ -316,9 +318,11 @@ class PropostaController
         $orderId = Quote::convertToOrder($quoteId);
         AuditLog::record((int) $user['id'], 'orcamento_convertido', 'quote', $quoteId, ['status' => $quote['status']], ['order_id' => $orderId]);
 
-        unset($_SESSION['proposta_result']);
+        $order = Order::find($orderId);
+        $_SESSION['proposta_result']['order_id'] = $orderId;
+        $_SESSION['proposta_result']['public_token'] = $order['public_token'] ?? null;
 
-        (new PaymentController())->generateForOrder((string) $orderId);
+        Router::redirect('/painel/proposta-facil/resultado?concluido=1');
     }
 
     public function pdf(): void
