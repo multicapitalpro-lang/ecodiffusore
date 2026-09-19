@@ -112,6 +112,10 @@ $allowGenerateCharge = $order['status'] !== 'cancelado' && $order['status'] !== 
 if ($payments || $allowGenerateCharge):
     $chargeAction = "/painel/pedidos/{$order['id']}/cobranca";
     $basePrice = (float) $order['total_value'];
+    // Fase 62: enquanto o cliente nao aceitar os Termos de Compra no painel dele, nem o STAFF ve
+    // o link direto de pagamento aqui -- senao o vendedor podia so copiar o link e mandar por
+    // fora, pulando o aceite (o motivo inteiro do gate deixaria de valer).
+    $termsPending = empty($order['terms_accepted_at']);
     include __DIR__ . '/../_payments_section.php';
 endif;
 ?>

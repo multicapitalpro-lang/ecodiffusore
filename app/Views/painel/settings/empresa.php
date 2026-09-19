@@ -28,3 +28,15 @@ $erro = isset($_GET['erro']);
 
     <button type="submit" class="btn btn-primary" style="margin-top:12px">Salvar</button>
 </form>
+
+<div class="page-header" style="margin-top:32px;">
+    <h2>Termos de Compra</h2>
+</div>
+<p class="hint-text" style="margin-top:-6px;">O cliente precisa ler e aceitar esse texto, no próprio painel dele, antes de conseguir pagar um Pedido. Editar aqui só vale pra próximas compras — o aceite de cada cliente guarda uma cópia do texto de quando ele aceitou.</p>
+
+<form method="post" action="/painel/configuracoes/empresa/termos" class="panel-form panel-form-wide" style="max-width:640px">
+    <?= Csrf::field() ?>
+    <label for="terms_text">Texto dos Termos de Compra</label>
+    <textarea id="terms_text" name="terms_text" rows="14"><?= View::e($settings['terms_text'] ?? '') ?></textarea>
+    <button type="submit" class="btn btn-primary" style="margin-top:12px">Salvar termos</button>
+</form>

@@ -134,23 +134,52 @@ $methodLabels = ['PIX' => 'Pix', 'BOLETO' => 'Boleto', 'CREDIT_CARD' => 'Cartão
 <?php if (!$payments): ?>
     <p class="hint-text">Nenhuma cobrança gerada ainda para este pedido. Fale com quem te vendeu o produto.</p>
 <?php endif; ?>
-<?php foreach ($payments as $p): ?>
-    <div class="dash-card" style="margin-bottom:14px;">
-        <span><?= View::e($methodLabels[$p['method']] ?? $p['method']) ?> — R$ <?= number_format((float) $p['amount'], 2, ',', '.') ?></span>
-        <?php if ($p['status'] === 'pendente'): ?>
-            <strong class="text-red">Pendente</strong>
-            <?php if ($p['checkout_url']): ?>
-                <a href="<?= View::e($p['checkout_url']) ?>" target="_blank" rel="noopener" class="btn btn-primary" style="margin-top:8px;width:fit-content;">Pagar agora</a>
-            <?php endif; ?>
-            <?php if ($p['method'] === 'PIX' && $p['pix_payload']): ?>
-                <small class="hint-text">Pix copia-e-cola:</small>
-                <input type="text" readonly value="<?= View::e($p['pix_payload']) ?>" style="width:100%;font-size:.75rem;padding:6px 8px;border-radius:6px;border:1px solid var(--border);margin-top:4px;" onclick="this.select()">
-            <?php endif; ?>
-        <?php else: ?>
-            <strong class="text-green">Pago</strong>
-        <?php endif; ?>
+
+<?php
+$hasPendingPayment = (bool) array_filter($payments, fn ($p) => $p['status'] === 'pendente');
+$termsAccepted = !empty($order['terms_accepted_at']);
+?>
+
+<?php if (isset($_GET['termos_ok'])): ?>
+    <p class="form-msg form-msg-ok">Termos aceitos! Já pode seguir com o pagamento abaixo.</p>
+<?php elseif (isset($_GET['erro_termos'])): ?>
+    <p class="form-msg form-msg-erro">Marque a caixinha de aceite pra continuar.</p>
+<?php endif; ?>
+
+<?php if ($hasPendingPayment && !$termsAccepted): ?>
+    <div class="form-msg" style="background:#fff4dc;color:#7a5a10;max-width:640px;margin-bottom:14px;">
+        <strong>📋 Termos de Compra</strong>
+        <div style="max-height:220px;overflow-y:auto;background:#fff;border:1px solid #f0c975;border-radius:8px;padding:12px;margin:10px 0;font-size:.85rem;white-space:pre-wrap;">
+            <?= $termsText !== '' ? View::e($termsText) : 'Termos de compra ainda não cadastrados — fale com quem te vendeu o produto.' ?>
+        </div>
+        <form action="/painel/meus-pedidos/<?= (int) $order['id'] ?>/aceitar-termos" method="post">
+            <?= Csrf::field() ?>
+            <label style="display:flex;gap:8px;align-items:flex-start;font-weight:600;">
+                <input type="checkbox" name="aceite" value="1" required style="margin-top:3px;">
+                Li e aceito os Termos de Compra do Ecodiffusore.
+            </label>
+            <button type="submit" class="btn btn-primary" style="margin-top:12px;">Aceitar e continuar</button>
+        </form>
     </div>
-<?php endforeach; ?>
+<?php else: ?>
+    <?php foreach ($payments as $p): ?>
+        <div class="dash-card" style="margin-bottom:14px;">
+            <span><?= View::e($methodLabels[$p['method']] ?? $p['method']) ?> — R$ <?= number_format((float) $p['amount'], 2, ',', '.') ?></span>
+            <?php if ($p['status'] === 'pendente'): ?>
+                <strong class="text-red">Pendente</strong>
+                <?php if ($p['checkout_url']): ?>
+                    <a href="<?= View::e($p['checkout_url']) ?>" target="_blank" rel="noopener" class="btn btn-primary" style="margin-top:8px;width:fit-content;">Pagar agora</a>
+                <?php endif; ?>
+                <?php if ($p['method'] === 'PIX' && $p['pix_payload']): ?>
+                    <small class="hint-text">Pix copia-e-cola:</small>
+                    <input type="text" readonly value="<?= View::e($p['pix_payload']) ?>" style="width:100%;font-size:.75rem;padding:6px 8px;border-radius:6px;border:1px solid var(--border);margin-top:4px;" onclick="this.select()">
+                <?php endif; ?>
+            <?php else: ?>
+                <strong class="text-green">Pago</strong>
+            <?php endif; ?>
+        </div>
+    <?php endforeach; ?>
+<?php endif; ?>
 
 <?php if ($approvedWarranty): ?>
     <a href="/painel/minhas-garantias/<?= (int) $approvedWarranty['id'] ?>/termo" target="_blank" rel="noopener" class="btn btn-outline" style="margin-top:16px">📄 Baixar Comprovante de Instalação</a>

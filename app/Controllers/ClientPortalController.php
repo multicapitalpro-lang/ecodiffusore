@@ -45,6 +45,7 @@ class ClientPortalController
             'items' => OrderItem::forOrder($id),
             'payments' => Payment::forPayable('order', $id),
             'approvedWarranty' => $approvedWarranty,
+            'termsText' => CompanySettings::current()['terms_text'] ?? '',
         ]);
     }
 
@@ -117,6 +118,33 @@ class ClientPortalController
         }
 
         Router::redirect("/painel/meus-pedidos/{$id}?docs_sucesso=1");
+    }
+
+    /** Fase 62: aceite dos Termos de Compra, exigido antes do cliente conseguir pagar (pedido
+     *  explicito do usuario: "antes dele concluir o pagamento" precisa ter um checkbox salvo).
+     *  Notifier::cobrancaGerada() ja segura o link direto da Asaas ate esse aceite acontecer --
+     *  esse metodo e' o unico jeito de destravar o pagamento pra um Pedido novo. */
+    public function acceptTerms(string $id): void
+    {
+        Auth::requireRole(['cliente']);
+        $client = Client::findByUserId((int) Auth::user()['id']);
+        $id = (int) $id;
+        $order = $client ? Order::find($id) : null;
+
+        if (!$order || (int) $order['client_id'] !== (int) $client['id']) {
+            Router::redirect('/painel');
+        }
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null) || empty($_POST['aceite'])) {
+            Router::redirect("/painel/meus-pedidos/{$id}?erro_termos=1");
+        }
+
+        if (empty($order['terms_accepted_at'])) {
+            $terms = CompanySettings::current()['terms_text'] ?? '';
+            Order::acceptTerms($id, $terms);
+        }
+
+        Router::redirect("/painel/meus-pedidos/{$id}?termos_ok=1");
     }
 
     public function warranties(): void

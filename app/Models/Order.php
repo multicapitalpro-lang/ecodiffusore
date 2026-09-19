@@ -350,6 +350,18 @@ class Order
         return $missing;
     }
 
+    /** Fase 62: aceite dos Termos de Compra pelo proprio CLIENTE, no painel dele, antes de poder
+     *  pagar (ver ClientPortalController::acceptTerms()). Grava uma COPIA do texto vigente na hora
+     *  ($snapshot) -- editar os termos depois (CompanySettings::updateTerms()) nunca reescreve o
+     *  que um cliente especifico ja aceitou no passado, importante pra defesa juridica. */
+    public static function acceptTerms(int $id, string $snapshot): void
+    {
+        $stmt = Database::connection()->prepare(
+            'UPDATE orders SET terms_accepted_at = NOW(), terms_text_snapshot = :snapshot WHERE id = :id'
+        );
+        $stmt->execute(['snapshot' => $snapshot, 'id' => $id]);
+    }
+
     /** Upload/preenchimento feito pelo proprio CLIENTE no painel dele (ClientPortalController::
      *  uploadOrderDocuments) -- update parcial, so mexe nos campos que vieram preenchidos (mesmo
      *  espirito de updateHeaderAndItems, mas sem tocar em client_id/seller_id/itens, que o cliente

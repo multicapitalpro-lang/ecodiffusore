@@ -600,7 +600,13 @@ class Notifier
      *  + produtos montado pelo chamador via OrderItem::forOrder()/QuoteItem::forQuote()). Dispara
      *  e-mail + WhatsApp direto pro cliente com o link/QR de pagamento -- gerado assim que a
      *  cobranca e' criada (App\Controllers\PaymentController::generateCharge()), tanto pra Pedido
-     *  quanto pra Orcamento. */
+     *  quanto pra Orcamento.
+     *  Fase 62: pra Pedido (nunca Orcamento, que nao tem terms_accepted_at), so manda o link
+     *  DIRETO de pagamento (checkout_url/Pix copia-e-cola) depois que o cliente aceitou os Termos
+     *  de Compra no proprio painel (Order::acceptTerms(), via ClientPortalController::
+     *  acceptTerms()) -- pedido explicito do usuario: "antes dele concluir o pagamento" precisa
+     *  ter o aceite. Antes disso, manda so o link do painel -- mandar o link direto da Asaas iria
+     *  deixar o aceite facil de pular (o cliente pagaria sem nunca abrir o painel). */
     public static function cobrancaGerada(array $client, array $payment, string $payableType, int $payableId): void
     {
         $label = $payableType === 'quote' ? 'Orçamento' : 'Pedido';
@@ -611,38 +617,56 @@ class Notifier
             $formaLabel .= " — {$installments}x de {$parcelaValue}";
         }
 
+        $termsPending = false;
+        if ($payableType === 'order') {
+            $order = Order::find($payableId);
+            $termsPending = $order && empty($order['terms_accepted_at']);
+        }
+        $portalUrl = self::BASE_URL . '/painel/meus-pedidos/' . $payableId;
+
         $vars = [
             'pedido' => "{$label} #{$payableId}",
             'produto' => $payment['produtos'] ?? '—',
             'valor' => 'R$ ' . number_format((float) $payment['amount'], 2, ',', '.'),
             'forma' => $formaLabel,
             'vencimento' => date('d/m/Y', strtotime($payment['due_date'])),
-            'url' => $payment['checkout_url'] ?? self::BASE_URL,
+            'url' => $termsPending ? $portalUrl : ($payment['checkout_url'] ?? self::BASE_URL),
         ];
 
         if (!empty($client['email'])) {
-            $body = '<p>' . self::esc("Sua cobrança do {$label} #{$payableId} foi gerada.") . '</p>'
-                . self::infoList(array_filter([
-                    'Produto' => $payment['produtos'] ?? null,
-                    'Valor' => $vars['valor'],
-                    'Forma' => $vars['forma'],
-                    'Vencimento' => $vars['vencimento'],
-                ]))
-                . self::button($vars['url'], 'Pagar agora');
-            if (!empty($payment['pix_payload'])) {
-                $body .= '<p>Pix copia-e-cola:</p><p style="word-break:break-all; font-size:12px; color:#666;">' . self::esc($payment['pix_payload']) . '</p>';
+            if ($termsPending) {
+                $body = '<p>' . self::esc("Sua compra do {$label} #{$payableId} foi registrada!") . '</p>'
+                    . '<p>Falta só um passo pra confirmar o pagamento: entre no seu painel e aceite os Termos de Compra.</p>'
+                    . self::button($portalUrl, 'Acessar meu painel');
+            } else {
+                $body = '<p>' . self::esc("Sua cobrança do {$label} #{$payableId} foi gerada.") . '</p>'
+                    . self::infoList(array_filter([
+                        'Produto' => $payment['produtos'] ?? null,
+                        'Valor' => $vars['valor'],
+                        'Forma' => $vars['forma'],
+                        'Vencimento' => $vars['vencimento'],
+                    ]))
+                    . self::button($vars['url'], 'Pagar agora');
+                if (!empty($payment['pix_payload'])) {
+                    $body .= '<p>Pix copia-e-cola:</p><p style="word-break:break-all; font-size:12px; color:#666;">' . self::esc($payment['pix_payload']) . '</p>';
+                }
             }
 
             Mailer::send($client['email'], "Cobrança do {$label} #{$payableId} - Ecodiffusore Brasil", self::template('Sua cobrança foi gerada', $body));
         }
 
         if (!empty($client['whatsapp'])) {
-            [$text] = self::waTexts('cobranca_gerada', $vars);
-            if ($text) {
-                if (!empty($payment['pix_payload'])) {
-                    $text .= "\n\nPix copia-e-cola:\n" . $payment['pix_payload'];
-                }
+            if ($termsPending) {
+                $text = "🧾 Sua compra do {$label} #{$payableId} foi registrada! Falta só um passo pra confirmar o pagamento: entre no seu painel e aceite os Termos de Compra: {$portalUrl}";
                 self::sendWhatsApp($client['whatsapp'], $text);
+            } else {
+                [$text] = self::waTexts('cobranca_gerada', $vars);
+                if ($text) {
+                    if (!empty($payment['pix_payload'])) {
+                        $text .= "\n\nPix copia-e-cola:\n" . $payment['pix_payload'];
+                    }
+                    self::sendWhatsApp($client['whatsapp'], $text);
+                }
             }
         }
     }

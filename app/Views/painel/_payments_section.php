@@ -6,6 +6,9 @@ use App\Core\View;
 /** @var string $chargeAction */
 /** @var float $basePrice */
 $allowGenerateCharge = $allowGenerateCharge ?? true;
+// Fase 62: so existe de verdade pra Pedido (Order::acceptTerms()) -- Orcamento nunca seta isso,
+// entao fica sempre false pra quotes/show.php, sem gate nenhum ali.
+$termsPending = $termsPending ?? false;
 $maxInstallments = CardPricing::maxInstallments();
 $basePrice = $basePrice ?? 0.0;
 $methodLabels = ['PIX' => 'Pix', 'BOLETO' => 'Boleto', 'CREDIT_CARD' => 'Cartão'];
@@ -43,12 +46,16 @@ if ($basePrice > 0) {
                         <td><?= View::e(date('d/m/Y', strtotime($p['due_date']))) ?></td>
                         <td><span class="status-badge status-<?= $p['status'] === 'pago' ? 'active' : (in_array($p['status'], ['cancelado', 'reembolsado'], true) ? 'inactive' : 'novo') ?>"><?= $statusLabels[$p['status']] ?? $p['status'] ?></span></td>
                         <td>
-                            <?php if ($p['status'] === 'pendente' && $p['checkout_url']): ?>
+                            <?php if ($p['status'] === 'pendente' && $p['checkout_url'] && !$termsPending): ?>
                                 <a href="<?= View::e($p['checkout_url']) ?>" target="_blank" rel="noopener">Ver cobrança</a>
                             <?php endif; ?>
                         </td>
                     </tr>
-                    <?php if ($p['status'] === 'pendente' && $p['method'] === 'PIX' && $p['pix_payload']): ?>
+                    <?php if ($p['status'] === 'pendente' && $termsPending): ?>
+                        <tr><td colspan="5">
+                            <small class="hint-text" style="color:#b3790f;">⏳ Aguardando o cliente aceitar os Termos de Compra no painel dele — o link de pagamento só libera depois disso.</small>
+                        </td></tr>
+                    <?php elseif ($p['status'] === 'pendente' && $p['method'] === 'PIX' && $p['pix_payload']): ?>
                         <tr><td colspan="5">
                             <small class="hint-text">Pix copia-e-cola:</small>
                             <input type="text" readonly value="<?= View::e($p['pix_payload']) ?>" style="width:100%;font-size:.75rem;padding:6px 8px;border-radius:6px;border:1px solid var(--border);margin-top:4px;">

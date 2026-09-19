@@ -88,6 +88,7 @@ $router->get('/painel', [App\Controllers\DashboardController::class, 'index']);
 $router->post('/painel/resumo-semanal', [App\Controllers\DashboardController::class, 'toggleWeeklyDigest']);
 $router->get('/painel/meus-pedidos/{id}', [App\Controllers\ClientPortalController::class, 'showOrder']);
 $router->post('/painel/meus-pedidos/{id}/documentos', [App\Controllers\ClientPortalController::class, 'uploadOrderDocuments']);
+$router->post('/painel/meus-pedidos/{id}/aceitar-termos', [App\Controllers\ClientPortalController::class, 'acceptTerms']);
 
 $router->get('/painel/meus-dados', [App\Controllers\ClientProfileController::class, 'edit']);
 $router->post('/painel/meus-dados', [App\Controllers\ClientProfileController::class, 'update']);
@@ -216,6 +217,7 @@ $router->get('/painel/email/{uid}/anexo/{partNum}', [App\Controllers\EmailInboxC
 
 $router->get('/painel/configuracoes/empresa', [App\Controllers\CompanySettingsController::class, 'index']);
 $router->post('/painel/configuracoes/empresa', [App\Controllers\CompanySettingsController::class, 'update']);
+$router->post('/painel/configuracoes/empresa/termos', [App\Controllers\CompanySettingsController::class, 'updateTerms']);
 
 $router->get('/painel/configuracoes/tutoriais', [App\Controllers\TutorialController::class, 'manage']);
 $router->post('/painel/configuracoes/tutoriais', [App\Controllers\TutorialController::class, 'store']);
