@@ -56,6 +56,45 @@ class PublicOrderController
         ], null);
     }
 
+    /** Fase 66: deixa o comprador trocar de ideia sobre a forma de pagamento -- sem isso, uma
+     *  cobranca gerada uma vez (pelo staff ou por ele mesmo) travava a pagina pra sempre nesse
+     *  metodo, mesmo que ele preferisse outro (achado testando o Pedido #43, que ja tinha um Pix
+     *  gerado antes dessa pagina existir). Cancela a cobranca PENDENTE na Asaas (best-effort -- se
+     *  ja tiver expirado/sumido do lado deles, seguimos e marcamos cancelada aqui do mesmo jeito)
+     *  e volta pra tela de escolha. Nunca mexe numa cobranca ja PAGA. */
+    public function cancelPayment(string $token): void
+    {
+        $order = Order::findByToken($token);
+        if (!$order) {
+            http_response_code(404);
+            exit('Pedido não encontrado.');
+        }
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            Router::redirect("/pedido/{$token}?erro_cobranca=" . urlencode('Sessão expirada, tente de novo.'));
+        }
+
+        $pending = null;
+        foreach (Payment::forPayable('order', (int) $order['id']) as $p) {
+            if ($p['status'] === 'pendente') {
+                $pending = $p;
+                break;
+            }
+        }
+
+        if ($pending) {
+            try {
+                (new AsaasClient())->cancel($pending['asaas_charge_id']);
+            } catch (\Throwable $e) {
+                // Best-effort -- segue e marca cancelada do nosso lado de qualquer forma, nao
+                // trava o cliente por causa de uma cobranca que a Asaas ja tratou sozinha.
+            }
+            Payment::markCancelled((int) $pending['id']);
+        }
+
+        Router::redirect("/pedido/{$token}?cobranca_cancelada=1");
+    }
+
     public function acceptTerms(string $token): void
     {
         $order = Order::findByToken($token);

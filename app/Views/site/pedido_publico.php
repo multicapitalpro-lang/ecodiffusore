@@ -16,7 +16,11 @@ $statusLabels = ['em_andamento' => 'Em andamento', 'atendido' => 'Atendido', 've
 $methodLabels = ['PIX' => 'Pix', 'BOLETO' => 'Boleto', 'CREDIT_CARD' => 'Cartão'];
 
 $termsAccepted = !empty($order['terms_accepted_at']);
-$hasPayment = (bool) $payments;
+// Fase 66: cobranca CANCELADA (comprador trocou de forma de pagamento) nao conta como "ja tem
+// pagamento" -- senao a pagina ficava travada mostrando um Pix morto pra sempre. So' pendente/pago
+// contam de verdade.
+$activePayments = array_values(array_filter($payments, fn ($p) => in_array($p['status'], ['pendente', 'pago'], true)));
+$hasPayment = (bool) $activePayments;
 $isPaid = $order['status'] === 'verificado';
 
 $basePrice = (float) $order['total_value'];
@@ -112,6 +116,9 @@ footer{text-align:center;color:var(--muted);font-size:.78rem;padding:20px 16px 0
     <?php endif; ?>
     <?php if (isset($_GET['cobranca_ok'])): ?>
         <p class="msg msg-ok">Cobrança gerada! Confira abaixo como pagar.</p>
+    <?php endif; ?>
+    <?php if (isset($_GET['cobranca_cancelada'])): ?>
+        <p class="msg msg-ok">Cobrança anterior cancelada — escolha outra forma de pagamento abaixo.</p>
     <?php endif; ?>
     <?php if (!empty($_GET['erro_cobranca'])): ?>
         <p class="msg msg-erro">Não foi possível gerar a cobrança: <?= View::e($_GET['erro_cobranca']) ?></p>
@@ -211,7 +218,7 @@ footer{text-align:center;color:var(--muted);font-size:.78rem;padding:20px 16px 0
         <?php else: ?>
             <div class="card">
                 <h2>Pagamento</h2>
-                <?php foreach ($payments as $p): ?>
+                <?php foreach ($activePayments as $p): ?>
                     <p style="margin:6px 0;"><?= View::e($methodLabels[$p['method']] ?? $p['method']) ?> — R$ <?= number_format((float) $p['amount'], 2, ',', '.') ?>
                         <?php if ($p['status'] === 'pendente'): ?>
                             <span class="badge badge-novo">Pendente</span>
@@ -227,6 +234,10 @@ footer{text-align:center;color:var(--muted);font-size:.78rem;padding:20px 16px 0
                             <label for="pix-<?= (int) $p['id'] ?>" style="margin-top:10px;">Pix copia-e-cola</label>
                             <input type="text" id="pix-<?= (int) $p['id'] ?>" class="pix-code" readonly value="<?= View::e($p['pix_payload']) ?>" onclick="this.select()">
                         <?php endif; ?>
+                        <form action="/pedido/<?= View::e($token) ?>/cancelar-cobranca" method="post" style="margin-top:12px;">
+                            <?= Csrf::field() ?>
+                            <button type="submit" class="btn btn-outline">Prefiro pagar de outro jeito</button>
+                        </form>
                     <?php endif; ?>
                 <?php endforeach; ?>
             </div>
