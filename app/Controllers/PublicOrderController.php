@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Core\AsaasClient;
 use App\Core\CardPricing;
 use App\Core\Csrf;
+use App\Core\EconomyCalculator;
 use App\Core\FileUpload;
 use App\Core\Notifier;
 use App\Core\Router;
@@ -45,12 +46,31 @@ class PublicOrderController
             Lead::advanceCheckoutStage($leadId, 'checkout_acessado');
         }
 
+        // Fase 72: economia minima garantida (5%, mesmo piso usado no resto do sistema) pra
+        // comparar com a parcela do cartao -- pedido explicito do usuario, "que o cliente
+        // consiga entender claramente que o valor que ele paga por mes possivelmente ele vai
+        // economizar muito mais de diesel". So' calcula se o Lead de origem tem os 3 dados
+        // (km/mes, km/litro, preco do diesel) -- Pedido criado sem passar por Proposta Facil/
+        // orcamento por placa nao tem essa informacao, entao a comparacao simplesmente nao aparece.
+        $vehicleInfo = Order::vehicleInfoFor((int) $order['id']);
+        $monthlyEconomy = null;
+        if (!empty($vehicleInfo['km_mensal']) && !empty($vehicleInfo['km_litro']) && !empty($vehicleInfo['preco_diesel'])) {
+            $economy = EconomyCalculator::estimate(
+                (float) $vehicleInfo['km_mensal'],
+                (float) $vehicleInfo['km_litro'],
+                (float) $vehicleInfo['preco_diesel'],
+                (float) $order['total_value']
+            );
+            $monthlyEconomy = $economy['tiers']['min']['monthly'];
+        }
+
         View::render('site/pedido_publico', [
             'order' => $order,
             'items' => OrderItem::forOrder((int) $order['id']),
             'payments' => Payment::forPayable('order', (int) $order['id']),
             'termsText' => CompanySettings::current()['terms_text'] ?? '',
             'maxInstallments' => CardPricing::maxInstallments(),
+            'monthlyEconomy' => $monthlyEconomy,
         ], null);
     }
 
@@ -282,6 +302,15 @@ class PublicOrderController
         $leadId = Order::leadIdFor($id);
         if ($leadId) {
             Lead::advanceCheckoutStage($leadId, 'pagamento_gerado');
+        }
+
+        // Fase 72: Cartao vai DIRETO pro invoiceUrl da Asaas, sem passar pela nossa tela de
+        // "cobranca gerada" primeiro -- pedido explicito do usuario ("nao deveria nem ser o print
+        // 2 e nem o 3... deveria aparecer tudo na mesma tela", ou seja, o mais perto disso que da
+        // pra chegar sem colocar dado de cartao no nosso servidor e' tirar o passo intermediario
+        // nosso do meio). Pix/Boleto continuam voltando pra nossa pagina, onde ja ficam completos.
+        if ($billingType === 'CREDIT_CARD' && $checkoutUrl) {
+            Router::redirect($checkoutUrl);
         }
 
         Router::redirect("/pedido/{$token}?cobranca_ok=1");

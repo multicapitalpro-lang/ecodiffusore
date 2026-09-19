@@ -9,7 +9,7 @@ use App\Models\Order;
 /** @var array $payments */
 /** @var string $termsText */
 /** @var int $maxInstallments */
-/** @var array $feeSettings */
+/** @var float|null $monthlyEconomy */
 
 $token = $order['public_token'];
 $statusLabels = ['em_andamento' => 'Em andamento', 'atendido' => 'Atendido', 'verificado' => 'Pago', 'cancelado' => 'Cancelado'];
@@ -77,6 +77,10 @@ footer{text-align:center;color:var(--muted);font-size:.78rem;padding:20px 16px 0
 .trust-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 16px}
 .trust-item{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px;font-size:.76rem;text-align:center;color:var(--muted)}
 .trust-item strong{display:block;font-size:1.3rem;margin-bottom:2px}
+.economy-box{background:#edf7e9;border:1px solid #cfe8c8;border-radius:10px;padding:12px;margin-top:10px}
+.economy-box .row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #dcefd5;font-size:.85rem}
+.economy-box .row:last-child{border-bottom:none}
+.economy-box .row strong{color:var(--green-dark)}
 .overlay{display:none;position:fixed;inset:0;background:rgba(13,47,85,.72);z-index:999;align-items:flex-end;justify-content:center;padding:0}
 .overlay-box{background:#fff;border-radius:18px 18px 0 0;padding:22px 20px 26px;max-width:560px;width:100%;text-align:center}
 .overlay-box .emoji{font-size:2.2rem}
@@ -191,6 +195,19 @@ footer{text-align:center;color:var(--muted);font-size:.78rem;padding:20px 16px 0
                                 <option value="<?= $row['n'] ?>"><?= $row['n'] ?>x de R$ <?= number_format($row['parcela'], 2, ',', '.') ?><?= $row['n'] === 1 ? ' (à vista)' : ' — total R$ ' . number_format($row['total'], 2, ',', '.') ?></option>
                             <?php endforeach; ?>
                         </select>
+                        <?php if ($monthlyEconomy !== null && $monthlyEconomy > 0): ?>
+                            <div class="economy-box">
+                                <strong>💰 O produto pagando ele mesmo</strong>
+                                <p class="hint" style="margin:4px 0 8px;">Com a economia mínima garantida de 5% no diesel (R$ <?= number_format($monthlyEconomy, 2, ',', '.') ?>/mês, pelos dados do seu pedido), veja quanto sobra depois de pagar cada parcela:</p>
+                                <?php foreach ($installmentsTable as $row): $diff = $monthlyEconomy - $row['parcela']; ?>
+                                    <div class="row">
+                                        <span><?= $row['n'] ?>x — parcela R$ <?= number_format($row['parcela'], 2, ',', '.') ?></span>
+                                        <strong style="color:<?= $diff >= 0 ? '#1f7a33' : '#c53030' ?>;"><?= $diff >= 0 ? 'sobra R$ ' . number_format($diff, 2, ',', '.') : 'falta R$ ' . number_format(abs($diff), 2, ',', '.') ?>/mês</strong>
+                                    </div>
+                                <?php endforeach; ?>
+                                <p class="hint" style="margin:8px 0 0;">"Sobra" já é economia real no seu bolso todo mês, além de pagar a parcela — e isso é só com o mínimo garantido; a economia média costuma ser bem maior.</p>
+                            </div>
+                        <?php endif; ?>
                     </div>
                     <button type="submit" class="btn btn-primary">Gerar cobrança</button>
                 </form>
