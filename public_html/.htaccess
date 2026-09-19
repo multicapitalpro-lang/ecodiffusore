@@ -1,5 +1,10 @@
 RewriteEngine On
 
+# Fase 76: alguns setups de hospedagem (CGI/FastCGI) nao repassam o header Authorization pro PHP
+# por padrao -- sem isso, App\Core\ApiAuth nao consegue ler o Bearer token da API.
+RewriteCond %{HTTP:Authorization} ^(.*)
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
 # Se o arquivo ou pasta existir de verdade (assets), serve direto
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d

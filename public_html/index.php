@@ -74,6 +74,13 @@ $router->get('/painel/cotacoes-maquina/{id}', [App\Controllers\MachineQuoteContr
 $router->post('/painel/cotacoes-maquina/{id}/responder', [App\Controllers\MachineQuoteController::class, 'respond']);
 $router->get('/painel/cotacoes-maquina/{id}/foto/{tipo}', [App\Controllers\MachineQuoteController::class, 'downloadPhoto']);
 
+// Fase 76: API por token pro futuro app mobile (React Native) -- paralela ao painel web,
+// nao substitui nenhuma rota existente. Ver App\Core\ApiAuth.
+$router->post('/api/v1/login', [App\Controllers\Api\AuthController::class, 'login']);
+$router->post('/api/v1/logout', [App\Controllers\Api\AuthController::class, 'logout']);
+$router->get('/api/v1/me', [App\Controllers\Api\AuthController::class, 'me']);
+$router->get('/api/v1/dashboard', [App\Controllers\Api\DashboardController::class, 'summary']);
+
 // Autenticação
 $router->get('/painel/login', [App\Controllers\AuthController::class, 'showLogin']);
 $router->post('/painel/login', [App\Controllers\AuthController::class, 'login']);
