@@ -48,7 +48,7 @@ $onboardingLabels = [
 </div>
 
 <form method="get" class="filter-bar">
-    <input type="text" id="licenciado-search" placeholder="Buscar por nome ou e-mail...">
+    <input type="text" id="licenciado-search" placeholder="Buscar por código, nome ou e-mail...">
     <select name="status">
         <option value="">Onboarding (todos)</option>
         <?php foreach ($onboardingLabels as $key => [$label, ]): ?>
@@ -76,6 +76,7 @@ $onboardingLabels = [
             <thead>
                 <tr>
                     <th><input type="checkbox" id="select-all-licenciados"></th>
+                    <th>Código</th>
                     <th>Licenciado</th>
                     <th>E-mail</th>
                     <th>Cidade/UF</th>
@@ -96,8 +97,9 @@ $onboardingLabels = [
                     $semSupervisor = empty($l['supervisor_id']);
                     $whatsapp = preg_replace('/\D/', '', (string) ($l['whatsapp'] ?? ''));
                     ?>
-                    <tr class="<?= $semSupervisor ? 'row-attention' : '' ?>" data-search="<?= View::e(mb_strtolower($l['name'] . ' ' . $l['email'])) ?>">
+                    <tr class="<?= $semSupervisor ? 'row-attention' : '' ?>" data-search="<?= View::e(mb_strtolower(($l['licenciado_code'] ?? '') . ' ' . $l['name'] . ' ' . $l['email'])) ?>">
                         <td><input type="checkbox" name="licenciado_ids[]" value="<?= (int) $l['id'] ?>" class="row-select-licenciado"></td>
+                        <td><strong><?= View::e($l['licenciado_code'] ?? '—') ?></strong></td>
                         <td>
                             <?= View::e($l['name']) ?>
                             <?php if ($whatsapp !== ''): ?>
@@ -144,7 +146,7 @@ $onboardingLabels = [
                     </tr>
                 <?php endforeach; ?>
                 <?php if (!$licenciados): ?>
-                    <tr><td colspan="9">Nenhum licenciado encontrado com esses filtros.</td></tr>
+                    <tr><td colspan="10">Nenhum licenciado encontrado com esses filtros.</td></tr>
                 <?php endif; ?>
             </tbody>
         </table>

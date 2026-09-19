@@ -192,6 +192,10 @@ class UserController
         }
 
         if ($createdRoleSlug === 'licenciado') {
+            // Fase 67: codigo proprio (LIC-0001...) pra Gerente/Admin acharem esse licenciado
+            // rapido em /painel/licenciados.
+            User::assignLicenciadoCode($newUserId);
+
             // Supervisor cadastrando o proprio Licenciado ja assume a supervisao na hora -- evita
             // um passo manual redundante. Admin/Gerente podem escolher o supervisor direto no
             // formulario agora, em vez de precisar ir na tela /painel/licenciados depois.
@@ -330,6 +334,12 @@ class UserController
 
         if (in_array($editedRoleSlug, ['gestor', 'vendedor'], true)) {
             ScreenPermissions::setFor($id, $_POST['screens'] ?? []);
+        }
+
+        // Fase 67: papel virou Licenciado agora (era outra coisa antes) e ainda nao tem codigo --
+        // cobre a troca de papel, ja que store() so cobre o cadastro direto como Licenciado.
+        if ($editedRoleSlug === 'licenciado' && empty($before['licenciado_code'])) {
+            User::assignLicenciadoCode($id);
         }
 
         $this->logIfChanged($before, 'commission_pct', $commissionPct, $id);

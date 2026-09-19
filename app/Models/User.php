@@ -362,6 +362,24 @@ class User
         return (int) Database::connection()->lastInsertId();
     }
 
+    /** Fase 67: codigo curto proprio por Licenciado (LIC-0001, LIC-0002...) -- pedido explicito do
+     *  usuario, pra Gerente/Admin acharem rapido em /painel/licenciados sem depender do id interno
+     *  cru (que mistura numeracao com todos os outros papeis). MAX(...)+1 em vez de COUNT(...)+1
+     *  pra nunca reaproveitar um numero, mesmo se um licenciado antigo for desativado/removido. */
+    public static function assignLicenciadoCode(int $userId): string
+    {
+        $db = Database::connection();
+        $max = (int) $db->query(
+            "SELECT COALESCE(MAX(CAST(SUBSTRING(licenciado_code, 5) AS UNSIGNED)), 0) FROM users WHERE licenciado_code IS NOT NULL"
+        )->fetchColumn();
+        $code = 'LIC-' . str_pad((string) ($max + 1), 4, '0', STR_PAD_LEFT);
+
+        $stmt = $db->prepare('UPDATE users SET licenciado_code = :code WHERE id = :id');
+        $stmt->execute(['code' => $code, 'id' => $userId]);
+
+        return $code;
+    }
+
     public static function setVerificationCode(int $id, string $code): void
     {
         $stmt = Database::connection()->prepare(
