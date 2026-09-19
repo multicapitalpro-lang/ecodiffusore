@@ -217,6 +217,29 @@ class Order
         return $order ?: null;
     }
 
+    /** Fase 63: acesso PUBLICO (sem login) ao pedido, via o token gerado em create() -- usado pela
+     *  pagina que o vendedor manda direto pro comprador. Mesmo SELECT de find(), so troca o WHERE
+     *  (nunca por id cru, que seria previsivel/enumeravel). */
+    public static function findByToken(string $token): ?array
+    {
+        if ($token === '') {
+            return null;
+        }
+        $stmt = Database::connection()->prepare(
+            'SELECT o.*, c.name AS client_name, c.whatsapp AS client_whatsapp, c.document AS client_document,
+                    c.city AS client_city, c.state AS client_state,
+                    u.name AS seller_name, inf.name AS influencer_name
+             FROM orders o
+             JOIN clients c ON c.id = o.client_id
+             LEFT JOIN users u ON u.id = o.seller_id
+             LEFT JOIN users inf ON inf.id = o.influencer_id
+             WHERE o.public_token = :token'
+        );
+        $stmt->execute(['token' => $token]);
+        $order = $stmt->fetch();
+        return $order ?: null;
+    }
+
     public static function create(array $data, array $items): int
     {
         $db = Database::connection();
@@ -224,8 +247,8 @@ class Order
 
         try {
             $stmt = $db->prepare(
-                'INSERT INTO orders (client_id, seller_id, influencer_id, status, order_date, total_value, notes, vehicle_type, vehicle_plate, vehicle_document_path, cnh_document_path)
-                 VALUES (:client_id, :seller_id, :influencer_id, :status, :order_date, 0, :notes, :vehicle_type, :vehicle_plate, :vehicle_document_path, :cnh_document_path)'
+                'INSERT INTO orders (client_id, seller_id, influencer_id, status, order_date, total_value, notes, vehicle_type, vehicle_plate, vehicle_document_path, cnh_document_path, public_token)
+                 VALUES (:client_id, :seller_id, :influencer_id, :status, :order_date, 0, :notes, :vehicle_type, :vehicle_plate, :vehicle_document_path, :cnh_document_path, :public_token)'
             );
             $stmt->execute([
                 'client_id' => $data['client_id'],
@@ -238,6 +261,10 @@ class Order
                 'vehicle_plate' => !empty($data['vehicle_plate']) ? $data['vehicle_plate'] : null,
                 'vehicle_document_path' => $data['vehicle_document_path'] ?? null,
                 'cnh_document_path' => $data['cnh_document_path'] ?? null,
+                // Fase 63: link publico do pedido -- gerado sempre, na criacao, pra nunca existir
+                // pedido "sem link pra mandar" (bin2hex(20) = 40 hex chars, imprevisivel o
+                // suficiente pra nao precisar de outra camada de autenticacao nessa pagina).
+                'public_token' => bin2hex(random_bytes(20)),
             ]);
             $orderId = (int) $db->lastInsertId();
 

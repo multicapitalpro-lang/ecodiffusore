@@ -62,6 +62,12 @@ $router->get('/comprar/orcamento/pdf', [App\Controllers\PublicController::class,
 $router->post('/comprar/orcamento-maquina', [App\Controllers\PublicController::class, 'submitMachineQuote']);
 $router->get('/comprar/cotacao-maquina/recebida', [App\Controllers\PublicController::class, 'showMachineQuoteReceived']);
 
+// Fase 63: link publico do Pedido (sem login) -- vendedor manda direto pro comprador.
+$router->get('/pedido/{token}', [App\Controllers\PublicOrderController::class, 'show']);
+$router->post('/pedido/{token}/aceitar-termos', [App\Controllers\PublicOrderController::class, 'acceptTerms']);
+$router->post('/pedido/{token}/documentos', [App\Controllers\PublicOrderController::class, 'uploadDocuments']);
+$router->post('/pedido/{token}/cobranca', [App\Controllers\PublicOrderController::class, 'generateCharge']);
+
 $router->get('/painel/cotacoes-maquina', [App\Controllers\MachineQuoteController::class, 'index']);
 $router->get('/painel/cotacoes-maquina/{id}', [App\Controllers\MachineQuoteController::class, 'show']);
 $router->post('/painel/cotacoes-maquina/{id}/responder', [App\Controllers\MachineQuoteController::class, 'respond']);

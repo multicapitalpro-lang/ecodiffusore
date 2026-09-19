@@ -39,6 +39,28 @@ $situation = $order['payment_situation'] ?? ['label' => '—', 'badge' => 'novo'
     <p class="form-msg form-msg-erro">Anexe a CNH e o documento do veículo, ou peça pro cliente enviar no painel dele — a fábrica precisa do documento do veículo pra montar o pedido certo.</p>
 <?php endif; ?>
 
+<?php if (!empty($order['public_token'])): ?>
+    <?php $publicLink = 'https://ecodiffusorebrasil.com.br/pedido/' . $order['public_token']; ?>
+    <div class="dash-card" style="max-width:640px;margin-bottom:16px;">
+        <span>Link do pedido pro cliente</span>
+        <p class="hint-text" style="margin:6px 0 12px;">Mande esse link direto pro comprador, sem precisar de login: ele ve o resumo, aceita os Termos de Compra, escolhe a forma de pagamento e paga. Depois de pago, e' onde ele envia CNH/documento do veiculo/fotos/telemetria.</p>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+            <input type="text" id="order-public-link" readonly value="<?= View::e($publicLink) ?>" style="flex:1; min-width:220px; font-size:.82rem; padding:8px 10px; border-radius:6px; border:1px solid var(--border);">
+            <button type="button" class="btn btn-outline btn-sm" id="order-public-link-copy">Copiar link</button>
+            <a href="https://wa.me/?text=<?= rawurlencode('Ola, ' . $order['client_name'] . '! Segue o link do seu pedido Ecodiffusore pra confirmar e pagar: ' . $publicLink) ?>" target="_blank" rel="noopener" class="btn btn-primary btn-sm">Enviar por WhatsApp</a>
+        </div>
+    </div>
+    <script>
+    document.getElementById('order-public-link-copy')?.addEventListener('click', function () {
+        var input = document.getElementById('order-public-link');
+        input.select();
+        navigator.clipboard?.writeText(input.value);
+        this.textContent = 'Copiado!';
+        setTimeout(() => { this.textContent = 'Copiar link'; }, 2000);
+    });
+    </script>
+<?php endif; ?>
+
 <div class="order-summary">
     <p><strong>Cliente:</strong> <?= View::e($order['client_name']) ?></p>
     <?php if (!empty($order['client_whatsapp'])): ?>
