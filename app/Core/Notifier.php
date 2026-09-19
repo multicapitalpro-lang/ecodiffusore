@@ -3,6 +3,7 @@
 namespace App\Core;
 
 use App\Models\Client;
+use App\Models\DeviceToken;
 use App\Models\EmailEventTemplate;
 use App\Models\EmailTemplateSettings;
 use App\Models\Order;
@@ -429,10 +430,12 @@ class Notifier
             }
         }
 
-        foreach ($recipients as $r) {
+        $pushData = ['type' => 'approval', 'approvable_type' => $approval['approvable_type'], 'approvable_id' => (int) $approval['approvable_id']];
+        foreach ($recipients as $id => $r) {
             if (!empty($r['whatsapp'])) {
                 self::sendWhatsApp($r['whatsapp'], $text);
             }
+            self::sendPush((int) $id, 'Desconto pendente de aprovação', "{$seller['name']} pediu {$vars['preco_solicitado']} pro cliente {$vars['cliente']}.", $pushData);
         }
     }
 
@@ -472,11 +475,13 @@ class Notifier
             return;
         }
 
+        $pushData = ['type' => 'approval', 'approvable_type' => $approval['approvable_type'], 'approvable_id' => (int) $approval['approvable_id']];
         foreach (['gerente', 'supervisor', 'admin'] as $role) {
             foreach (User::allByRole($role) as $p) {
                 if (!empty($p['whatsapp'])) {
                     self::sendWhatsApp($p['whatsapp'], $text);
                 }
+                self::sendPush((int) $p['id'], 'Desconto pendente de aprovação final', "{$seller['name']} pediu {$vars['preco_solicitado']} pro cliente {$vars['cliente']}.", $pushData);
             }
         }
     }
@@ -513,6 +518,12 @@ class Notifier
         if ($text) {
             self::sendWhatsApp($seller['whatsapp'], $text);
         }
+        self::sendPush(
+            (int) $seller['id'],
+            'Sua solicitação de desconto foi decidida',
+            "Cliente {$vars['cliente']}: {$status}.",
+            ['type' => 'approval', 'approvable_type' => $approval['approvable_type'], 'approvable_id' => (int) $approval['approvable_id']]
+        );
     }
 
     /** Fase 60: avisa Vendedor + Licenciado quando o CLIENTE termina de enviar CNH + documento do
@@ -1036,6 +1047,22 @@ class Notifier
             if (str_starts_with($e->getMessage(), 'Erro de conexão com o Evolution API')) {
                 self::$whatsappUnavailable = true;
             }
+        }
+    }
+
+    /** Fase 77: push notification (Expo Push Service) -- canal novo, pensado pra ir substituindo
+     *  o WhatsApp aos poucos. So dispara pra quem ja tem o app instalado e logado (registrou
+     *  token em /api/v1/device-token); sem token, simplesmente nao manda nada -- nunca falha o
+     *  fluxo que chamou. */
+    private static function sendPush(int $userId, string $title, string $body, array $data = []): void
+    {
+        try {
+            $tokens = DeviceToken::tokensForUser($userId);
+            if ($tokens) {
+                PushClient::send($tokens, $title, $body, $data);
+            }
+        } catch (\Throwable $e) {
+            error_log('Push dispatch falhou: ' . $e->getMessage());
         }
     }
 
