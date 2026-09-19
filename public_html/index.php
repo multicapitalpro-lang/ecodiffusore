@@ -89,6 +89,9 @@ $router->get('/api/v1/comissoes', [App\Controllers\Api\CommissionController::cla
 $router->post('/api/v1/comissoes/{id}/pagar', [App\Controllers\Api\CommissionController::class, 'markPaid']);
 $router->get('/api/v1/clientes', [App\Controllers\Api\ClientController::class, 'index']);
 $router->get('/api/v1/clientes/{id}', [App\Controllers\Api\ClientController::class, 'show']);
+$router->get('/api/v1/orcamentos', [App\Controllers\Api\QuoteController::class, 'index']);
+$router->get('/api/v1/orcamentos/{id}', [App\Controllers\Api\QuoteController::class, 'show']);
+$router->get('/api/v1/materiais', [App\Controllers\Api\MaterialController::class, 'index']);
 
 // Autenticação
 $router->get('/painel/login', [App\Controllers\AuthController::class, 'showLogin']);
