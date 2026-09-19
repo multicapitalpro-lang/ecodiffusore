@@ -209,10 +209,23 @@ class PaymentController
             'installment_count' => $installments > 1 ? $installments : null,
         ]);
 
+        // Fase 70: Pix e Boleto ficam inteiros na tela de pagamento (cliente ou staff), sem passar
+        // pela pagina hospedada da Asaas -- so' Cartao precisa mesmo do invoiceUrl. $pixPayload
+        // reaproveitado tambem pra linha digitavel do boleto.
         $pixPayload = null;
+        $checkoutUrl = $charge['invoiceUrl'] ?? null;
+
         if ($billingType === 'PIX') {
             $pix = $asaas->getPixQrCode($charge['id']);
             $pixPayload = $pix['payload'] ?? null;
+        } elseif ($billingType === 'BOLETO') {
+            try {
+                $boleto = $asaas->getBoletoIdentificationField($charge['id']);
+                $pixPayload = $boleto['identificationField'] ?? null;
+            } catch (\Throwable $e) {
+                // Best-effort -- sem a linha digitavel agora, ainda sobra o link do boleto.
+            }
+            $checkoutUrl = $charge['bankSlipUrl'] ?? $checkoutUrl;
         }
 
         Payment::create([
@@ -222,7 +235,7 @@ class PaymentController
             'asaas_charge_id' => $charge['id'],
             'method' => $billingType,
             'amount' => $chargeAmount,
-            'checkout_url' => $charge['invoiceUrl'] ?? null,
+            'checkout_url' => $checkoutUrl,
             'pix_payload' => $pixPayload,
             'due_date' => $dueDate,
         ]);

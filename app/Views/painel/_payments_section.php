@@ -60,6 +60,11 @@ if ($basePrice > 0) {
                             <small class="hint-text">Pix copia-e-cola:</small>
                             <input type="text" readonly value="<?= View::e($p['pix_payload']) ?>" style="width:100%;font-size:.75rem;padding:6px 8px;border-radius:6px;border:1px solid var(--border);margin-top:4px;">
                         </td></tr>
+                    <?php elseif ($p['status'] === 'pendente' && $p['method'] === 'BOLETO' && $p['pix_payload']): ?>
+                        <tr><td colspan="5">
+                            <small class="hint-text">Linha digitável do boleto:</small>
+                            <input type="text" readonly value="<?= View::e($p['pix_payload']) ?>" style="width:100%;font-size:.75rem;padding:6px 8px;border-radius:6px;border:1px solid var(--border);margin-top:4px;">
+                        </td></tr>
                     <?php endif; ?>
                 <?php endforeach; ?>
             </tbody>

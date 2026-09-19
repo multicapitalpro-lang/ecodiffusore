@@ -207,12 +207,22 @@ footer{text-align:center;color:var(--muted);font-size:.78rem;padding:20px 16px 0
                         <?php endif; ?>
                     </p>
                     <?php if ($p['status'] === 'pendente'): ?>
-                        <?php if ($p['checkout_url']): ?>
-                            <a href="<?= View::e($p['checkout_url']) ?>" target="_blank" rel="noopener" class="btn btn-primary">Pagar agora</a>
-                        <?php endif; ?>
                         <?php if ($p['method'] === 'PIX' && $p['pix_payload']): ?>
-                            <label for="pix-<?= (int) $p['id'] ?>" style="margin-top:10px;">Pix copia-e-cola</label>
+                            <label for="pix-<?= (int) $p['id'] ?>">Pix copia-e-cola</label>
                             <input type="text" id="pix-<?= (int) $p['id'] ?>" class="pix-code" readonly value="<?= View::e($p['pix_payload']) ?>" onclick="this.select()">
+                            <p class="hint" style="margin-top:6px;">Abra o app do seu banco, escolha pagar com Pix Copia e Cola, e cole o código acima.</p>
+                        <?php elseif ($p['method'] === 'BOLETO'): ?>
+                            <?php if ($p['pix_payload']): ?>
+                                <label for="boleto-<?= (int) $p['id'] ?>">Linha digitável do boleto</label>
+                                <input type="text" id="boleto-<?= (int) $p['id'] ?>" class="pix-code" readonly value="<?= View::e($p['pix_payload']) ?>" onclick="this.select()">
+                            <?php endif; ?>
+                            <?php if ($p['checkout_url']): ?>
+                                <a href="<?= View::e($p['checkout_url']) ?>" target="_blank" rel="noopener" class="btn btn-primary" style="margin-top:10px;">📄 Baixar boleto (PDF)</a>
+                            <?php endif; ?>
+                        <?php elseif ($p['method'] === 'CREDIT_CARD' && $p['checkout_url']): ?>
+                            <p class="hint">O número do cartão é digitado numa página segura da Asaas (nunca no nosso site) — redirecionando você agora...</p>
+                            <a href="<?= View::e($p['checkout_url']) ?>" class="btn btn-primary" id="card-redirect-link">Continuar pro pagamento seguro</a>
+                            <script>window.location.href = <?= json_encode($p['checkout_url']) ?>;</script>
                         <?php endif; ?>
                         <form action="/pedido/<?= View::e($token) ?>/cancelar-cobranca" method="post" style="margin-top:12px;">
                             <?= Csrf::field() ?>

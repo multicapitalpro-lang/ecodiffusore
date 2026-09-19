@@ -77,6 +77,14 @@ class AsaasClient
         return $this->request('GET', "/payments/{$chargeId}/pixQrCode");
     }
 
+    /** Linha digitavel + codigo de barras do boleto -- junto com bankSlipUrl (ja vem na propria
+     *  resposta de createCharge()), deixa mostrar o boleto inteiro direto na nossa pagina, sem
+     *  precisar mandar o comprador pra pagina hospedada da Asaas (mesmo espirito do Pix). */
+    public function getBoletoIdentificationField(string $chargeId): array
+    {
+        return $this->request('GET', "/payments/{$chargeId}/identificationField");
+    }
+
     public function find(string $chargeId): array
     {
         return $this->request('GET', "/payments/{$chargeId}");
