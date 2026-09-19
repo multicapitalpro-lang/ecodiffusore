@@ -83,6 +83,8 @@ $router->get('/api/v1/dashboard', [App\Controllers\Api\DashboardController::clas
 $router->get('/api/v1/leads', [App\Controllers\Api\LeadController::class, 'index']);
 $router->get('/api/v1/aprovacoes', [App\Controllers\Api\ApprovalController::class, 'index']);
 $router->post('/api/v1/aprovacoes/{id}/decidir', [App\Controllers\Api\ApprovalController::class, 'decide']);
+$router->get('/api/v1/pedidos', [App\Controllers\Api\OrderController::class, 'index']);
+$router->get('/api/v1/pedidos/{id}', [App\Controllers\Api\OrderController::class, 'show']);
 
 // Autenticação
 $router->get('/painel/login', [App\Controllers\AuthController::class, 'showLogin']);
