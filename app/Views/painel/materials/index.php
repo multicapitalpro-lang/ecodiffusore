@@ -57,6 +57,26 @@ $erro = isset($_GET['erro']);
     <?php endforeach; ?>
 </div>
 
+<h3 class="section-title" style="margin-top:32px">Materiais de apoio</h3>
+<p class="hint-text" style="margin-top:-4px">Apresentações comerciais prontas pra enviar — sem valor de produto, com link pras calculadoras já incluído.</p>
+
+<div class="cards-grid">
+    <?php foreach ($presentations as $m): ?>
+        <div class="dash-card">
+            <span><?= $m['icon'] ?> <?= View::e($m['title']) ?></span>
+            <p class="hint-text" style="margin:6px 0 12px;"><?= View::e($m['description']) ?></p>
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <a href="<?= View::e($m['file']) ?>" target="_blank" rel="noopener" class="link-small">Abrir</a>
+                <a href="<?= View::e($m['file']) ?>" download class="link-small">Baixar</a>
+                <a href="https://wa.me/?text=<?= rawurlencode('Segue a apresentação: https://ecodiffusorebrasil.com.br' . $m['file']) ?>" target="_blank" rel="noopener" class="link-small">💬 Enviar por WhatsApp</a>
+            </div>
+        </div>
+    <?php endforeach; ?>
+    <?php if (!$presentations): ?>
+        <p class="hint-text">Nenhuma apresentação disponível ainda.</p>
+    <?php endif; ?>
+</div>
+
 <h3 class="section-title" style="margin-top:32px">Calculadoras interativas</h3>
 <p class="hint-text" style="margin-top:-4px">Abre numa aba nova, sem precisar de login — pode usar direto na conversa com o cliente ou o interessado em ser licenciado.</p>
 

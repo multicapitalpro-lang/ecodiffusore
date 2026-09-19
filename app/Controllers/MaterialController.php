@@ -54,6 +54,20 @@ class MaterialController
             ],
         ];
 
+        // Fase 74: apresentacoes comerciais em PDF, sem valor de produto (so' economia/payback de
+        // exemplo) -- pedido explicito do usuario. Cada uma ganha uma pagina extra no final com
+        // link clicavel pra calculadora(s) relacionada(s), gerada a partir do material original
+        // que o usuario mandou (nao e' so' o PDF cru dele). A de Novos Licenciados entra depois,
+        // quando o usuario mandar o PDF definitivo (ainda ajustando valores).
+        $presentations = [
+            [
+                'title' => 'Apresentação para Clientes',
+                'description' => 'Sem valor de produto -- só o ecossistema Ecodiffusore e exemplos de economia/payback. Última página já linka pra Calculadora de Economia de Diesel.',
+                'file' => '/assets/docs/apresentacao-clientes.pdf',
+                'icon' => '📊',
+            ],
+        ];
+
         // Calculadoras interativas (HTML autonomo, sem PHP -- o vendedor/licenciado abre e usa na
         // hora com o cliente, sem precisar fazer login em nada, so o link).
         $calculators = [
@@ -74,6 +88,7 @@ class MaterialController
         View::render('painel/materials/index', [
             'user' => $user,
             'materials' => $materials,
+            'presentations' => $presentations,
             'calculators' => $calculators,
             'scripts' => SalesScript::all(),
             'testimonials' => Testimonial::all(),
