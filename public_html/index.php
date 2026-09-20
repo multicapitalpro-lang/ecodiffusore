@@ -97,8 +97,16 @@ $router->get('/api/v1/garantias', [App\Controllers\Api\WarrantyController::class
 $router->get('/api/v1/garantias/{id}', [App\Controllers\Api\WarrantyController::class, 'show']);
 $router->post('/api/v1/garantias/{id}/status', [App\Controllers\Api\WarrantyController::class, 'updateStatus']);
 $router->get('/api/v1/rede', [App\Controllers\Api\UserController::class, 'index']);
+$router->get('/api/v1/rede/opcoes', [App\Controllers\Api\UserController::class, 'options']);
+$router->post('/api/v1/rede', [App\Controllers\Api\UserController::class, 'store']);
+$router->get('/api/v1/rede/{id}', [App\Controllers\Api\UserController::class, 'show']);
+$router->post('/api/v1/rede/{id}', [App\Controllers\Api\UserController::class, 'update']);
 $router->post('/api/v1/device-token', [App\Controllers\Api\DeviceTokenController::class, 'register']);
 $router->get('/api/v1/desempenho/equipe', [App\Controllers\Api\PerformanceController::class, 'team']);
+$router->get('/api/v1/financeiro/contas', [App\Controllers\Api\FinanceController::class, 'accounts']);
+$router->get('/api/v1/financeiro/pagar', [App\Controllers\Api\FinanceController::class, 'payable']);
+$router->get('/api/v1/financeiro/receber', [App\Controllers\Api\FinanceController::class, 'receivable']);
+$router->post('/api/v1/financeiro/lancamentos/{id}/pagar', [App\Controllers\Api\FinanceController::class, 'markPaid']);
 
 // Autenticação
 $router->get('/painel/login', [App\Controllers\AuthController::class, 'showLogin']);
