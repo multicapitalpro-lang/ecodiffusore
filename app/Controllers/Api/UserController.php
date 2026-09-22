@@ -26,8 +26,8 @@ class UserController
         if ($user['role_slug'] === 'admin') {
             $scoped = User::all();
         } else {
-            $downline = User::downlineIds((int) $user['id']);
-            $scoped = array_values(array_filter(User::all(), fn ($u) => in_array((int) $u['id'], $downline, true)));
+            $ids = $this->scopedUserIds($user);
+            $scoped = array_values(array_filter(User::all(), fn ($u) => in_array((int) $u['id'], $ids, true)));
         }
 
         ApiResponse::json(['users' => array_map(fn ($u) => $this->publicUser($u), $scoped)]);
@@ -315,7 +315,22 @@ class UserController
 
     private function isAuthorizedTarget(array $user, int $targetId): bool
     {
-        return $user['role_slug'] === 'admin' || in_array($targetId, User::downlineIds((int) $user['id']), true);
+        return $user['role_slug'] === 'admin' || in_array($targetId, $this->scopedUserIds($user), true);
+    }
+
+    /** Mesmo criterio de App\Controllers\UserController::scopedUserIds() (Fase 79c) -- Gerente/
+     *  Supervisor seguem a rede nacional (nationalIds/supervisedIds), nao a downline por
+     *  manager_id (que so serve pra Gestor/Licenciado). Bug ja corrigido no painel web; faltava
+     *  aqui na API do app. */
+    private function scopedUserIds(array $user): array
+    {
+        if ($user['role_slug'] === 'gerente') {
+            return User::nationalIds((int) $user['id']);
+        }
+        if ($user['role_slug'] === 'supervisor') {
+            return User::supervisedIds((int) $user['id']);
+        }
+        return User::downlineIds((int) $user['id']);
     }
 
     private function createsCycle(int $userId, int $candidateManagerId): bool

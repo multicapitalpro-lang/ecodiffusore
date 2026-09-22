@@ -109,6 +109,19 @@ $router->get('/api/v1/financeiro/pagar', [App\Controllers\Api\FinanceController:
 $router->get('/api/v1/financeiro/receber', [App\Controllers\Api\FinanceController::class, 'receivable']);
 $router->post('/api/v1/financeiro/lancamentos/{id}/pagar', [App\Controllers\Api\FinanceController::class, 'markPaid']);
 
+// Fase 85: paridade do app com as fases 79-84 do painel web.
+$router->get('/api/v1/treinamento', [App\Controllers\Api\TrainingController::class, 'index']);
+$router->post('/api/v1/treinamento/progresso', [App\Controllers\Api\TrainingController::class, 'reportProgress']);
+$router->get('/api/v1/metas', [App\Controllers\Api\GoalController::class, 'index']);
+$router->get('/api/v1/cotacoes-maquina', [App\Controllers\Api\MachineQuoteController::class, 'index']);
+$router->get('/api/v1/cotacoes-maquina/{id}', [App\Controllers\Api\MachineQuoteController::class, 'show']);
+$router->post('/api/v1/cotacoes-maquina/{id}/responder', [App\Controllers\Api\MachineQuoteController::class, 'respond']);
+$router->get('/api/v1/emails-profissionais', [App\Controllers\Api\LicenciadoEmailController::class, 'index']);
+$router->post('/api/v1/emails-profissionais', [App\Controllers\Api\LicenciadoEmailController::class, 'store']);
+$router->get('/api/v1/proposta-facil/opcoes', [App\Controllers\Api\PropostaController::class, 'options']);
+$router->post('/api/v1/proposta-facil', [App\Controllers\Api\PropostaController::class, 'store']);
+$router->post('/api/v1/proposta-facil/{id}/concluir', [App\Controllers\Api\PropostaController::class, 'conclude']);
+
 // Autenticação
 $router->get('/painel/login', [App\Controllers\AuthController::class, 'showLogin']);
 $router->post('/painel/login', [App\Controllers\AuthController::class, 'login']);

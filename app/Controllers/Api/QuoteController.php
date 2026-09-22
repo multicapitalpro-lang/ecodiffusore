@@ -79,6 +79,8 @@ class QuoteController
                 'status' => $quote['status'],
                 'total_value' => (float) $quote['total_value'],
                 'client_id' => (int) $quote['client_id'],
+                'seller_id' => $quote['seller_id'] !== null ? (int) $quote['seller_id'] : null,
+                'licenciado_name' => User::licenciadoNameFor($quote['seller_id'] !== null ? (int) $quote['seller_id'] : null),
                 'payment_situation' => $situation,
             ],
             'items' => array_map(fn ($i) => [

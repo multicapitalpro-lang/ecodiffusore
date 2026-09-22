@@ -62,6 +62,7 @@ class AuthController
             'role_slug' => $user['role_slug'],
             'role_name' => $user['role_name'],
             'must_change_password' => !empty($user['must_change_password']),
+            'must_complete_training' => $user['role_slug'] === 'vendedor' && empty($user['training_completed_at']),
         ];
     }
 }

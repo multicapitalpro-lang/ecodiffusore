@@ -81,6 +81,7 @@ class OrderController
                 'total_value' => (float) $order['total_value'],
                 'client_id' => (int) $order['client_id'],
                 'seller_id' => $order['seller_id'] !== null ? (int) $order['seller_id'] : null,
+                'licenciado_name' => User::licenciadoNameFor($order['seller_id'] !== null ? (int) $order['seller_id'] : null),
                 'payment_situation' => $order['payment_situation'],
                 'public_link' => !empty($order['public_token']) ? "https://ecodiffusorebrasil.com.br/pedido/{$order['public_token']}" : null,
                 'terms_accepted_at' => $order['terms_accepted_at'] ?? null,
