@@ -9,8 +9,8 @@ class Payment
     public static function create(array $data): int
     {
         $stmt = Database::connection()->prepare(
-            'INSERT INTO payments (payable_type, payable_id, asaas_customer_id, asaas_charge_id, method, amount, status, checkout_url, pix_payload, due_date)
-             VALUES (:payable_type, :payable_id, :asaas_customer_id, :asaas_charge_id, :method, :amount, :status, :checkout_url, :pix_payload, :due_date)'
+            'INSERT INTO payments (payable_type, payable_id, asaas_customer_id, asaas_charge_id, method, amount, status, checkout_url, pix_payload, due_date, installments)
+             VALUES (:payable_type, :payable_id, :asaas_customer_id, :asaas_charge_id, :method, :amount, :status, :checkout_url, :pix_payload, :due_date, :installments)'
         );
         $stmt->execute([
             'payable_type' => $data['payable_type'],
@@ -23,6 +23,10 @@ class Payment
             'checkout_url' => $data['checkout_url'] ?? null,
             'pix_payload' => $data['pix_payload'] ?? null,
             'due_date' => $data['due_date'],
+            // Fase 81: quantidade de parcelas escolhida pelo comprador -- pedido explicito do
+            // usuario pra aparecer no card do Kanban, antes so ia pra Asaas e nao ficava salvo
+            // aqui (Payment::create() nao tinha essa coluna).
+            'installments' => $data['installments'] ?? null,
         ]);
 
         return (int) Database::connection()->lastInsertId();

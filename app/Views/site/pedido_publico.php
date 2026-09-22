@@ -87,6 +87,14 @@ footer{text-align:center;color:var(--muted);font-size:.78rem;padding:20px 16px 0
 .overlay-box h3{margin:8px 0 6px;font-size:1.15rem}
 .overlay-box p{color:var(--muted);font-size:.9rem;margin:0 0 6px}
 @media (min-width:601px){.overlay{align-items:center}.overlay-box{border-radius:18px}}
+/* Fase 81: prova social (atividade real recente) -- toast discreto, canto inferior */
+.activity-toast{position:fixed;left:12px;bottom:12px;max-width:300px;background:#fff;border:1px solid var(--line);border-radius:12px;
+    box-shadow:0 8px 24px rgba(0,0,0,.12);padding:10px 14px;font-size:.82rem;color:var(--ink);display:flex;align-items:center;gap:10px;
+    z-index:500;transform:translateY(140%);transition:transform .35s ease;}
+.activity-toast.is-visible{transform:translateY(0)}
+.activity-toast .dot{width:8px;height:8px;border-radius:50%;background:var(--green-dark);flex-shrink:0}
+.activity-toast strong{color:var(--ink)}
+.activity-toast small{display:block;color:var(--muted);font-size:.72rem;margin-top:1px}
 </style>
 </head>
 <body>
@@ -152,7 +160,6 @@ footer{text-align:center;color:var(--muted);font-size:.78rem;padding:20px 16px 0
         <div class="trust-grid">
             <div class="trust-item"><strong>🔒</strong>Pagamento processado com segurança pela Asaas</div>
             <div class="trust-item"><strong>📜</strong>Produto com patente e marca registradas no INPI</div>
-            <div class="trust-item"><strong>🛡️</strong>Garantia de 90 dias + devolução se não atingir 5% de economia</div>
             <div class="trust-item"><strong>🇧🇷</strong>Fabricado no Brasil, sob encomenda</div>
         </div>
     <?php endif; ?>
@@ -304,6 +311,8 @@ footer{text-align:center;color:var(--muted);font-size:.78rem;padding:20px 16px 0
     <footer>ECODIFFUSORE BRASIL · Ecologia · Potência · Economia</footer>
 </div>
 
+<div class="activity-toast" id="activity-toast"></div>
+
 <?php if (!$isPaid): ?>
 <div class="overlay" id="exit-overlay">
     <div class="overlay-box">
@@ -353,6 +362,37 @@ footer{text-align:center;color:var(--muted);font-size:.78rem;padding:20px 16px 0
     document.getElementById('exit-overlay-close')?.addEventListener('click', function () {
         overlay.style.display = 'none';
     });
+})();
+
+(function () {
+    // Fase 81: prova social -- atividade REAL recente (nunca inventada, ver
+    // Order::recentActivity()). Busca 1 vez ao carregar, mostra em rodizio a cada ~9s, some
+    // sozinho depois de ~5s visivel. Sem atividade recente = sem toast (nunca inventa fake).
+    var toast = document.getElementById('activity-toast');
+    if (!toast) return;
+
+    fetch('/atividade-recente')
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            var items = (data.activity || []).filter(function (a) { return a.minutes_ago < (60 * 24 * 14); });
+            if (!items.length) return;
+
+            var i = 0;
+            function show() {
+                var a = items[i % items.length];
+                i++;
+                var verb = a.type === 'compra' ? 'acabou de comprar' : 'está finalizando a compra';
+                var when = a.minutes_ago < 1 ? 'agora mesmo' : (a.minutes_ago < 60 ? 'há ' + a.minutes_ago + ' min' : 'há ' + Math.floor(a.minutes_ago / 60) + 'h');
+                var place = a.city ? ' de ' + a.city : '';
+                toast.innerHTML = '<span class="dot"></span><span><strong>' + a.first_name + place + '</strong> ' + verb + '<small>' + when + '</small></span>';
+                toast.classList.add('is-visible');
+                setTimeout(function () { toast.classList.remove('is-visible'); }, 5000);
+            }
+
+            setTimeout(show, 4000);
+            setInterval(show, 9000);
+        })
+        .catch(function () {});
 })();
 </script>
 </body>

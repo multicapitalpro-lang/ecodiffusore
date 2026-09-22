@@ -106,7 +106,6 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/desempen
             <?php endif; ?>
 
             <?php if (in_array($role, $staffRoles, true)): ?>
-                <a href="/painel/busca" class="painel-search-navlink <?= $isActive('/painel/busca') ? 'is-active' : '' ?>"><?= $icon('search') ?> Busca</a>
                 <details class="nav-group" <?= $leadsOpen ? 'open' : '' ?>>
                     <summary><?= $icon('pin') ?> Leads</summary>
                     <div class="nav-subitems">

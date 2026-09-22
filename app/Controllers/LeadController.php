@@ -15,6 +15,7 @@ use App\Models\LeadNote;
 use App\Models\LeadRoutingSettings;
 use App\Models\LeadStage;
 use App\Models\Order;
+use App\Models\Payment;
 use App\Models\Quote;
 use App\Models\User;
 
@@ -53,6 +54,23 @@ class LeadController
         foreach ($leads as &$l) {
             if ($showLicenciadoBadge) {
                 $l['licenciado_name'] = User::licenciadoNameFor((int) ($l['assigned_to_user_id'] ?? 0));
+            }
+
+            // Fase 81: dados que o COMPRADOR preencheu no checkout -- CPF, parcelas escolhidas e
+            // o numero do pedido gerado, pra quem esta olhando o Kanban ver de cara sem abrir o
+            // pedido (pedido explicito do usuario). So busca quando o lead ja passou de "checkout
+            // acessado" pra frente -- evita uma consulta extra pra todo lead ainda em Novo/Contatado.
+            $order = null;
+            if (in_array($l['status'], ['checkout_acessado', 'termos_aceitos', 'pagamento_gerado', 'pagamento_pendente', 'convertido'], true)) {
+                $order = Order::forLead((int) $l['id']);
+            }
+            if ($order) {
+                $l['order_id'] = (int) $order['id'];
+                $l['order_status'] = $order['status'];
+                $l['order_document'] = $order['client_document'];
+                $payments = Payment::forPayable('order', (int) $order['id']);
+                $l['order_installments'] = $payments[0]['installments'] ?? null;
+                $l['order_paid'] = ($payments[0]['status'] ?? null) === 'pago';
             }
             $l['days_until_expiration'] = $l['expires_at']
                 ? (int) ceil((strtotime($l['expires_at']) - $now) / 86400)

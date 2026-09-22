@@ -98,7 +98,12 @@ $vehicleFieldLabels = [
                          data-lead-assigned="<?= View::e($lead['assigned_name'] ?? '') ?>"
                          data-lead-created="<?= View::e($lead['created_at'] ?? '') ?>"
                          data-lead-vehicle="<?= View::e(json_encode($vehicleInfo, JSON_UNESCAPED_UNICODE)) ?>"
-                         data-lead-notes="<?= View::e(json_encode($lead['notes'], JSON_UNESCAPED_UNICODE)) ?>">
+                         data-lead-notes="<?= View::e(json_encode($lead['notes'], JSON_UNESCAPED_UNICODE)) ?>"
+                         data-lead-licenciado="<?= View::e($lead['licenciado_name'] ?? '') ?>"
+                         data-lead-order-id="<?= View::e((string) ($lead['order_id'] ?? '')) ?>"
+                         data-lead-order-document="<?= View::e($lead['order_document'] ?? '') ?>"
+                         data-lead-order-installments="<?= View::e((string) ($lead['order_installments'] ?? '')) ?>"
+                         data-lead-order-paid="<?= !empty($lead['order_paid']) ? '1' : '' ?>">
                         <div class="kanban-card-top">
                             <strong><?= !empty($lead['is_urgent']) ? '🔥 ' : '' ?><?= View::e($lead['name']) ?></strong>
                             <button type="button" class="icon-button-danger" data-delete-lead="<?= (int) $lead['id'] ?>" title="Excluir lead">🗑</button>
@@ -219,6 +224,15 @@ $vehicleFieldLabels = [
             <div><span class="hint-text">Origem</span><br><span id="lead-detail-source"></span></div>
             <div><span class="hint-text">Responsável</span><br><span id="lead-detail-assigned"></span></div>
             <div><span class="hint-text">Cadastrado em</span><br><span id="lead-detail-created"></span></div>
+            <?php if ($showLicenciadoBadge): ?>
+                <div><span class="hint-text">Licenciado</span><br><span id="lead-detail-licenciado"></span></div>
+            <?php endif; ?>
+        </div>
+
+        <div class="lead-detail-grid" id="lead-detail-checkout-grid" hidden>
+            <div><span class="hint-text">Pedido gerado</span><br><span id="lead-detail-order"></span></div>
+            <div><span class="hint-text">CPF/CNPJ informado</span><br><span id="lead-detail-document"></span></div>
+            <div><span class="hint-text">Parcelas escolhidas</span><br><span id="lead-detail-installments"></span></div>
         </div>
         <div class="lead-detail-grid" id="lead-detail-vehicle-grid"></div>
         <p id="lead-detail-message-wrap"><strong>Mensagem:</strong> <span id="lead-detail-message" class="hint-text"></span></p>
@@ -325,6 +339,23 @@ $vehicleFieldLabels = [
             document.getElementById('lead-detail-assigned').textContent = card.dataset.leadAssigned || 'Sem responsável';
             document.getElementById('lead-detail-created').textContent = card.dataset.leadCreated || '—';
             document.getElementById('lead-detail-message').textContent = card.dataset.leadMessage || '— sem mensagem —';
+
+            const licenciadoEl = document.getElementById('lead-detail-licenciado');
+            if (licenciadoEl) licenciadoEl.textContent = card.dataset.leadLicenciado || '—';
+
+            const checkoutGrid = document.getElementById('lead-detail-checkout-grid');
+            if (card.dataset.leadOrderId) {
+                checkoutGrid.hidden = false;
+                const paid = card.dataset.leadOrderPaid === '1';
+                document.getElementById('lead-detail-order').innerHTML = '#' + card.dataset.leadOrderId
+                    + ' <span class="status-badge ' + (paid ? 'status-active' : 'status-aguardando-assinatura') + '">' + (paid ? 'Pago' : 'Aguardando pagamento') + '</span>';
+                document.getElementById('lead-detail-document').textContent = card.dataset.leadOrderDocument || '— não informado —';
+                document.getElementById('lead-detail-installments').textContent = card.dataset.leadOrderInstallments
+                    ? card.dataset.leadOrderInstallments + 'x'
+                    : (card.dataset.leadOrderPaid || card.dataset.leadOrderId ? 'à vista' : '—');
+            } else {
+                checkoutGrid.hidden = true;
+            }
 
             const vehicleGrid = document.getElementById('lead-detail-vehicle-grid');
             vehicleGrid.innerHTML = '';

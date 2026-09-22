@@ -68,6 +68,7 @@ $router->post('/pedido/{token}/aceitar-termos', [App\Controllers\PublicOrderCont
 $router->post('/pedido/{token}/documentos', [App\Controllers\PublicOrderController::class, 'uploadDocuments']);
 $router->post('/pedido/{token}/cobranca', [App\Controllers\PublicOrderController::class, 'generateCharge']);
 $router->post('/pedido/{token}/cancelar-cobranca', [App\Controllers\PublicOrderController::class, 'cancelPayment']);
+$router->get('/atividade-recente', [App\Controllers\PublicOrderController::class, 'recentActivity']);
 
 $router->get('/painel/cotacoes-maquina', [App\Controllers\MachineQuoteController::class, 'index']);
 $router->get('/painel/cotacoes-maquina/{id}', [App\Controllers\MachineQuoteController::class, 'show']);

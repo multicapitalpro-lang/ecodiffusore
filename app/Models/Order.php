@@ -659,6 +659,58 @@ class Order
         return $leadId ? (int) $leadId : null;
     }
 
+    /** Fase 81: caminho INVERSO de leadIdFor() -- do Lead pro Pedido gerado a partir dele (via
+     *  Quote), pra mostrar no card do Kanban o numero do pedido/CPF do comprador/parcelas
+     *  escolhidas assim que ele existir, pago ou nao (pedido explicito do usuario). Junta com
+     *  clients pra trazer o documento (CPF/CNPJ) sem 2a consulta -- e' exatamente o dado que
+     *  PublicOrderController::confirmDocument() grava assim que o comprador digita no checkout. */
+    public static function forLead(int $leadId): ?array
+    {
+        $stmt = Database::connection()->prepare(
+            'SELECT o.id, o.status, o.total_value, c.document AS client_document
+             FROM quotes q
+             JOIN orders o ON o.id = q.converted_order_id
+             JOIN clients c ON c.id = o.client_id
+             WHERE q.lead_id = :lead_id AND q.converted_order_id IS NOT NULL
+             LIMIT 1'
+        );
+        $stmt->execute(['lead_id' => $leadId]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
+    /** Fase 81: atividade recente REAL (nunca inventada) pro popup de prova social no checkout
+     *  publico -- pedido do usuario ("fulano X acabou de comprar, fulano Y acessou a pagina").
+     *  So primeiro nome + cidade (nunca sobrenome/telefone/documento) -- mesma discricao ja usada
+     *  no resto do site pra dado de cliente exibido publicamente. "Aceitou os termos" serve de
+     *  proxy pra "engajado com o checkout agora", ja que nao existe rastreio de pageview por
+     *  visita nessa base (so estagio do Lead, sem timestamp granular). */
+    public static function recentActivity(int $limit = 10): array
+    {
+        $stmt = Database::connection()->prepare(
+            "(SELECT c.name, c.city, o.verified_at AS event_at, 'compra' AS type
+              FROM orders o JOIN clients c ON c.id = o.client_id
+              WHERE o.status = 'verificado' AND o.verified_at IS NOT NULL)
+             UNION ALL
+             (SELECT c.name, c.city, o.terms_accepted_at AS event_at, 'checkout' AS type
+              FROM orders o JOIN clients c ON c.id = o.client_id
+              WHERE o.terms_accepted_at IS NOT NULL)
+             ORDER BY event_at DESC LIMIT :limit"
+        );
+        $stmt->bindValue('limit', $limit, \PDO::PARAM_INT);
+        $stmt->execute();
+
+        return array_map(function ($row) {
+            $firstName = trim(explode(' ', trim((string) $row['name']))[0] ?? '');
+            return [
+                'first_name' => $firstName !== '' ? $firstName : 'Alguém',
+                'city' => $row['city'] ?: null,
+                'type' => $row['type'],
+                'minutes_ago' => max(0, (int) floor((time() - strtotime($row['event_at'])) / 60)),
+            ];
+        }, $stmt->fetchAll());
+    }
+
     public static function vehicleInfoFor(int $orderId): array
     {
         $empty = [

@@ -294,6 +294,7 @@ class PublicOrderController
                 'checkout_url' => $checkoutUrl,
                 'pix_payload' => $pixPayload,
                 'due_date' => $dueDate,
+                'installments' => $installments > 1 ? $installments : null,
             ]);
         } catch (\Throwable $e) {
             Router::redirect("/pedido/{$token}?erro_cobranca=" . urlencode($e->getMessage()));
@@ -311,5 +312,15 @@ class PublicOrderController
         // automatico via JS, ver pedido_publico.php) em vez de pular direto -- "volte pra
         // configuracao anterior que ja estava boa".
         Router::redirect("/pedido/{$token}?cobranca_ok=1");
+    }
+
+    /** Fase 81: prova social no checkout publico -- atividade REAL recente (nunca inventada),
+     *  ver Order::recentActivity(). Rota publica generica, nao vinculada a um token especifico
+     *  (mostra atividade do site todo, mesmo espirito de "outras pessoas compraram/estao
+     *  comprando agora" ja usado em qualquer e-commerce). */
+    public function recentActivity(): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['activity' => Order::recentActivity(10)], JSON_UNESCAPED_UNICODE);
     }
 }
