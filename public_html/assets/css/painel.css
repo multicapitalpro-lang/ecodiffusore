@@ -321,7 +321,21 @@ a { text-decoration: none; color: inherit; }
 .accordion-row td { background: var(--gray-bg); padding: 14px 16px; }
 .accordion-content .data-table-compact th, .accordion-content .data-table-compact td { padding: 8px 12px; font-size: .82rem; }
 .accordion-content .data-table-compact { min-width: 0; box-shadow: none; border: 1px solid var(--border); }
-.accordion-toggle { font-size: .82rem; margin-right: 6px; min-width: 16px; display: inline-block; }
+/* Fase 79b: botão + triângulo desenhado em CSS (não depende de glifo Unicode/fonte, que
+   renderizava minúsculo/quebrado -- "ícone muito safado", reportado pelo usuário) */
+.accordion-toggle {
+    display: inline-flex; align-items: center; gap: 6px; background: #fff; border: 1.5px solid var(--border);
+    border-radius: 6px; padding: 3px 8px; font-size: .8rem; font-weight: 700; color: var(--gray-text);
+    cursor: pointer; vertical-align: middle; margin-right: 4px; line-height: 1.6;
+}
+.accordion-toggle:hover { border-color: var(--green); color: var(--navy); }
+.accordion-toggle-icon {
+    display: inline-block; width: 0; height: 0; flex-shrink: 0;
+    border-top: 5px solid transparent; border-bottom: 5px solid transparent; border-left: 6px solid var(--gray-text);
+    transition: transform .15s ease;
+}
+.accordion-toggle:hover .accordion-toggle-icon { border-left-color: var(--green-dark); }
+.accordion-toggle.is-open .accordion-toggle-icon { transform: rotate(90deg); }
 .status-badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; font-size: .76rem; font-weight: 700; white-space: nowrap; }
 .status-badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
 .status-active, .status-novo { background: #e5f6e0; color: var(--green-dark); }

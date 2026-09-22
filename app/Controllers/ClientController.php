@@ -406,10 +406,12 @@ class ClientController
         }
 
         $ids = array_unique(array_map('intval', $_POST['ids'] ?? []));
-        // Fase 79: "Também excluir pedidos/orçamentos vinculados" no bulk -- mesmo cascadeDelete()
-        // usado no popup de exclusão individual, sem preview por cliente aqui (impraticável pra
-        // dezenas de clientes de uma vez), so o aviso generico ja mostrado no data-confirm do botão.
-        $cascade = !empty($_POST['cascade']);
+        // Fase 79b: exclusão em lote sempre em cascata (Client::cascadeDelete) -- tinha um
+        // checkbox opcional "também excluir pedidos/orçamentos vinculados" antes, mas o usuario
+        // tentou excluir 39 clientes de teste sem notar a caixinha e todos falharam por vinculo.
+        // Sem preview por cliente aqui (impraticável pra dezenas de uma vez so), so o aviso
+        // generico ja mostrado no data-confirm do botão -- mesmo espirito do popup individual,
+        // que ja cascade por padrão depois de confirmado.
         $deleted = 0;
         $failed = 0;
 
@@ -423,11 +425,7 @@ class ClientController
                 continue;
             }
             try {
-                if ($cascade) {
-                    Client::cascadeDelete($id);
-                } else {
-                    Client::delete($id);
-                }
+                Client::cascadeDelete($id);
                 $deleted++;
             } catch (\PDOException $e) {
                 $failed++;

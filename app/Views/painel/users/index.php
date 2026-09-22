@@ -134,7 +134,7 @@ $erroLabels = [
                                                     <td><?= $child['city'] ? View::e($child['city']) . ($child['state'] ? '/' . View::e($child['state']) : '') : '—' ?></td>
                                                     <td>
                                                         <?php if ($child['role_slug'] === 'vendedor'): ?>
-                                                            <button type="button" class="link-button accordion-toggle" data-toggle-clients="<?= (int) $child['id'] ?>">Ver clientes ▾</button>
+                                                            <button type="button" class="accordion-toggle" data-toggle-clients="<?= (int) $child['id'] ?>"><span class="accordion-toggle-icon"></span> Ver clientes</button>
                                                         <?php endif; ?>
                                                     </td>
                                                 </tr>
@@ -146,7 +146,7 @@ $erroLabels = [
                                                             <td class="text-standardized" style="padding-left:24px">↳ <?= View::e($grandchild['name']) ?></td>
                                                             <td><span class="role-badge role-vendedor">Vendedor</span></td>
                                                             <td><?= $grandchild['city'] ? View::e($grandchild['city']) . ($grandchild['state'] ? '/' . View::e($grandchild['state']) : '') : '—' ?></td>
-                                                            <td><button type="button" class="link-button accordion-toggle" data-toggle-clients="<?= (int) $grandchild['id'] ?>">Ver clientes ▾</button></td>
+                                                            <td><button type="button" class="accordion-toggle" data-toggle-clients="<?= (int) $grandchild['id'] ?>"><span class="accordion-toggle-icon"></span> Ver clientes</button></td>
                                                         </tr>
                                                         <?php $renderSellerAccordionRow($grandchild, 2); ?>
                                                     <?php endforeach; ?>
@@ -166,9 +166,9 @@ $erroLabels = [
                         <td><input type="checkbox" name="ids[]" value="<?= (int) $u['id'] ?>" class="row-select-user" <?= $u['role_slug'] === 'admin' ? 'disabled' : '' ?>></td>
                         <td class="text-standardized">
                             <?php if ($u['role_slug'] === 'licenciado'): ?>
-                                <button type="button" class="link-button accordion-toggle" data-toggle-licenciado="<?= (int) $u['id'] ?>" title="Ver rede deste Licenciado">▸</button>
+                                <button type="button" class="accordion-toggle" data-toggle-licenciado="<?= (int) $u['id'] ?>" title="Ver rede deste Licenciado"><span class="accordion-toggle-icon"></span></button>
                             <?php elseif ($u['role_slug'] === 'vendedor'): ?>
-                                <button type="button" class="link-button accordion-toggle" data-toggle-clients="<?= (int) $u['id'] ?>" title="Ver clientes deste Vendedor">▸</button>
+                                <button type="button" class="accordion-toggle" data-toggle-clients="<?= (int) $u['id'] ?>" title="Ver clientes deste Vendedor"><span class="accordion-toggle-icon"></span></button>
                             <?php endif; ?>
                             <?= View::e($u['name']) ?>
                         </td>
@@ -297,11 +297,7 @@ $erroLabels = [
         var row = table.querySelector('[data-accordion-for="' + key + '"]');
         if (!row) return null;
         row.hidden = !row.hidden;
-        if (btn.textContent.indexOf('▸') !== -1 || btn.textContent.indexOf('▾') !== -1) {
-            btn.textContent = row.hidden ? '▸' : '▾';
-        } else {
-            btn.textContent = row.hidden ? 'Ver clientes ▾' : 'Ocultar clientes ▴';
-        }
+        btn.classList.toggle('is-open', !row.hidden);
         return row;
     }
 })();

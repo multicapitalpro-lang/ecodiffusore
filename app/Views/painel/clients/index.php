@@ -83,11 +83,7 @@ $erroLabels = [
             </select>
         </label>
         <button type="submit" class="btn btn-outline">Vincular a vendedor</button>
-        <label style="display:flex;align-items:center;gap:6px;font-size:.85rem;">
-            <input type="checkbox" name="cascade" value="1">
-            Também excluir pedidos/orçamentos vinculados
-        </label>
-        <button type="submit" formaction="/painel/clientes/excluir-lote" class="btn btn-danger" data-confirm="Excluir os clientes selecionados? Se a caixa 'também excluir pedidos/orçamentos vinculados' estiver marcada, isso também apaga pedidos/orçamentos/lançamentos financeiros deles. Essa ação não pode ser desfeita.">🗑 Excluir selecionados (<span id="bulk-count">0</span>)</button>
+        <button type="submit" formaction="/painel/clientes/excluir-lote" class="btn btn-danger" data-confirm="Excluir os clientes selecionados? Isso também apaga os pedidos, orçamentos, comissões e lançamentos financeiros vinculados a eles. Essa ação não pode ser desfeita.">🗑 Excluir selecionados e vínculos (<span id="bulk-count">0</span>)</button>
     </div>
 
     <div class="table-scroll">
