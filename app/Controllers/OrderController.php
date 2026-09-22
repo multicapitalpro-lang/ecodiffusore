@@ -15,6 +15,7 @@ use App\Core\View;
 use App\Models\Approval;
 use App\Models\AuditLog;
 use App\Models\Client;
+use App\Models\LeadRoutingSettings;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Payment;
@@ -65,7 +66,7 @@ class OrderController
             'stats' => $stats,
             'situacaoPagamento' => $situacaoPagamento,
             'filters' => $filters,
-            'clients' => Client::all(array_merge($this->scopeFilters(Auth::user()), ['include_unassigned' => true])),
+            'clients' => Client::all(array_merge($this->scopeFilters(Auth::user()), ['include_unassigned' => LeadRoutingSettings::canSeeUnassigned(Auth::user())])),
             'products' => Product::all(true),
             'pricingTiers' => PricingTier::all(),
             'sellers' => $this->sellerOptions($user),
@@ -165,7 +166,7 @@ class OrderController
                 'orders' => $ordersWithSituation,
                 'stats' => $stats,
                 'filters' => [],
-                'clients' => Client::all(array_merge($this->scopeFilters(Auth::user()), ['include_unassigned' => true])),
+                'clients' => Client::all(array_merge($this->scopeFilters(Auth::user()), ['include_unassigned' => LeadRoutingSettings::canSeeUnassigned(Auth::user())])),
                 'products' => Product::all(true),
             'pricingTiers' => PricingTier::all(),
                 'sellers' => $this->sellerOptions($user),
@@ -273,7 +274,7 @@ class OrderController
             'user' => Auth::user(),
             'editing' => $order,
             'items' => OrderItem::forOrder((int) $id),
-            'clients' => Client::all(array_merge($this->scopeFilters(Auth::user()), ['include_unassigned' => true])),
+            'clients' => Client::all(array_merge($this->scopeFilters(Auth::user()), ['include_unassigned' => LeadRoutingSettings::canSeeUnassigned(Auth::user())])),
             'products' => Product::all(true),
             'pricingTiers' => PricingTier::all(),
             'sellers' => $this->sellerOptions(Auth::user()),
@@ -308,7 +309,7 @@ class OrderController
                 'user' => $user,
                 'editing' => array_merge(['id' => $id], $_POST),
                 'items' => $items,
-                'clients' => Client::all(array_merge($this->scopeFilters(Auth::user()), ['include_unassigned' => true])),
+                'clients' => Client::all(array_merge($this->scopeFilters(Auth::user()), ['include_unassigned' => LeadRoutingSettings::canSeeUnassigned(Auth::user())])),
                 'products' => Product::all(true),
             'pricingTiers' => PricingTier::all(),
                 'sellers' => $this->sellerOptions($user),

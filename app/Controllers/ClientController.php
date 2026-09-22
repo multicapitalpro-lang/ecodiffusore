@@ -13,6 +13,7 @@ use App\Core\View;
 use App\Models\Client;
 use App\Models\ClientNote;
 use App\Models\FinancialTransaction;
+use App\Models\LeadRoutingSettings;
 use App\Models\Order;
 use App\Models\Role;
 use App\Models\User;
@@ -538,7 +539,7 @@ class ClientController
             return ['seller_ids' => User::nationalIds((int) $user['id'])];
         }
 
-        return ['seller_ids' => User::downlineIds((int) $user['id']), 'include_unassigned' => true];
+        return ['seller_ids' => User::downlineIds((int) $user['id']), 'include_unassigned' => LeadRoutingSettings::canSeeUnassigned($user)];
     }
 
     /** Cliente sem vendedor (seller_id null) so e' acessivel por quem gerencia (fallback abaixo),

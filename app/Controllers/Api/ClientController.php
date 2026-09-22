@@ -6,6 +6,7 @@ use App\Core\ApiAuth;
 use App\Core\ApiResponse;
 use App\Core\Roles;
 use App\Models\Client;
+use App\Models\LeadRoutingSettings;
 use App\Models\Order;
 use App\Models\User;
 
@@ -90,7 +91,7 @@ class ClientController
             return ['seller_ids' => User::nationalIds((int) $user['id'])];
         }
 
-        return ['seller_ids' => User::downlineIds((int) $user['id']), 'include_unassigned' => true];
+        return ['seller_ids' => User::downlineIds((int) $user['id']), 'include_unassigned' => LeadRoutingSettings::canSeeUnassigned($user)];
     }
 
     private function canAccessSeller(array $user, int $sellerId): bool

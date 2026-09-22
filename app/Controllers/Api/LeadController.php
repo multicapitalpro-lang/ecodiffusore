@@ -6,6 +6,7 @@ use App\Core\ApiAuth;
 use App\Core\ApiResponse;
 use App\Core\Roles;
 use App\Models\Lead;
+use App\Models\LeadRoutingSettings;
 use App\Models\LeadStage;
 use App\Models\Order;
 use App\Models\Payment;
@@ -78,6 +79,6 @@ class LeadController
         if ($role === 'gerente') {
             return Lead::forScope(User::nationalIds((int) $user['id']), false);
         }
-        return Lead::forScope(User::downlineIds((int) $user['id']), true);
+        return Lead::forScope(User::downlineIds((int) $user['id']), LeadRoutingSettings::canSeeUnassigned($user));
     }
 }

@@ -12,6 +12,7 @@ use App\Core\View;
 use App\Models\Approval;
 use App\Models\AuditLog;
 use App\Models\Client;
+use App\Models\LeadRoutingSettings;
 use App\Models\Payment;
 use App\Models\PricingTier;
 use App\Models\Product;
@@ -60,7 +61,7 @@ class QuoteController
                 'licenciado_id' => $_GET['licenciado_id'] ?? '',
                 'seller_id' => $_GET['seller_id'] ?? '',
             ]),
-            'clients' => Client::all(array_merge($this->scopeFilters(Auth::user()), ['include_unassigned' => true])),
+            'clients' => Client::all(array_merge($this->scopeFilters(Auth::user()), ['include_unassigned' => LeadRoutingSettings::canSeeUnassigned(Auth::user())])),
             'products' => Product::all(true),
             'pricingTiers' => PricingTier::all(),
             'sellers' => $this->sellerOptions($user),
@@ -287,7 +288,7 @@ class QuoteController
             'user' => $user,
             'editing' => $quote,
             'items' => QuoteItem::forQuote((int) $id),
-            'clients' => Client::all(array_merge($this->scopeFilters(Auth::user()), ['include_unassigned' => true])),
+            'clients' => Client::all(array_merge($this->scopeFilters(Auth::user()), ['include_unassigned' => LeadRoutingSettings::canSeeUnassigned(Auth::user())])),
             'products' => Product::all(true),
             'pricingTiers' => PricingTier::all(),
             'sellers' => $this->sellerOptions($user),
@@ -322,7 +323,7 @@ class QuoteController
                 'user' => $user,
                 'editing' => array_merge(['id' => $id], $_POST),
                 'items' => $items,
-                'clients' => Client::all(array_merge($this->scopeFilters(Auth::user()), ['include_unassigned' => true])),
+                'clients' => Client::all(array_merge($this->scopeFilters(Auth::user()), ['include_unassigned' => LeadRoutingSettings::canSeeUnassigned(Auth::user())])),
                 'products' => Product::all(true),
             'pricingTiers' => PricingTier::all(),
                 'sellers' => $this->sellerOptions($user),
