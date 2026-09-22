@@ -428,6 +428,18 @@ class UserController
             $target = '/painel/usuarios?sucesso=1';
         }
 
+        // Fase 87: e-mail do ClickSign fica "congelado" no signatario desde a criacao do envelope
+        // -- corrigir o e-mail aqui no cadastro NAO atualiza o que o ClickSign tem guardado (bug
+        // real reportado ao vivo: token de autenticacao continuou indo pro e-mail antigo/errado
+        // mesmo depois do cadastro corrigido). Avisa o admin que precisa clicar em "Pedir nova
+        // assinatura" (LicenciadoApprovalController::resendSignature) pra gerar um envelope novo
+        // com o e-mail certo -- so quando o e-mail de fato mudou e o Licenciado ainda esta preso
+        // no fluxo de assinatura (depois de 'ativo' o contrato ja foi assinado, nao adianta mais).
+        if ($before['role_slug'] === 'licenciado' && trim($_POST['email']) !== $before['email']
+            && ($before['licenciado_onboarding_status'] ?? '') === 'aguardando_assinatura') {
+            $target .= '&aviso=email_licenciado_pendente';
+        }
+
         if (Response::isAjax()) {
             Response::json(['ok' => true, 'redirect' => $target]);
         }

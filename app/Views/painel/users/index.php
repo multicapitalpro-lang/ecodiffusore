@@ -37,6 +37,10 @@ $erroLabels = [
     <p class="form-msg form-msg-erro"><?= View::e($erroLabels[$erro] ?? 'Não foi possível concluir a ação.') ?></p>
 <?php endif; ?>
 
+<?php if (($_GET['aviso'] ?? '') === 'email_licenciado_pendente'): ?>
+    <p class="form-msg form-msg-erro">⚠️ O e-mail foi alterado, mas o contrato desse Licenciado no ClickSign ainda está com o e-mail ANTIGO (o token de assinatura continuaria indo pro endereço errado). Vá em <a href="/painel/licenciados/aprovacoes">Aprovação de Cadastros</a> e clique em "✍️ Pedir nova assinatura" pra gerar um envelope novo com o e-mail corrigido.</p>
+<?php endif; ?>
+
 <div class="cards-grid">
     <div class="dash-card">
         <span>Total Clientes</span>
