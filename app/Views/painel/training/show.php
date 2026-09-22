@@ -17,32 +17,43 @@ use App\Models\SellerTrainingProgress;
     <p class="auth-hint">Antes de liberar o acesso completo ao painel, assista aos vídeos abaixo até o fim. É obrigatório pra garantir que você sabe vender e atender o cliente do jeito certo.</p>
 
     <div id="training-videos">
-        <?php foreach ($videos as $v): ?>
-            <?php
-            $p = $progress[$v['id']] ?? null;
-            $pct = $p ? (float) $p['max_percent_watched'] : 0.0;
-            $done = $p && !empty($p['completed_at']);
-            ?>
-            <div class="dash-card" style="text-align:left;margin-bottom:16px;" data-video-card="<?= (int) $v['id'] ?>">
-                <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
-                    <strong><?= View::e($v['title']) ?></strong>
-                    <span class="status-badge status-<?= $done ? 'active' : 'novo' ?>" data-video-status>
-                        <?= $done ? '✔ Concluído' : 'Pendente' ?>
-                    </span>
+        <?php
+        // Fase 83: modulos na sequencia definida pelo admin/gerente, depois os videos "soltos"
+        // (sem modulo) num bucket final -- mesmo agrupamento de painel/settings/treinamento.php.
+        $groups = [];
+        foreach ($modules as $m) {
+            $groups[] = ['title' => $m['title'], 'videos' => $byModule[$m['id']] ?? []];
+        }
+        if (!empty($byModule[0])) {
+            $groups[] = ['title' => null, 'videos' => $byModule[0]];
+        }
+        ?>
+        <?php foreach ($groups as $g): ?>
+            <?php if ($g['title']): ?><h3 class="section-title">📦 <?= View::e($g['title']) ?></h3><?php endif; ?>
+            <?php foreach ($g['videos'] as $v): ?>
+                <?php
+                $p = $progress[$v['id']] ?? null;
+                $pct = $p ? (float) $p['max_percent_watched'] : 0.0;
+                $done = $p && !empty($p['completed_at']);
+                ?>
+                <div class="dash-card" style="text-align:left;margin-bottom:16px;" data-video-card="<?= (int) $v['id'] ?>">
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+                        <strong><?= View::e($v['title']) ?></strong>
+                        <span class="status-badge status-<?= $done ? 'active' : 'novo' ?>" data-video-status>
+                            <?= $done ? '✔ Concluído' : 'Pendente' ?>
+                        </span>
+                    </div>
+                    <video
+                        src="<?= View::e($v['video_url']) ?>"
+                        controls
+                        style="width:100%;margin-top:10px;border-radius:8px;background:#000;"
+                        data-video-id="<?= (int) $v['id'] ?>"
+                        data-start-percent="<?= $pct ?>"
+                    ></video>
+                    <div class="hint-text" style="margin-top:6px;" data-video-pct>Assistido: <?= number_format($pct, 0) ?>%</div>
                 </div>
-                <video
-                    src="<?= View::e($v['video_url']) ?>"
-                    controls
-                    style="width:100%;margin-top:10px;border-radius:8px;background:#000;"
-                    data-video-id="<?= (int) $v['id'] ?>"
-                    data-start-percent="<?= $pct ?>"
-                ></video>
-                <div class="hint-text" style="margin-top:6px;" data-video-pct>Assistido: <?= number_format($pct, 0) ?>%</div>
-            </div>
+            <?php endforeach; ?>
         <?php endforeach; ?>
-        <?php if (!$videos): ?>
-            <p class="hint-text">Nenhum vídeo de treinamento cadastrado ainda — fale com o administrador.</p>
-        <?php endif; ?>
     </div>
 
     <button type="button" class="btn btn-primary" id="training-continue" style="width:100%;margin-top:8px;" disabled>

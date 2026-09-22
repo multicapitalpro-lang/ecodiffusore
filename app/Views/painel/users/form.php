@@ -99,8 +99,8 @@ $values = $editing ?? ($old ?? []);
         </div>
 
         <div id="vendedor-commission-wrap" style="display:none;">
-            <label>Como pagar este Vendedor por venda?</label>
-            <p class="hint-text" style="margin-top:0;">Opcional: defina um valor por faixa de preço abaixo pra pagar esse Vendedor direto pelo valor/percentual da venda, em vez do % padrão do campo "Comissão desta pessoa" acima. Escolha primeiro o formato:</p>
+            <label id="tier-commission-label">Como pagar este Vendedor por venda?</label>
+            <p class="hint-text" style="margin-top:0;" id="tier-commission-hint-top">Opcional: defina um valor por faixa de preço abaixo pra pagar esse Vendedor direto pelo valor/percentual da venda, em vez do % padrão do campo "Comissão desta pessoa" acima. Escolha primeiro o formato:</p>
             <label class="checkbox-label">
                 <input type="radio" name="commission_type" value="percentual" <?= ($values['commission_type'] ?? 'percentual') === 'percentual' ? 'checked' : '' ?>> % da venda
             </label>
@@ -110,7 +110,7 @@ $values = $editing ?? ($old ?? []);
 
             <div class="table-scroll">
                 <table class="data-table" style="margin-top:10px;">
-                    <thead><tr><th>Faixa de preço negociado</th><th>Comissão do vendedor</th></tr></thead>
+                    <thead><tr><th>Faixa de preço negociado</th><th>Comissão</th></tr></thead>
                     <tbody>
                         <?php foreach ($pricingTiers as $tier): ?>
                             <tr>
@@ -125,7 +125,7 @@ $values = $editing ?? ($old ?? []);
                     </tbody>
                 </table>
             </div>
-            <p class="hint-text">Um valor por faixa (vazio = essa faixa cai no % de comissão padrão acima). Sai do pool que o Licenciado recebe da Ecodiffusore — não é um custo adicional.</p>
+            <p class="hint-text" id="tier-commission-hint-bottom">Um valor por faixa (vazio = essa faixa cai no % de comissão padrão acima). Sai do pool que o Licenciado recebe da Ecodiffusore — não é um custo adicional.</p>
         </div>
     <?php endif; ?>
 

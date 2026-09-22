@@ -210,7 +210,7 @@ class UserController
             'licenciado_onboarding_status' => $createdRoleSlug === 'licenciado' ? 'aguardando_perfil' : 'nao_aplicavel',
         ]);
 
-        if ($createdRoleSlug === 'vendedor' && $this->canSetCommission($user)) {
+        if (in_array($createdRoleSlug, ['vendedor', 'supervisor'], true) && $this->canSetCommission($user)) {
             UserCommissionTier::setForUser($newUserId, $this->vendorTierValues($_POST));
         }
 
@@ -358,10 +358,10 @@ class UserController
             'discount_limit_pct' => $discountLimitPct,
         ]);
 
-        if ($editedRoleSlug === 'vendedor' && $this->canSetCommission($user)) {
+        if (in_array($editedRoleSlug, ['vendedor', 'supervisor'], true) && $this->canSetCommission($user)) {
             UserCommissionTier::setForUser($id, $this->vendorTierValues($_POST));
-        } elseif ($editedRoleSlug !== 'vendedor') {
-            // Papel deixou de ser vendedor -- limpa qualquer faixa configurada antes.
+        } elseif (!in_array($editedRoleSlug, ['vendedor', 'supervisor'], true)) {
+            // Papel deixou de ser vendedor/supervisor -- limpa qualquer faixa configurada antes.
             UserCommissionTier::setForUser($id, []);
         }
 
@@ -580,16 +580,18 @@ class UserController
     }
 
     /**
-     * So relevante quando o papel cadastrado/editado e' vendedor -- comissao por faixa de
-     * quantidade (Fase 24, pricing_tiers), em % da venda ou valor fixo por venda, definida pelo
-     * Licenciado (ou admin), nunca pela Ecodiffusore -- sai do pool do Licenciado (ver Commission::
-     * createCascadeForOrder). Quando o papel NAO e' vendedor, ou quem esta logado nao pode definir
-     * comissao, devolve null (limpa o tipo -- os valores por faixa sao limpos a parte, ver
-     * UserCommissionTier::setForUser() nas chamadas de store()/update()).
+     * So relevante quando o papel cadastrado/editado e' vendedor OU supervisor -- comissao por
+     * faixa de preco negociado (pricing_tiers), em % da venda ou valor fixo por venda. Pro
+     * Vendedor, definida pelo Licenciado (ou admin), sai do pool do Licenciado; pro Supervisor
+     * (Fase 83), definida pelo Gerente (ou admin), sai direto da Ecodiffusore (comissao
+     * nacional), mesmo tratamento de Commission::createCascadeForOrder. Quando o papel nao e'
+     * nenhum dos dois, ou quem esta logado nao pode definir comissao, devolve null (limpa o tipo
+     * -- os valores por faixa sao limpos a parte, ver UserCommissionTier::setForUser() nas
+     * chamadas de store()/update()).
      */
     private function vendorCommissionType(array $user, ?string $roleSlug, array $input): ?string
     {
-        if (!$this->canSetCommission($user) || $roleSlug !== 'vendedor') {
+        if (!$this->canSetCommission($user) || !in_array($roleSlug, ['vendedor', 'supervisor'], true)) {
             return null;
         }
 
@@ -622,11 +624,15 @@ class UserController
     /**
      * So admin e licenciado definem commission_pct de alguem: licenciado controla o quanto repassa
      * do proprio pool (gestor/vendedor); admin define o % contratual do licenciado e o % de
-     * gerente/supervisor (pago direto pela Ecodiffusore). Gestor/Gerente nunca definem comissao.
+     * gerente/supervisor (pago direto pela Ecodiffusore). Gestor nunca define comissao. Fase 83:
+     * Gerente tambem define a comissao do Supervisor que ele cadastra (pedido explicito do
+     * usuario -- mesma liberdade que o Licenciado ja tem pro Vendedor, incluindo a tabela por
+     * faixa abaixo), continua sem poder mexer na do proprio Licenciado (essa vem da faixa de
+     * preco, ver licenciado-commission-note).
      */
     private function canSetCommission(array $user): bool
     {
-        return in_array($user['role_slug'], ['admin', Roles::REGIONAL_OWNER], true);
+        return in_array($user['role_slug'], ['admin', Roles::REGIONAL_OWNER, 'gerente'], true);
     }
 
     private function resolveManagerId(array $user, array $input, ?int $targetId): ?int

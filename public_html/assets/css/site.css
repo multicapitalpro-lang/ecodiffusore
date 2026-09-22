@@ -307,6 +307,9 @@ span.beneficio-icon { font-size: 2.1rem; }
 .site-footer a { color: var(--green); }
 .site-footer-login { display: inline-block; color: var(--white) !important; border-color: var(--white); margin-bottom: 16px; padding: 8px 18px; font-size: .82rem; }
 .site-footer-login:hover { background: var(--white); color: var(--navy) !important; }
+.site-lgpd-badge { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; color: var(--green); }
+.site-lgpd-badge svg { flex-shrink: 0; }
+.site-lgpd-badge span { font-size: .78rem; color: #b9c1d9; }
 
 /* WhatsApp float */
 .whatsapp-float {

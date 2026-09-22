@@ -26,15 +26,19 @@ class SellerTrainingVideo
         return $row ?: null;
     }
 
-    public static function create(string $title, string $videoUrl): int
+    /** $moduleId null = video "solto", fora de qualquer modulo (Fase 83). sort_order e' por
+     *  modulo (cada bucket tem sua propria sequencia 1..N), nao global. */
+    public static function create(string $title, string $videoUrl, ?int $moduleId = null): int
     {
         $db = Database::connection();
-        $nextOrder = (int) $db->query('SELECT COALESCE(MAX(sort_order), 0) + 1 FROM seller_training_videos')->fetchColumn();
+        $stmt = $db->prepare('SELECT COALESCE(MAX(sort_order), 0) + 1 FROM seller_training_videos WHERE module_id <=> :module_id');
+        $stmt->execute(['module_id' => $moduleId]);
+        $nextOrder = (int) $stmt->fetchColumn();
 
         $stmt = $db->prepare(
-            'INSERT INTO seller_training_videos (title, video_url, sort_order) VALUES (:title, :video_url, :sort_order)'
+            'INSERT INTO seller_training_videos (title, video_url, module_id, sort_order) VALUES (:title, :video_url, :module_id, :sort_order)'
         );
-        $stmt->execute(['title' => $title, 'video_url' => $videoUrl, 'sort_order' => $nextOrder]);
+        $stmt->execute(['title' => $title, 'video_url' => $videoUrl, 'module_id' => $moduleId, 'sort_order' => $nextOrder]);
         return (int) $db->lastInsertId();
     }
 
@@ -42,5 +46,42 @@ class SellerTrainingVideo
     {
         $stmt = Database::connection()->prepare('DELETE FROM seller_training_videos WHERE id = :id');
         $stmt->execute(['id' => $id]);
+    }
+
+    public static function moveUp(int $id): void
+    {
+        self::swap($id, '<', 'DESC');
+    }
+
+    public static function moveDown(int $id): void
+    {
+        self::swap($id, '>', 'ASC');
+    }
+
+    /** Troca de posicao so' com o vizinho do MESMO modulo (<=> trata NULL=NULL como igual, pra
+     *  nao misturar a sequencia de um modulo com a de outro nem com os videos soltos). */
+    private static function swap(int $id, string $operator, string $direction): void
+    {
+        $db = Database::connection();
+        $current = self::find($id);
+        if (!$current) {
+            return;
+        }
+
+        $stmt = $db->prepare(
+            "SELECT id, sort_order FROM seller_training_videos
+             WHERE module_id <=> :module_id AND sort_order {$operator} :sort
+             ORDER BY sort_order {$direction} LIMIT 1"
+        );
+        $stmt->execute(['module_id' => $current['module_id'], 'sort' => $current['sort_order']]);
+        $neighbor = $stmt->fetch();
+        if (!$neighbor) {
+            return;
+        }
+
+        $db->prepare('UPDATE seller_training_videos SET sort_order = :sort WHERE id = :id')
+            ->execute(['sort' => $neighbor['sort_order'], 'id' => $current['id']]);
+        $db->prepare('UPDATE seller_training_videos SET sort_order = :sort WHERE id = :id')
+            ->execute(['sort' => $current['sort_order'], 'id' => $neighbor['id']]);
     }
 }

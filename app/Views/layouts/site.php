@@ -144,6 +144,10 @@ $canonicalUrl = $baseUrl . $seoPath;
         </div>
         <div>
             <a href="/painel/login" class="btn btn-outline site-footer-login">Acessar o Painel</a>
+            <div class="site-lgpd-badge">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"/><path d="M9 12l2 2 4-4"/></svg>
+                <span>Seus dados protegidos — em conformidade com a LGPD</span>
+            </div>
             <p>&copy; <?= date('Y') ?> Ecodiffusore Brasil. Todos os direitos reservados.</p>
         </div>
     </div>

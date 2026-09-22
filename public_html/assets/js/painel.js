@@ -505,6 +505,25 @@ document.addEventListener('DOMContentLoaded', function () {
             var screensWrap = root.querySelector('#screens-permissions-wrap');
             var commissionHints = root.querySelectorAll('[data-commission-hint]');
 
+            // Fase 83: a tabela por faixa (#vendedor-commission-wrap) agora serve pro Vendedor
+            // (definida pelo Licenciado) E pro Supervisor (definida pelo Gerente) -- mesmo
+            // markup, so troca o texto do titulo/dicas conforme o papel escolhido.
+            var tierLabel = root.querySelector('#tier-commission-label');
+            var tierHintTop = root.querySelector('#tier-commission-hint-top');
+            var tierHintBottom = root.querySelector('#tier-commission-hint-bottom');
+            var tierTextByRole = {
+                vendedor: {
+                    label: 'Como pagar este Vendedor por venda?',
+                    top: 'Opcional: defina um valor por faixa de preço abaixo pra pagar esse Vendedor direto pelo valor/percentual da venda, em vez do % padrão do campo "Comissão desta pessoa" acima. Escolha primeiro o formato:',
+                    bottom: 'Um valor por faixa (vazio = essa faixa cai no % de comissão padrão acima). Sai do pool que o Licenciado recebe da Ecodiffusore — não é um custo adicional.'
+                },
+                supervisor: {
+                    label: 'Como pagar este Supervisor por venda?',
+                    top: 'Opcional: defina um valor por faixa de preço abaixo pra pagar esse Supervisor direto pelo valor/percentual da venda, em vez do % padrão do campo "Comissão desta pessoa" acima. Escolha primeiro o formato:',
+                    bottom: 'Um valor por faixa (vazio = essa faixa cai no % de comissão padrão acima). Paga direto pela Ecodiffusore (comissão nacional) — não é custo do Licenciado nem do pool regional.'
+                }
+            };
+
             // O campo generico "Comissao desta pessoa (%)" significa uma coisa diferente por
             // papel (Gestor/Vendedor: % do total do pedido, Fase 43; Gerente/Supervisor: % do
             // pedido pago pela empresa; Vendedor: comissao padrao de faixa) -- mostra so a frase
@@ -516,11 +535,18 @@ document.addEventListener('DOMContentLoaded', function () {
                 var opt = roleSelect.options[roleSelect.selectedIndex];
                 var slug = opt ? opt.dataset.slug : null;
                 if (supervisorWrap) supervisorWrap.style.display = slug === 'licenciado' ? '' : 'none';
-                if (vendedorWrap) vendedorWrap.style.display = slug === 'vendedor' ? '' : 'none';
+                if (vendedorWrap) vendedorWrap.style.display = (slug === 'vendedor' || slug === 'supervisor') ? '' : 'none';
                 if (commissionPctWrap) commissionPctWrap.style.display = (slug === 'licenciado' || slug === 'influenciador') ? 'none' : '';
                 if (licenciadoNote) licenciadoNote.style.display = slug === 'licenciado' ? '' : 'none';
                 if (influencerWrap) influencerWrap.style.display = slug === 'influenciador' ? '' : 'none';
                 if (screensWrap) screensWrap.style.display = (slug === 'gestor' || slug === 'vendedor') ? '' : 'none';
+
+                var tierText = tierTextByRole[slug];
+                if (tierText) {
+                    if (tierLabel) tierLabel.textContent = tierText.label;
+                    if (tierHintTop) tierHintTop.textContent = tierText.top;
+                    if (tierHintBottom) tierHintBottom.textContent = tierText.bottom;
+                }
 
                 var activeHintKey = hintKeyByRole[slug] || null;
                 commissionHints.forEach(function (h) { h.hidden = h.dataset.commissionHint !== activeHintKey; });

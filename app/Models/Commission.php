@@ -39,7 +39,10 @@ class Commission
      * 2) Comissao nacional: se o Licenciado tiver um Supervisor atribuido (supervisor_id, definido
      *    pelo Gerente em /painel/licenciados), Supervisor e Gerente recebem um % do TOTAL do
      *    pedido -- paga direto pela Ecodiffusore, nunca sai do pool acima. Por isso roda num bloco
-     *    totalmente a parte, mesmo se o pedido nao tiver faixa de preco valida.
+     *    totalmente a parte, mesmo se o pedido nao tiver faixa de preco valida. Fase 83: o
+     *    Supervisor pode, opcionalmente, ter a MESMA tabela por faixa de preco do Vendedor
+     *    (commission_type + user_commission_tiers, definida pelo Gerente) em vez do % simples --
+     *    ver tierBasedAmount(). O Gerente continua so' no % simples (nao pedido pelo usuario).
      */
     public static function createCascadeForOrder(int $orderId, int $sellerId, float $orderTotal): void
     {
@@ -74,7 +77,7 @@ class Commission
                     continue;
                 }
 
-                $tierAmount = (int) $p['id'] === $sellerId ? self::vendorTierAmount($p, $tier, $orderTotal, $totalQty) : null;
+                $tierAmount = (int) $p['id'] === $sellerId ? self::tierBasedAmount($p, $tier, $orderTotal, $totalQty) : null;
 
                 if ($tierAmount !== null) {
                     $effectivePct = $orderTotal > 0 ? round($tierAmount / $orderTotal * 100, 2) : 0.0;
@@ -126,7 +129,14 @@ class Commission
             $supervisor = User::find((int) $licenciado['supervisor_id']);
 
             if ($supervisor && $supervisor['role_slug'] === 'supervisor') {
-                if ((float) ($supervisor['commission_pct'] ?? 0) > 0) {
+                // Fase 83: Supervisor tambem pode ter tabela por faixa de preco (definida pelo
+                // Gerente), igual o Vendedor -- usa ela quando configurada pra essa faixa, senao
+                // cai no % simples do commission_pct, igual antes.
+                $supervisorTierAmount = $tier ? self::tierBasedAmount($supervisor, $tier, $orderTotal, $totalQty) : null;
+                if ($supervisorTierAmount !== null) {
+                    $effectivePct = $orderTotal > 0 ? round($supervisorTierAmount / $orderTotal * 100, 2) : 0.0;
+                    self::insertRow($orderId, $sellerId, (int) $supervisor['id'], 'supervisor', $effectivePct, $supervisorTierAmount);
+                } elseif ((float) ($supervisor['commission_pct'] ?? 0) > 0) {
                     $pct = (float) $supervisor['commission_pct'];
                     self::insertRow($orderId, $sellerId, (int) $supervisor['id'], 'supervisor', $pct, round($orderTotal * $pct / 100, 2));
                 }
@@ -143,24 +153,24 @@ class Commission
     }
 
     /**
-     * Comissao do Vendedor pela tabela de faixa de PRECO (Fase 31, antes era faixa de quantidade
-     * na Fase 24) -- null se o Vendedor nao tem commission_type configurado (ainda no esquema
-     * antigo de % do pool) OU se nao ha valor cadastrado especificamente pra essa faixa. Nesse
-     * caso o chamador cai de volta pro % do pool, igual Gestor. "percentual" e sobre o TOTAL do
-     * pedido (nao o pool); "fixo" e por unidade vendida (valor x quantidade total do pedido).
+     * Comissao por tabela de faixa de PRECO (Fase 31, Vendedor; Fase 83, tambem Supervisor) --
+     * null se a pessoa nao tem commission_type configurado (ainda no esquema simples de % fixo)
+     * OU se nao ha valor cadastrado especificamente pra essa faixa. Nesse caso o chamador cai de
+     * volta pro % simples (commission_pct), igual Gestor/Gerente. "percentual" e sobre o TOTAL do
+     * pedido; "fixo" e por unidade vendida (valor x quantidade total do pedido).
      */
-    private static function vendorTierAmount(array $vendedor, array $tier, float $orderTotal, int $totalQty): ?float
+    private static function tierBasedAmount(array $person, array $tier, float $orderTotal, int $totalQty): ?float
     {
-        if (empty($vendedor['commission_type'])) {
+        if (empty($person['commission_type'])) {
             return null;
         }
 
-        $value = UserCommissionTier::valueFor((int) $vendedor['id'], (int) $tier['id']);
+        $value = UserCommissionTier::valueFor((int) $person['id'], (int) $tier['id']);
         if ($value === null) {
             return null;
         }
 
-        return $vendedor['commission_type'] === 'percentual'
+        return $person['commission_type'] === 'percentual'
             ? round($orderTotal * $value / 100, 2)
             : round($value * $totalQty, 2);
     }

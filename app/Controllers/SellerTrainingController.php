@@ -8,6 +8,7 @@ use App\Core\Response;
 use App\Core\Roles;
 use App\Core\Router;
 use App\Core\View;
+use App\Models\SellerTrainingModule;
 use App\Models\SellerTrainingProgress;
 use App\Models\SellerTrainingVideo;
 use App\Models\User;
@@ -41,9 +42,18 @@ class SellerTrainingController
             Router::redirect('/painel');
         }
 
+        // Fase 83: agrupa por modulo pra exibir em blocos, na sequencia definida pelo admin/
+        // gerente -- videos sem modulo (module_id null) caem no bucket 0, mostrado por ultimo.
+        $modules = SellerTrainingModule::all();
+        $byModule = [];
+        foreach ($videos as $v) {
+            $byModule[(int) ($v['module_id'] ?? 0)][] = $v;
+        }
+
         View::render('painel/training/show', [
             'user' => $user,
-            'videos' => $videos,
+            'modules' => $modules,
+            'byModule' => $byModule,
             'progress' => SellerTrainingProgress::forUser((int) $user['id']),
         ], null);
     }
@@ -79,13 +89,22 @@ class SellerTrainingController
     }
 
     /** Gestao de conteudo (admin/gerente) -- mesmo escopo do TutorialController::manage(),
-     *  papel nacional de suporte a conteudo (Roles::SUPERVISOR_ASSIGNMENT). */
+     *  papel nacional de suporte a conteudo (Roles::SUPERVISOR_ASSIGNMENT). Fase 83: videos
+     *  organizados em modulos -- agrupa aqui pra view nao precisar repetir a logica. */
     public function manage(): void
     {
         Auth::requireRole(Roles::SUPERVISOR_ASSIGNMENT);
+
+        $videos = SellerTrainingVideo::all();
+        $byModule = [];
+        foreach ($videos as $v) {
+            $byModule[(int) ($v['module_id'] ?? 0)][] = $v;
+        }
+
         View::render('painel/settings/treinamento', [
             'user' => Auth::user(),
-            'videos' => SellerTrainingVideo::all(),
+            'modules' => SellerTrainingModule::all(),
+            'byModule' => $byModule,
         ]);
     }
 
@@ -102,7 +121,12 @@ class SellerTrainingController
             Router::redirect('/painel/configuracoes/treinamento?erro=1');
         }
 
-        SellerTrainingVideo::create($title, $videoUrl);
+        $moduleId = !empty($_POST['module_id']) ? (int) $_POST['module_id'] : null;
+        if ($moduleId !== null && !SellerTrainingModule::find($moduleId)) {
+            $moduleId = null;
+        }
+
+        SellerTrainingVideo::create($title, $videoUrl, $moduleId);
         Router::redirect('/painel/configuracoes/treinamento?sucesso=1');
     }
 
@@ -114,6 +138,55 @@ class SellerTrainingController
         }
 
         SellerTrainingVideo::delete((int) $id);
+        Router::redirect('/painel/configuracoes/treinamento?sucesso=1');
+    }
+
+    public function moveVideo(string $id, string $direction): void
+    {
+        Auth::requireRole(Roles::SUPERVISOR_ASSIGNMENT);
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            Router::redirect('/painel/configuracoes/treinamento?erro=1');
+        }
+
+        $direction === 'subir' ? SellerTrainingVideo::moveUp((int) $id) : SellerTrainingVideo::moveDown((int) $id);
+        Router::redirect('/painel/configuracoes/treinamento?sucesso=1');
+    }
+
+    public function storeModule(): void
+    {
+        Auth::requireRole(Roles::SUPERVISOR_ASSIGNMENT);
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            Router::redirect('/painel/configuracoes/treinamento?erro=1');
+        }
+
+        $title = trim($_POST['title'] ?? '');
+        if ($title === '') {
+            Router::redirect('/painel/configuracoes/treinamento?erro=2');
+        }
+
+        SellerTrainingModule::create($title);
+        Router::redirect('/painel/configuracoes/treinamento?sucesso=1');
+    }
+
+    public function destroyModule(string $id): void
+    {
+        Auth::requireRole(Roles::SUPERVISOR_ASSIGNMENT);
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            Router::redirect('/painel/configuracoes/treinamento?erro=1');
+        }
+
+        SellerTrainingModule::delete((int) $id);
+        Router::redirect('/painel/configuracoes/treinamento?sucesso=1');
+    }
+
+    public function moveModule(string $id, string $direction): void
+    {
+        Auth::requireRole(Roles::SUPERVISOR_ASSIGNMENT);
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            Router::redirect('/painel/configuracoes/treinamento?erro=1');
+        }
+
+        $direction === 'subir' ? SellerTrainingModule::moveUp((int) $id) : SellerTrainingModule::moveDown((int) $id);
         Router::redirect('/painel/configuracoes/treinamento?sucesso=1');
     }
 }

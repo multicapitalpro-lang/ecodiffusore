@@ -285,7 +285,7 @@ $erro = isset($_GET['erro']);
         $depoimentosDemo = [
             ['nome' => 'Caminhoneiro autônomo', 'texto' => 'Caminhão melhorou a média e trouxe mais torque.', 'video' => 'depoimento-1'],
             ['nome' => 'Cliente Ecodiffusore', 'texto' => 'Senti a diferença já nos primeiros abastecimentos, o motor responde melhor.', 'video' => 'depoimento-2'],
-            ['nome' => 'Transportadora parceira', 'texto' => 'Reduzimos o custo de combustível em toda a frota de forma perceptível.', 'video' => 'depoimento-3'],
+            ['nome' => 'Transportadora parceira', 'texto' => 'Aceleração máxima, motor tranquilo: o painel mostra que nem estamos exigindo o limite do motor com o Ecodiffusore instalado.', 'video' => 'depoimento-3'],
             ['nome' => 'Licenciado Ecodiffusore', 'texto' => 'O consumo no painel confirma a economia real, dia após dia.', 'video' => 'depoimento-4'],
             ['nome' => 'Motorista parceiro', 'texto' => 'Rodando com mais economia e sem perder desempenho.', 'video' => 'depoimento-5'],
         ];
