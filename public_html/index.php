@@ -82,6 +82,11 @@ $router->post('/api/v1/logout', [App\Controllers\Api\AuthController::class, 'log
 $router->get('/api/v1/me', [App\Controllers\Api\AuthController::class, 'me']);
 $router->get('/api/v1/dashboard', [App\Controllers\Api\DashboardController::class, 'summary']);
 $router->get('/api/v1/leads', [App\Controllers\Api\LeadController::class, 'index']);
+$router->get('/api/v1/leads/opcoes', [App\Controllers\Api\LeadController::class, 'options']);
+$router->get('/api/v1/leads/{id}', [App\Controllers\Api\LeadController::class, 'show']);
+$router->post('/api/v1/leads/{id}/status', [App\Controllers\Api\LeadController::class, 'updateStatus']);
+$router->post('/api/v1/leads/{id}/atribuir', [App\Controllers\Api\LeadController::class, 'assign']);
+$router->post('/api/v1/leads/{id}/notas', [App\Controllers\Api\LeadController::class, 'storeNote']);
 $router->get('/api/v1/aprovacoes', [App\Controllers\Api\ApprovalController::class, 'index']);
 $router->post('/api/v1/aprovacoes/{id}/decidir', [App\Controllers\Api\ApprovalController::class, 'decide']);
 $router->get('/api/v1/pedidos', [App\Controllers\Api\OrderController::class, 'index']);
