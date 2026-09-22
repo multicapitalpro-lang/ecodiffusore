@@ -353,6 +353,49 @@ class ClientController
         Router::redirect('/painel/clientes?sucesso=2');
     }
 
+    /** Fase 79: popup de confirmação antes de excluir um cliente com pedido/orçamento vinculado
+     *  -- pedido explicito do usuario depois de tentar limpar clientes de teste em lote e tomar
+     *  erro de vínculo sem entender o motivo. Mostra os pedidos/orçamentos que serão apagados
+     *  junto, pra decisão informada antes de uma ação irreversível. */
+    public function confirmDestroy(string $id): void
+    {
+        $client = $this->authorizeClient((int) $id);
+        $id = (int) $id;
+
+        View::render('painel/clients/_delete_confirm', [
+            'client' => $client,
+            'impact' => Client::deletionImpact($id),
+        ], null);
+    }
+
+    public function destroyConfirmed(string $id): void
+    {
+        $this->authorizeClient((int) $id);
+        $id = (int) $id;
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            if (Response::isAjax()) {
+                Response::json(['ok' => false, 'errors' => ['geral' => 'Sessão expirada, recarregue a página.']]);
+            }
+            Router::redirect('/painel/clientes?erro=csrf');
+        }
+
+        try {
+            Client::cascadeDelete($id);
+        } catch (\PDOException $e) {
+            $msg = 'Não foi possível excluir: existe um lançamento financeiro deste cliente que já faz parte de uma remessa bancária.';
+            if (Response::isAjax()) {
+                Response::json(['ok' => false, 'errors' => ['geral' => $msg]]);
+            }
+            Router::redirect('/painel/clientes?erro=vinculo');
+        }
+
+        if (Response::isAjax()) {
+            Response::json(['ok' => true, 'redirect' => '/painel/clientes?sucesso=2']);
+        }
+        Router::redirect('/painel/clientes?sucesso=2');
+    }
+
     public function destroyBulk(): void
     {
         Auth::requireRole(Roles::STAFF);
@@ -363,6 +406,10 @@ class ClientController
         }
 
         $ids = array_unique(array_map('intval', $_POST['ids'] ?? []));
+        // Fase 79: "Também excluir pedidos/orçamentos vinculados" no bulk -- mesmo cascadeDelete()
+        // usado no popup de exclusão individual, sem preview por cliente aqui (impraticável pra
+        // dezenas de clientes de uma vez), so o aviso generico ja mostrado no data-confirm do botão.
+        $cascade = !empty($_POST['cascade']);
         $deleted = 0;
         $failed = 0;
 
@@ -376,7 +423,11 @@ class ClientController
                 continue;
             }
             try {
-                Client::delete($id);
+                if ($cascade) {
+                    Client::cascadeDelete($id);
+                } else {
+                    Client::delete($id);
+                }
                 $deleted++;
             } catch (\PDOException $e) {
                 $failed++;

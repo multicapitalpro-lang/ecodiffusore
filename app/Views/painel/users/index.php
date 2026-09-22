@@ -98,10 +98,80 @@ $erroLabels = [
                 </tr>
             </thead>
             <tbody>
+                <?php
+                // Fase 79: organograma em pirâmide (sanfona) -- Licenciado expande mostrando
+                // Gestores/Vendedores da rede (2 níveis: diretos + vendedores de cada Gestor);
+                // Vendedor (direto na tabela ou dentro da sanfona de um Licenciado) expande
+                // mostrando os próprios Clientes, carregados sob demanda via fetch().
+                $renderSellerAccordionRow = function (array $seller, int $depth) {
+                    ?>
+                    <tr class="accordion-row" data-accordion-for="seller-<?= (int) $seller['id'] ?>" hidden>
+                        <td colspan="12">
+                            <div class="accordion-content" data-clients-for="<?= (int) $seller['id'] ?>" data-loaded="0" style="margin-left:<?= $depth * 20 ?>px">
+                                <p class="hint-text">Carregando clientes...</p>
+                            </div>
+                        </td>
+                    </tr>
+                    <?php
+                };
+
+                $renderLicenciadoAccordionRow = function (array $licenciado) use ($byManager, $renderSellerAccordionRow) {
+                    $directChildren = $byManager[(int) $licenciado['id']] ?? [];
+                    ?>
+                    <tr class="accordion-row" data-accordion-for="licenciado-<?= (int) $licenciado['id'] ?>" hidden>
+                        <td colspan="12">
+                            <div class="accordion-content">
+                                <?php if (!$directChildren): ?>
+                                    <p class="hint-text">Nenhum Gestor ou Vendedor cadastrado nessa rede ainda.</p>
+                                <?php else: ?>
+                                    <table class="data-table data-table-compact">
+                                        <thead><tr><th>Nome</th><th>Papel</th><th>Cidade/UF</th><th></th></tr></thead>
+                                        <tbody>
+                                            <?php foreach ($directChildren as $child): ?>
+                                                <tr>
+                                                    <td class="text-standardized"><?= View::e($child['name']) ?></td>
+                                                    <td><span class="role-badge role-<?= View::e($child['role_slug']) ?>"><?= View::e($child['role_name']) ?></span></td>
+                                                    <td><?= $child['city'] ? View::e($child['city']) . ($child['state'] ? '/' . View::e($child['state']) : '') : '—' ?></td>
+                                                    <td>
+                                                        <?php if ($child['role_slug'] === 'vendedor'): ?>
+                                                            <button type="button" class="link-button accordion-toggle" data-toggle-clients="<?= (int) $child['id'] ?>">Ver clientes ▾</button>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                </tr>
+                                                <?php if ($child['role_slug'] === 'vendedor'): $renderSellerAccordionRow($child, 1); ?>
+                                                <?php elseif ($child['role_slug'] === 'gestor'): ?>
+                                                    <?php foreach (($byManager[(int) $child['id']] ?? []) as $grandchild): ?>
+                                                        <?php if ($grandchild['role_slug'] !== 'vendedor') continue; ?>
+                                                        <tr>
+                                                            <td class="text-standardized" style="padding-left:24px">↳ <?= View::e($grandchild['name']) ?></td>
+                                                            <td><span class="role-badge role-vendedor">Vendedor</span></td>
+                                                            <td><?= $grandchild['city'] ? View::e($grandchild['city']) . ($grandchild['state'] ? '/' . View::e($grandchild['state']) : '') : '—' ?></td>
+                                                            <td><button type="button" class="link-button accordion-toggle" data-toggle-clients="<?= (int) $grandchild['id'] ?>">Ver clientes ▾</button></td>
+                                                        </tr>
+                                                        <?php $renderSellerAccordionRow($grandchild, 2); ?>
+                                                    <?php endforeach; ?>
+                                                <?php endif; ?>
+                                            <?php endforeach; ?>
+                                        </tbody>
+                                    </table>
+                                <?php endif; ?>
+                            </div>
+                        </td>
+                    </tr>
+                    <?php
+                };
+                ?>
                 <?php foreach ($users as $u): ?>
                     <tr>
                         <td><input type="checkbox" name="ids[]" value="<?= (int) $u['id'] ?>" class="row-select-user" <?= $u['role_slug'] === 'admin' ? 'disabled' : '' ?>></td>
-                        <td class="text-standardized"><?= View::e($u['name']) ?></td>
+                        <td class="text-standardized">
+                            <?php if ($u['role_slug'] === 'licenciado'): ?>
+                                <button type="button" class="link-button accordion-toggle" data-toggle-licenciado="<?= (int) $u['id'] ?>" title="Ver rede deste Licenciado">▸</button>
+                            <?php elseif ($u['role_slug'] === 'vendedor'): ?>
+                                <button type="button" class="link-button accordion-toggle" data-toggle-clients="<?= (int) $u['id'] ?>" title="Ver clientes deste Vendedor">▸</button>
+                            <?php endif; ?>
+                            <?= View::e($u['name']) ?>
+                        </td>
                         <td><?= View::e($u['email']) ?></td>
                         <td><span class="role-badge role-<?= View::e($u['role_slug']) ?>"><?= View::e($u['role_name']) ?></span></td>
                         <td><span class="status-badge status-<?= View::e($u['status']) ?>"><?= $u['status'] === 'active' ? 'Ativo' : 'Inativo' ?></span></td>
@@ -145,9 +215,12 @@ $erroLabels = [
                             <?php endif; ?>
                         </td>
                     </tr>
+                    <?php if ($u['role_slug'] === 'licenciado'): $renderLicenciadoAccordionRow($u); ?>
+                    <?php elseif ($u['role_slug'] === 'vendedor'): $renderSellerAccordionRow($u, 1); ?>
+                    <?php endif; ?>
                 <?php endforeach; ?>
                 <?php if (!$users): ?>
-                    <tr><td colspan="10">Nenhum usuário encontrado com esses filtros.</td></tr>
+                    <tr><td colspan="12">Nenhum usuário encontrado com esses filtros.</td></tr>
                 <?php endif; ?>
             </tbody>
         </table>
@@ -191,5 +264,45 @@ $erroLabels = [
             e.preventDefault();
         }
     });
+
+    // Fase 79: organograma em pirâmide -- clicar num Licenciado expande a rede (Gestores/
+    // Vendedores); clicar num Vendedor expande os Clientes dele, carregados sob demanda.
+    var table = document.querySelector('.table-scroll table');
+    if (table) {
+        table.addEventListener('click', function (e) {
+            var licBtn = e.target.closest('[data-toggle-licenciado]');
+            if (licBtn) {
+                toggleAccordion('licenciado-' + licBtn.dataset.toggleLicenciado, licBtn);
+                return;
+            }
+            var clBtn = e.target.closest('[data-toggle-clients]');
+            if (clBtn) {
+                var sellerId = clBtn.dataset.toggleClients;
+                var row = toggleAccordion('seller-' + sellerId, clBtn);
+                if (row) {
+                    var box = row.querySelector('[data-clients-for="' + sellerId + '"]');
+                    if (box && box.dataset.loaded === '0' && !row.hidden) {
+                        box.dataset.loaded = '1';
+                        fetch('/painel/usuarios/' + sellerId + '/clientes')
+                            .then(function (r) { return r.text(); })
+                            .then(function (html) { box.innerHTML = html; })
+                            .catch(function () { box.innerHTML = '<p class="hint-text">Erro ao carregar clientes.</p>'; });
+                    }
+                }
+            }
+        });
+    }
+
+    function toggleAccordion(key, btn) {
+        var row = table.querySelector('[data-accordion-for="' + key + '"]');
+        if (!row) return null;
+        row.hidden = !row.hidden;
+        if (btn.textContent.indexOf('▸') !== -1 || btn.textContent.indexOf('▾') !== -1) {
+            btn.textContent = row.hidden ? '▸' : '▾';
+        } else {
+            btn.textContent = row.hidden ? 'Ver clientes ▾' : 'Ocultar clientes ▴';
+        }
+        return row;
+    }
 })();
 </script>

@@ -83,7 +83,11 @@ $erroLabels = [
             </select>
         </label>
         <button type="submit" class="btn btn-outline">Vincular a vendedor</button>
-        <button type="submit" formaction="/painel/clientes/excluir-lote" class="btn btn-danger" data-confirm="Excluir os clientes selecionados? Essa ação não pode ser desfeita.">🗑 Excluir selecionados (<span id="bulk-count">0</span>)</button>
+        <label style="display:flex;align-items:center;gap:6px;font-size:.85rem;">
+            <input type="checkbox" name="cascade" value="1">
+            Também excluir pedidos/orçamentos vinculados
+        </label>
+        <button type="submit" formaction="/painel/clientes/excluir-lote" class="btn btn-danger" data-confirm="Excluir os clientes selecionados? Se a caixa 'também excluir pedidos/orçamentos vinculados' estiver marcada, isso também apaga pedidos/orçamentos/lançamentos financeiros deles. Essa ação não pode ser desfeita.">🗑 Excluir selecionados (<span id="bulk-count">0</span>)</button>
     </div>
 
     <div class="table-scroll">
@@ -117,7 +121,7 @@ $erroLabels = [
                         <td><span class="status-badge status-<?= $c['status'] === 'ativo' ? 'active' : 'inactive' ?>"><?= $c['status'] === 'ativo' ? 'Ativo' : 'Inativo' ?></span></td>
                         <td class="table-actions">
                             <button type="button" class="link-button" data-edit-client="<?= (int) $c['id'] ?>">Editar</button>
-                            <button type="submit" formaction="/painel/clientes/<?= (int) $c['id'] ?>/excluir" formnovalidate class="icon-button-danger" title="Excluir" data-confirm="Excluir o cliente <?= View::e($c['name']) ?>? Essa ação não pode ser desfeita.">🗑</button>
+                            <button type="button" class="icon-button-danger" title="Excluir" data-delete-client="<?= (int) $c['id'] ?>">🗑</button>
                         </td>
                     </tr>
                 <?php endforeach; ?>
@@ -181,6 +185,13 @@ $erroLabels = [
 <dialog class="modal" id="modal-client-edit">
     <div id="modal-client-edit-content">
         <div class="modal-header"><h2>Editar cliente</h2><button type="button" class="modal-close" data-modal-close aria-label="Fechar">&times;</button></div>
+        <div class="modal-body"><p class="hint-text">Carregando...</p></div>
+    </div>
+</dialog>
+
+<dialog class="modal" id="modal-client-delete">
+    <div id="modal-client-delete-content">
+        <div class="modal-header"><h2>Excluir cliente</h2><button type="button" class="modal-close" data-modal-close aria-label="Fechar">&times;</button></div>
         <div class="modal-body"><p class="hint-text">Carregando...</p></div>
     </div>
 </dialog>

@@ -317,6 +317,11 @@ a { text-decoration: none; color: inherit; }
 .data-table tbody tr { transition: background .12s ease; }
 .data-table tbody tr:hover { background: #fafbfd; }
 .data-table td a { color: var(--green-dark); font-weight: 700; }
+/* Fase 79: sanfona (organograma em pirâmide) em /painel/usuarios */
+.accordion-row td { background: var(--gray-bg); padding: 14px 16px; }
+.accordion-content .data-table-compact th, .accordion-content .data-table-compact td { padding: 8px 12px; font-size: .82rem; }
+.accordion-content .data-table-compact { min-width: 0; box-shadow: none; border: 1px solid var(--border); }
+.accordion-toggle { font-size: .82rem; margin-right: 6px; min-width: 16px; display: inline-block; }
 .status-badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; font-size: .76rem; font-weight: 700; white-space: nowrap; }
 .status-badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
 .status-active, .status-novo { background: #e5f6e0; color: var(--green-dark); }

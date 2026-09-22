@@ -217,6 +217,84 @@ class Client
         $stmt->execute(['id' => $id]);
     }
 
+    /** Fase 79: o que trava a exclusão direta de um cliente (orders.client_id/quotes.client_id/
+     *  financial_transactions.client_id são todos RESTRICT) -- usado pra montar o popup de
+     *  confirmação antes de cascadeDelete(), pedido explicito do usuario ("mostrando informações
+     *  daquele pedido e me confirmando se realmente quero excluir"). */
+    public static function deletionImpact(int $id): array
+    {
+        $db = Database::connection();
+
+        $orders = $db->prepare('SELECT id, order_date, status, total_value FROM orders WHERE client_id = :id ORDER BY order_date DESC');
+        $orders->execute(['id' => $id]);
+
+        $quotes = $db->prepare('SELECT id, quote_date, status, total_value FROM quotes WHERE client_id = :id ORDER BY quote_date DESC');
+        $quotes->execute(['id' => $id]);
+
+        $trans = $db->prepare('SELECT COUNT(*) AS qty, COALESCE(SUM(amount), 0) AS total FROM financial_transactions WHERE client_id = :id');
+        $trans->execute(['id' => $id]);
+
+        $warranties = $db->prepare('SELECT COUNT(*) AS qty FROM warranty_requests WHERE client_id = :id');
+        $warranties->execute(['id' => $id]);
+
+        return [
+            'orders' => $orders->fetchAll(),
+            'quotes' => $quotes->fetchAll(),
+            'financial_transactions' => $trans->fetch(),
+            'warranty_requests_count' => (int) $warranties->fetchColumn(),
+        ];
+    }
+
+    /** Fase 79: exclusão em cascata (cliente + pedidos/orçamentos vinculados + tudo que pendura
+     *  neles) -- so chamada depois de confirmação explícita na tela (ver deletionImpact()).
+     *  orders.client_id/quotes.client_id/financial_transactions.client_id são RESTRICT (sem essa
+     *  limpeza manual, o DELETE direto do cliente sempre falhava quando havia pedido vinculado --
+     *  o motivo do erro que o usuario reportou tentando limpar clientes de teste em lote).
+     *  payments/approvals são polimórficos (payable_type/approvable_type), sem FK real -- por
+     *  isso precisam de limpeza manual aqui, senão ficam orfãos (não bloqueiam o DELETE, mas
+     *  sujam o banco). Tudo dentro de uma transação: ou termina tudo, ou nada muda. */
+    public static function cascadeDelete(int $id): void
+    {
+        $db = Database::connection();
+        $db->beginTransaction();
+
+        try {
+            $orderIds = array_map('intval', array_column(
+                $db->query("SELECT id FROM orders WHERE client_id = {$id}")->fetchAll(),
+                'id'
+            ));
+            if ($orderIds) {
+                $in = implode(',', $orderIds);
+                $db->exec("DELETE FROM warranty_requests WHERE order_id IN ({$in})");
+                $db->exec("DELETE FROM payments WHERE payable_type = 'order' AND payable_id IN ({$in})");
+                $db->exec("DELETE FROM approvals WHERE approvable_type = 'order' AND approvable_id IN ({$in})");
+                $db->exec("DELETE FROM orders WHERE id IN ({$in})");
+            }
+
+            $quoteIds = array_map('intval', array_column(
+                $db->query("SELECT id FROM quotes WHERE client_id = {$id}")->fetchAll(),
+                'id'
+            ));
+            if ($quoteIds) {
+                $in = implode(',', $quoteIds);
+                $db->exec("DELETE FROM payments WHERE payable_type = 'quote' AND payable_id IN ({$in})");
+                $db->exec("DELETE FROM approvals WHERE approvable_type = 'quote' AND approvable_id IN ({$in})");
+                $db->exec("DELETE FROM quotes WHERE id IN ({$in})");
+            }
+
+            $stmt = $db->prepare('DELETE FROM financial_transactions WHERE client_id = :id');
+            $stmt->execute(['id' => $id]);
+
+            $stmt = $db->prepare('DELETE FROM clients WHERE id = :id');
+            $stmt->execute(['id' => $id]);
+
+            $db->commit();
+        } catch (\PDOException $e) {
+            $db->rollBack();
+            throw $e;
+        }
+    }
+
     public static function findByUserId(int $userId): ?array
     {
         $stmt = Database::connection()->prepare('SELECT * FROM clients WHERE user_id = :id LIMIT 1');

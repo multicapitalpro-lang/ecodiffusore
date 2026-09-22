@@ -11,6 +11,7 @@ use App\Core\Router;
 use App\Core\ScreenPermissions;
 use App\Core\View;
 use App\Models\AuditLog;
+use App\Models\Client;
 use App\Models\Commission;
 use App\Models\Order;
 use App\Models\PricingTier;
@@ -76,13 +77,45 @@ class UserController
         }
         unset($u);
 
+        // Fase 79: organograma em pirâmide (sanfona) -- pedido explicito do usuario: clicar num
+        // Licenciado mostra Gestores/Vendedores da rede dele; clicar num Vendedor mostra os
+        // Clientes vinculados. Agrupa por manager_id sobre TODO o escopo (nao so os filtrados),
+        // pra sanfona nao sumir com um filtro ativo na tabela principal.
+        $byManager = [];
+        foreach ($scoped as $u) {
+            $byManager[(int) ($u['manager_id'] ?? 0)][] = $u;
+        }
+
         View::render('painel/users/index', [
             'user' => $user,
             'users' => $users,
             'stats' => $stats,
             'filters' => $filters,
             'roles' => Role::all(),
+            'byManager' => $byManager,
         ]);
+    }
+
+    /** Fase 79: clientes vinculados a um Vendedor/Gestor/Licenciado -- fragmento HTML carregado
+     *  via fetch() quando a sanfona de um vendedor e' aberta pela primeira vez (lazy, pra nao
+     *  consultar clientes de todo mundo de uma vez so). Mesmo escopo de acesso de
+     *  ClientController (isAuthorizedTarget), aplicado sobre o VENDEDOR (nao sobre quem esta
+     *  pedindo), senao um Licenciado nao conseguiria ver os clientes do proprio vendedor. */
+    public function clientsForSeller(string $id): void
+    {
+        Auth::requireRole(Roles::USER_MANAGEMENT);
+        $user = Auth::user();
+        $id = (int) $id;
+
+        $target = User::find($id);
+        if (!$target || !$this->isAuthorizedTarget($user, $id)) {
+            http_response_code(403);
+            exit;
+        }
+
+        View::render('painel/users/_clients_fragment', [
+            'clients' => Client::all(['seller_id' => $id]),
+        ], null);
     }
 
     public function create(): void

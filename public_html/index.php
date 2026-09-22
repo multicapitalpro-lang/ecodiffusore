@@ -165,6 +165,7 @@ $router->get('/painel/usuarios/{id}/editar', [App\Controllers\UserController::cl
 $router->post('/painel/usuarios/excluir-lote', [App\Controllers\UserController::class, 'destroyBulk']);
 $router->post('/painel/usuarios/{id}', [App\Controllers\UserController::class, 'update']);
 $router->post('/painel/usuarios/{id}/excluir', [App\Controllers\UserController::class, 'destroy']);
+$router->get('/painel/usuarios/{id}/clientes', [App\Controllers\UserController::class, 'clientsForSeller']);
 $router->get('/painel/licenciados', [App\Controllers\UserController::class, 'licenciados']);
 $router->post('/painel/licenciados/atribuir-lote', [App\Controllers\UserController::class, 'assignSupervisorBulk']);
 $router->post('/painel/licenciados/{id}/supervisor', [App\Controllers\UserController::class, 'assignSupervisor']);
@@ -216,6 +217,8 @@ $router->get('/painel/clientes/exportar', [App\Controllers\ClientController::cla
 $router->get('/painel/clientes/{id}/editar', [App\Controllers\ClientController::class, 'edit']);
 $router->post('/painel/clientes/{id}', [App\Controllers\ClientController::class, 'update']);
 $router->post('/painel/clientes/{id}/excluir', [App\Controllers\ClientController::class, 'destroy']);
+$router->get('/painel/clientes/{id}/excluir-preview', [App\Controllers\ClientController::class, 'confirmDestroy']);
+$router->post('/painel/clientes/{id}/excluir-confirmado', [App\Controllers\ClientController::class, 'destroyConfirmed']);
 $router->get('/painel/clientes/{id}', [App\Controllers\ClientController::class, 'show']);
 $router->post('/painel/clientes/{id}/notas', [App\Controllers\ClientController::class, 'storeNote']);
 $router->get('/painel/clientes/notas/{id}/anexo', [App\Controllers\ClientController::class, 'downloadNoteAttachment']);

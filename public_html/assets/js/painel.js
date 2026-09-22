@@ -727,6 +727,13 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         });
 
+        document.querySelectorAll('[data-delete-client]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var id = btn.getAttribute('data-delete-client');
+                openFragmentModal('modal-client-delete', 'modal-client-delete-content', '/painel/clientes/' + id + '/excluir-preview', 'Excluir cliente');
+            });
+        });
+
         document.querySelectorAll('[data-edit-transaction]').forEach(function (btn) {
             btn.addEventListener('click', function () {
                 var id = btn.getAttribute('data-edit-transaction');
