@@ -54,24 +54,31 @@ class MachineQuoteRequest
 
     /** Fila de cotacoes pendentes/respondidas no escopo de staff -- $userIds: null = sem escopo
      *  (Admin), [] = nada no escopo, senao filtra por assigned_user_id. Mesmo espirito de
-     *  Lead::forScope()/WarrantyRequest::forScope(). */
-    public static function forScope(?array $userIds, ?string $status = null): array
+     *  Lead::forScope()/WarrantyRequest::forScope(). Fase 82: $includeUnassigned -- quando o
+     *  GeoMatch nao acha ninguem no raio de 100km, assigned_user_id fica NULL, e antes isso so
+     *  aparecia pro Admin (NULL nunca cai num IN (...)); Gerente/Supervisor/Licenciado tambem
+     *  precisam ver pra poder assumir/responder (pedido explicito do usuario). */
+    public static function forScope(?array $userIds, ?string $status = null, bool $includeUnassigned = false): array
     {
         $sql = 'SELECT mq.*, u.name AS assignee_name FROM machine_quote_requests mq
                 LEFT JOIN users u ON u.id = mq.assigned_user_id WHERE 1=1';
         $params = [];
 
         if ($userIds !== null) {
-            if (!$userIds) {
+            if (!$userIds && !$includeUnassigned) {
                 return [];
             }
-            $names = [];
-            foreach (array_values($userIds) as $i => $uid) {
-                $key = "uid{$i}";
-                $names[] = ":{$key}";
-                $params[$key] = $uid;
+            $scopedSql = '1=0';
+            if ($userIds) {
+                $names = [];
+                foreach (array_values($userIds) as $i => $uid) {
+                    $key = "uid{$i}";
+                    $names[] = ":{$key}";
+                    $params[$key] = $uid;
+                }
+                $scopedSql = 'mq.assigned_user_id IN (' . implode(',', $names) . ')';
             }
-            $sql .= ' AND mq.assigned_user_id IN (' . implode(',', $names) . ')';
+            $sql .= ' AND (' . $scopedSql . ($includeUnassigned ? ' OR mq.assigned_user_id IS NULL' : '') . ')';
         }
         if ($status) {
             $sql .= ' AND mq.status = :status';

@@ -43,6 +43,13 @@ $pricingTiers = $pricingTiers ?? [];
             </div>
         </div>
 
+        <div style="position:relative;">
+            <label for="city">Cidade</label>
+            <input type="text" id="city" name="city" autocomplete="off" data-city-autocomplete placeholder="Digite pra buscar...">
+            <div class="autocomplete-results" hidden></div>
+            <p class="field-error" data-error-for="city"></p>
+        </div>
+
         <h3>Veículo</h3>
             <div class="form-grid-2">
                 <div>

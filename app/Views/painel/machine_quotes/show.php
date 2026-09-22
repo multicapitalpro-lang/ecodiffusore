@@ -66,7 +66,7 @@ $erro = $_GET['erro'] ?? null;
         <?php endif; ?>
         <p class="hint-text">Respondido por <?= View::e($quote['responder_name'] ?? '—') ?> em <?= $quote['responded_at'] ? View::e(date('d/m/Y H:i', strtotime($quote['responded_at']))) : '—' ?></p>
     </div>
-<?php else: ?>
+<?php elseif ($canRespond ?? false): ?>
     <h3 class="section-title">Definir preço e responder</h3>
     <form method="post" action="/painel/cotacoes-maquina/<?= (int) $quote['id'] ?>/responder" class="panel-form">
         <?= Csrf::field() ?>
@@ -79,4 +79,7 @@ $erro = $_GET['erro'] ?? null;
         <p class="hint-text">Salvar aqui NÃO envia nada pro cliente automaticamente — é só pra registrar o valor. Retorne o orçamento pra ele por WhatsApp/telefone.</p>
         <button type="submit" class="btn btn-primary" style="margin-top:12px">Salvar resposta</button>
     </form>
+<?php else: ?>
+    <h3 class="section-title">Aguardando valores</h3>
+    <p class="hint-text">Essa cotação ainda não tem preço definido. Só o Gerente ou o Admin podem inserir o valor.</p>
 <?php endif; ?>

@@ -258,6 +258,9 @@ class QuoteController
 
         $payments = Payment::forPayable('quote', (int) $id);
         $quote['payment_situation'] = Payment::situationFor($quote, $payments[0] ?? null, 'recusado');
+        // Fase 82: mesmo pedido de OrderController::show() -- Gerente/Supervisor tambem precisam
+        // ver o Licenciado da rede do orcamento, nao so o Vendedor.
+        $quote['licenciado_name'] = User::licenciadoNameFor($quote['seller_id'] !== null ? (int) $quote['seller_id'] : null);
 
         View::render('painel/quotes/show', [
             'user' => Auth::user(),

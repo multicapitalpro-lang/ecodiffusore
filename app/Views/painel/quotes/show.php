@@ -35,6 +35,9 @@ $situation = $quote['payment_situation'] ?? ['label' => '—', 'badge' => 'novo'
     <?php endif; ?>
     <p><strong>Cidade:</strong> <?= View::e($quote['client_city'] ?? $quote['lead_city'] ?? '—') ?></p>
     <p><strong>Vendedor:</strong> <?= View::e($quote['seller_name'] ?: 'Sem vendedor') ?></p>
+    <?php if (!empty($quote['licenciado_name'])): ?>
+        <p><strong>Licenciado:</strong> <?= View::e($quote['licenciado_name']) ?></p>
+    <?php endif; ?>
     <p><strong>Situação do pagamento:</strong> <span class="status-badge status-<?= View::e($situation['badge']) ?>"><?= View::e($situation['label']) ?></span></p>
     <p><strong>Gerado em:</strong> <?= View::e(date('d/m/Y', strtotime($quote['created_at']))) ?> às <?= View::e(date('H:i', strtotime($quote['created_at']))) ?></p>
     <p><strong>Data:</strong> <?= View::e(date('d/m/Y', strtotime($quote['quote_date']))) ?></p>

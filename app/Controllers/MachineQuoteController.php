@@ -27,17 +27,20 @@ class MachineQuoteController
 
         View::render('painel/machine_quotes/index', [
             'user' => $user,
-            'quotes' => MachineQuoteRequest::forScope($this->scopeUserIds($user), $status ?: null),
+            'quotes' => MachineQuoteRequest::forScope($this->scopeUserIds($user), $status ?: null, $this->includesUnassigned($user['role_slug'])),
             'status' => $status,
+            'canRespond' => in_array($user['role_slug'], ['admin', 'gerente'], true),
         ]);
     }
 
     public function show(string $id): void
     {
         $quote = $this->authorizeQuote((int) $id);
+        $user = Auth::user();
         View::render('painel/machine_quotes/show', [
-            'user' => Auth::user(),
+            'user' => $user,
             'quote' => $quote,
+            'canRespond' => in_array($user['role_slug'], ['admin', 'gerente'], true),
         ]);
     }
 
@@ -46,6 +49,15 @@ class MachineQuoteController
         $quote = $this->authorizeQuote((int) $id);
         $id = (int) $id;
         $user = Auth::user();
+
+        // Fase 82: so Gerente e Admin inserem valor de cotacao -- pedido explicito do usuario.
+        // Licenciado/Supervisor podem ver a cotacao (inclusive sem vendedor atribuido ainda) mas
+        // nao decidem o preco.
+        if (!in_array($user['role_slug'], ['admin', 'gerente'], true)) {
+            http_response_code(403);
+            require BASE_PATH . '/app/Views/errors/403.php';
+            exit;
+        }
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
             Router::redirect("/painel/cotacoes-maquina/{$id}?erro=1");
@@ -100,7 +112,11 @@ class MachineQuoteController
         }
 
         $scope = $this->scopeUserIds($user);
-        if ($scope !== null && !in_array((int) ($quote['assigned_user_id'] ?? 0), $scope, true)) {
+        $assignedId = (int) ($quote['assigned_user_id'] ?? 0);
+        $allowed = $scope === null
+            || in_array($assignedId, $scope, true)
+            || ($assignedId === 0 && $this->includesUnassigned($user['role_slug']));
+        if (!$allowed) {
             http_response_code(403);
             require BASE_PATH . '/app/Views/errors/403.php';
             exit;
@@ -127,5 +143,13 @@ class MachineQuoteController
         }
 
         return User::downlineIds((int) $user['id']);
+    }
+
+    /** Fase 82: cotacao sem vendedor atribuido (GeoMatch nao achou ninguem no raio de 100km)
+     *  precisa continuar visivel pra quem pode assumir/decidir -- Gerente, Supervisor e
+     *  Licenciado, mas nao Vendedor/Gestor (pedido explicito do usuario). */
+    private function includesUnassigned(string $role): bool
+    {
+        return in_array($role, ['gerente', 'supervisor', Roles::REGIONAL_OWNER], true);
     }
 }

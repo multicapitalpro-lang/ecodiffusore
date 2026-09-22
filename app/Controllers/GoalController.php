@@ -82,6 +82,7 @@ class GoalController
         if (!is_numeric($_POST['target_value'] ?? null) || (float) $_POST['target_value'] <= 0) {
             $errors['target_value'] = 'Informe um valor de meta válido.';
         }
+        $metricType = ($_POST['metric_type'] ?? '') === 'quantidade' ? 'quantidade' : 'valor';
 
         // "Toda a equipe" cria UMA meta (mesmo nome/valor/premio) pra CADA Vendedor entre os
         // destinatarios permitidos -- nao um alvo agregado dividido entre eles, cada um persegue
@@ -117,6 +118,7 @@ class GoalController
                 'start_date' => $_POST['start_date'],
                 'end_date' => $_POST['end_date'],
                 'target_value' => $_POST['target_value'],
+                'metric_type' => $metricType,
                 'reward_description' => trim($_POST['reward_description'] ?? ''),
                 'reward_amount' => trim($_POST['reward_amount'] ?? ''),
                 'seller_id' => $targetId,

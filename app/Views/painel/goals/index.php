@@ -6,6 +6,12 @@ $sucesso = isset($_GET['sucesso']);
 $erro = isset($_GET['erro']);
 $roleLabels = ['admin' => 'Admin', 'gerente' => 'Gerente', 'supervisor' => 'Supervisor', 'licenciado' => 'Licenciado', 'gestor' => 'Gestor', 'vendedor' => 'Vendedor'];
 $myId = (int) $user['id'];
+// Fase 82: meta por valor (R$) ou por quantidade (equipamentos/placas vendidas).
+$fmtGoal = function (float $value, string $metricType): string {
+    return $metricType === 'quantidade'
+        ? number_format($value, 0, ',', '.') . ' un.'
+        : 'R$ ' . number_format($value, 2, ',', '.');
+};
 ?>
 <div class="page-header">
     <h1>Metas</h1>
@@ -32,7 +38,7 @@ $myId = (int) $user['id'];
             </small>
             <div class="progress-bar"><div class="progress-fill" style="width:<?= $p['pct'] ?>%"></div></div>
             <strong><?= $p['pct'] ?>%<?= $p['reached'] ? ' 🎉' : '' ?></strong>
-            <span class="hint-inline">R$ <?= number_format($p['achieved'], 2, ',', '.') ?> de R$ <?= number_format($p['target'], 2, ',', '.') ?></span>
+            <span class="hint-inline"><?= $fmtGoal($p['achieved'], $g['metric_type'] ?? 'valor') ?> de <?= $fmtGoal($p['target'], $g['metric_type'] ?? 'valor') ?></span>
             <?php if ($g['reward_description'] || $g['reward_amount']): ?>
                 <?php
                 $rewardParts = array_filter([
@@ -74,8 +80,8 @@ $myId = (int) $user['id'];
                     <td><?= View::e($g['name']) ?></td>
                     <td><?= $g['seller_name'] ? View::e($g['seller_name']) : 'Geral' ?></td>
                     <td><?= View::e(date('d/m/Y', strtotime($g['start_date']))) ?> – <?= View::e(date('d/m/Y', strtotime($g['end_date']))) ?></td>
-                    <td>R$ <?= number_format($p['achieved'], 2, ',', '.') ?></td>
-                    <td>R$ <?= number_format($p['target'], 2, ',', '.') ?></td>
+                    <td><?= $fmtGoal($p['achieved'], $g['metric_type'] ?? 'valor') ?></td>
+                    <td><?= $fmtGoal($p['target'], $g['metric_type'] ?? 'valor') ?></td>
                     <td><?= $p['pct'] ?>%<?= $p['reached'] ? ' 🎉' : '' ?></td>
                     <td><?= $p['reached'] && ($g['reward_description'] || $g['reward_amount']) ? ($g['reward_paid'] ? 'Pago' : 'A pagar') : '—' ?></td>
                 </tr>
@@ -122,7 +128,14 @@ $myId = (int) $user['id'];
             </select>
             <p class="hint-text" style="margin-top:2px;">"Toda a equipe" cria a mesma meta, individualmente, pra cada Vendedor — não divide o valor entre eles.</p>
 
-            <label for="goal-value">Valor da meta (R$)</label>
+            <label for="goal-metric">Tipo de meta</label>
+            <select id="goal-metric" name="metric_type">
+                <option value="valor">Valor faturado (R$)</option>
+                <option value="quantidade">Quantidade de equipamentos vendidos</option>
+            </select>
+            <p class="hint-text" style="margin-top:2px;">Quantidade conta as placas/equipamentos vendidos no período — não muda com desconto ou faixa de preço, fica mais exato pra bater meta de vendas.</p>
+
+            <label for="goal-value" id="goal-value-label">Valor da meta (R$)</label>
             <input type="number" step="0.01" id="goal-value" name="target_value" placeholder="Ex: 50000,00" required>
 
             <label for="goal-reward-desc">Premiação (opcional)</label>
@@ -138,3 +151,26 @@ $myId = (int) $user['id'];
         </form>
     </div>
 </dialog>
+
+<script>
+(function () {
+    var metricSelect = document.getElementById('goal-metric');
+    var valueLabel = document.getElementById('goal-value-label');
+    var valueInput = document.getElementById('goal-value');
+    if (!metricSelect || !valueLabel || !valueInput) return;
+
+    function sync() {
+        if (metricSelect.value === 'quantidade') {
+            valueLabel.textContent = 'Quantidade de equipamentos';
+            valueInput.step = '1';
+            valueInput.placeholder = 'Ex: 20';
+        } else {
+            valueLabel.textContent = 'Valor da meta (R$)';
+            valueInput.step = '0.01';
+            valueInput.placeholder = 'Ex: 50000,00';
+        }
+    }
+    metricSelect.addEventListener('change', sync);
+    sync();
+})();
+</script>

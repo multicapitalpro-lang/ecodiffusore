@@ -244,6 +244,10 @@ class OrderController
 
         $payments = Payment::forPayable('order', (int) $id);
         $order['payment_situation'] = Payment::situationFor($order, $payments[0] ?? null);
+        // Fase 82: Gerente/Supervisor (rede nacional, so visualizam) so viam o Vendedor no
+        // detalhe do Pedido -- pedido explicito do usuario pra tambem mostrar o Licenciado da
+        // rede daquele pedido.
+        $order['licenciado_name'] = User::licenciadoNameFor($order['seller_id'] !== null ? (int) $order['seller_id'] : null);
 
         View::render('painel/orders/show', [
             'user' => Auth::user(),

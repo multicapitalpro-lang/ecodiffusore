@@ -155,7 +155,10 @@ class PropostaController
             $leadId = Lead::create([
                 'name' => $name,
                 'whatsapp' => $whatsapp,
-                'city' => '',
+                // Fase 82: antes ia sempre vazio -- pedido do usuario pra aparecer no card do
+                // Kanban igual aos leads vindos do site publico (autocomplete de cidade real,
+                // ver data-city-autocomplete no formulario, nunca texto livre).
+                'city' => trim($_POST['city'] ?? ''),
                 'truck_brand' => $brand,
                 'message' => null,
                 'source' => 'proposta_facil',
