@@ -40,3 +40,15 @@ $erro = isset($_GET['erro']);
     <textarea id="terms_text" name="terms_text" rows="14"><?= View::e($settings['terms_text'] ?? '') ?></textarea>
     <button type="submit" class="btn btn-primary" style="margin-top:12px">Salvar termos</button>
 </form>
+
+<div class="page-header" style="margin-top:32px;">
+    <h2>E-mails Profissionais (@ecodiffusorebrasil.com.br)</h2>
+</div>
+<p class="hint-text" style="margin-top:-6px;">A Hostinger limita a quantidade de caixas de e-mail por plano de hospedagem. Defina aqui quantos e-mails personalizados (ex: comercial.cascavel@ecodiffusorebrasil.com.br) o sistema aceita ter pedidos em aberto/ativos ao mesmo tempo — ajuste conforme o plano contratado. Os pedidos ficam em <a href="/painel/emails-profissionais">Emails Profissionais</a>.</p>
+
+<form method="post" action="/painel/configuracoes/empresa/cota-emails" class="panel-form panel-form-wide" style="max-width:320px">
+    <?= Csrf::field() ?>
+    <label for="custom_email_quota">Quantidade máxima de e-mails</label>
+    <input type="number" id="custom_email_quota" name="custom_email_quota" min="0" value="<?= (int) ($settings['custom_email_quota'] ?? 0) ?>" required>
+    <button type="submit" class="btn btn-primary" style="margin-top:12px">Salvar cota</button>
+</form>

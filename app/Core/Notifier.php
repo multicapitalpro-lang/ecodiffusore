@@ -593,6 +593,50 @@ class Notifier
         );
     }
 
+    /** Fase 84: Licenciado pediu um e-mail @ecodiffusorebrasil.com.br -- so o Admin recebe (ele
+     *  quem provisiona manualmente no hPanel da Hostinger, sem API publica pra isso).
+     *  @param array $request precisa de user_name/full_address/id */
+    public static function emailProfissionalSolicitado(array $request): void
+    {
+        $vars = [
+            'licenciado' => $request['user_name'] ?? '—',
+            'endereco' => $request['full_address'] ?? '—',
+            'url' => self::BASE_URL . '/painel/emails-profissionais',
+        ];
+        [, $text] = self::waTexts('email_profissional_solicitado', $vars);
+        if (!$text) {
+            return;
+        }
+
+        foreach (User::allByRole('admin') as $admin) {
+            if (!empty($admin['whatsapp'])) {
+                self::sendWhatsApp($admin['whatsapp'], $text);
+            }
+        }
+    }
+
+    /** Fase 84: admin aprovou/recusou o pedido de e-mail -- avisa quem pediu (Licenciado). $info
+     *  carrega a senha/instrucoes de acesso quando aprovado, ou o motivo quando recusado.
+     *  @param array $request precisa de user_id/full_address */
+    public static function emailProfissionalDecidido(array $request, string $status, ?string $info): void
+    {
+        $licenciado = User::find((int) $request['user_id']);
+        if (!$licenciado || empty($licenciado['whatsapp'])) {
+            return;
+        }
+
+        $vars = [
+            'endereco' => $request['full_address'] ?? '—',
+            'status' => $status,
+            'info' => $info ?: '—',
+            'url' => self::BASE_URL . '/painel/emails-profissionais',
+        ];
+        [$text] = self::waTexts('email_profissional_decidido', $vars);
+        if ($text) {
+            self::sendWhatsApp($licenciado['whatsapp'], $text);
+        }
+    }
+
     /** @param array $licenciado precisa de id/name/email */
     public static function cadastroAprovado(array $licenciado): void
     {

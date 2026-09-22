@@ -15,7 +15,7 @@ class CompanySettings
     public static function current(): array
     {
         $row = Database::connection()->query('SELECT * FROM company_settings WHERE id = 1')->fetch();
-        return $row ?: ['id' => 1, 'razao_social' => '', 'cnpj' => '', 'endereco' => '', 'terms_text' => ''];
+        return $row ?: ['id' => 1, 'razao_social' => '', 'cnpj' => '', 'endereco' => '', 'terms_text' => '', 'custom_email_quota' => 0];
     }
 
     public static function update(string $razaoSocial, string $cnpj, string $endereco): void
@@ -30,5 +30,14 @@ class CompanySettings
     {
         $stmt = Database::connection()->prepare('UPDATE company_settings SET terms_text = :terms_text WHERE id = 1');
         $stmt->execute(['terms_text' => $termsText]);
+    }
+
+    /** Fase 84: teto de e-mails profissionais (@ecodiffusorebrasil.com.br) que o admin aceita
+     *  provisionar ao mesmo tempo -- reflete o limite de caixas do plano de hospedagem atual da
+     *  Hostinger, nao um numero arbitrario (ver LicenciadoEmailRequest::countTowardQuota()). */
+    public static function updateEmailQuota(int $quota): void
+    {
+        $stmt = Database::connection()->prepare('UPDATE company_settings SET custom_email_quota = :quota WHERE id = 1');
+        $stmt->execute(['quota' => max(0, $quota)]);
     }
 }

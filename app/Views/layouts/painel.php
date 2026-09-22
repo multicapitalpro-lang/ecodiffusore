@@ -226,6 +226,9 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/desempen
                 <a href="/painel/whatsapp" class="<?= $isActive('/painel/whatsapp') ? 'is-active' : '' ?>">💬 Meu WhatsApp</a>
                 <a href="/painel/assinatura" class="<?= $isActive('/painel/assinatura') ? 'is-active' : '' ?>">⭐ Assinatura</a>
             <?php endif; ?>
+            <?php if ($role === 'licenciado'): ?>
+                <a href="/painel/emails-profissionais" class="<?= $isActive('/painel/emails-profissionais') ? 'is-active' : '' ?>">✉️ E-mail Profissional</a>
+            <?php endif; ?>
 
             <?php if (in_array($role, $userManagementRoles, true)): ?>
                 <a href="/painel/usuarios" class="<?= $isActive('/painel/usuarios') ? 'is-active' : '' ?>"><?= $icon('gear') ?> Usuários</a>
@@ -245,6 +248,7 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/desempen
                 <a href="/painel/configuracoes/nfe" class="<?= $isActive('/painel/configuracoes/nfe') ? 'is-active' : '' ?>"><?= $icon('wallet') ?> Config. de NF-e</a>
                 <a href="/painel/configuracoes/email" class="<?= $isActive('/painel/configuracoes/email') ? 'is-active' : '' ?>"><?= $icon('gear') ?> Config. de E-mail</a>
                 <a href="/painel/configuracoes/empresa" class="<?= $isActive('/painel/configuracoes/empresa') ? 'is-active' : '' ?>"><?= $icon('gear') ?> Dados da Empresa</a>
+                <a href="/painel/emails-profissionais/admin" class="<?= $isActive('/painel/emails-profissionais/admin') ? 'is-active' : '' ?>">✉️ E-mails Profissionais</a>
             <?php endif; ?>
             <?php if (in_array($role, ['admin', 'gerente'], true)): ?>
                 <a href="/painel/email" class="<?= $isActive('/painel/email') ? 'is-active' : '' ?>"><?= $icon('megaphone') ?> Caixa de E-mail</a>

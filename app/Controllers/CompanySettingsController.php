@@ -54,4 +54,20 @@ class CompanySettingsController
 
         Router::redirect('/painel/configuracoes/empresa?sucesso=1');
     }
+
+    /** Fase 84: teto de e-mails profissionais (@ecodiffusorebrasil.com.br) -- separado de
+     *  update()/updateTerms() de proposito, mesmo padrao ja usado aqui (campos/contexto diferentes
+     *  nao precisam do mesmo formulario). */
+    public function updateEmailQuota(): void
+    {
+        Auth::requireRole(['admin']);
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            Router::redirect('/painel/configuracoes/empresa?erro=1');
+        }
+
+        CompanySettings::updateEmailQuota((int) ($_POST['custom_email_quota'] ?? 0));
+
+        Router::redirect('/painel/configuracoes/empresa?sucesso=1');
+    }
 }

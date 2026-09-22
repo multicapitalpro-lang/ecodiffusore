@@ -265,6 +265,7 @@ $router->get('/painel/email/{uid}/anexo/{partNum}', [App\Controllers\EmailInboxC
 $router->get('/painel/configuracoes/empresa', [App\Controllers\CompanySettingsController::class, 'index']);
 $router->post('/painel/configuracoes/empresa', [App\Controllers\CompanySettingsController::class, 'update']);
 $router->post('/painel/configuracoes/empresa/termos', [App\Controllers\CompanySettingsController::class, 'updateTerms']);
+$router->post('/painel/configuracoes/empresa/cota-emails', [App\Controllers\CompanySettingsController::class, 'updateEmailQuota']);
 
 $router->get('/painel/configuracoes/tutoriais', [App\Controllers\TutorialController::class, 'manage']);
 $router->post('/painel/configuracoes/tutoriais', [App\Controllers\TutorialController::class, 'store']);
@@ -335,6 +336,12 @@ $router->get('/webhooks/mercadopago', [App\Controllers\SubscriptionWebhookContro
 // Assinatura do Licenciado (Fase 32)
 $router->get('/painel/assinatura', [App\Controllers\SubscriptionController::class, 'index']);
 $router->post('/painel/assinatura/comprar', [App\Controllers\SubscriptionController::class, 'purchase']);
+
+$router->get('/painel/emails-profissionais', [App\Controllers\LicenciadoEmailController::class, 'index']);
+$router->post('/painel/emails-profissionais', [App\Controllers\LicenciadoEmailController::class, 'store']);
+$router->get('/painel/emails-profissionais/admin', [App\Controllers\LicenciadoEmailController::class, 'adminIndex']);
+$router->post('/painel/emails-profissionais/admin/{id}/aprovar', [App\Controllers\LicenciadoEmailController::class, 'approve']);
+$router->post('/painel/emails-profissionais/admin/{id}/recusar', [App\Controllers\LicenciadoEmailController::class, 'reject']);
 
 // Custos do Licenciado (Fase 32, sempre liberado)
 $router->get('/painel/meus-custos', [App\Controllers\LicenciadoExpenseController::class, 'index']);
