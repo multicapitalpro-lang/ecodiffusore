@@ -595,6 +595,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 // e' quem realmente decide/cria a pendencia -- isso aqui e' so' a dica visual).
                 var submitBtn = root.querySelector('#proposta-submit-btn');
 
+                var motivoWrap = root.querySelector('#motivo-desconto-wrap');
+                var motivoField = root.querySelector('#motivo_desconto');
+
                 var updatePreview = function () {
                     var qty = parseInt(qtyInput.value, 10) || 1;
                     var price = parseFloat((priceInput.value || '').replace(/\./g, '').replace(',', '.')) || 0;
@@ -602,6 +605,10 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (submitBtn && isVendedor) {
                         var belowFloor = price > 0 && price < vendorFloor;
                         submitBtn.textContent = belowFloor ? '🔓 Solicitar liberação de preço' : 'Gerar proposta';
+                        if (motivoWrap) {
+                            motivoWrap.hidden = !belowFloor;
+                            if (motivoField) motivoField.required = belowFloor;
+                        }
                     }
 
                     if (!price) {

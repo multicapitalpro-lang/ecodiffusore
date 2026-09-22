@@ -29,8 +29,8 @@ class UserController
         if ($user['role_slug'] === 'admin') {
             $scoped = User::all();
         } else {
-            $downline = User::downlineIds((int) $user['id']);
-            $scoped = array_values(array_filter(User::all(), fn ($u) => in_array((int) $u['id'], $downline, true)));
+            $ids = $this->scopedUserIds($user);
+            $scoped = array_values(array_filter(User::all(), fn ($u) => in_array((int) $u['id'], $ids, true)));
         }
 
         // Cards do topo contam sempre o total do escopo, sem aplicar os filtros abaixo.
@@ -655,7 +655,23 @@ class UserController
     /** Bloqueia edicao/leitura de gente fora da propria regiao/equipe */
     private function isAuthorizedTarget(array $user, int $targetId): bool
     {
-        return $user['role_slug'] === 'admin' || in_array($targetId, User::downlineIds((int) $user['id']), true);
+        return $user['role_slug'] === 'admin' || in_array($targetId, $this->scopedUserIds($user), true);
+    }
+
+    /** Fase 79c: Gerente/Supervisor usavam downlineIds() (segue manager_id) igual Gestor/
+     *  Licenciado -- mas Gerente/Supervisor sao rede NACIONAL, ligada via supervisor_id, nao
+     *  manager_id (mesmo criterio ja usado em DashboardController/PerformanceController/
+     *  FinanceController). Por isso Gerente via quase ninguem em /painel/usuarios -- bug
+     *  reportado pelo usuario ("gerente teria o mesmo acesso de admin praticamente"). */
+    private function scopedUserIds(array $user): array
+    {
+        if ($user['role_slug'] === 'gerente') {
+            return User::nationalIds((int) $user['id']);
+        }
+        if ($user['role_slug'] === 'supervisor') {
+            return User::supervisedIds((int) $user['id']);
+        }
+        return User::downlineIds((int) $user['id']);
     }
 
     private function authorizeTarget(array $user, int $targetId): void

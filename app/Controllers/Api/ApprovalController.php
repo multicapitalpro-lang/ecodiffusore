@@ -78,6 +78,8 @@ class ApprovalController
             'approvable_id' => (int) $a['approvable_id'],
             'requester_role' => $a['requester_role'] ?? null,
             'requested_by_name' => $a['requested_by_name'] ?? null,
+            'requested_price' => isset($a['requested_price']) ? (float) $a['requested_price'] : null,
+            'justification' => $a['justification'] ?? null,
             'status' => $a['status'],
             'status_label' => Approval::statusLabel($a),
             'created_at' => $a['created_at'] ?? null,

@@ -153,7 +153,7 @@ class OrderController
 
         $user = Auth::user();
         $items = $this->parseItems($_POST);
-        $errors = $this->validate($_POST, $items);
+        $errors = $this->validate($_POST, $items, $user['role_slug']);
 
         if ($errors) {
             if (Response::isAjax()) {
@@ -208,7 +208,7 @@ class OrderController
         ], $items);
 
         if ($sellerId) {
-            Approval::checkAndRequest('order', $orderId, $items, (int) $sellerId, (int) $user['id']);
+            Approval::checkAndRequest('order', $orderId, $items, (int) $sellerId, (int) $user['id'], trim($_POST['motivo_desconto'] ?? '') ?: null);
             $createdOrder = Order::find($orderId);
             if ($createdOrder) {
                 Notifier::pedidoRealizado($createdOrder);
@@ -294,7 +294,7 @@ class OrderController
 
         $user = Auth::user();
         $items = $this->parseItems($_POST);
-        $errors = $this->validate($_POST, $items);
+        $errors = $this->validate($_POST, $items, $user['role_slug']);
 
         if ($errors) {
             if (Response::isAjax()) {
@@ -347,10 +347,38 @@ class OrderController
             }
         }
 
+        // Fase 79c: registra em Auditoria toda edicao de Pedido (pedido explicito do usuario --
+        // "pra podermos ter registro do que ele alterou e em que momento, pra caso haja interesse
+        // de conflito"). Guarda cabecalho + itens ANTES e DEPOIS, nao so o status (que ja tinha
+        // log em markStatus/refundPayment) -- e' a edicao de preco/produto que mais importa aqui.
+        $itemsBefore = array_map(fn ($i) => ['product_id' => (int) $i['product_id'], 'quantity' => (int) $i['quantity'], 'unit_price' => (float) $i['unit_price']], OrderItem::forOrder($id));
+
         Order::updateHeaderAndItems($id, $orderData, $items);
 
+        $itemsAfter = array_map(fn ($i) => ['product_id' => (int) $i['product_id'], 'quantity' => (int) $i['quantity'], 'unit_price' => (float) $i['unit_price']], OrderItem::forOrder($id));
+        AuditLog::record(
+            (int) $user['id'],
+            'pedido_editado',
+            'order',
+            $id,
+            [
+                'client_id' => (int) $order['client_id'],
+                'seller_id' => $order['seller_id'] !== null ? (int) $order['seller_id'] : null,
+                'order_date' => $order['order_date'],
+                'notes' => $order['notes'],
+                'items' => $itemsBefore,
+            ],
+            [
+                'client_id' => $orderData['client_id'],
+                'seller_id' => $orderData['seller_id'] !== null ? (int) $orderData['seller_id'] : null,
+                'order_date' => $orderData['order_date'],
+                'notes' => $orderData['notes'],
+                'items' => $itemsAfter,
+            ]
+        );
+
         if ($sellerId) {
-            Approval::checkAndRequest('order', $id, $items, (int) $sellerId, (int) $user['id']);
+            Approval::checkAndRequest('order', $id, $items, (int) $sellerId, (int) $user['id'], trim($_POST['motivo_desconto'] ?? '') ?: null);
         }
 
         $target = "/painel/pedidos/{$id}?sucesso=1";
@@ -641,7 +669,7 @@ class OrderController
         return $items;
     }
 
-    private function validate(array $input, array $items): array
+    private function validate(array $input, array $items, string $role = ''): array
     {
         $errors = [];
 
@@ -657,6 +685,7 @@ class OrderController
 
         // Fase 31: preco unitario negociado livremente, mas com piso bloqueado -- mesma regra da
         // Proposta Facil (ver PropostaController::validate()), agora tambem pro Pedido manual.
+        $lowestPrice = null;
         foreach ($items as $item) {
             if ($item['unit_price'] > 0 && !PricingTier::forPrice($item['unit_price'])) {
                 $floorTier = PricingTier::all()[0] ?? null;
@@ -664,6 +693,17 @@ class OrderController
                 $errors['items'] = "Preço unitário abaixo do mínimo negociável (R$ {$floor}).";
                 break;
             }
+            if ($item['unit_price'] > 0 && ($lowestPrice === null || $item['unit_price'] < $lowestPrice)) {
+                $lowestPrice = $item['unit_price'];
+            }
+        }
+
+        // Fase 80: Vendedor pedindo abaixo do proprio piso (vira pendencia de aprovacao) precisa
+        // explicar o motivo pro Licenciado/Gerente analisarem com contexto -- pedido explicito do
+        // usuario.
+        if ($role === Roles::SELLER && $lowestPrice !== null && $lowestPrice < PricingTier::VENDOR_STANDARD_PRICE
+            && trim($input['motivo_desconto'] ?? '') === '') {
+            $errors['motivo_desconto'] = 'Explique o motivo do preço abaixo do padrão -- o Gestor/Licenciado e o Gerente vão ver isso pra decidir.';
         }
 
         return $errors;

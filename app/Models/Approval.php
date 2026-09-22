@@ -32,7 +32,7 @@ class Approval
      * passar preco abaixo do piso absoluto, so decide se precisa de aprovacao pra ficar entre o
      * piso absoluto e o piso do papel.
      */
-    public static function checkAndRequest(string $type, int $id, array $items, ?int $sellerId, int $requestedBy): void
+    public static function checkAndRequest(string $type, int $id, array $items, ?int $sellerId, int $requestedBy, ?string $justification = null): void
     {
         if (!$sellerId) {
             return;
@@ -62,17 +62,17 @@ class Approval
         $existing = self::pendingFor($type, $id);
         if ($existing) {
             $stmt = Database::connection()->prepare(
-                'UPDATE approvals SET requested_discount_pct = :dpct, requested_price = :price, requester_role = :role WHERE id = :id'
+                'UPDATE approvals SET requested_discount_pct = :dpct, requested_price = :price, requester_role = :role, justification = :justification WHERE id = :id'
             );
-            $stmt->execute(['dpct' => $discountPct, 'price' => $lowestPrice, 'role' => $seller['role_slug'], 'id' => $existing['id']]);
+            $stmt->execute(['dpct' => $discountPct, 'price' => $lowestPrice, 'role' => $seller['role_slug'], 'justification' => $justification ?: null, 'id' => $existing['id']]);
             return;
         }
 
         $stmt = Database::connection()->prepare(
-            'INSERT INTO approvals (approvable_type, approvable_id, requested_discount_pct, requested_price, requester_role, status, requested_by)
-             VALUES (:type, :id, :dpct, :price, :role, "pendente", :by)'
+            'INSERT INTO approvals (approvable_type, approvable_id, requested_discount_pct, requested_price, requester_role, justification, status, requested_by)
+             VALUES (:type, :id, :dpct, :price, :role, :justification, "pendente", :by)'
         );
-        $stmt->execute(['type' => $type, 'id' => $id, 'dpct' => $discountPct, 'price' => $lowestPrice, 'role' => $seller['role_slug'], 'by' => $requestedBy]);
+        $stmt->execute(['type' => $type, 'id' => $id, 'dpct' => $discountPct, 'price' => $lowestPrice, 'role' => $seller['role_slug'], 'justification' => $justification ?: null, 'by' => $requestedBy]);
 
         // Notifica so na CRIACAO (nao a cada reenvio do mesmo formulario com o mesmo preco baixo)
         // -- WhatsApp pra quem pode decidir essa pendencia especifica (nivel 1, ou direto nivel 2

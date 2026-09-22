@@ -140,6 +140,12 @@ $pricingTiers = $pricingTiers ?? [];
             <p class="hint-text" id="proposta-price-bands" style="margin-top:0;"></p>
             <p class="hint-text" id="proposta-price-preview"></p>
 
+            <div id="motivo-desconto-wrap" hidden>
+                <label for="motivo_desconto">Motivo do preço abaixo do padrão</label>
+                <textarea id="motivo_desconto" name="motivo_desconto" placeholder="Explique pra quem for analisar: por que esse cliente precisa de um preço menor?"></textarea>
+                <p class="field-error" data-error-for="motivo_desconto"></p>
+            </div>
+
             <button type="submit" class="btn btn-primary" id="proposta-submit-btn">Gerar proposta</button>
         </form>
 <?php endif; ?>

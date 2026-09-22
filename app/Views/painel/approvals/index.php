@@ -37,6 +37,7 @@ $statusBadgeClass = function (array $a): string {
                     <th>Tipo</th>
                     <th>Solicitado por</th>
                     <th>Cliente</th>
+                    <th>Motivo do vendedor</th>
                     <th>Preço padrão</th>
                     <th>Preço solicitado</th>
                     <th>Pedido em</th>
@@ -54,6 +55,7 @@ $statusBadgeClass = function (array $a): string {
                             <?php endif; ?>
                         </td>
                         <td><?= View::e($a['client_name']) ?></td>
+                        <td style="max-width:220px;"><?= !empty($a['justification']) ? nl2br(View::e($a['justification'])) : '<span class="hint-text">— não informado —</span>' ?></td>
                         <td>R$ <?= number_format(PricingTier::VENDOR_STANDARD_PRICE, 2, ',', '.') ?></td>
                         <td><strong style="color:#c53030;">R$ <?= number_format((float) $a['requested_price'], 2, ',', '.') ?></strong></td>
                         <td><?= View::e(date('d/m/Y H:i', strtotime($a['created_at']))) ?></td>

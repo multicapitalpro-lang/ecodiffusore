@@ -215,7 +215,7 @@ class QuoteController
 
         $user = Auth::user();
         $items = $this->parseItems($_POST);
-        $errors = $this->validate($_POST, $items);
+        $errors = $this->validate($_POST, $items, $user['role_slug']);
 
         if ($errors) {
             if (Response::isAjax()) {
@@ -235,7 +235,7 @@ class QuoteController
         ], $items);
 
         if ($sellerId) {
-            Approval::checkAndRequest('quote', $quoteId, $items, (int) $sellerId, (int) $user['id']);
+            Approval::checkAndRequest('quote', $quoteId, $items, (int) $sellerId, (int) $user['id'], trim($_POST['motivo_desconto'] ?? '') ?: null);
             $createdQuote = Quote::find($quoteId);
             if ($createdQuote) {
                 Notifier::orcamentoRealizado($createdQuote);
@@ -309,7 +309,7 @@ class QuoteController
 
         $user = Auth::user();
         $items = $this->parseItems($_POST);
-        $errors = $this->validate($_POST, $items);
+        $errors = $this->validate($_POST, $items, $user['role_slug']);
 
         if ($errors) {
             if (Response::isAjax()) {
@@ -331,16 +331,46 @@ class QuoteController
 
         $sellerId = $user['role_slug'] === Roles::SELLER ? $quote['seller_id'] : ($_POST['seller_id'] ?: null);
 
-        Quote::updateHeaderAndItems($id, [
+        $quoteData = [
             'client_id' => (int) $_POST['client_id'],
             'seller_id' => $sellerId,
             'quote_date' => $_POST['quote_date'],
             'valid_until' => $_POST['valid_until'] ?? null,
             'notes' => $_POST['notes'] ?? '',
-        ], $items);
+        ];
+
+        // Fase 79c: registra em Auditoria toda edicao de Orcamento -- mesmo pedido/motivo de
+        // OrderController::update() (rastreio de conflito: quem mudou o que e quando).
+        $itemsBefore = array_map(fn ($i) => ['product_id' => (int) $i['product_id'], 'quantity' => (int) $i['quantity'], 'unit_price' => (float) $i['unit_price']], QuoteItem::forQuote($id));
+
+        Quote::updateHeaderAndItems($id, $quoteData, $items);
+
+        $itemsAfter = array_map(fn ($i) => ['product_id' => (int) $i['product_id'], 'quantity' => (int) $i['quantity'], 'unit_price' => (float) $i['unit_price']], QuoteItem::forQuote($id));
+        AuditLog::record(
+            (int) $user['id'],
+            'orcamento_editado',
+            'quote',
+            $id,
+            [
+                'client_id' => (int) $quote['client_id'],
+                'seller_id' => $quote['seller_id'] !== null ? (int) $quote['seller_id'] : null,
+                'quote_date' => $quote['quote_date'],
+                'valid_until' => $quote['valid_until'],
+                'notes' => $quote['notes'],
+                'items' => $itemsBefore,
+            ],
+            [
+                'client_id' => $quoteData['client_id'],
+                'seller_id' => $quoteData['seller_id'] !== null ? (int) $quoteData['seller_id'] : null,
+                'quote_date' => $quoteData['quote_date'],
+                'valid_until' => $quoteData['valid_until'],
+                'notes' => $quoteData['notes'],
+                'items' => $itemsAfter,
+            ]
+        );
 
         if ($sellerId) {
-            Approval::checkAndRequest('quote', $id, $items, (int) $sellerId, (int) $user['id']);
+            Approval::checkAndRequest('quote', $id, $items, (int) $sellerId, (int) $user['id'], trim($_POST['motivo_desconto'] ?? '') ?: null);
         }
 
         $target = "/painel/orcamentos/{$id}?sucesso=1";
@@ -447,7 +477,7 @@ class QuoteController
         return $items;
     }
 
-    private function validate(array $input, array $items): array
+    private function validate(array $input, array $items, string $role = ''): array
     {
         $errors = [];
 
@@ -463,6 +493,7 @@ class QuoteController
 
         // Fase 31: preco unitario negociado livremente, mas com piso bloqueado -- mesma regra da
         // Proposta Facil (ver PropostaController::validate()), agora tambem pro Orcamento manual.
+        $lowestPrice = null;
         foreach ($items as $item) {
             if ($item['unit_price'] > 0 && !PricingTier::forPrice($item['unit_price'])) {
                 $floorTier = PricingTier::all()[0] ?? null;
@@ -470,6 +501,16 @@ class QuoteController
                 $errors['items'] = "Preço unitário abaixo do mínimo negociável (R$ {$floor}).";
                 break;
             }
+            if ($item['unit_price'] > 0 && ($lowestPrice === null || $item['unit_price'] < $lowestPrice)) {
+                $lowestPrice = $item['unit_price'];
+            }
+        }
+
+        // Fase 80: mesmo pedido de OrderController::validate() -- Vendedor pedindo abaixo do
+        // proprio piso precisa explicar o motivo.
+        if ($role === Roles::SELLER && $lowestPrice !== null && $lowestPrice < PricingTier::VENDOR_STANDARD_PRICE
+            && trim($input['motivo_desconto'] ?? '') === '') {
+            $errors['motivo_desconto'] = 'Explique o motivo do preço abaixo do padrão -- o Gestor/Licenciado e o Gerente vão ver isso pra decidir.';
         }
 
         return $errors;

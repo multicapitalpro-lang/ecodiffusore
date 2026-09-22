@@ -10,6 +10,8 @@ $actionLabels = [
     'orcamento_convertido' => 'Orçamento convertido em pedido',
     'aprovacao_desconto_aprovado' => 'Desconto aprovado',
     'aprovacao_desconto_recusado' => 'Desconto recusado',
+    'pedido_editado' => 'Pedido editado',
+    'orcamento_editado' => 'Orçamento editado',
 ];
 ?>
 <h1>Auditoria</h1>

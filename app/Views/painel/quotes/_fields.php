@@ -88,5 +88,12 @@ use App\Core\View;
 
 <p class="order-total">Total do orçamento: <strong id="order-total">R$ 0,00</strong></p>
 
+<?php if ($isVendedor): ?>
+    <label for="motivo_desconto">Motivo do preço abaixo do padrão (se estiver pedindo desconto)</label>
+    <textarea id="motivo_desconto" name="motivo_desconto" placeholder="Explique pra quem for analisar: por que esse cliente precisa de um preço menor?"><?= View::e($values['motivo_desconto'] ?? '') ?></textarea>
+    <p class="field-error" data-error-for="motivo_desconto"></p>
+    <p class="hint-text" style="margin-top:0;">Só é obrigatório se o preço ficar abaixo de R$ <?= number_format(\App\Models\PricingTier::VENDOR_STANDARD_PRICE, 2, ',', '.') ?> — o Gestor/Licenciado e o Gerente vão ver esse motivo antes de decidir.</p>
+<?php endif; ?>
+
 <label for="q-notes">Observações</label>
 <textarea id="q-notes" name="notes"><?= View::e($values['notes'] ?? '') ?></textarea>

@@ -20,6 +20,7 @@ use App\Models\PricingTier;
 use App\Models\Product;
 use App\Models\Quote;
 use App\Models\QuoteItem;
+use App\Models\User;
 
 /**
  * "Proposta Fácil": ferramenta interna pro Vendedor/Licenciado gerar um orçamento completo do
@@ -63,7 +64,7 @@ class PropostaController
             Router::redirect('/painel/proposta-facil?erro=csrf');
         }
 
-        $errors = $this->validate($_POST);
+        $errors = $this->validate($_POST, $user['role_slug']);
         if ($errors) {
             if (Response::isAjax()) {
                 Response::json(['ok' => false, 'errors' => $errors]);
@@ -80,9 +81,16 @@ class PropostaController
         // manual do vendedor na tela, entao faz sentido avisar em vez de so redirecionar.
         $duplicateClient = Client::findDuplicate(null, $whatsapp);
         if ($duplicateClient) {
-            $message = 'Esse WhatsApp já está cadastrado' . ($duplicateClient['seller_name'] ? ' com o vendedor ' . $duplicateClient['seller_name'] : '') . '.';
+            // Fase 79c: pedido do usuario -- antes so aparecia um erro pequeno debaixo do campo,
+            // facil de nao notar. Agora usa o banner "_geral" (topo do formulario, bem visivel) e
+            // identifica a rede (Licenciado) do cadastro existente, nao so o vendedor.
+            $licenciadoName = User::licenciadoNameFor($duplicateClient['seller_id'] ? (int) $duplicateClient['seller_id'] : null);
+            $message = 'Esse número de WhatsApp já está cadastrado como cliente'
+                . ($duplicateClient['seller_name'] ? ' do vendedor ' . $duplicateClient['seller_name'] : '')
+                . ($licenciadoName ? ' (rede do Licenciado ' . $licenciadoName . ')' : '')
+                . '. Não é possível cadastrar o mesmo contato em outra rede.';
             if (Response::isAjax()) {
-                Response::json(['ok' => false, 'errors' => ['whatsapp' => $message]]);
+                Response::json(['ok' => false, 'errors' => ['_geral' => $message]]);
             }
             Router::redirect('/painel/proposta-facil?erro=' . urlencode($message));
         }
@@ -194,7 +202,7 @@ class PropostaController
             // Fase 57: Proposta Facil e' o caminho mais usado pelo Vendedor -- sem essa chamada,
             // a regra nova de piso por papel (Vendedor a partir de R$4.290) nunca seria checada
             // aqui, so no Pedido/Orcamento manual.
-            Approval::checkAndRequest('quote', $quoteId, [['product_id' => $product['id'], 'quantity' => $qty, 'unit_price' => $unitPrice]], $sellerId, $sellerId);
+            Approval::checkAndRequest('quote', $quoteId, [['product_id' => $product['id'], 'quantity' => $qty, 'unit_price' => $unitPrice]], $sellerId, $sellerId, trim($_POST['motivo_desconto'] ?? '') ?: null);
         }
 
         $_SESSION['proposta_result'] = [
@@ -356,7 +364,7 @@ class PropostaController
         }
     }
 
-    private function validate(array $post): array
+    private function validate(array $post, string $role = ''): array
     {
         $errors = [];
 
@@ -396,6 +404,13 @@ class PropostaController
             $floorTier = PricingTier::all()[0] ?? null;
             $floor = $floorTier ? number_format((float) $floorTier['min_price'], 2, ',', '.') : '0,00';
             $errors['unit_price'] = "Preço abaixo do mínimo negociável (R$ {$floor}).";
+        }
+
+        // Fase 80: mesmo pedido de OrderController::validate() -- Vendedor pedindo abaixo do
+        // proprio piso precisa explicar o motivo pro Licenciado/Gerente analisarem.
+        if ($role === Roles::SELLER && $unitPrice > 0 && $unitPrice < PricingTier::VENDOR_STANDARD_PRICE
+            && trim($post['motivo_desconto'] ?? '') === '') {
+            $errors['motivo_desconto'] = 'Explique o motivo do preço abaixo do padrão -- o Gestor/Licenciado e o Gerente vão ver isso pra decidir.';
         }
 
         if (self::parseBrNumber($post['km_mensal'] ?? '') <= 0) {
