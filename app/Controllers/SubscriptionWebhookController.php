@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Core\Config;
 use App\Core\MercadoPagoClient;
+use App\Models\LicenciadoSeatAddon;
 use App\Models\LicenciadoSubscription;
 
 /**
@@ -45,6 +46,13 @@ class SubscriptionWebhookController
         $subscription = LicenciadoSubscription::findByExternalReference($payment['external_reference']);
         if ($subscription) {
             LicenciadoSubscription::markPaid((int) $subscription['id'], (string) $paymentId);
+        }
+
+        // Fase 86: vaga extra de colaborador usa o mesmo external_reference + webhook (referencias
+        // sao geradas com bin2hex(random_bytes(16)) nos dois modelos -- nunca colidem entre si).
+        $seatAddon = LicenciadoSeatAddon::findByExternalReference($payment['external_reference']);
+        if ($seatAddon) {
+            LicenciadoSeatAddon::markPaid((int) $seatAddon['id'], (string) $paymentId);
         }
 
         http_response_code(200);

@@ -433,6 +433,17 @@ a { text-decoration: none; color: inherit; }
 .plan-feature strong { font-size: .9rem; }
 .plan-feature span { font-size: .8rem; color: var(--gray-text); line-height: 1.4; }
 
+/* Fase 86: banner de bloqueio/remarketing + hero persuasivo da tela de assinatura. */
+.subscription-blocked-banner { background: #fff7ed; border: 1px solid #fdba74; border-radius: 12px; padding: 14px 16px; margin-bottom: 18px; }
+.subscription-blocked-banner strong { display: block; font-size: .95rem; color: #9a3412; margin-bottom: 4px; }
+.subscription-blocked-banner p { font-size: .84rem; color: #9a3412; margin: 0; line-height: 1.4; }
+.subscription-hero { background: var(--navy); color: #fff; border-radius: 14px; padding: 18px 20px; margin: 14px 0 20px; }
+.subscription-hero p { margin: 0; font-size: .9rem; line-height: 1.55; }
+.subscription-hero strong { color: var(--green); }
+.subscription-nudge-bar { display: block; background: #fff7ed; border: 1px solid #fdba74; color: #9a3412; border-radius: 10px; padding: 10px 14px; font-size: .84rem; margin-bottom: 16px; text-decoration: none; }
+.subscription-nudge-bar:hover { background: #ffedd5; }
+.subscription-nudge-bar strong { color: #9a3412; }
+
 .plan-cards { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); margin-bottom: 18px; }
 .plan-card {
     position: relative;

@@ -241,6 +241,25 @@ class User
         return array_keys($ids);
     }
 
+    /** Fase 86: quantos colaboradores ATIVOS (Gestor+Vendedor, nunca o proprio Licenciado) essa
+     *  rede tem hoje -- usado contra SubscriptionPlans::INCLUDED_SEATS + vagas extras compradas
+     *  (LicenciadoSeatAddon::activeSeatsFor) pra saber se cadastrar mais um exige comprar vaga. */
+    public static function activeStaffCountFor(int $licenciadoId): int
+    {
+        $ids = array_diff(self::downlineIds($licenciadoId), [$licenciadoId]);
+        if (!$ids) {
+            return 0;
+        }
+
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $stmt = Database::connection()->prepare(
+            "SELECT COUNT(*) FROM users u JOIN roles r ON r.id = u.role_id
+             WHERE u.id IN ({$placeholders}) AND u.status = 'active' AND r.slug IN ('gestor', 'vendedor')"
+        );
+        $stmt->execute(array_values($ids));
+        return (int) $stmt->fetchColumn();
+    }
+
     /** Sobe a cadeia de gestao a partir de um usuario (nao inclui ele mesmo), ate 5 niveis pra evitar loop */
     public static function managerChain(int $userId): array
     {

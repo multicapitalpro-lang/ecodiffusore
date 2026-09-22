@@ -27,6 +27,20 @@ class SubscriptionPlans
         'anual' => 'Anual',
     ];
 
+    /** Fase 86: a assinatura cobre o Licenciado + ate esta quantidade de colaboradores (Gestor +
+     *  Vendedor, somados) sem custo adicional -- acima disso, cada vaga extra e' cobrada por fora
+     *  (ver SEAT_PRICES). Valor informado pelo usuario. */
+    public const INCLUDED_SEATS = 5;
+
+    /** Preco por VAGA extra (1 colaborador a mais que INCLUDED_SEATS), no mesmo formato de
+     *  periodo/desconto da assinatura base -- mesma proporcao de desconto semestral/anual de
+     *  PRICES, aplicada sobre o valor mensal informado pelo usuario (R$25). */
+    public const SEAT_PRICES = [
+        'mensal' => 25.00,
+        'semestral' => 100.00,
+        'anual' => 167.00,
+    ];
+
     /** % de desconto comparado a pagar o plano mensal repetidamente pelo mesmo periodo. */
     public static function discountPct(string $plan): float
     {
@@ -45,5 +59,15 @@ class SubscriptionPlans
     public static function isValid(string $plan): bool
     {
         return isset(self::PRICES[$plan]);
+    }
+
+    /** Mesmo calculo de discountPct(), pro preco da VAGA EXTRA (por unidade). */
+    public static function seatDiscountPct(string $plan): float
+    {
+        if ($plan === 'mensal') {
+            return 0.0;
+        }
+        $fullPrice = self::SEAT_PRICES['mensal'] * self::MONTHS[$plan];
+        return round((1 - self::SEAT_PRICES[$plan] / $fullPrice) * 100);
     }
 }

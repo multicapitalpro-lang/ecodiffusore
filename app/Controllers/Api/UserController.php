@@ -6,6 +6,8 @@ use App\Core\ApiAuth;
 use App\Core\ApiResponse;
 use App\Core\Notifier;
 use App\Core\Roles;
+use App\Core\SubscriptionPlans;
+use App\Models\LicenciadoSeatAddon;
 use App\Models\Role;
 use App\Models\User;
 
@@ -90,6 +92,14 @@ class UserController
             }
         }
 
+        // Fase 86: mesmo limite de colaboradores do painel web (UserController::seatLimitReached).
+        if (in_array($createdRoleSlug, ['gestor', 'vendedor'], true)) {
+            $licenciadoId = User::licenciadoIdFor($managerId);
+            if ($licenciadoId && $this->seatLimitReached($licenciadoId)) {
+                ApiResponse::json(['errors' => ['_geral' => 'Limite de colaboradores da assinatura atingido. Compre uma vaga extra pra cadastrar mais um.']], 422);
+            }
+        }
+
         $newUserId = User::create([
             'role_id' => (int) $body['role_id'],
             'manager_id' => $managerId,
@@ -153,6 +163,23 @@ class UserController
         }
 
         $commissionPct = $this->canSetCommission($user) && !empty($body['commission_pct']) ? $body['commission_pct'] : $existing['commission_pct'];
+
+        $editedRoleSlug = null;
+        foreach (Role::all() as $r) {
+            if ((int) $r['id'] === (int) $body['role_id']) {
+                $editedRoleSlug = $r['slug'];
+                break;
+            }
+        }
+        $editedStatus = $body['status'] ?? $existing['status'];
+        $wasSeat = $existing['status'] === 'active' && in_array($existing['role_slug'], ['gestor', 'vendedor'], true);
+        $willBeSeat = $editedStatus === 'active' && in_array($editedRoleSlug, ['gestor', 'vendedor'], true);
+        if (!$wasSeat && $willBeSeat) {
+            $licenciadoId = User::licenciadoIdFor($managerId);
+            if ($licenciadoId && $this->seatLimitReached($licenciadoId)) {
+                ApiResponse::json(['errors' => ['_geral' => 'Limite de colaboradores da assinatura atingido. Compre uma vaga extra antes de ativar mais um.']], 422);
+            }
+        }
 
         User::update($id, [
             'role_id' => (int) $body['role_id'],
@@ -291,6 +318,13 @@ class UserController
     private function canSetCommission(array $user): bool
     {
         return in_array($user['role_slug'], ['admin', Roles::REGIONAL_OWNER], true);
+    }
+
+    /** Fase 86: mesmo criterio de App\Controllers\UserController::seatLimitReached(). */
+    private function seatLimitReached(int $licenciadoId): bool
+    {
+        $allowed = SubscriptionPlans::INCLUDED_SEATS + LicenciadoSeatAddon::activeSeatsFor($licenciadoId);
+        return User::activeStaffCountFor($licenciadoId) >= $allowed;
     }
 
     private function resolveManagerId(array $user, array $input, ?int $targetId): ?int

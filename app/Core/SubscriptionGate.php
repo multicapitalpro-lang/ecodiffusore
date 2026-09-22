@@ -3,6 +3,7 @@
 namespace App\Core;
 
 use App\Models\LicenciadoSubscription;
+use App\Models\SubscriptionPaywallHit;
 use App\Models\User;
 
 /**
@@ -36,11 +37,18 @@ class SubscriptionGate
 
     /** Redireciona pra tela de assinatura (com preview do que ganha) em vez de completar a acao --
      *  chamado em toda mutacao (store/update/destroy/markPaid/pdf/downloadAttachment/storeSchedule),
-     *  nunca nas telas de so-visualizacao (essas ficam abertas, com numero mascarado). */
-    public static function requireAccess(array $user): void
+     *  nunca nas telas de so-visualizacao (essas ficam abertas, com numero mascarado). Fase 86:
+     *  $feature (chave de SubscriptionPaywallHit::LABELS) grava o "toque no paywall" pra
+     *  alimentar o banner de remarketing -- omitido, nao grava nada (alguns call sites nao tem um
+     *  rotulo natural, sem problema deixar de fora). */
+    public static function requireAccess(array $user, ?string $feature = null): void
     {
         if (!self::hasAccess($user)) {
-            Router::redirect('/painel/assinatura?bloqueado=1');
+            if ($feature) {
+                $licenciadoId = $user['role_slug'] === 'licenciado' ? (int) $user['id'] : User::licenciadoIdFor((int) $user['id']);
+                SubscriptionPaywallHit::record((int) $user['id'], $licenciadoId, $feature);
+            }
+            Router::redirect('/painel/assinatura?bloqueado=1' . ($feature ? '&feature=' . urlencode($feature) : ''));
         }
     }
 

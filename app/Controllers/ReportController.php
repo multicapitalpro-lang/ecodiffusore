@@ -85,7 +85,7 @@ class ReportController
     {
         Auth::requireRole(Roles::STAFF);
         $user = Auth::user();
-        SubscriptionGate::requireAccess($user);
+        SubscriptionGate::requireAccess($user, 'relatorios');
         $this->assertTypeAllowed($type, $user);
 
         [$from, $to] = DateRange::fromRequest();
@@ -191,7 +191,7 @@ class ReportController
     {
         Auth::requireRole(self::ALLOWED_ROLES);
         $user = Auth::user();
-        SubscriptionGate::requireAccess($user);
+        SubscriptionGate::requireAccess($user, 'relatorios');
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
             Router::redirect('/painel/financeiro/relatorios/agendamentos?erro=1');

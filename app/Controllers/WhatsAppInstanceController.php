@@ -25,7 +25,7 @@ class WhatsAppInstanceController
     {
         Auth::requireRole(self::ROLES);
         $user = Auth::user();
-        SubscriptionGate::requireAccess($user);
+        SubscriptionGate::requireAccess($user, 'whatsapp');
 
         $instance = WhatsAppInstance::forUser((int) $user['id']);
 
@@ -45,7 +45,7 @@ class WhatsAppInstanceController
     {
         Auth::requireRole(self::ROLES);
         $user = Auth::user();
-        SubscriptionGate::requireAccess($user);
+        SubscriptionGate::requireAccess($user, 'whatsapp');
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
             Router::redirect('/painel/whatsapp?erro=1');
@@ -127,7 +127,7 @@ class WhatsAppInstanceController
     {
         Auth::requireRole(self::ROLES);
         $user = Auth::user();
-        SubscriptionGate::requireAccess($user);
+        SubscriptionGate::requireAccess($user, 'whatsapp');
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
             Router::redirect('/painel/whatsapp?erro=1');

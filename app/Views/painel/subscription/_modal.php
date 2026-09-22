@@ -13,7 +13,9 @@ $modalLicenciado = $modalIsLicenciado ? $user : User::licenciadoFor((int) $user[
 $modalFeatures = [
     '📊 Relatórios completos' => 'Vendas por vendedor, garantias, fiscal, financeiro.',
     '💰 Financeiro completo' => 'Caixas e Bancos, Contas a Pagar e a Receber, Controle Fiscal.',
-    '👥 Toda a sua equipe' => 'Libera pro Gestor e Vendedores também, sem custo extra.',
+    '💬 WhatsApp integrado' => 'Atenda direto do painel, com histórico salvo.',
+    '✉️ E-mail Profissional' => 'E-mail no domínio da Ecodiffusore pra sua rede.',
+    '👥 Toda a sua equipe' => 'Libera pro Gestor e Vendedores também (até 5 colaboradores inclusos).',
     '✅ Aceite digital de comissão' => 'Gestor/Vendedor confirmam a proposta pelo WhatsApp.',
 ];
 ?>

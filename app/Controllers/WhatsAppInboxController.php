@@ -28,7 +28,7 @@ class WhatsAppInboxController
     {
         Auth::requireRole(self::ROLES);
         $user = Auth::user();
-        SubscriptionGate::requireAccess($user);
+        SubscriptionGate::requireAccess($user, 'whatsapp');
 
         $instance = $this->requireConnectedInstance($user);
         $this->refreshProfilePics($instance, 25);
@@ -48,7 +48,7 @@ class WhatsAppInboxController
     {
         Auth::requireRole(self::ROLES);
         $user = Auth::user();
-        SubscriptionGate::requireAccess($user);
+        SubscriptionGate::requireAccess($user, 'whatsapp');
 
         $instance = $this->requireConnectedInstance($user);
         $chat = $this->authorizeChat((int) $id, (int) $instance['id']);
@@ -135,7 +135,7 @@ class WhatsAppInboxController
     {
         Auth::requireRole(self::ROLES);
         $user = Auth::user();
-        SubscriptionGate::requireAccess($user);
+        SubscriptionGate::requireAccess($user, 'whatsapp');
 
         $instance = $this->requireConnectedInstance($user);
         $chat = $this->authorizeChat((int) $id, (int) $instance['id']);
@@ -194,7 +194,7 @@ class WhatsAppInboxController
     {
         Auth::requireRole(self::ROLES);
         $user = Auth::user();
-        SubscriptionGate::requireAccess($user);
+        SubscriptionGate::requireAccess($user, 'whatsapp');
 
         $instance = $this->requireConnectedInstance($user);
         $chat = $this->authorizeChat((int) $id, (int) $instance['id']);
@@ -238,7 +238,7 @@ class WhatsAppInboxController
     {
         Auth::requireRole(self::ROLES);
         $user = Auth::user();
-        SubscriptionGate::requireAccess($user);
+        SubscriptionGate::requireAccess($user, 'whatsapp');
 
         $instance = $this->requireConnectedInstance($user);
         $chat = $this->authorizeChat((int) $id, (int) $instance['id']);
@@ -331,7 +331,7 @@ class WhatsAppInboxController
     {
         Auth::requireRole(self::ROLES);
         $user = Auth::user();
-        SubscriptionGate::requireAccess($user);
+        SubscriptionGate::requireAccess($user, 'whatsapp');
 
         $instance = $this->requireConnectedInstance($user);
 
@@ -352,7 +352,7 @@ class WhatsAppInboxController
     {
         Auth::requireRole(self::ROLES);
         $user = Auth::user();
-        SubscriptionGate::requireAccess($user);
+        SubscriptionGate::requireAccess($user, 'whatsapp');
 
         $instance = $this->requireConnectedInstance($user);
         $chat = $this->authorizeChat((int) $id, (int) $instance['id']);
@@ -381,7 +381,7 @@ class WhatsAppInboxController
     {
         Auth::requireRole(self::ROLES);
         $user = Auth::user();
-        SubscriptionGate::requireAccess($user);
+        SubscriptionGate::requireAccess($user, 'whatsapp');
 
         $instance = $this->requireConnectedInstance($user);
         $chat = $this->authorizeChat((int) $id, (int) $instance['id']);
@@ -420,7 +420,7 @@ class WhatsAppInboxController
     {
         Auth::requireRole(self::ROLES);
         $user = Auth::user();
-        SubscriptionGate::requireAccess($user);
+        SubscriptionGate::requireAccess($user, 'whatsapp');
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
             Router::redirect('/painel/whatsapp/conversas?erro=1');
@@ -440,7 +440,7 @@ class WhatsAppInboxController
     {
         Auth::requireRole(self::ROLES);
         $user = Auth::user();
-        SubscriptionGate::requireAccess($user);
+        SubscriptionGate::requireAccess($user, 'whatsapp');
 
         $instance = $this->requireConnectedInstance($user);
         $chat = $this->authorizeChat((int) $id, (int) $instance['id']);
@@ -462,7 +462,7 @@ class WhatsAppInboxController
     {
         Auth::requireRole(self::ROLES);
         $user = Auth::user();
-        SubscriptionGate::requireAccess($user);
+        SubscriptionGate::requireAccess($user, 'whatsapp');
 
         $instance = $this->requireConnectedInstance($user);
         $chat = $this->authorizeChat((int) $id, (int) $instance['id']);
@@ -483,7 +483,7 @@ class WhatsAppInboxController
     {
         Auth::requireRole(self::ROLES);
         $user = Auth::user();
-        SubscriptionGate::requireAccess($user);
+        SubscriptionGate::requireAccess($user, 'whatsapp');
 
         $instance = $this->requireConnectedInstance($user);
         $chat = $this->authorizeChat((int) $id, (int) $instance['id']);

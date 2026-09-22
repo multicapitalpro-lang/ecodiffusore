@@ -9,10 +9,12 @@ use App\Core\Response;
 use App\Core\Roles;
 use App\Core\Router;
 use App\Core\ScreenPermissions;
+use App\Core\SubscriptionPlans;
 use App\Core\View;
 use App\Models\AuditLog;
 use App\Models\Client;
 use App\Models\Commission;
+use App\Models\LicenciadoSeatAddon;
 use App\Models\Order;
 use App\Models\PricingTier;
 use App\Models\Role;
@@ -187,6 +189,20 @@ class UserController
 
         $vendorType = $this->vendorCommissionType($user, $createdRoleSlug, $_POST);
 
+        // Fase 86: cadastrar mais um Gestor/Vendedor ATIVO pode estourar o limite de colaboradores
+        // inclusos na assinatura -- checa ANTES de criar, manda pra tela de comprar vaga extra em
+        // vez de deixar passar. So vale pra status ativo (inativo nao ocupa vaga).
+        $newStatus = $_POST['status'] ?? 'active';
+        if (in_array($createdRoleSlug, ['gestor', 'vendedor'], true) && $newStatus === 'active') {
+            $licenciadoId = User::licenciadoIdFor($managerId);
+            if ($licenciadoId && $this->seatLimitReached($licenciadoId)) {
+                if (Response::isAjax()) {
+                    Response::json(['ok' => false, 'errors' => ['_geral' => 'Limite de colaboradores da assinatura atingido. Compre uma vaga extra pra cadastrar mais um.']]);
+                }
+                Router::redirect('/painel/assinatura?erro=limite');
+            }
+        }
+
         // Fase 56: comissao fixa do Influenciador -- so' admin define, R$100 default (pedido
         // explicito do usuario) se ele nao digitar um valor customizado.
         $influencerCommissionValue = $createdRoleSlug === Roles::INFLUENCER
@@ -336,6 +352,22 @@ class UserController
         }
 
         $vendorType = $this->vendorCommissionType($user, $editedRoleSlug, $_POST);
+
+        // Fase 86: so checa limite quando essa edicao PASSA A OCUPAR uma vaga que antes nao
+        // ocupava (reativar um Gestor/Vendedor inativo, ou trocar o papel de outra coisa pra
+        // Gestor/Vendedor) -- editar quem ja era Gestor/Vendedor ativo nao consome vaga nova.
+        $editedStatus = $_POST['status'] ?? $before['status'];
+        $wasSeat = $before['status'] === 'active' && in_array($before['role_slug'], ['gestor', 'vendedor'], true);
+        $willBeSeat = $editedStatus === 'active' && in_array($editedRoleSlug, ['gestor', 'vendedor'], true);
+        if (!$wasSeat && $willBeSeat) {
+            $licenciadoId = User::licenciadoIdFor($managerId);
+            if ($licenciadoId && $this->seatLimitReached($licenciadoId)) {
+                if (Response::isAjax()) {
+                    Response::json(['ok' => false, 'errors' => ['_geral' => 'Limite de colaboradores da assinatura atingido. Compre uma vaga extra antes de ativar mais um.']]);
+                }
+                Router::redirect('/painel/assinatura?erro=limite');
+            }
+        }
 
         // Fase 56: so' admin edita a comissao fixa do Influenciador -- qualquer outro editor
         // (ou o campo ausente do POST) preserva o valor que ja estava salvo, nunca zera.
@@ -630,6 +662,15 @@ class UserController
      * faixa abaixo), continua sem poder mexer na do proprio Licenciado (essa vem da faixa de
      * preco, ver licenciado-commission-note).
      */
+    /** Fase 86: true se a rede desse Licenciado ja esta no limite de colaboradores (assinatura
+     *  base + vagas extras compradas) -- vale pra qualquer criador (Admin incluso: mesmo o Admin
+     *  cadastrando em nome do Licenciado, a vaga e' real e precisa ser paga). */
+    private function seatLimitReached(int $licenciadoId): bool
+    {
+        $allowed = SubscriptionPlans::INCLUDED_SEATS + LicenciadoSeatAddon::activeSeatsFor($licenciadoId);
+        return User::activeStaffCountFor($licenciadoId) >= $allowed;
+    }
+
     private function canSetCommission(array $user): bool
     {
         return in_array($user['role_slug'], ['admin', Roles::REGIONAL_OWNER, 'gerente'], true);

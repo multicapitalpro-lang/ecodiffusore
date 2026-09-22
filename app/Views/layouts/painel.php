@@ -1,9 +1,23 @@
 <?php
 use App\Core\Roles;
+use App\Core\SubscriptionGate;
 use App\Core\View;
+use App\Models\SubscriptionPaywallHit;
+use App\Models\User;
 /** @var callable $content */
 /** @var array $user */
 $role = $user['role_slug'] ?? '';
+
+// Fase 86: banner de remarketing -- so' pra quem NAO tem acesso a assinatura e ja esbarrou em
+// algum paywall nos ultimos 14 dias (sem WhatsApp por decisao do usuario, so destaque visual).
+$subscriptionNudge = null;
+if (in_array($role, ['licenciado', 'gestor', 'vendedor'], true) && !SubscriptionGate::hasAccess($user)) {
+    $nudgeLicenciadoId = $role === 'licenciado' ? (int) $user['id'] : User::licenciadoIdFor((int) $user['id']);
+    $hit = $nudgeLicenciadoId ? SubscriptionPaywallHit::latestForLicenciado($nudgeLicenciadoId) : null;
+    if ($hit && strtotime($hit['created_at']) >= strtotime('-14 days')) {
+        $subscriptionNudge = $hit;
+    }
+}
 $roleLabels = [
     'admin' => 'Administrador',
     'gestor' => 'Gestor',
@@ -278,6 +292,11 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/desempen
             <a class="painel-logout" href="/painel/logout">Sair</a>
         </header>
         <main class="painel-content">
+            <?php if ($subscriptionNudge && !$isActive('/painel/assinatura')): ?>
+                <a href="/painel/assinatura" class="subscription-nudge-bar">
+                    🔒 <?= View::e($subscriptionNudge['user_name']) ?> tentou usar <strong><?= View::e(SubscriptionPaywallHit::LABELS[$subscriptionNudge['feature']] ?? $subscriptionNudge['feature']) ?></strong> — assine e libere pra toda a equipe →
+                </a>
+            <?php endif; ?>
             <?php $content(); ?>
         </main>
     </div>

@@ -48,7 +48,7 @@ class LicenciadoEmailController
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
             Router::redirect('/painel/emails-profissionais?erro=1');
         }
-        SubscriptionGate::requireAccess($user);
+        SubscriptionGate::requireAccess($user, 'email_profissional');
 
         $localPart = strtolower(trim($_POST['local_part'] ?? ''));
         $settings = CompanySettings::current();

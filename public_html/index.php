@@ -349,6 +349,7 @@ $router->get('/webhooks/mercadopago', [App\Controllers\SubscriptionWebhookContro
 // Assinatura do Licenciado (Fase 32)
 $router->get('/painel/assinatura', [App\Controllers\SubscriptionController::class, 'index']);
 $router->post('/painel/assinatura/comprar', [App\Controllers\SubscriptionController::class, 'purchase']);
+$router->post('/painel/assinatura/vagas/comprar', [App\Controllers\SubscriptionController::class, 'purchaseSeats']);
 
 $router->get('/painel/emails-profissionais', [App\Controllers\LicenciadoEmailController::class, 'index']);
 $router->post('/painel/emails-profissionais', [App\Controllers\LicenciadoEmailController::class, 'store']);
