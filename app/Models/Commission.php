@@ -25,7 +25,7 @@ class Commission
      *    cadastro:
      *      a) Tabela por faixa (commission_type + user_commission_tiers): sai direto do valor da
      *         venda -- % da venda ou R$ fixo por unidade, conforme a MESMA faixa de preco que
-     *         definiu o pool. Ver vendorTierAmount(). Ja era % do TOTAL do pedido desde a Fase 31,
+     *         definiu o pool. Ver tierBasedAmount(). Ja era % do TOTAL do pedido desde a Fase 31,
      *         sem mudanca nesta fase.
      *      b) Sem commission_type configurado, ou sem valor pra essa faixa especifica: cai no
      *         esquema simples, commission_pct do Vendedor = % do TOTAL DO PEDIDO, igual Gestor.
