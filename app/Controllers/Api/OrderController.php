@@ -116,6 +116,11 @@ class OrderController
                 'has_photo3' => !empty($order['photo3_path']),
                 'has_telemetry' => !empty($order['telemetry_path']),
                 'missing_document_labels' => Order::missingDocumentLabels($order),
+                'is_cost_price' => !empty($order['is_cost_price']),
+                'documents_approved_at' => $order['documents_approved_at'] ?? null,
+                'can_approve_documents' => in_array($user['role_slug'], ['supervisor', 'gerente', 'admin'], true)
+                    && empty($order['is_cost_price']) && $order['status'] === 'verificado'
+                    && !Order::missingDocumentLabels($order) && empty($order['documents_approved_at']),
                 'tracking_carrier' => $order['tracking_carrier'] ?? null,
                 'tracking_code' => $order['tracking_code'] ?? null,
                 'prazo_entrega' => $order['prazo_entrega'] ?? null,
