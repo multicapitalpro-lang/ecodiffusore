@@ -17,6 +17,7 @@ class SubscriptionPaywallHit
         'calendario' => 'Calendário da Equipe',
         'simulador_comissao' => 'Simulador de Comissão',
         'alerta_meta' => 'Alerta Preditivo de Meta',
+        'indicacao_premiada' => 'Indicações Premiadas',
     ];
 
     public static function record(int $userId, ?int $licenciadoId, string $feature): void

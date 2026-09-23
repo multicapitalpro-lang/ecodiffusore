@@ -241,6 +241,7 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/desempen
             <?php endif; ?>
             <?php if (in_array($role, ['licenciado', 'gestor', 'vendedor'], true)): ?>
                 <a href="/painel/meu-link" class="<?= $isActive('/painel/meu-link') ? 'is-active' : '' ?>">🔗 Meu Link de Vendas</a>
+                <a href="/painel/indicacoes" class="<?= $isActive('/painel/indicacoes') ? 'is-active' : '' ?>">🎁 Indicações Premiadas</a>
                 <a href="/painel/simulador-comissao" class="<?= $isActive('/painel/simulador-comissao') ? 'is-active' : '' ?>">💰 Simulador de Comissão</a>
                 <a href="/painel/whatsapp" class="<?= $isActive('/painel/whatsapp') ? 'is-active' : '' ?>">💬 Meu WhatsApp</a>
                 <a href="/painel/assinatura" class="<?= $isActive('/painel/assinatura') ? 'is-active' : '' ?>">⭐ Assinatura</a>

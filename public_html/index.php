@@ -372,6 +372,13 @@ $router->post('/painel/calendario/{id}', [App\Controllers\CalendarController::cl
 
 // Link de vendas pessoal (Fase 93)
 $router->get('/painel/meu-link', [App\Controllers\SellerLinkController::class, 'index']);
+$router->get('/painel/indicacoes', [App\Controllers\ReferralController::class, 'index']);
+$router->post('/painel/indicacoes', [App\Controllers\ReferralController::class, 'store']);
+$router->post('/painel/indicacoes/{id}/vincular', [App\Controllers\ReferralController::class, 'link']);
+$router->post('/painel/indicacoes/{id}/contato', [App\Controllers\ReferralController::class, 'markContacted']);
+$router->post('/painel/indicacoes/{id}/descartar', [App\Controllers\ReferralController::class, 'discard']);
+$router->post('/painel/indicacoes/{id}/premio', [App\Controllers\ReferralController::class, 'setReward']);
+$router->post('/painel/indicacoes/{id}/premio-pago', [App\Controllers\ReferralController::class, 'markRewardPaid']);
 $router->get('/v/{slug}', [App\Controllers\SellerLandingController::class, 'show']);
 $router->post('/v/{slug}', [App\Controllers\SellerLandingController::class, 'submitLead']);
 

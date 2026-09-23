@@ -13,6 +13,7 @@ use App\Models\Payment;
 use App\Models\PricingTier;
 use App\Models\Quote;
 use App\Models\QuoteItem;
+use App\Models\Referral;
 use App\Models\User;
 use App\Models\WhatsAppEventTemplate;
 
@@ -1025,6 +1026,27 @@ class Notifier
             }
             self::sendPush((int) $licenciado['id'], '⚠️ Vendedor fora do ritmo', "{$seller['name']}: {$goal['pct']}% da meta \"{$goal['name']}\"", ['type' => 'goal_pace', 'goal_id' => (int) $goal['id']], 'normal');
         }
+    }
+
+    /** Fase 95: a pessoa que um Licenciado/Gestor/Vendedor indicou virou de verdade um
+     *  Licenciado/Gestor/Vendedor ativo -- avisa o indicador que o premio da indicacao esta
+     *  liberado. WhatsApp + push urgente, so pro indicador (sem rede aqui -- quem "paga" o premio
+     *  e' quem decide registrar em /painel/indicacoes, nao precisa de aviso automatico a mais).
+     *  @param array $referral precisa de id/referrer_id/name/target_role. */
+    public static function indicacaoAtivada(array $referral): void
+    {
+        $referrer = User::find((int) $referral['referrer_id']);
+        if (!$referrer) {
+            return;
+        }
+
+        $roleLabel = Referral::TARGET_ROLE_LABELS[$referral['target_role']] ?? $referral['target_role'];
+        $text = "🎉 Sua indicação \"{$referral['name']}\" virou {$roleLabel} ativo(a)! Acesse Indicações Premiadas no painel pra registrar sua premiação.";
+
+        if (!empty($referrer['whatsapp'])) {
+            self::sendWhatsApp($referrer['whatsapp'], $text);
+        }
+        self::sendPush((int) $referrer['id'], '🎉 Indicação ativada!', "{$referral['name']} agora é {$roleLabel}. Registre seu prêmio.", ['type' => 'referral', 'referral_id' => (int) $referral['id']], 'urgent');
     }
 
     /** @param array $row precisa de client_name/total_value */
