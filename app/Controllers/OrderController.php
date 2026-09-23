@@ -27,6 +27,62 @@ use App\Models\User;
 
 class OrderController
 {
+    private const DOCUMENT_APPROVER_ROLES = ['licenciado', 'gerente', 'admin'];
+
+    /** Fase 99: fila de pedidos pagos com documento do veiculo completo, esperando revisao antes
+     *  de ir pra fabrica -- Licenciado ve so' a propria rede, Gerente a rede nacional, Admin tudo. */
+    public function pendingDocuments(): void
+    {
+        Auth::requireRole(self::DOCUMENT_APPROVER_ROLES);
+        $user = Auth::user();
+
+        $sellerIds = match ($user['role_slug']) {
+            'admin' => null,
+            'gerente' => User::nationalIds((int) $user['id']),
+            default => User::downlineIds((int) $user['id']),
+        };
+
+        View::render('painel/orders/pending_documents', [
+            'user' => $user,
+            'orders' => Order::pendingDocumentApproval($sellerIds),
+        ]);
+    }
+
+    /** Fase 99: aprova os documentos revisados -- so' a partir daqui o pedido entra na fila de
+     *  despacho da Fabrica (ver Order::forFactory()). */
+    public function approveDocuments(string $id): void
+    {
+        Auth::requireRole(self::DOCUMENT_APPROVER_ROLES);
+        $user = Auth::user();
+        $id = (int) $id;
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            Router::redirect("/painel/pedidos/{$id}?erro=1");
+        }
+
+        $order = Order::find($id);
+        if (!$order || $order['status'] !== 'verificado' || !empty($order['is_cost_price']) || !empty($order['documents_approved_at'])) {
+            Router::redirect('/painel/pedidos/aprovar-documentos?erro=1');
+        }
+        if (!Order::hasRequiredDocuments($order)) {
+            Router::redirect('/painel/pedidos/aprovar-documentos?erro=1');
+        }
+        if ($user['role_slug'] !== 'admin' && !$this->canAccessSeller($user, (int) ($order['seller_id'] ?? 0))) {
+            http_response_code(403);
+            require BASE_PATH . '/app/Views/errors/403.php';
+            exit;
+        }
+
+        Order::approveDocuments($id, (int) $user['id']);
+        AuditLog::record((int) $user['id'], 'pedido_documentos_aprovados', 'order', $id, ['documents_approved_at' => null], ['documents_approved_at' => date('Y-m-d H:i:s')]);
+
+        $freshOrder = Order::find($id);
+        Notifier::pedidoDocumentosAprovadosFabrica($freshOrder);
+        Notifier::documentosAprovadosCliente($freshOrder);
+
+        Router::redirect('/painel/pedidos/aprovar-documentos?sucesso=1');
+    }
+
     public function index(): void
     {
         Auth::requireRole(Roles::STAFF);

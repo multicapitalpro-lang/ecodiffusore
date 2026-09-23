@@ -178,31 +178,40 @@ class Notifier
     }
 
     /** @param array $order precisa de id/client_name/total_value (retorno de Order::find()). So
-     *  WhatsApp, pra todo usuario do papel Fabrica -- avisa que caiu um pedido novo JA PAGO pra ela
-     *  incluir o codigo de rastreio (Fase 28: fabrica so ve pedidos com status verificado). Ao
-     *  contrario de pedidoAprovado(), dispara mesmo sem seller_id (ex: checkout publico sem
-     *  vendedor) -- a fabrica precisa saber de TODO pedido pago, tenha vendedor ou nao.
-     *  Fase 98: EXCECAO -- pedido a preco de custo (is_cost_price) nao dispara aqui, so' quando o
-     *  comprovante do Pix pra fabrica for anexado (ver pedidoCustoProntoParaFabrica()), senao a
-     *  fabrica recebia aviso de um pedido que ainda nem aparece na fila dela. */
-    public static function novoPedidoPagoFabrica(array $order): void
+     *  WhatsApp, pra todo usuario do papel Fabrica. Fase 99: NAO dispara mais so' por pagamento --
+     *  so' depois que Licenciado/Gerente/Admin revisa e aprova os documentos do veiculo
+     *  (Order::approveDocuments(), chamado por OrderController::approveDocuments()), pra fabrica
+     *  nunca ver um pedido que a equipe ainda nao conferiu (pedido de custo tem seu proprio aviso
+     *  separado, ver pedidoCustoProntoParaFabrica()). */
+    public static function pedidoDocumentosAprovadosFabrica(array $order): void
     {
-        if (!empty($order['is_cost_price'])) {
-            return;
-        }
-
         $produtos = OrderItem::forOrder((int) $order['id']);
         $produto = $produtos
             ? implode(', ', array_map(fn ($i) => $i['product_name'] . ' (x' . (int) $i['quantity'] . ')', $produtos))
             : '—';
 
-        $text = "📦 Novo pedido pago #{$order['id']}! Cliente {$order['client_name']}, produto: {$produto}. Acesse o painel e inclua o código de rastreio: " . self::BASE_URL . '/painel/fabrica';
+        $text = "📦 Pedido #{$order['id']} aprovado e liberado! Cliente {$order['client_name']}, produto: {$produto}. Acesse o painel e inclua o código de rastreio: " . self::BASE_URL . '/painel/fabrica';
 
         foreach (User::allByRole(Roles::FACTORY) as $fabrica) {
             if (!empty($fabrica['whatsapp'])) {
                 self::sendWhatsApp($fabrica['whatsapp'], $text);
             }
         }
+    }
+
+    /** Fase 99: aviso pro CLIENTE assim que os documentos do veiculo forem aprovados -- so' WhatsApp,
+     *  direto pra ele. Antes disso ele so sabia que "enviou os documentos", sem saber se ja tinha
+     *  sido conferido -- pedido explicito do usuario pra ficar claro que pagamento nao e' o mesmo
+     *  que liberacao pra fabricacao. */
+    public static function documentosAprovadosCliente(array $order): void
+    {
+        if (empty($order['client_whatsapp'])) {
+            return;
+        }
+
+        $url = self::BASE_URL . '/painel/meus-pedidos/' . (int) $order['id'];
+        $text = "✅ Conferimos seus documentos! Seu pedido #{$order['id']} foi liberado e já segue pra fabricação. Acompanhe: {$url}";
+        self::sendWhatsApp($order['client_whatsapp'], $text);
     }
 
     /** Fase 98: so' dispara quando o Admin anexa o comprovante do Pix pra fabrica num pedido a

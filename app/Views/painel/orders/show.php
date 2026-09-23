@@ -126,6 +126,24 @@ $situation = $order['payment_situation'] ?? ['label' => '—', 'badge' => 'novo'
     </div>
 <?php endif; ?>
 
+<?php $canApproveDocs = in_array($user['role_slug'] ?? '', ['licenciado', 'gerente', 'admin'], true); ?>
+<?php if (empty($order['is_cost_price']) && $order['status'] === 'verificado' && !\App\Models\Order::missingDocumentLabels($order) && $canApproveDocs): ?>
+    <div class="dash-card" style="text-align:left;max-width:520px;margin-bottom:16px;">
+        <?php if (empty($order['documents_approved_at'])): ?>
+            <span>Documentos do veículo</span>
+            <strong style="font-size:1rem;">Enviados pelo cliente — aguardando aprovação</strong>
+            <p class="hint-text" style="margin:6px 0 10px;">Confira CNH/documento/fotos/telemetria acima antes de aprovar. Só depois disso o pedido entra na fila de despacho da fábrica.</p>
+            <form action="/painel/pedidos/<?= (int) $order['id'] ?>/aprovar-documentos" method="post" class="inline-form">
+                <?= Csrf::field() ?>
+                <button type="submit" class="btn btn-primary" style="align-self:flex-start;">✅ Aprovar e liberar pra fábrica</button>
+            </form>
+        <?php else: ?>
+            <span>Documentos do veículo</span>
+            <strong style="font-size:1rem;">✅ Aprovados em <?= View::e(date('d/m/Y', strtotime($order['documents_approved_at']))) ?></strong>
+        <?php endif; ?>
+    </div>
+<?php endif; ?>
+
 <?php if (!$isViewOnly): ?>
 <form action="/painel/pedidos/<?= (int) $order['id'] ?>/rastreio" method="post" class="inline-form" style="margin-bottom:16px">
     <?= Csrf::field() ?>

@@ -17,10 +17,12 @@ $methodLabels = ['PIX' => 'Pix', 'BOLETO' => 'Boleto', 'CREDIT_CARD' => 'Cartão
 <?php endif; ?>
 
 <?php $missing = Order::missingDocumentLabels($order); ?>
-<?php if ($missing): ?>
+<?php if (!empty($order['is_cost_price'])): ?>
+    <?php // Pedido a preco de custo nao depende de documento de veiculo -- nada a mostrar aqui. ?>
+<?php elseif ($missing): ?>
     <div class="form-msg" style="background:#fff4dc;color:#b7791f;max-width:640px;margin-bottom:18px;">
         <strong>📎 Cadastro do veículo pendente</strong>
-        <p style="margin:6px 0 0;">O seu Ecodiffusore <strong>só vai pra fabricação depois que você enviar tudo abaixo</strong> — sem isso a peça não é confeccionada.</p>
+        <p style="margin:6px 0 0;">O seu Ecodiffusore <strong>só vai pra fabricação depois que você enviar tudo abaixo</strong> — sem isso a peça não é confeccionada. Mesmo com o pagamento confirmado, a fabricação não começa antes disso. Depois de enviado, nossa equipe confere tudo antes de liberar.</p>
         <ul style="margin:10px 0;padding-left:20px;">
             <?php foreach (Order::REQUIRED_VEHICLE_FIELDS as $field => $label): ?>
                 <li><?= empty($order[$field]) ? '❌' : '✅' ?> <?= View::e($label) ?></li>
@@ -75,8 +77,10 @@ $methodLabels = ['PIX' => 'Pix', 'BOLETO' => 'Boleto', 'CREDIT_CARD' => 'Cartão
             <button type="submit" class="btn btn-primary" style="margin-top:12px;">Enviar</button>
         </form>
     </div>
+<?php elseif (empty($order['documents_approved_at'])): ?>
+    <p class="form-msg" style="background:#fff4dc;color:#7a5a10;max-width:640px;margin-bottom:18px;">📋 <strong>Documentos recebidos!</strong> Nossa equipe está conferindo antes de enviar pra fabricação — mesmo com o pagamento confirmado, a fabricação do seu Ecodiffusore só começa depois dessa conferência (ele é personalizado pro seu veículo). Você recebe um aviso assim que for aprovado.</p>
 <?php else: ?>
-    <p class="form-msg form-msg-ok" style="max-width:640px;">✅ Cadastro do veículo completo — seu pedido já está liberado pra fabricação.</p>
+    <p class="form-msg form-msg-ok" style="max-width:640px;margin-bottom:18px;">✅ Documentos aprovados — seu pedido já foi liberado e segue pra fabricação.</p>
 <?php endif; ?>
 
 <div class="order-summary">

@@ -422,8 +422,52 @@ class Order
             return;
         }
 
+        // Fase 99: qualquer reenvio de documento invalida uma aprovacao anterior -- o dado mudou,
+        // precisa passar pela revisao de novo antes de liberar pra fabrica.
+        $sets[] = 'documents_approved_at = NULL';
+        $sets[] = 'documents_approved_by_user_id = NULL';
+
         $stmt = Database::connection()->prepare('UPDATE orders SET ' . implode(', ', $sets) . ' WHERE id = :id');
         $stmt->execute($params);
+    }
+
+    /** Fase 99: Licenciado/Gerente/Admin revisou os documentos do veiculo e liberou o pedido pra
+     *  fabrica -- so' a partir daqui ele entra em forFactory(). */
+    public static function approveDocuments(int $id, int $approvedByUserId): void
+    {
+        $stmt = Database::connection()->prepare(
+            'UPDATE orders SET documents_approved_at = NOW(), documents_approved_by_user_id = :uid WHERE id = :id'
+        );
+        $stmt->execute(['uid' => $approvedByUserId, 'id' => $id]);
+    }
+
+    /** Pedidos pagos, com o cadastro do veiculo completo, esperando essa revisao -- fila de
+     *  trabalho de quem aprova (Licenciado/Gerente/Admin). $sellerIds = null (admin) nao filtra. */
+    public static function pendingDocumentApproval(?array $sellerIds = null): array
+    {
+        $sql = "SELECT o.id, o.order_date, o.total_value, c.name AS client_name, u.name AS seller_name
+                FROM orders o
+                JOIN clients c ON c.id = o.client_id
+                LEFT JOIN users u ON u.id = o.seller_id
+                WHERE o.status = 'verificado' AND o.is_cost_price = 0 AND o.documents_approved_at IS NULL
+                    AND o.vehicle_plate IS NOT NULL AND o.vehicle_plate <> ''
+                    AND o.vehicle_document_path IS NOT NULL AND o.cnh_document_path IS NOT NULL
+                    AND o.photo1_path IS NOT NULL AND o.photo2_path IS NOT NULL AND o.photo3_path IS NOT NULL
+                    AND o.telemetry_path IS NOT NULL";
+        $params = [];
+        if ($sellerIds !== null) {
+            if (!$sellerIds) {
+                return [];
+            }
+            $placeholders = implode(',', array_fill(0, count($sellerIds), '?'));
+            $sql .= " AND o.seller_id IN ({$placeholders})";
+            $params = $sellerIds;
+        }
+        $sql .= ' ORDER BY o.order_date ASC';
+
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
     }
 
     public static function recalculateTotal(int $id): void
@@ -588,13 +632,16 @@ class Order
              FROM orders o JOIN clients c ON c.id = o.client_id
              WHERE o.status = 'verificado' AND o.delivered_at IS NULL
                 AND (
-                    -- Pedido normal (com vendedor): precisa do cadastro completo do veiculo,
-                    -- igual sempre precisou.
+                    -- Pedido normal (com vendedor): precisa do cadastro completo do veiculo (igual
+                    -- sempre precisou) E, desde a Fase 99, de revisao manual de Licenciado/
+                    -- Gerente/Admin (Order::approveDocuments()) -- pra corrigir qualquer dado
+                    -- errado antes de mandar pra fabrica (peca e' personalizada pro caminhao).
                     (o.is_cost_price = 0
                         AND o.vehicle_plate IS NOT NULL AND o.vehicle_plate <> ''
                         AND o.vehicle_document_path IS NOT NULL AND o.cnh_document_path IS NOT NULL
                         AND o.photo1_path IS NOT NULL AND o.photo2_path IS NOT NULL AND o.photo3_path IS NOT NULL
-                        AND o.telemetry_path IS NOT NULL)
+                        AND o.telemetry_path IS NOT NULL
+                        AND o.documents_approved_at IS NOT NULL)
                     -- Fase 98: pedido a preco de custo (mostruario) NAO exige documento de
                     -- veiculo nenhum (pode nem ter um veiculo real envolvido) -- so' precisa do
                     -- comprovante do Pix que o Admin mandou pra fabrica.
@@ -891,7 +938,6 @@ class Order
         }
 
         Notifier::pedidoAprovado($order);
-        Notifier::novoPedidoPagoFabrica($order);
         TeamFeed::orderVerified($order);
 
         // Fase 61: pagamento confirmado e' o gatilho pro cliente saber, na hora, que falta

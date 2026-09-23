@@ -311,12 +311,14 @@ $router->get('/painel/pedidos', [App\Controllers\OrderController::class, 'index'
 $router->get('/painel/pedidos/novo', [App\Controllers\OrderController::class, 'create']);
 $router->post('/painel/pedidos', [App\Controllers\OrderController::class, 'store']);
 $router->get('/painel/pedidos/exportar', [App\Controllers\OrderController::class, 'export']);
+$router->get('/painel/pedidos/aprovar-documentos', [App\Controllers\OrderController::class, 'pendingDocuments']);
 $router->get('/painel/pedidos/{id}', [App\Controllers\OrderController::class, 'show']);
 $router->get('/painel/pedidos/{id}/editar', [App\Controllers\OrderController::class, 'edit']);
 $router->post('/painel/pedidos/{id}', [App\Controllers\OrderController::class, 'update']);
 $router->post('/painel/pedidos/{id}/status', [App\Controllers\OrderController::class, 'markStatus']);
 $router->post('/painel/pedidos/{id}/reembolsar', [App\Controllers\OrderController::class, 'refundPayment']);
 $router->post('/painel/pedidos/{id}/rastreio', [App\Controllers\OrderController::class, 'updateTracking']);
+$router->post('/painel/pedidos/{id}/aprovar-documentos', [App\Controllers\OrderController::class, 'approveDocuments']);
 $router->post('/painel/pedidos/{id}/comprovante-fabrica', [App\Controllers\OrderController::class, 'attachFactoryPaymentProof']);
 $router->get('/painel/pedidos/{id}/comprovante-fabrica', [App\Controllers\OrderController::class, 'downloadFactoryPaymentProof']);
 $router->get('/painel/pedidos/{id}/documento-veiculo', [App\Controllers\OrderController::class, 'downloadVehicleDocument']);
