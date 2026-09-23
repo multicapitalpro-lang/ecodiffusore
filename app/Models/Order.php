@@ -248,8 +248,8 @@ class Order
 
         try {
             $stmt = $db->prepare(
-                'INSERT INTO orders (client_id, seller_id, influencer_id, status, order_date, total_value, notes, vehicle_type, vehicle_plate, vehicle_document_path, cnh_document_path, public_token, is_cost_price)
-                 VALUES (:client_id, :seller_id, :influencer_id, :status, :order_date, 0, :notes, :vehicle_type, :vehicle_plate, :vehicle_document_path, :cnh_document_path, :public_token, :is_cost_price)'
+                'INSERT INTO orders (client_id, seller_id, influencer_id, status, order_date, total_value, notes, vehicle_type, vehicle_plate, vehicle_document_path, cnh_document_path, public_token, is_cost_price, cost_price_billing_name, cost_price_billing_document, cost_price_delivery_address)
+                 VALUES (:client_id, :seller_id, :influencer_id, :status, :order_date, 0, :notes, :vehicle_type, :vehicle_plate, :vehicle_document_path, :cnh_document_path, :public_token, :is_cost_price, :cost_price_billing_name, :cost_price_billing_document, :cost_price_delivery_address)'
             );
             $stmt->execute([
                 'client_id' => $data['client_id'],
@@ -270,6 +270,12 @@ class Order
                 // e a Fabrica so' ve na fila dela depois que o comprovante do Pix pra ela for
                 // anexado (ver Order::forFactory()).
                 'is_cost_price' => !empty($data['is_cost_price']) ? 1 : 0,
+                // Fase 101: pra quem a fabrica fatura (nota fiscal) e pra onde entrega -- so'
+                // preenchido/usado quando is_cost_price, ja que esse tipo de pedido pode nao usar
+                // o endereco do "cliente" normal do CRM.
+                'cost_price_billing_name' => $data['cost_price_billing_name'] ?? null,
+                'cost_price_billing_document' => $data['cost_price_billing_document'] ?? null,
+                'cost_price_delivery_address' => $data['cost_price_delivery_address'] ?? null,
             ]);
             $orderId = (int) $db->lastInsertId();
 
@@ -624,6 +630,8 @@ class Order
                     o.nfe_status, o.nfe_pdf_url, o.notes, o.vehicle_type, o.vehicle_plate,
                     o.vehicle_document_path, o.cnh_document_path,
                     o.photo1_path, o.photo2_path, o.photo3_path, o.telemetry_path,
+                    o.is_cost_price, o.factory_payment_proof_path, o.factory_payment_proof_original_name,
+                    o.cost_price_billing_name, o.cost_price_billing_document, o.cost_price_delivery_address,
                     c.name AS client_name, c.whatsapp AS client_whatsapp, c.document AS client_document,
                     c.email AS client_email,
                     c.zip_code, c.street, c.number, c.complement, c.neighborhood, c.city, c.state,

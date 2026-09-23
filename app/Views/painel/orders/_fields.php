@@ -44,16 +44,34 @@ use App\Core\View;
             🏷️ Pedido a preço de custo (mostruário) — sem vendedor, sem comissão
         </label>
         <p class="hint-text" style="margin-top:4px;">Pra compra interna a preço de fábrica (ex: peça de mostruário). Libera o preço abaixo do piso normal e não gera comissão pra ninguém. Depois de verificado, anexe o comprovante do Pix pra fábrica no detalhe do pedido.</p>
+
+        <div id="cost-price-fields" style="display:none;margin-top:10px;">
+            <label for="cost_price_billing_name">Faturar para (nome/razão social)</label>
+            <input type="text" id="cost_price_billing_name" name="cost_price_billing_name" placeholder="Pra quem a fábrica deve emitir a nota fiscal">
+            <p class="field-error" data-error-for="cost_price_billing_name"><?= View::e($errors['cost_price_billing_name'] ?? '') ?></p>
+
+            <label for="cost_price_billing_document">CNPJ/CPF pra nota fiscal</label>
+            <input type="text" id="cost_price_billing_document" name="cost_price_billing_document">
+            <p class="field-error" data-error-for="cost_price_billing_document"><?= View::e($errors['cost_price_billing_document'] ?? '') ?></p>
+
+            <label for="cost_price_delivery_address">Endereço de entrega</label>
+            <input type="text" id="cost_price_delivery_address" name="cost_price_delivery_address" placeholder="Rua, número, bairro, cidade/UF, CEP">
+            <p class="field-error" data-error-for="cost_price_delivery_address"><?= View::e($errors['cost_price_delivery_address'] ?? '') ?></p>
+        </div>
     </div>
     <script>
     (function () {
         var cb = document.getElementById('is_cost_price');
         var sellerWrap = document.getElementById('seller-field-wrap');
         var vehicleSection = document.getElementById('vehicle-section');
+        var costPriceFields = document.getElementById('cost-price-fields');
+        var costPriceInputs = costPriceFields ? costPriceFields.querySelectorAll('input') : [];
         if (!cb) return;
         function sync() {
             if (sellerWrap) sellerWrap.style.display = cb.checked ? 'none' : '';
             if (vehicleSection) vehicleSection.style.display = cb.checked ? 'none' : '';
+            if (costPriceFields) costPriceFields.style.display = cb.checked ? '' : 'none';
+            costPriceInputs.forEach(function (input) { input.required = cb.checked; });
         }
         cb.addEventListener('change', sync);
         sync();

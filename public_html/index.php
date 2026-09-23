@@ -175,6 +175,7 @@ $router->post('/painel/fabrica/{id}/entrega', [App\Controllers\FactoryController
 $router->post('/painel/fabrica/{id}/entregue', [App\Controllers\FactoryController::class, 'markDelivered']);
 $router->get('/painel/fabrica/{id}/termo-garantia', [App\Controllers\FactoryController::class, 'downloadWarrantyTerm']);
 $router->get('/painel/fabrica/{id}/arquivo/{field}', [App\Controllers\FactoryController::class, 'downloadDocument']);
+$router->get('/painel/fabrica/{id}/comprovante-pagamento', [App\Controllers\FactoryController::class, 'downloadFactoryPaymentProof']);
 
 $router->get('/painel/influenciador', [App\Controllers\InfluencerController::class, 'dashboard']);
 $router->get('/painel/entregas', [App\Controllers\OrderController::class, 'deliveries']);

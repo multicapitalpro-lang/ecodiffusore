@@ -47,6 +47,7 @@ $erro = isset($_GET['erro']);
                 <th>Código</th>
                 <th>Previsão</th>
                 <th>Nota Fiscal</th>
+                <th>Comprovante Pagamento (custo)</th>
                 <th>Comprovante de Instalação</th>
                 <th>Documentos do veículo</th>
                 <th></th>
@@ -93,12 +94,22 @@ $erro = isset($_GET['erro']);
                         <?php endif; ?>
                     </td>
                     <td>
-                        <?= View::e($o['client_name']) ?><br>
-                        <small class="hint-text"><?= View::e($o['client_document'] ?: '—') ?><?php if (!empty($o['client_whatsapp'])): ?> · <?= View::e($o['client_whatsapp']) ?><?php endif; ?><?php if (!empty($o['client_email'])): ?> · <?= View::e($o['client_email']) ?><?php endif; ?></small>
+                        <?php if (!empty($o['is_cost_price'])): ?>
+                            <span class="status-badge status-novo">🏷️ Preço de custo</span><br>
+                            <?= View::e($o['cost_price_billing_name'] ?: '—') ?><br>
+                            <small class="hint-text">CNPJ/CPF: <?= View::e($o['cost_price_billing_document'] ?: '—') ?></small>
+                        <?php else: ?>
+                            <?= View::e($o['client_name']) ?><br>
+                            <small class="hint-text"><?= View::e($o['client_document'] ?: '—') ?><?php if (!empty($o['client_whatsapp'])): ?> · <?= View::e($o['client_whatsapp']) ?><?php endif; ?><?php if (!empty($o['client_email'])): ?> · <?= View::e($o['client_email']) ?><?php endif; ?></small>
+                        <?php endif; ?>
                     </td>
                     <td style="min-width:220px">
-                        <?= View::e($o['street'] ?: '—') ?><?= $o['number'] ? ', ' . View::e($o['number']) : '' ?><?= $o['complement'] ? ' - ' . View::e($o['complement']) : '' ?><br>
-                        <small class="hint-text"><?= View::e($o['neighborhood'] ?: '—') ?>, <?= View::e($o['city'] ?: '—') ?>/<?= View::e($o['state'] ?: '—') ?> · CEP <?= View::e($o['zip_code'] ?: '—') ?></small>
+                        <?php if (!empty($o['is_cost_price'])): ?>
+                            <?= View::e($o['cost_price_delivery_address'] ?: '—') ?>
+                        <?php else: ?>
+                            <?= View::e($o['street'] ?: '—') ?><?= $o['number'] ? ', ' . View::e($o['number']) : '' ?><?= $o['complement'] ? ' - ' . View::e($o['complement']) : '' ?><br>
+                            <small class="hint-text"><?= View::e($o['neighborhood'] ?: '—') ?>, <?= View::e($o['city'] ?: '—') ?>/<?= View::e($o['state'] ?: '—') ?> · CEP <?= View::e($o['zip_code'] ?: '—') ?></small>
+                        <?php endif; ?>
                     </td>
                     <td><input form="<?= $formId ?>" type="text" name="tracking_carrier" value="<?= View::e($o['tracking_carrier'] ?? '') ?>" placeholder="Correios, Jadlog..." style="width:120px"></td>
                     <td>
@@ -113,6 +124,13 @@ $erro = isset($_GET['erro']);
                             <a href="<?= View::e($o['nfe_pdf_url']) ?>" target="_blank" rel="noopener" class="link-small">📄 Baixar</a>
                         <?php elseif (!empty($o['nfe_status'])): ?>
                             <span class="hint-text">Em processamento</span>
+                        <?php else: ?>
+                            <span class="hint-text">—</span>
+                        <?php endif; ?>
+                    </td>
+                    <td>
+                        <?php if (!empty($o['is_cost_price']) && !empty($o['factory_payment_proof_path'])): ?>
+                            <a href="/painel/fabrica/<?= (int) $o['id'] ?>/comprovante-pagamento" target="_blank" rel="noopener" class="link-small">📄 Ver comprovante</a>
                         <?php else: ?>
                             <span class="hint-text">—</span>
                         <?php endif; ?>
@@ -141,7 +159,7 @@ $erro = isset($_GET['erro']);
                 </tr>
             <?php endforeach; ?>
             <?php if (!$orders): ?>
-                <tr><td colspan="12">Nenhum pedido pago aguardando despacho no momento.</td></tr>
+                <tr><td colspan="13">Nenhum pedido pago aguardando despacho no momento.</td></tr>
             <?php endif; ?>
         </tbody>
     </table>

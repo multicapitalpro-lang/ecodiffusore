@@ -221,6 +221,21 @@ class OrderController
         $isCostPrice = $user['role_slug'] === 'admin' && !empty($_POST['is_cost_price']);
         $errors = $this->validate($_POST, $items, $user['role_slug'], $isCostPrice);
 
+        // Fase 101: pra quem a fabrica fatura e pra onde entrega -- so' exigido na CRIACAO de um
+        // pedido a preco de custo (nao reaproveita validate(), que tambem roda em update() de um
+        // pedido ja existente onde esses campos ainda nao aparecem no form de edicao).
+        if ($isCostPrice) {
+            if (trim($_POST['cost_price_billing_name'] ?? '') === '') {
+                $errors['cost_price_billing_name'] = 'Informe pra quem a fábrica deve faturar.';
+            }
+            if (trim($_POST['cost_price_billing_document'] ?? '') === '') {
+                $errors['cost_price_billing_document'] = 'Informe o CNPJ/CPF pra nota fiscal.';
+            }
+            if (trim($_POST['cost_price_delivery_address'] ?? '') === '') {
+                $errors['cost_price_delivery_address'] = 'Informe o endereço de entrega.';
+            }
+        }
+
         if ($errors) {
             if (Response::isAjax()) {
                 Response::json(['ok' => false, 'errors' => $errors]);
@@ -272,6 +287,9 @@ class OrderController
             'vehicle_document_path' => $vehicleDocument['stored_name'] ?? null,
             'cnh_document_path' => $cnhDocument['stored_name'] ?? null,
             'is_cost_price' => $isCostPrice,
+            'cost_price_billing_name' => $isCostPrice ? trim($_POST['cost_price_billing_name'] ?? '') : null,
+            'cost_price_billing_document' => $isCostPrice ? trim($_POST['cost_price_billing_document'] ?? '') : null,
+            'cost_price_delivery_address' => $isCostPrice ? trim($_POST['cost_price_delivery_address'] ?? '') : null,
         ], $items);
 
         if ($sellerId) {

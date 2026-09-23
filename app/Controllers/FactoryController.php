@@ -109,6 +109,33 @@ class FactoryController
         exit;
     }
 
+    /** Fase 101: comprovante do Pix que o Admin mandou pra Fabrica num pedido a preco de custo --
+     *  a fabrica precisa disso pra confirmar que recebeu o pagamento antes de despachar. Mesmo
+     *  padrao de downloadDocument(), so' que a pasta/campo sao os do comprovante de pagamento. */
+    public function downloadFactoryPaymentProof(string $id): void
+    {
+        Auth::requireRole([Roles::FACTORY]);
+        $id = (int) $id;
+
+        $order = Order::find($id);
+        if (!$order || empty($order['is_cost_price']) || empty($order['factory_payment_proof_path'])) {
+            http_response_code(404);
+            exit('Arquivo não encontrado.');
+        }
+
+        $path = FileUpload::path('factory_payment_proofs', $order['factory_payment_proof_path']);
+        if (!file_exists($path)) {
+            http_response_code(404);
+            exit('Arquivo não encontrado.');
+        }
+
+        header('Content-Type: ' . (mime_content_type($path) ?: 'application/octet-stream'));
+        header('Content-Disposition: inline; filename="' . rawurlencode($order['factory_payment_proof_original_name'] ?: 'comprovante.pdf') . '"');
+        header('Content-Length: ' . filesize($path));
+        readfile($path);
+        exit;
+    }
+
     /** Fase 71: "Consulta de Pedidos" -- pedido explicito do usuario, pra fabrica conseguir
      *  responder um cliente que liga perguntando do pedido dele (nome, modelo(s), cidade, prazo
      *  de entrega vendido), mesmo fora da fila de despacho (Order::forFactory(), so' pedidos
