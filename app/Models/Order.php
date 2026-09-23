@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Core\Database;
 use App\Core\Notifier;
+use App\Core\TeamFeed;
 use PDO;
 
 class Order
@@ -857,6 +858,7 @@ class Order
 
         Notifier::pedidoAprovado($order);
         Notifier::novoPedidoPagoFabrica($order);
+        TeamFeed::orderVerified($order);
 
         // Fase 61: pagamento confirmado e' o gatilho pro cliente saber, na hora, que falta
         // completar o cadastro do veiculo -- sem isso a peca nao vai pra fabricacao. So se ainda

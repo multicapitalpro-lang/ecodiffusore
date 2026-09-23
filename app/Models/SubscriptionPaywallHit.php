@@ -19,6 +19,7 @@ class SubscriptionPaywallHit
         'alerta_meta' => 'Alerta Preditivo de Meta',
         'indicacao_premiada' => 'Indicações Premiadas',
         'certificacao_vendedor' => 'Certificação do Vendedor',
+        'mural_conquistas' => 'Mural de Conquistas',
     ];
 
     public static function record(int $userId, ?int $licenciadoId, string $feature): void

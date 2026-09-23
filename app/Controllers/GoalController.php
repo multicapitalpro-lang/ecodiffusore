@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Core\Auth;
 use App\Core\Csrf;
+use App\Core\GoalAchievementCheck;
 use App\Core\GoalPaceAlert;
 use App\Core\Roles;
 use App\Core\Router;
@@ -22,6 +23,7 @@ class GoalController
         // Fase 94: sem cron nesse plano Hostinger -- roda o alerta de ritmo aqui, na tela mais
         // visitada por quem tem meta (mesmo padrao ja usado no Calendario/Dashboard).
         GoalPaceAlert::processDue();
+        GoalAchievementCheck::processDue();
 
         $goals = Goal::all();
         $today = date('Y-m-d');

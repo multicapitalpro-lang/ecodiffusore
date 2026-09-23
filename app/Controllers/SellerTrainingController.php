@@ -7,6 +7,7 @@ use App\Core\Csrf;
 use App\Core\Response;
 use App\Core\Roles;
 use App\Core\Router;
+use App\Core\TeamFeed;
 use App\Core\View;
 use App\Models\SellerTrainingModule;
 use App\Models\SellerTrainingProgress;
@@ -82,6 +83,12 @@ class SellerTrainingController
 
         $allCompleted = SellerTrainingProgress::hasCompletedAll((int) $user['id']);
         if ($allCompleted) {
+            // Fase 97: posta no Mural de Conquistas so' na PRIMEIRA vez que completa (checa
+            // ANTES de marcar) -- nao no auto-pass de "sem video cadastrado" em show(), pra so'
+            // celebrar quem realmente assistiu o treinamento.
+            if (empty($user['training_completed_at'])) {
+                TeamFeed::certificationEarned($user);
+            }
             User::markTrainingCompleted((int) $user['id']);
         }
 

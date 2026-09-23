@@ -163,4 +163,12 @@ class Goal
         $stmt = Database::connection()->prepare('UPDATE goals SET pace_alert_sent_at = NOW() WHERE id = :id');
         $stmt->execute(['id' => $id]);
     }
+
+    /** Fase 97: guarda de dedup pro Mural de Conquistas -- garante que "meta batida" so' posta
+     *  uma vez por meta, mesmo com a rotina lazy rodando em toda carga de /painel/metas. */
+    public static function markAchievementPosted(int $id): void
+    {
+        $stmt = Database::connection()->prepare('UPDATE goals SET achievement_posted_at = NOW() WHERE id = :id');
+        $stmt->execute(['id' => $id]);
+    }
 }

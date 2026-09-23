@@ -36,5 +36,6 @@ class ReferralActivationCheck
 
         Referral::markActive((int) $referral['id']);
         Notifier::indicacaoAtivada($referral);
+        TeamFeed::referralActivated($referral);
     }
 }

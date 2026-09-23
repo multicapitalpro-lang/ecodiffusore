@@ -292,6 +292,8 @@ $router->post('/painel/configuracoes/tutoriais', [App\Controllers\TutorialContro
 $router->post('/painel/configuracoes/tutoriais/{id}/excluir', [App\Controllers\TutorialController::class, 'destroy']);
 $router->get('/painel/tutoriais', [App\Controllers\TutorialController::class, 'client']);
 
+$router->get('/painel/mural', [App\Controllers\MuralController::class, 'index']);
+$router->get('/painel/mural/feed', [App\Controllers\MuralController::class, 'feed']);
 $router->get('/painel/certificacao', [App\Controllers\CertificationController::class, 'index']);
 $router->get('/painel/certificacao/pdf', [App\Controllers\CertificationController::class, 'pdf']);
 $router->get('/painel/treinamento', [App\Controllers\SellerTrainingController::class, 'show']);
