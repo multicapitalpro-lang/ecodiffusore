@@ -122,6 +122,7 @@ $router->post('/api/v1/financeiro/lancamentos/{id}/pagar', [App\Controllers\Api\
 $router->get('/api/v1/treinamento', [App\Controllers\Api\TrainingController::class, 'index']);
 $router->post('/api/v1/treinamento/progresso', [App\Controllers\Api\TrainingController::class, 'reportProgress']);
 $router->get('/api/v1/metas', [App\Controllers\Api\GoalController::class, 'index']);
+$router->get('/api/v1/metas/{id}/ritmo', [App\Controllers\Api\GoalController::class, 'pace']);
 $router->get('/api/v1/cotacoes-maquina', [App\Controllers\Api\MachineQuoteController::class, 'index']);
 $router->get('/api/v1/cotacoes-maquina/{id}', [App\Controllers\Api\MachineQuoteController::class, 'show']);
 $router->post('/api/v1/cotacoes-maquina/{id}/responder', [App\Controllers\Api\MachineQuoteController::class, 'respond']);
@@ -130,6 +131,26 @@ $router->post('/api/v1/emails-profissionais', [App\Controllers\Api\LicenciadoEma
 $router->get('/api/v1/proposta-facil/opcoes', [App\Controllers\Api\PropostaController::class, 'options']);
 $router->post('/api/v1/proposta-facil', [App\Controllers\Api\PropostaController::class, 'store']);
 $router->post('/api/v1/proposta-facil/{id}/concluir', [App\Controllers\Api\PropostaController::class, 'conclude']);
+
+// Fase 103: paridade do app com as 7 ferramentas premium (Fases 92-97) + Meu Link de Vendas (Fase 99, gratuito).
+$router->get('/api/v1/meu-link', [App\Controllers\Api\SellerLinkController::class, 'show']);
+$router->get('/api/v1/simulador-comissao', [App\Controllers\Api\CommissionSimulatorController::class, 'index']);
+$router->get('/api/v1/indicacoes', [App\Controllers\Api\ReferralController::class, 'index']);
+$router->post('/api/v1/indicacoes', [App\Controllers\Api\ReferralController::class, 'store']);
+$router->post('/api/v1/indicacoes/{id}/vincular', [App\Controllers\Api\ReferralController::class, 'link']);
+$router->post('/api/v1/indicacoes/{id}/contato', [App\Controllers\Api\ReferralController::class, 'markContacted']);
+$router->post('/api/v1/indicacoes/{id}/descartar', [App\Controllers\Api\ReferralController::class, 'discard']);
+$router->post('/api/v1/indicacoes/{id}/premio', [App\Controllers\Api\ReferralController::class, 'setReward']);
+$router->post('/api/v1/indicacoes/{id}/premio-pago', [App\Controllers\Api\ReferralController::class, 'markRewardPaid']);
+$router->get('/api/v1/certificacao', [App\Controllers\Api\CertificationController::class, 'show']);
+$router->get('/api/v1/certificacao/pdf', [App\Controllers\Api\CertificationController::class, 'pdf']);
+$router->get('/api/v1/mural', [App\Controllers\Api\MuralController::class, 'index']);
+$router->get('/api/v1/calendario', [App\Controllers\Api\CalendarController::class, 'index']);
+$router->post('/api/v1/calendario', [App\Controllers\Api\CalendarController::class, 'store']);
+$router->get('/api/v1/calendario/{id}', [App\Controllers\Api\CalendarController::class, 'show']);
+$router->post('/api/v1/calendario/{id}', [App\Controllers\Api\CalendarController::class, 'update']);
+$router->post('/api/v1/calendario/{id}/status', [App\Controllers\Api\CalendarController::class, 'markStatus']);
+$router->post('/api/v1/calendario/{id}/excluir', [App\Controllers\Api\CalendarController::class, 'destroy']);
 
 // Autenticação
 $router->get('/painel/login', [App\Controllers\AuthController::class, 'showLogin']);
