@@ -15,6 +15,7 @@ class SubscriptionPaywallHit
         'relatorios' => 'Relatórios completos',
         'email_profissional' => 'E-mail Profissional',
         'calendario' => 'Calendário da Equipe',
+        'simulador_comissao' => 'Simulador de Comissão',
     ];
 
     public static function record(int $userId, ?int $licenciadoId, string $feature): void

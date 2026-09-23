@@ -374,6 +374,8 @@ $router->post('/painel/calendario/{id}', [App\Controllers\CalendarController::cl
 $router->get('/painel/meu-link', [App\Controllers\SellerLinkController::class, 'index']);
 $router->get('/v/{slug}', [App\Controllers\SellerLandingController::class, 'show']);
 $router->post('/v/{slug}', [App\Controllers\SellerLandingController::class, 'submitLead']);
+
+$router->get('/painel/simulador-comissao', [App\Controllers\CommissionSimulatorController::class, 'index']);
 $router->get('/painel/emails-profissionais/admin', [App\Controllers\LicenciadoEmailController::class, 'adminIndex']);
 $router->post('/painel/emails-profissionais/admin/{id}/aprovar', [App\Controllers\LicenciadoEmailController::class, 'approve']);
 $router->post('/painel/emails-profissionais/admin/{id}/recusar', [App\Controllers\LicenciadoEmailController::class, 'reject']);
