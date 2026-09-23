@@ -117,8 +117,10 @@ class Notifier
             }
         }
 
-        foreach ($recipients as $whatsapp) {
+        $pushBody = "Cliente {$request['client_name']} ({$request['machine_type']}) aguardando preço.";
+        foreach ($recipients as $id => $whatsapp) {
             self::sendWhatsApp($whatsapp, $text);
+            self::sendPush((int) $id, 'Nova cotação de máquina agrícola', $pushBody, ['type' => 'machine_quote', 'machine_quote_id' => (int) $request['id']], 'urgent');
         }
     }
 
@@ -233,10 +235,16 @@ class Notifier
         if ($seller && !empty($seller['whatsapp']) && $waSelf) {
             self::sendWhatsApp($seller['whatsapp'], $waSelf);
         }
+        if ($seller) {
+            self::sendPush($sellerId, 'Pedido cancelado', "Pedido #{$orderId} ({$vars['cliente']}) foi cancelado.", ['type' => 'order', 'order_id' => $orderId], 'urgent');
+        }
 
         $licenciado = User::licenciadoFor($sellerId);
         if ($licenciado && !empty($licenciado['whatsapp']) && (int) $licenciado['id'] !== $sellerId && $waNetwork) {
             self::sendWhatsApp($licenciado['whatsapp'], $waNetwork);
+        }
+        if ($licenciado && (int) $licenciado['id'] !== $sellerId) {
+            self::sendPush((int) $licenciado['id'], 'Pedido cancelado', "Pedido #{$orderId} ({$vars['cliente']}) foi cancelado.", ['type' => 'order', 'order_id' => $orderId], 'urgent');
         }
     }
 
@@ -271,10 +279,12 @@ class Notifier
 
         self::addNetworkChain($recipients, $licenciado);
 
-        foreach ($recipients as $r) {
+        $pushBody = "{$seller['name']} está {$diasInativo} dias sem vender.";
+        foreach ($recipients as $id => $r) {
             if (!empty($r['whatsapp'])) {
                 self::sendWhatsApp($r['whatsapp'], $text);
             }
+            self::sendPush((int) $id, 'Vendedor inativo', $pushBody, ['type' => 'team'], 'normal');
         }
     }
 
@@ -296,10 +306,12 @@ class Notifier
             self::addRecipient($recipients, $gerente, 'network');
         }
 
-        foreach ($recipients as $r) {
+        $pushBody = "{$vars['nome']} ({$vars['cidade']}) quer se cadastrar como Licenciado.";
+        foreach ($recipients as $id => $r) {
             if (!empty($r['whatsapp'])) {
                 self::sendWhatsApp($r['whatsapp'], $text);
             }
+            self::sendPush((int) $id, 'Novo Licenciado pendente de aprovação', $pushBody, ['type' => 'licenciado_approval'], 'urgent');
         }
     }
 
@@ -373,6 +385,9 @@ class Notifier
         [$text] = self::waTexts('licenciado_contrato_pendente', $vars);
         if ($text) {
             self::sendWhatsApp($licenciado['whatsapp'], $text);
+        }
+        if (!empty($licenciado['id'])) {
+            self::sendPush((int) $licenciado['id'], 'Contrato pendente de assinatura', 'Seu contrato de Licenciado está pronto -- falta só assinar.', ['type' => 'licenciado_contract'], 'normal');
         }
     }
 
@@ -554,11 +569,13 @@ class Notifier
             self::addRecipient($recipients, $licenciado, 'network');
         }
 
-        foreach ($recipients as $r) {
+        $pushBody = "Cliente {$vars['cliente']} enviou CNH/documento do veículo -- Pedido #{$vars['pedido']}.";
+        foreach ($recipients as $id => $r) {
             $text = $r['bucket'] === 'self' ? $waSelf : $waNetwork;
             if ($text && !empty($r['whatsapp'])) {
                 self::sendWhatsApp($r['whatsapp'], $text);
             }
+            self::sendPush((int) $id, 'Documentos do pedido enviados', $pushBody, ['type' => 'order', 'order_id' => (int) $order['id']], 'urgent');
         }
     }
 
@@ -608,10 +625,12 @@ class Notifier
             return;
         }
 
+        $pushBody = "{$vars['licenciado']} pediu {$vars['endereco']}.";
         foreach (User::allByRole('admin') as $admin) {
             if (!empty($admin['whatsapp'])) {
                 self::sendWhatsApp($admin['whatsapp'], $text);
             }
+            self::sendPush((int) $admin['id'], 'E-mail profissional solicitado', $pushBody, ['type' => 'email_profissional_admin'], 'urgent');
         }
     }
 
@@ -635,6 +654,7 @@ class Notifier
         if ($text) {
             self::sendWhatsApp($licenciado['whatsapp'], $text);
         }
+        self::sendPush((int) $licenciado['id'], 'E-mail profissional: ' . $status, "{$vars['endereco']} -- {$status}.", ['type' => 'email_profissional'], 'normal');
     }
 
     /** @param array $licenciado precisa de id/name/email */
@@ -908,10 +928,16 @@ class Notifier
         if ($seller && !empty($seller['whatsapp']) && $waSelf) {
             self::sendWhatsApp($seller['whatsapp'], $waSelf);
         }
+        if ($seller) {
+            self::sendPush($sellerId, 'Pós-venda enviada', "Pedido #{$vars['id']} ({$vars['cliente']}) -- confirmação enviada pra análise.", ['type' => 'warranty', 'warranty_id' => (int) $warranty['id']], 'normal');
+        }
 
         $licenciado = User::licenciadoFor($sellerId);
         if ($licenciado && !empty($licenciado['whatsapp']) && (int) $licenciado['id'] !== $sellerId && $waNetwork) {
             self::sendWhatsApp($licenciado['whatsapp'], $waNetwork);
+        }
+        if ($licenciado && (int) $licenciado['id'] !== $sellerId) {
+            self::sendPush((int) $licenciado['id'], 'Pós-venda enviada', "Pedido #{$vars['id']} ({$vars['cliente']}) -- confirmação enviada pra análise.", ['type' => 'warranty', 'warranty_id' => (int) $warranty['id']], 'normal');
         }
 
         $urgentText = "⚠️ Nova confirmação de Pós-venda de Instalação aguardando análise -- cliente {$vars['cliente']}, pedido #{$vars['id']}. Quanto antes analisar, mais rápido a fábrica recebe o comprovante pra despachar junto. Analise aqui: {$vars['url']}";
@@ -919,6 +945,7 @@ class Notifier
             if (!empty($approver['whatsapp'])) {
                 self::sendWhatsApp($approver['whatsapp'], $urgentText);
             }
+            self::sendPush((int) $approver['id'], 'Pós-venda aguardando análise', "Cliente {$vars['cliente']}, pedido #{$vars['id']}.", ['type' => 'warranty', 'warranty_id' => (int) $warranty['id']], 'urgent');
         }
     }
 
@@ -933,6 +960,9 @@ class Notifier
         [$text] = self::waTexts('follow_up_lembrete', $vars);
         if ($text) {
             self::sendWhatsApp($seller['whatsapp'], $text);
+        }
+        if (!empty($seller['id'])) {
+            self::sendPush((int) $seller['id'], 'Follow-up de lead pendente', "Retorno combinado pra hoje: {$vars['leads']}.", ['type' => 'leads'], 'normal');
         }
     }
 
@@ -1104,12 +1134,14 @@ class Notifier
      *  o WhatsApp aos poucos. So dispara pra quem ja tem o app instalado e logado (registrou
      *  token em /api/v1/device-token); sem token, simplesmente nao manda nada -- nunca falha o
      *  fluxo que chamou. */
-    private static function sendPush(int $userId, string $title, string $body, array $data = []): void
+    /** Fase 91: $priority 'urgent' (com som, precisa agir) ou 'normal' (silencioso, so' pra
+     *  ficar sabendo) -- ver App\Core\PushClient::send(). */
+    private static function sendPush(int $userId, string $title, string $body, array $data = [], string $priority = 'urgent'): void
     {
         try {
             $tokens = DeviceToken::tokensForUser($userId);
             if ($tokens) {
-                PushClient::send($tokens, $title, $body, $data);
+                PushClient::send($tokens, $title, $body, $data, $priority);
             }
         } catch (\Throwable $e) {
             error_log('Push dispatch falhou: ' . $e->getMessage());
@@ -1239,7 +1271,7 @@ class Notifier
             if ($waText && !empty($r['whatsapp'])) {
                 self::sendWhatsApp($r['whatsapp'], $waText);
             }
-            self::sendPush((int) $id, $title, $pushBody);
+            self::sendPush((int) $id, $title, $pushBody, [], 'normal');
         }
     }
 

@@ -14,20 +14,28 @@ class PushClient
 {
     private const ENDPOINT = 'https://exp.host/--/api/v2/push/send';
 
-    /** @param string[] $tokens */
-    public static function send(array $tokens, string $title, string $body, array $data = []): void
+    /** Fase 91: $priority separa "urgente" (com som, precisa de acao/atencao ja) de "normal"
+     *  (silencioso, so' pra ficar sabendo) -- ate aqui todo push tocava som igual, sem
+     *  diferenciar o que realmente precisa interromper a pessoa. channelId bate com os canais
+     *  Android registrados no app (src/push.ts, 'urgent'/'normal'); no iOS quem decide
+     *  som/critico e' o campo sound em si (Expo nao usa channelId no iOS).
+     * @param string[] $tokens */
+    public static function send(array $tokens, string $title, string $body, array $data = [], string $priority = 'urgent'): void
     {
         $tokens = array_values(array_filter($tokens, fn ($t) => str_starts_with($t, 'ExponentPushToken')));
         if (!$tokens) {
             return;
         }
 
+        $isUrgent = $priority === 'urgent';
         $messages = array_map(fn ($t) => [
             'to' => $t,
-            'sound' => 'default',
+            'sound' => $isUrgent ? 'default' : null,
+            'priority' => $isUrgent ? 'high' : 'default',
+            'channelId' => $isUrgent ? 'urgent' : 'normal',
             'title' => $title,
             'body' => $body,
-            'data' => $data,
+            'data' => $data + ['priority' => $priority],
         ], $tokens);
 
         $ch = curl_init(self::ENDPOINT);
