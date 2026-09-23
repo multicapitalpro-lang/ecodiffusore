@@ -48,7 +48,10 @@ $fmtGoal = function (float $value, string $metricType): string {
                 ?>
                 <span class="hint-inline">🏆 <?= View::e(implode(' · ', $rewardParts)) ?><?= $g['reward_paid'] ? ' (pago)' : '' ?></span>
             <?php endif; ?>
-            <div style="display:flex;gap:10px;margin-top:6px;">
+            <div style="display:flex;gap:10px;margin-top:6px;flex-wrap:wrap;">
+                <?php if (!$p['reached']): ?>
+                    <button type="button" class="link-button" data-view-goal-pace="<?= (int) $g['id'] ?>">📈 Ver ritmo</button>
+                <?php endif; ?>
                 <?php if ($p['reached'] && !$g['reward_paid'] && ($g['reward_description'] || $g['reward_amount']) && (int) $g['created_by'] === $myId): ?>
                     <form action="/painel/metas/<?= (int) $g['id'] ?>/premio-pago" method="post" class="inline-form">
                         <?= Csrf::field() ?>
@@ -152,7 +155,19 @@ $fmtGoal = function (float $value, string $metricType): string {
     </div>
 </dialog>
 
+<dialog class="modal" id="modal-goal-pace">
+    <div id="modal-goal-pace-content"></div>
+</dialog>
+
 <script>
+(function () {
+    document.querySelectorAll('[data-view-goal-pace]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var id = btn.getAttribute('data-view-goal-pace');
+            openFragmentModal('modal-goal-pace', 'modal-goal-pace-content', '/painel/metas/' + id + '/ritmo?fragment=1', 'Ritmo da meta');
+        });
+    });
+})();
 (function () {
     var metricSelect = document.getElementById('goal-metric');
     var valueLabel = document.getElementById('goal-value-label');

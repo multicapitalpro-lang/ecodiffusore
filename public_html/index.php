@@ -425,6 +425,7 @@ $router->get('/painel/desempenho/panorama/estado/{uf}', [App\Controllers\Perform
 // Metas
 $router->get('/painel/metas', [App\Controllers\GoalController::class, 'index']);
 $router->post('/painel/metas', [App\Controllers\GoalController::class, 'store']);
+$router->get('/painel/metas/{id}/ritmo', [App\Controllers\GoalController::class, 'pace']);
 $router->post('/painel/metas/{id}/excluir', [App\Controllers\GoalController::class, 'delete']);
 $router->post('/painel/metas/{id}/premio-pago', [App\Controllers\GoalController::class, 'markRewardPaid']);
 

@@ -98,4 +98,69 @@ class Goal
 
         return ['achieved' => $achieved, 'target' => $target, 'pct' => $pct, 'reached' => $achieved >= $target && $target > 0];
     }
+
+    /** Fase 94: ritmo da meta -- compara o % ja alcancado com o % de dias ja decorridos do
+     *  periodo, pra saber se quem persegue a meta esta adiantado, no ritmo ou atrasado, e quanto
+     *  precisa vender por dia dai pra frente pra bater no prazo. */
+    public static function pace(array $goal): array
+    {
+        $progress = self::progress($goal);
+        $start = strtotime($goal['start_date']);
+        $end = strtotime($goal['end_date']);
+        $today = strtotime(date('Y-m-d'));
+
+        $totalDays = max(1, (int) round(($end - $start) / 86400) + 1);
+        $elapsedDays = max(0, min($totalDays, (int) round(($today - $start) / 86400) + 1));
+        $remainingDays = max(0, $totalDays - $elapsedDays);
+
+        $expectedPct = round($elapsedDays / $totalDays * 100, 1);
+        $paceDiff = round($progress['pct'] - $expectedPct, 1);
+
+        $remainingTarget = max(0, $progress['target'] - $progress['achieved']);
+        $dailyNeeded = $remainingDays > 0 ? $remainingTarget / $remainingDays : $remainingTarget;
+        $dailyAverage = $progress['achieved'] / max(1, $elapsedDays);
+
+        if ($progress['reached']) {
+            $status = 'batida';
+        } elseif ($remainingDays === 0) {
+            $status = 'encerrada_nao_batida';
+        } elseif ($paceDiff <= -10) {
+            $status = 'atrasado';
+        } elseif ($paceDiff >= 10) {
+            $status = 'adiantado';
+        } else {
+            $status = 'no_ritmo';
+        }
+
+        return array_merge($progress, [
+            'total_days' => $totalDays,
+            'elapsed_days' => $elapsedDays,
+            'remaining_days' => $remainingDays,
+            'expected_pct' => $expectedPct,
+            'pace_diff' => $paceDiff,
+            'daily_needed' => round($dailyNeeded, 2),
+            'daily_average' => round($dailyAverage, 2),
+            'status' => $status,
+        ]);
+    }
+
+    /** Metas em andamento com destinatario definido -- usado so pela rotina lazy de alerta de
+     *  ritmo (App\Core\GoalPaceAlert), nao pela tela normal de Metas. */
+    public static function allActive(): array
+    {
+        $today = date('Y-m-d');
+        $stmt = Database::connection()->prepare(
+            'SELECT g.*, u.name AS seller_name FROM goals g
+             LEFT JOIN users u ON u.id = g.seller_id
+             WHERE g.start_date <= :today1 AND g.end_date >= :today2 AND g.seller_id IS NOT NULL'
+        );
+        $stmt->execute(['today1' => $today, 'today2' => $today]);
+        return $stmt->fetchAll();
+    }
+
+    public static function markPaceAlertSent(int $id): void
+    {
+        $stmt = Database::connection()->prepare('UPDATE goals SET pace_alert_sent_at = NOW() WHERE id = :id');
+        $stmt->execute(['id' => $id]);
+    }
 }

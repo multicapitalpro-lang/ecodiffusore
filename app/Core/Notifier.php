@@ -990,6 +990,43 @@ class Notifier
         }
     }
 
+    /** Fase 94: ritmo da meta caiu (10+ pontos abaixo do esperado pros dias ja decorridos) --
+     *  WhatsApp + push urgente pro dono da meta, e um aviso mais brando (push normal) pro
+     *  licenciado da rede dele, mesmo padrao self+network ja usado em pedidoCancelado. Texto fixo,
+     *  nao passa por WhatsAppEventTemplate (mesmo criterio de calendarEventReminder).
+     *  @param array $goal precisa vir de array_merge($goalRow, Goal::pace($goalRow)). */
+    public static function metaForaDoRitmo(array $goal): void
+    {
+        $seller = User::find((int) $goal['seller_id']);
+        if (!$seller) {
+            return;
+        }
+
+        $metricType = $goal['metric_type'] ?? 'valor';
+        $fmt = fn (float $v) => $metricType === 'quantidade'
+            ? number_format($v, 0, ',', '.') . ' un.'
+            : 'R$ ' . number_format($v, 2, ',', '.');
+        $falta = $fmt(max(0, $goal['target'] - $goal['achieved']));
+        $ritmoNecessario = $fmt((float) $goal['daily_needed']);
+
+        $text = "⚠️ Ritmo da meta \"{$goal['name']}\" caiu!\n\n"
+            . "Você está em {$goal['pct']}% (esperado até agora: {$goal['expected_pct']}%).\n"
+            . "Faltam {$falta} em {$goal['remaining_days']} dia(s) -- ritmo necessário: {$ritmoNecessario}/dia pra bater a meta.";
+
+        if (!empty($seller['whatsapp'])) {
+            self::sendWhatsApp($seller['whatsapp'], $text);
+        }
+        self::sendPush((int) $seller['id'], '⚠️ Meta fora do ritmo', "Faltam {$falta} em {$goal['remaining_days']} dia(s)", ['type' => 'goal_pace', 'goal_id' => (int) $goal['id']], 'urgent');
+
+        $licenciado = User::licenciadoFor((int) $seller['id']);
+        if ($licenciado && (int) $licenciado['id'] !== (int) $seller['id']) {
+            if (!empty($licenciado['whatsapp'])) {
+                self::sendWhatsApp($licenciado['whatsapp'], "⚠️ {$seller['name']} está fora do ritmo pra bater a meta \"{$goal['name']}\" ({$goal['pct']}% de {$goal['expected_pct']}% esperado).");
+            }
+            self::sendPush((int) $licenciado['id'], '⚠️ Vendedor fora do ritmo', "{$seller['name']}: {$goal['pct']}% da meta \"{$goal['name']}\"", ['type' => 'goal_pace', 'goal_id' => (int) $goal['id']], 'normal');
+        }
+    }
+
     /** @param array $row precisa de client_name/total_value */
     private static function orderVars(array $row): array
     {

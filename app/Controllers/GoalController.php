@@ -4,8 +4,10 @@ namespace App\Controllers;
 
 use App\Core\Auth;
 use App\Core\Csrf;
+use App\Core\GoalPaceAlert;
 use App\Core\Roles;
 use App\Core\Router;
+use App\Core\SubscriptionGate;
 use App\Core\View;
 use App\Models\Goal;
 use App\Models\User;
@@ -16,6 +18,10 @@ class GoalController
     {
         Auth::requireRole(Roles::STAFF);
         $user = Auth::user();
+
+        // Fase 94: sem cron nesse plano Hostinger -- roda o alerta de ritmo aqui, na tela mais
+        // visitada por quem tem meta (mesmo padrao ja usado no Calendario/Dashboard).
+        GoalPaceAlert::processDue();
 
         $goals = Goal::all();
         $today = date('Y-m-d');
@@ -127,6 +133,33 @@ class GoalController
         }
 
         Router::redirect('/painel/metas?sucesso=1');
+    }
+
+    /** Fase 94: detalhe do ritmo de uma meta -- quantos dias faltam, se esta adiantado/no
+     *  ritmo/atrasado, quanto precisa vender por dia dai pra frente. Ferramenta premium (atras do
+     *  paywall da assinatura), mesmo tratamento do Simulador de Comissao. */
+    public function pace(string $id): void
+    {
+        Auth::requireRole(Roles::STAFF);
+        $user = Auth::user();
+        SubscriptionGate::requireAccess($user, 'alerta_meta');
+
+        $goal = Goal::find((int) $id);
+        $canView = $goal && (
+            (int) ($goal['seller_id'] ?? 0) === (int) $user['id']
+            || (int) ($goal['created_by'] ?? 0) === (int) $user['id']
+            || $user['role_slug'] === 'admin'
+        );
+        if (!$canView) {
+            Router::redirect('/painel/metas');
+        }
+
+        View::render('painel/goals/pace', [
+            'user' => $user,
+            'goal' => $goal,
+            'pace' => Goal::pace($goal),
+            'isModal' => isset($_GET['fragment']),
+        ], isset($_GET['fragment']) ? null : 'painel');
     }
 
     public function delete(string $id): void
