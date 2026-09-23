@@ -196,7 +196,9 @@ class FinanceController
 
     public function payable(): void
     {
-        Auth::requireRole(Roles::MANAGEMENT);
+        // Fase 100: Gerente ganha acesso (so' a esta tela, nao ao resto do Financeiro) pra ver o
+        // custo de fabrica/imposto automatico de todo pedido pago -- pedido explicito do usuario.
+        Auth::requireRole([...Roles::MANAGEMENT, 'gerente']);
         $this->renderLedger('saida', 'Contas a Pagar');
     }
 

@@ -935,6 +935,21 @@ class Order
         $accountId = FinancialAccount::defaultAccountId();
         if ($accountId) {
             FinancialTransaction::createForOrderReceivable($id, $accountId, (float) $order['total_value'], date('Y-m-d'));
+
+            // Fase 100: custo de fabrica + imposto automaticos em Contas a Pagar (so' Admin/
+            // Gerente veem, nunca o Licenciado -- ver FinancialTransaction::createFactoryCostAndTax()).
+            // Pedido a preco de custo (is_cost_price) fica de fora -- ja tem seu proprio fluxo
+            // manual de pagamento a fabrica (Fase 98), gerar os dois automaticamente duplicaria.
+            if (empty($order['is_cost_price'])) {
+                $qty = array_sum(array_column($items, 'quantity'));
+                $avgUnitPrice = $qty > 0 ? (float) $order['total_value'] / $qty : 0.0;
+                $tier = $qty > 0 ? PricingTier::forPrice($avgUnitPrice) : null;
+                if ($tier) {
+                    $costAmount = round((float) $tier['cost_price'] * $qty, 2);
+                    $taxAmount = round((float) $order['total_value'] * (float) $tier['tax_pct'] / 100, 2);
+                    FinancialTransaction::createFactoryCostAndTax($id, $accountId, $costAmount, $taxAmount, date('Y-m-d'));
+                }
+            }
         }
 
         Notifier::pedidoAprovado($order);

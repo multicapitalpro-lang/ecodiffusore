@@ -5,6 +5,8 @@ $statusLabels = ['pendente' => 'Pendente', 'pago' => 'Pago'];
 $roleLabels = ['licenciado' => 'Licenciado', 'gestor' => 'Gestor', 'vendedor' => 'Vendedor', 'gerente' => 'Gerente', 'supervisor' => 'Supervisor', 'influenciador' => 'Influenciador'];
 $sucesso = isset($_GET['sucesso']);
 $period = $period ?? [];
+$showDirection = in_array($user['role_slug'], ['licenciado', 'gestor', 'vendedor'], true);
+$myId = (int) $user['id'];
 
 $today = date('Y-m-d');
 $weekStart = date('Y-m-d', strtotime('monday this week'));
@@ -54,6 +56,32 @@ $presets = [
         <strong>R$ <?= number_format($summary['pendente'], 2, ',', '.') ?></strong>
     </div>
 </div>
+
+<?php if (in_array($user['role_slug'], ['licenciado', 'gestor', 'vendedor'], true)): ?>
+    <?php
+    $aReceber = array_filter($commissions, fn ($c) => (int) $c['beneficiary_id'] === $myId);
+    $aPagar = array_filter($commissions, fn ($c) => (int) $c['beneficiary_id'] !== $myId);
+    $sumAmount = function (array $rows, ?string $status = null): float {
+        return array_sum(array_map(fn ($c) => (float) $c['amount'], array_filter($rows, fn ($c) => $status === null || $c['status'] === $status)));
+    };
+    ?>
+    <h3 class="section-title" style="margin-top:0;">Contas a Pagar e a Receber (comissão)</h3>
+    <div class="cards-grid" style="margin-bottom:4px;">
+        <div class="dash-card" style="border-top-color:#1a7a4c;">
+            <span>💰 A receber — sua comissão</span>
+            <strong>R$ <?= number_format($sumAmount($aReceber), 2, ',', '.') ?></strong>
+            <span class="hint-inline">Pendente: R$ <?= number_format($sumAmount($aReceber, 'pendente'), 2, ',', '.') ?></span>
+        </div>
+        <?php if ($aPagar): ?>
+            <div class="dash-card dash-card-warning">
+                <span>💸 A pagar — sua equipe</span>
+                <strong>R$ <?= number_format($sumAmount($aPagar), 2, ',', '.') ?></strong>
+                <span class="hint-inline">Pendente: R$ <?= number_format($sumAmount($aPagar, 'pendente'), 2, ',', '.') ?></span>
+            </div>
+        <?php endif; ?>
+    </div>
+    <p class="hint-text" style="margin-bottom:20px;">"A receber" é sua comissão, paga pela Ecodiffusore. <?= $aPagar ? '"A pagar" é a comissão do seu Gestor/Vendedor, que sai do seu pool.' : '' ?> Já refletido nos lançamentos abaixo.</p>
+<?php endif; ?>
 
 <?php if (!empty($pricingTiersRef)): ?>
     <h3 class="section-title">Faixas de preço negociável</h3>
@@ -143,10 +171,13 @@ $presets = [
 <h3 class="section-title">Lançamentos</h3>
 <div class="table-scroll">
     <table class="data-table">
-        <thead><tr><th>Pedido</th><th>Beneficiário</th><th>Papel</th><th>Cliente</th><th>Data</th><th>%</th><th>Comissão</th><th>Situação</th><?php if ($canManageAny): ?><th></th><?php endif; ?></tr></thead>
+        <thead><tr><?php if ($showDirection): ?><th></th><?php endif; ?><th>Pedido</th><th>Beneficiário</th><th>Papel</th><th>Cliente</th><th>Data</th><th>%</th><th>Comissão</th><th>Situação</th><?php if ($canManageAny): ?><th></th><?php endif; ?></tr></thead>
         <tbody>
             <?php foreach ($commissions as $c): ?>
                 <tr>
+                    <?php if ($showDirection): ?>
+                        <td><?= (int) $c['beneficiary_id'] === $myId ? '<span class="hint-inline" style="color:#1a7a4c;">💰 Receber</span>' : '<span class="hint-inline" style="color:#b3790f;">💸 Pagar</span>' ?></td>
+                    <?php endif; ?>
                     <td>#<?= (int) $c['order_id'] ?></td>
                     <td>
                         <?= View::e($c['beneficiary_name']) ?>
@@ -173,7 +204,7 @@ $presets = [
                 </tr>
             <?php endforeach; ?>
             <?php if (!$commissions): ?>
-                <tr><td colspan="<?= $canManageAny ? 9 : 8 ?>">Nenhuma comissão gerada nesse período.</td></tr>
+                <tr><td colspan="<?= ($canManageAny ? 9 : 8) + ($showDirection ? 1 : 0) ?>">Nenhuma comissão gerada nesse período.</td></tr>
             <?php endif; ?>
         </tbody>
     </table>

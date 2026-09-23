@@ -190,6 +190,55 @@ class FinancialTransaction
         ]);
     }
 
+    /** Fase 100: custo de fabrica + imposto automaticos, gerados quando um pedido NORMAL (com
+     *  vendedor) e' verificado -- obrigacao da EMPRESA, nunca do Licenciado, mesmo sendo um pedido
+     *  da rede dele (pedido explicito do usuario). De proposito SEM order_id/client_id -- o filtro
+     *  por rede em all() (seller_ids) so' enxerga transacao vinculada a um order_id/client_id cujo
+     *  vendedor esteja na rede de quem esta vendo; sem esses 2 campos a transacao fica invisivel
+     *  pra esse filtro, so' Admin/Gerente (sem filtro de rede) enxergam. O numero do pedido fica
+     *  so' no texto (idempotente via descricao, ja que nao da pra usar order_id aqui). Usa o mesmo
+     *  custo por FAIXA DE PRECO (pricing_tiers.cost_price) e a mesma formula de imposto
+     *  (tax_pct * total) ja usados no Relatorio Fiscal (App\Core\TaxReport), pra nao inventar um
+     *  numero novo/divergente. */
+    public static function createFactoryCostAndTax(int $orderId, int $accountId, float $costAmount, float $taxAmount, string $date): void
+    {
+        $marker = 'Pedido #' . $orderId;
+
+        if ($costAmount > 0) {
+            $desc = 'Custo de fábrica · ' . $marker;
+            $stmt = Database::connection()->prepare('SELECT id FROM financial_transactions WHERE description = :d LIMIT 1');
+            $stmt->execute(['d' => $desc]);
+            if (!$stmt->fetch()) {
+                self::create([
+                    'account_id' => $accountId,
+                    'category_id' => FinancialCategory::factoryCostCategoryId(),
+                    'type' => 'saida',
+                    'description' => $desc,
+                    'amount' => $costAmount,
+                    'due_date' => $date,
+                    'status' => 'pendente',
+                ]);
+            }
+        }
+
+        if ($taxAmount > 0) {
+            $desc = 'Imposto sobre venda · ' . $marker;
+            $stmt = Database::connection()->prepare('SELECT id FROM financial_transactions WHERE description = :d LIMIT 1');
+            $stmt->execute(['d' => $desc]);
+            if (!$stmt->fetch()) {
+                self::create([
+                    'account_id' => $accountId,
+                    'category_id' => FinancialCategory::salesTaxCategoryId(),
+                    'type' => 'saida',
+                    'description' => $desc,
+                    'amount' => $taxAmount,
+                    'due_date' => $date,
+                    'status' => 'pendente',
+                ]);
+            }
+        }
+    }
+
     /** Fase 98: saida ja paga, pro Pix que o Admin manda pra Fabrica num pedido a preco de custo
      *  -- mesmo espirito de createForOrderReceivable() (idempotente, nunca duplica pro mesmo
      *  pedido), so' que do lado de saida. Sem categoria fixa -- fica "sem categoria" mesmo, o

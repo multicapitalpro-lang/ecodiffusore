@@ -54,4 +54,28 @@ class FinancialCategory
         $id = $stmt->fetchColumn();
         return $id !== false ? (int) $id : null;
     }
+
+    /** Fase 100: categoria "Custo das mercadorias vendidas" (ja seedada no schema_fase3, filha de
+     *  Custos) -- usada pra classificar automaticamente o custo de fabrica gerado quando um
+     *  pedido normal e' verificado. */
+    public static function factoryCostCategoryId(): ?int
+    {
+        $stmt = Database::connection()->query(
+            "SELECT id FROM financial_categories WHERE name = 'Custo das mercadorias vendidas' AND type = 'saida' LIMIT 1"
+        );
+        $id = $stmt->fetchColumn();
+        return $id !== false ? (int) $id : null;
+    }
+
+    /** Fase 100: categoria "Impostos sobre vendas" (ja seedada no schema_fase3, filha de Impostos
+     *  e Taxas) -- usada pra classificar automaticamente o imposto gerado quando um pedido normal
+     *  e' verificado. */
+    public static function salesTaxCategoryId(): ?int
+    {
+        $stmt = Database::connection()->query(
+            "SELECT id FROM financial_categories WHERE name = 'Impostos sobre vendas' AND type = 'saida' LIMIT 1"
+        );
+        $id = $stmt->fetchColumn();
+        return $id !== false ? (int) $id : null;
+    }
 }
