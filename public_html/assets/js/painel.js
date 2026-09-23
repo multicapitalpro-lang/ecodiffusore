@@ -402,6 +402,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
         }
 
+        // Exposta em window pois views (Calendario, Metas/Ver ritmo) chamam openFragmentModal()
+        // do proprio <script> inline da pagina, fora deste closure -- sem isso, ficava
+        // "openFragmentModal is not defined" e o botao nao fazia nada.
+        window.openFragmentModal = openFragmentModal;
+
         // Form de "Gerar cobranca" (Pedido/Orcamento): so mostra o seletor de parcelas (e a tabela
         // de parcelas, se houver) quando o meio escolhido e' Cartao de credito -- Pix/Boleto sao
         // sempre a vista, sem parcela. A tabela em si e' toda computada no servidor (mesmo padrao
