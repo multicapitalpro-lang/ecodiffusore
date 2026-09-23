@@ -48,9 +48,13 @@ use App\Core\View;
     <script>
     (function () {
         var cb = document.getElementById('is_cost_price');
-        var wrap = document.getElementById('seller-field-wrap');
-        if (!cb || !wrap) return;
-        function sync() { wrap.style.display = cb.checked ? 'none' : ''; }
+        var sellerWrap = document.getElementById('seller-field-wrap');
+        var vehicleSection = document.getElementById('vehicle-section');
+        if (!cb) return;
+        function sync() {
+            if (sellerWrap) sellerWrap.style.display = cb.checked ? 'none' : '';
+            if (vehicleSection) vehicleSection.style.display = cb.checked ? 'none' : '';
+        }
         cb.addEventListener('change', sync);
         sync();
     })();
@@ -71,6 +75,7 @@ use App\Core\View;
     </div>
 <?php endif; ?>
 
+<div id="vehicle-section">
 <h3 class="section-title">Veículo</h3>
 <div class="form-grid-2">
     <div>
@@ -89,25 +94,26 @@ use App\Core\View;
 </div>
 
 <div>
-    <label>Foto do documento do veículo</label>
+    <label>Foto do documento do veículo (opcional)</label>
     <label class="file-drop" data-file-drop>
         <span data-file-drop-label>Solte o arquivo aqui ou clique para adicionar (PDF, JPG, PNG — até 5MB)</span>
         <input type="file" id="vehicle_document" name="vehicle_document" accept=".pdf,.jpg,.jpeg,.png,.webp">
     </label>
     <ul class="file-list" data-file-list></ul>
-    <p class="hint-text">Obrigatório antes de gerar a cobrança — a fábrica precisa do documento do veículo pra montar o pedido certo.</p>
+    <p class="hint-text">Não trava a compra — o próprio comprador pode enviar depois, pelo painel dele ("Meus Pedidos"), assim que pagar. Só precisa estar completo quando o pedido for liberado pra fábrica.</p>
     <p class="field-error" data-error-for="vehicle_document"><?= View::e($errors['vehicle_document'] ?? '') ?></p>
 </div>
 
 <div>
-    <label>Foto da CNH do comprador</label>
+    <label>Foto da CNH do comprador (opcional)</label>
     <label class="file-drop" data-file-drop>
         <span data-file-drop-label>Solte o arquivo aqui ou clique para adicionar (PDF, JPG, PNG — até 5MB)</span>
         <input type="file" id="cnh_document" name="cnh_document" accept=".pdf,.jpg,.jpeg,.png,.webp">
     </label>
     <ul class="file-list" data-file-list></ul>
-    <p class="hint-text">Também obrigatório antes de gerar a cobrança.</p>
+    <p class="hint-text">Mesma coisa — pode ser enviada depois pelo cliente, sem travar a compra agora.</p>
     <p class="field-error" data-error-for="cnh_document"><?= View::e($errors['cnh_document'] ?? '') ?></p>
+</div>
 </div>
 
 <h3 class="section-title">Produtos</h3>

@@ -358,9 +358,15 @@ class Order
     ];
 
     /** Ate a Fase 60 travava a geracao da COBRANCA -- agora so trava o pedido de aparecer pra
-     *  fabrica (ver forFactory()), pra nao atrasar o fechamento da venda esperando documento. */
+     *  fabrica (ver forFactory()), pra nao atrasar o fechamento da venda esperando documento.
+     *  Fase 98: pedido a preco de custo (mostruario) nunca exige isso -- o que libera ele pra
+     *  fabrica e' o comprovante de pagamento, nao o documento do veiculo (pode nem existir um
+     *  veiculo real envolvido). */
     public static function hasRequiredDocuments(array $order): bool
     {
+        if (!empty($order['is_cost_price'])) {
+            return true;
+        }
         foreach (array_keys(self::REQUIRED_VEHICLE_FIELDS) as $field) {
             if (empty($order[$field])) {
                 return false;
@@ -373,6 +379,9 @@ class Order
      *  staff saberem exatamente o que falta, sem adivinhar. */
     public static function missingDocumentLabels(array $order): array
     {
+        if (!empty($order['is_cost_price'])) {
+            return [];
+        }
         $missing = [];
         foreach (self::REQUIRED_VEHICLE_FIELDS as $field => $label) {
             if (empty($order[$field])) {
@@ -578,14 +587,19 @@ class Order
                      FROM order_items oi JOIN products p ON p.id = oi.product_id WHERE oi.order_id = o.id) AS produtos
              FROM orders o JOIN clients c ON c.id = o.client_id
              WHERE o.status = 'verificado' AND o.delivered_at IS NULL
-                AND o.vehicle_plate IS NOT NULL AND o.vehicle_plate <> ''
-                AND o.vehicle_document_path IS NOT NULL AND o.cnh_document_path IS NOT NULL
-                AND o.photo1_path IS NOT NULL AND o.photo2_path IS NOT NULL AND o.photo3_path IS NOT NULL
-                AND o.telemetry_path IS NOT NULL
-                -- Fase 98: pedido a preco de custo so' entra na fila da fabrica depois que o
-                -- comprovante do Pix pra ela for anexado (pedido normal, com vendedor, nunca
-                -- precisou disso -- so' afeta o caminho novo).
-                AND (o.is_cost_price = 0 OR o.factory_payment_proof_path IS NOT NULL)
+                AND (
+                    -- Pedido normal (com vendedor): precisa do cadastro completo do veiculo,
+                    -- igual sempre precisou.
+                    (o.is_cost_price = 0
+                        AND o.vehicle_plate IS NOT NULL AND o.vehicle_plate <> ''
+                        AND o.vehicle_document_path IS NOT NULL AND o.cnh_document_path IS NOT NULL
+                        AND o.photo1_path IS NOT NULL AND o.photo2_path IS NOT NULL AND o.photo3_path IS NOT NULL
+                        AND o.telemetry_path IS NOT NULL)
+                    -- Fase 98: pedido a preco de custo (mostruario) NAO exige documento de
+                    -- veiculo nenhum (pode nem ter um veiculo real envolvido) -- so' precisa do
+                    -- comprovante do Pix que o Admin mandou pra fabrica.
+                    OR (o.is_cost_price = 1 AND o.factory_payment_proof_path IS NOT NULL)
+                )
              ORDER BY o.order_date DESC"
         )->fetchAll();
     }
