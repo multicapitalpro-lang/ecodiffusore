@@ -2,6 +2,7 @@
 
 namespace App\Core;
 
+use App\Models\CalendarEvent;
 use App\Models\Client;
 use App\Models\DeviceToken;
 use App\Models\EmailEventTemplate;
@@ -963,6 +964,29 @@ class Notifier
         }
         if (!empty($seller['id'])) {
             self::sendPush((int) $seller['id'], 'Follow-up de lead pendente', "Retorno combinado pra hoje: {$vars['leads']}.", ['type' => 'leads'], 'normal');
+        }
+    }
+
+    /** Fase 92: lembrete de evento do Calendario ~1h antes -- dono + participantes, WhatsApp +
+     *  push urgente (e' hora certa, precisa aparecer na hora). Texto fixo (nao passa por
+     *  WhatsAppEventTemplate) -- mesmo criterio ja usado em eventos operacionais simples como
+     *  machineQuoteSolicitada, nao e' mensagem de relacionamento que precise ser editavel.
+     *  @param array $event precisa de id/title/event_type/starts_at/location/owner_id */
+    public static function calendarEventReminder(array $event): void
+    {
+        $when = date('H:i', strtotime($event['starts_at']));
+        $tipo = CalendarEvent::TYPE_LABELS[$event['event_type']] ?? 'Evento';
+        $local = !empty($event['location']) ? " em {$event['location']}" : '';
+        $text = "🔔 Lembrete: {$tipo} \"{$event['title']}\" às {$when}{$local}.";
+        $url = self::BASE_URL . '/painel/calendario';
+
+        $userIds = array_unique(array_merge([(int) $event['owner_id']], CalendarEvent::participantIdsFor((int) $event['id'])));
+        foreach ($userIds as $userId) {
+            $user = User::find($userId);
+            if ($user && !empty($user['whatsapp'])) {
+                self::sendWhatsApp($user['whatsapp'], $text . ' ' . $url);
+            }
+            self::sendPush($userId, "Lembrete: {$tipo} às {$when}", $event['title'], ['type' => 'calendar', 'calendar_event_id' => (int) $event['id']], 'urgent');
         }
     }
 

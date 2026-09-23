@@ -14,6 +14,7 @@ class SubscriptionPaywallHit
         'whatsapp' => 'WhatsApp integrado',
         'relatorios' => 'Relatórios completos',
         'email_profissional' => 'E-mail Profissional',
+        'calendario' => 'Calendário da Equipe',
     ];
 
     public static function record(int $userId, ?int $licenciadoId, string $feature): void

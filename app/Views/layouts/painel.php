@@ -236,6 +236,9 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/desempen
                 </details>
             <?php endif; ?>
 
+            <?php if (in_array($role, $staffRoles, true)): ?>
+                <a href="/painel/calendario" class="<?= $isActive('/painel/calendario') ? 'is-active' : '' ?>">📅 Calendário</a>
+            <?php endif; ?>
             <?php if (in_array($role, ['licenciado', 'gestor', 'vendedor'], true)): ?>
                 <a href="/painel/whatsapp" class="<?= $isActive('/painel/whatsapp') ? 'is-active' : '' ?>">💬 Meu WhatsApp</a>
                 <a href="/painel/assinatura" class="<?= $isActive('/painel/assinatura') ? 'is-active' : '' ?>">⭐ Assinatura</a>

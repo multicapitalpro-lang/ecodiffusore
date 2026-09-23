@@ -360,6 +360,15 @@ $router->post('/painel/assinatura/vagas/comprar', [App\Controllers\SubscriptionC
 
 $router->get('/painel/emails-profissionais', [App\Controllers\LicenciadoEmailController::class, 'index']);
 $router->post('/painel/emails-profissionais', [App\Controllers\LicenciadoEmailController::class, 'store']);
+
+// Calendario da equipe (Fase 92)
+$router->get('/painel/calendario', [App\Controllers\CalendarController::class, 'index']);
+$router->get('/painel/calendario/novo', [App\Controllers\CalendarController::class, 'create']);
+$router->post('/painel/calendario', [App\Controllers\CalendarController::class, 'store']);
+$router->get('/painel/calendario/{id}/editar', [App\Controllers\CalendarController::class, 'edit']);
+$router->post('/painel/calendario/{id}/status', [App\Controllers\CalendarController::class, 'markStatus']);
+$router->post('/painel/calendario/{id}/excluir', [App\Controllers\CalendarController::class, 'destroy']);
+$router->post('/painel/calendario/{id}', [App\Controllers\CalendarController::class, 'update']);
 $router->get('/painel/emails-profissionais/admin', [App\Controllers\LicenciadoEmailController::class, 'adminIndex']);
 $router->post('/painel/emails-profissionais/admin/{id}/aprovar', [App\Controllers\LicenciadoEmailController::class, 'approve']);
 $router->post('/painel/emails-profissionais/admin/{id}/recusar', [App\Controllers\LicenciadoEmailController::class, 'reject']);
