@@ -100,6 +100,26 @@ $situation = $order['payment_situation'] ?? ['label' => '—', 'badge' => 'novo'
     <?php if ($order['notes']): ?><p><strong>Obs.:</strong> <?= nl2br(View::e($order['notes'])) ?></p><?php endif; ?>
 </div>
 
+<?php if (!empty($order['is_cost_price']) && ($user['role_slug'] ?? '') === 'admin'): ?>
+    <div class="dash-card <?= empty($order['cost_price_billing_name']) || empty($order['cost_price_delivery_address']) ? 'dash-card-danger' : '' ?>" style="text-align:left;max-width:520px;margin-bottom:16px;">
+        <span>Faturamento e entrega (pedido a preço de custo)</span>
+        <p class="hint-text" style="margin:4px 0 10px;">Pra quem a fábrica deve emitir a nota fiscal e pra onde entregar — aparece pra ela em "Pedidos pra Despachar".</p>
+        <form action="/painel/pedidos/<?= (int) $order['id'] ?>/faturamento-custo" method="post" class="inline-form" style="display:flex;flex-direction:column;gap:8px;">
+            <?= Csrf::field() ?>
+            <label>Faturar para (nome/razão social)
+                <input type="text" name="cost_price_billing_name" value="<?= View::e($order['cost_price_billing_name'] ?? '') ?>">
+            </label>
+            <label>CNPJ/CPF pra nota fiscal
+                <input type="text" name="cost_price_billing_document" value="<?= View::e($order['cost_price_billing_document'] ?? '') ?>">
+            </label>
+            <label>Endereço de entrega
+                <input type="text" name="cost_price_delivery_address" value="<?= View::e($order['cost_price_delivery_address'] ?? '') ?>">
+            </label>
+            <button type="submit" class="btn btn-primary" style="align-self:flex-start;">Salvar</button>
+        </form>
+    </div>
+<?php endif; ?>
+
 <?php if (!empty($order['is_cost_price']) && $order['status'] === 'verificado' && ($user['role_slug'] ?? '') === 'admin'): ?>
     <div class="dash-card <?= empty($order['factory_payment_proof_path']) ? 'dash-card-danger' : '' ?>" style="text-align:left;max-width:520px;margin-bottom:16px;">
         <?php if (empty($order['factory_payment_proof_path'])): ?>

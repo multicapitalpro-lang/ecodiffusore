@@ -487,6 +487,33 @@ class OrderController
      *  custo ja verificado -- so' depois disso o pedido entra na fila de despacho dela (ver
      *  Order::forFactory()) e ela recebe o aviso (Notifier::pedidoCustoProntoParaFabrica()).
      *  Tambem registra a saida ja paga em Caixas e Bancos, pra o fluxo de caixa bater sozinho. */
+    /** Fase 101b: preenche/corrige os dados de faturamento+entrega de um pedido a preco de custo
+     *  direto na tela do pedido -- cobre tanto quem cria o pedido sem preencher na hora quanto
+     *  pedidos antigos, criados antes desse campo existir no formulario (Fase 101). */
+    public function updateCostPriceBilling(string $id): void
+    {
+        Auth::requireRole(['admin']);
+        $id = (int) $id;
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            Router::redirect("/painel/pedidos/{$id}?erro=1");
+        }
+
+        $order = Order::find($id);
+        if (!$order || empty($order['is_cost_price'])) {
+            Router::redirect("/painel/pedidos/{$id}?erro=1");
+        }
+
+        Order::updateCostPriceBilling(
+            $id,
+            trim($_POST['cost_price_billing_name'] ?? ''),
+            trim($_POST['cost_price_billing_document'] ?? ''),
+            trim($_POST['cost_price_delivery_address'] ?? '')
+        );
+
+        Router::redirect("/painel/pedidos/{$id}?sucesso=1");
+    }
+
     public function attachFactoryPaymentProof(string $id): void
     {
         Auth::requireRole(['admin']);

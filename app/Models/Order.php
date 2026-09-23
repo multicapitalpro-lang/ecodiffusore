@@ -899,6 +899,23 @@ class Order
         $stmt->execute(['id' => $id]);
     }
 
+    /** Fase 101b: preenche/corrige os dados de faturamento e entrega de um pedido a preco de
+     *  custo -- separado do formulario de criacao pra dar pra preencher depois tambem (pedidos
+     *  criados antes desse campo existir, ou pra corrigir um dado errado). */
+    public static function updateCostPriceBilling(int $id, string $billingName, string $billingDocument, string $deliveryAddress): void
+    {
+        $stmt = Database::connection()->prepare(
+            'UPDATE orders SET cost_price_billing_name = :name, cost_price_billing_document = :document,
+                cost_price_delivery_address = :address WHERE id = :id'
+        );
+        $stmt->execute([
+            'name' => $billingName ?: null,
+            'document' => $billingDocument ?: null,
+            'address' => $deliveryAddress ?: null,
+            'id' => $id,
+        ]);
+    }
+
     /** Fase 98: registra o comprovante do Pix que o Admin mandou pra Fabrica num pedido a preco
      *  de custo -- so' depois disso o pedido entra na fila de despacho dela (ver forFactory()). */
     public static function setFactoryPaymentProof(int $id, float $amount, string $storedName, string $originalName): void

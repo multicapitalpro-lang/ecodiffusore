@@ -322,6 +322,7 @@ $router->post('/painel/pedidos/{id}/status', [App\Controllers\OrderController::c
 $router->post('/painel/pedidos/{id}/reembolsar', [App\Controllers\OrderController::class, 'refundPayment']);
 $router->post('/painel/pedidos/{id}/rastreio', [App\Controllers\OrderController::class, 'updateTracking']);
 $router->post('/painel/pedidos/{id}/aprovar-documentos', [App\Controllers\OrderController::class, 'approveDocuments']);
+$router->post('/painel/pedidos/{id}/faturamento-custo', [App\Controllers\OrderController::class, 'updateCostPriceBilling']);
 $router->post('/painel/pedidos/{id}/comprovante-fabrica', [App\Controllers\OrderController::class, 'attachFactoryPaymentProof']);
 $router->get('/painel/pedidos/{id}/comprovante-fabrica', [App\Controllers\OrderController::class, 'downloadFactoryPaymentProof']);
 $router->get('/painel/pedidos/{id}/documento-veiculo', [App\Controllers\OrderController::class, 'downloadVehicleDocument']);
