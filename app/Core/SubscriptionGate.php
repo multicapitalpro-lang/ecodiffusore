@@ -64,4 +64,17 @@ class SubscriptionGate
     {
         return self::hasAccess($user) ? (string) $value : '••';
     }
+
+    /** Decide se o modal de assinatura (painel/subscription/_modal.php) deve abrir SOZINHO no
+     *  carregamento da tela -- so' quando sem acesso, e so' na primeira vez na sessao (senao
+     *  atrapalharia navegar entre Caixas/Contas/Relatorios). Consome o flag ja na primeira
+     *  chamada (nunca mais reabre sozinho ate' relogar). */
+    public static function shouldAutoOpenModal(array $user): bool
+    {
+        if (self::hasAccess($user) || !empty($_SESSION['subscription_modal_seen'])) {
+            return false;
+        }
+        $_SESSION['subscription_modal_seen'] = true;
+        return true;
+    }
 }

@@ -6,7 +6,11 @@ use App\Models\User;
 
 /** Modal reutilizavel de assinatura -- incluido em qualquer tela paga (Financeiro/Relatorios/
  *  Dashboard) pra abrir quando o usuario tenta USAR uma funcao sem assinatura (ver
- *  App\Core\SubscriptionGate). So precisa de $user (ja disponivel em toda view do painel). */
+ *  App\Core\SubscriptionGate). So precisa de $user (ja disponivel em toda view do painel).
+ *  $openSubscriptionModal (opcional, default false): quando true, o dialog abre sozinho no
+ *  carregamento da pagina (data-autoopen, ver painel.js) -- usado so' nas telas do Financeiro
+ *  (Caixas e Bancos/Contas a Pagar/Contas a Receber/Relatorios), 1x por sessao, pra quem ainda
+ *  nao tem assinatura ver de cara o que esta faltando, sem precisar clicar em nada primeiro. */
 $modalIsLicenciado = $user['role_slug'] === 'licenciado';
 $modalLicenciado = $modalIsLicenciado ? $user : User::licenciadoFor((int) $user['id']);
 
@@ -19,7 +23,7 @@ $modalFeatures = [
     '✅ Aceite digital de comissão' => 'Gestor/Vendedor confirmam a proposta pelo WhatsApp.',
 ];
 ?>
-<dialog class="modal" id="modal-assinatura">
+<dialog class="modal" id="modal-assinatura" <?= !empty($openSubscriptionModal) ? 'data-autoopen="1"' : '' ?>>
     <div class="modal-header">
         <h2>⭐ Assinatura</h2>
         <button type="button" class="modal-close" data-modal-close aria-label="Fechar">&times;</button>

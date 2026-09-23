@@ -72,6 +72,7 @@ class FinanceController
             'filters' => $filters,
             'errors' => [],
             'values' => [],
+            'openSubscriptionModal' => SubscriptionGate::shouldAutoOpenModal($user),
         ]);
     }
 
@@ -244,6 +245,7 @@ class FinanceController
             'filters' => $filters,
             'errors' => $errors,
             'values' => $values,
+            'openSubscriptionModal' => SubscriptionGate::shouldAutoOpenModal($user),
         ]);
     }
 

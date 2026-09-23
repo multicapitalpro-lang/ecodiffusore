@@ -78,6 +78,7 @@ class ReportController
             'to' => $to,
             'report' => FinancialReports::generate($type, $from, $to, $this->scopeFor($user, $type)),
             'hasSub' => SubscriptionGate::hasAccess($user),
+            'openSubscriptionModal' => SubscriptionGate::shouldAutoOpenModal($user),
         ]);
     }
 
