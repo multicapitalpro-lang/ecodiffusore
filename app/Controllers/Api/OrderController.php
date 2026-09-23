@@ -4,17 +4,30 @@ namespace App\Controllers\Api;
 
 use App\Core\ApiAuth;
 use App\Core\ApiResponse;
+use App\Core\Notifier;
 use App\Core\Roles;
 use App\Models\Approval;
+use App\Models\AuditLog;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Payment;
 use App\Models\User;
 
-/** Fase 76c: Pedidos pro app -- mesmo escopo por hierarquia de App\Controllers\OrderController
- *  (scopeFilters/canAccessSeller), devolvendo JSON. */
+/** Fase 76c/90: Pedidos pro app -- mesmo escopo por hierarquia de App\Controllers\OrderController
+ *  (scopeFilters/canAccessSeller), devolvendo JSON. Fase 90: show() ganhou paridade de conteudo
+ *  com o modal do painel web (cliente/vendedor/veiculo/documentos/rastreio/observacoes -- o app so
+ *  mostrava um resumo bem mais pobre antes), alem de endpoints pra mudar status e salvar rastreio.
+ *  Sem download de anexo aqui (CNH/documento do veiculo/fotos) -- so' indica se cada um existe
+ *  (booleano), mesmo corte ja aplicado em MachineQuoteController/Warranty pro app. */
 class OrderController
 {
+    private const STATUS_LABELS = [
+        'em_andamento' => 'Em andamento',
+        'atendido' => 'Atendido',
+        'verificado' => 'Verificado',
+        'cancelado' => 'Cancelado',
+    ];
+
     public function index(): void
     {
         $user = ApiAuth::requireUser();
@@ -72,19 +85,43 @@ class OrderController
         $payments = Payment::forPayable('order', $id);
         $order['payment_situation'] = Payment::situationFor($order, $payments[0] ?? null);
         $approval = Approval::pendingFor('order', $id);
+        $isViewOnly = in_array($user['role_slug'], Roles::NATIONAL_SUPPORT, true);
 
         ApiResponse::json([
             'order' => [
                 'id' => (int) $order['id'],
                 'order_date' => $order['order_date'],
                 'status' => $order['status'],
+                'status_label' => self::STATUS_LABELS[$order['status']] ?? $order['status'],
                 'total_value' => (float) $order['total_value'],
                 'client_id' => (int) $order['client_id'],
+                'client_name' => $order['client_name'],
+                'client_whatsapp' => $order['client_whatsapp'] ?? null,
+                'client_city' => $order['client_city'] ?? null,
+                'client_state' => $order['client_state'] ?? null,
                 'seller_id' => $order['seller_id'] !== null ? (int) $order['seller_id'] : null,
+                'seller_name' => $order['seller_name'] ?? null,
                 'licenciado_name' => User::licenciadoNameFor($order['seller_id'] !== null ? (int) $order['seller_id'] : null),
+                'influencer_name' => $order['influencer_name'] ?? null,
                 'payment_situation' => $order['payment_situation'],
                 'public_link' => !empty($order['public_token']) ? "https://ecodiffusorebrasil.com.br/pedido/{$order['public_token']}" : null,
                 'terms_accepted_at' => $order['terms_accepted_at'] ?? null,
+                'notes' => $order['notes'] ?? null,
+                'vehicle_type' => $order['vehicle_type'] ?? null,
+                'vehicle_plate' => $order['vehicle_plate'] ?? null,
+                'has_vehicle_document' => !empty($order['vehicle_document_path']),
+                'has_cnh' => !empty($order['cnh_document_path']),
+                'has_photo1' => !empty($order['photo1_path']),
+                'has_photo2' => !empty($order['photo2_path']),
+                'has_photo3' => !empty($order['photo3_path']),
+                'has_telemetry' => !empty($order['telemetry_path']),
+                'missing_document_labels' => Order::missingDocumentLabels($order),
+                'tracking_carrier' => $order['tracking_carrier'] ?? null,
+                'tracking_code' => $order['tracking_code'] ?? null,
+                'prazo_entrega' => $order['prazo_entrega'] ?? null,
+                'tracking_status' => $order['tracking_status'] ?? null,
+                'tracking_status_date' => $order['tracking_status_date'] ?? null,
+                'is_view_only' => $isViewOnly,
             ],
             'items' => array_map(fn ($i) => [
                 'product_name' => $i['product_name'],
@@ -103,6 +140,73 @@ class OrderController
                 'status_label' => Approval::statusLabel($approval),
             ] : null,
         ]);
+    }
+
+    /** Mesma maquina de estado de App\Controllers\OrderController::markStatus() -- "verificado"
+     *  gera comissao (Order::markVerifiedWithCommission), "cancelado" avisa a rede. */
+    public function markStatus(string $id): void
+    {
+        $user = ApiAuth::requireUser();
+        if (in_array($user['role_slug'], Roles::NATIONAL_SUPPORT, true)) {
+            ApiResponse::error('Gerente e Supervisor tem acesso de visualizacao.', 403);
+        }
+
+        $id = (int) $id;
+        $order = Order::find($id);
+        if (!$order || !$this->canAccessSeller($user, (int) ($order['seller_id'] ?? 0))) {
+            ApiResponse::error('Pedido nao encontrado.', 404);
+        }
+
+        $body = json_decode(file_get_contents('php://input'), true) ?: [];
+        $status = $body['status'] ?? '';
+        if (!in_array($status, ['atendido', 'verificado', 'cancelado'], true)) {
+            ApiResponse::error('Status invalido.', 422);
+        }
+
+        if ($status === 'verificado') {
+            $ok = Order::markVerifiedWithCommission($id);
+            if ($ok) {
+                AuditLog::record((int) $user['id'], 'pedido_verificado', 'order', $id, ['status' => $order['status']], ['status' => 'verificado']);
+            }
+            if (!$ok) {
+                ApiResponse::error('Nao foi possivel verificar o pedido.', 422);
+            }
+            ApiResponse::json(['ok' => true]);
+        }
+
+        Order::updateStatus($id, $status);
+        if ($status === 'cancelado') {
+            Notifier::pedidoCancelado($order);
+        }
+
+        ApiResponse::json(['ok' => true]);
+    }
+
+    /** Mesma logica de App\Controllers\OrderController::updateTracking() -- sem a checagem ao
+     *  vivo do status dos Correios aqui (best-effort no painel web; o cron
+     *  CorreiosTrackingChecker::processDue() mantem isso atualizado de qualquer forma). */
+    public function updateTracking(string $id): void
+    {
+        $user = ApiAuth::requireUser();
+        if (in_array($user['role_slug'], Roles::NATIONAL_SUPPORT, true)) {
+            ApiResponse::error('Gerente e Supervisor tem acesso de visualizacao.', 403);
+        }
+
+        $id = (int) $id;
+        $order = Order::find($id);
+        if (!$order || !$this->canAccessSeller($user, (int) ($order['seller_id'] ?? 0))) {
+            ApiResponse::error('Pedido nao encontrado.', 404);
+        }
+
+        $body = json_decode(file_get_contents('php://input'), true) ?: [];
+        Order::updateTracking(
+            $id,
+            trim($body['tracking_code'] ?? ''),
+            trim($body['tracking_carrier'] ?? ''),
+            trim($body['prazo_entrega'] ?? '')
+        );
+
+        ApiResponse::json(['ok' => true]);
     }
 
     /** Fase 76h: Acompanhar Entregas -- mesma consulta de OrderController::deliveries() (so

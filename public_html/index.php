@@ -91,6 +91,8 @@ $router->get('/api/v1/aprovacoes', [App\Controllers\Api\ApprovalController::clas
 $router->post('/api/v1/aprovacoes/{id}/decidir', [App\Controllers\Api\ApprovalController::class, 'decide']);
 $router->get('/api/v1/pedidos', [App\Controllers\Api\OrderController::class, 'index']);
 $router->get('/api/v1/pedidos/{id}', [App\Controllers\Api\OrderController::class, 'show']);
+$router->post('/api/v1/pedidos/{id}/status', [App\Controllers\Api\OrderController::class, 'markStatus']);
+$router->post('/api/v1/pedidos/{id}/rastreio', [App\Controllers\Api\OrderController::class, 'updateTracking']);
 $router->get('/api/v1/comissoes', [App\Controllers\Api\CommissionController::class, 'index']);
 $router->post('/api/v1/comissoes/{id}/pagar', [App\Controllers\Api\CommissionController::class, 'markPaid']);
 $router->get('/api/v1/clientes', [App\Controllers\Api\ClientController::class, 'index']);
