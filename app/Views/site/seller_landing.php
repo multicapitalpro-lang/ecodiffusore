@@ -9,7 +9,7 @@ $waUrl = $_GET['wa'] ?? null;
 <section class="hero">
     <div class="site-container hero-inner">
         <div class="hero-text">
-            <span class="badge">Vendedor Autorizado Ecodiffusore Brasil</span>
+            <span class="badge"><?= !empty($seller['training_completed_at']) ? '✅ Vendedor Certificado Ecodiffusore Brasil' : 'Vendedor Autorizado Ecodiffusore Brasil' ?></span>
             <h1>Fale direto com <span><?= View::e($seller['name']) ?></span></h1>
             <p class="hero-sub">Economize de 5% a 20% no consumo de diesel com o Ecodiffusore — sistema patenteado (INPI) e fabricado no Brasil, com garantia e suporte em português. Deixe seus dados que <?= View::e(explode(' ', $seller['name'])[0]) ?> te chama no WhatsApp.</p>
             <div class="hero-ctas">

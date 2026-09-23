@@ -18,6 +18,7 @@ class SubscriptionPaywallHit
         'simulador_comissao' => 'Simulador de Comissão',
         'alerta_meta' => 'Alerta Preditivo de Meta',
         'indicacao_premiada' => 'Indicações Premiadas',
+        'certificacao_vendedor' => 'Certificação do Vendedor',
     ];
 
     public static function record(int $userId, ?int $licenciadoId, string $feature): void
