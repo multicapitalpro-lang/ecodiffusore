@@ -369,6 +369,11 @@ $router->get('/painel/calendario/{id}/editar', [App\Controllers\CalendarControll
 $router->post('/painel/calendario/{id}/status', [App\Controllers\CalendarController::class, 'markStatus']);
 $router->post('/painel/calendario/{id}/excluir', [App\Controllers\CalendarController::class, 'destroy']);
 $router->post('/painel/calendario/{id}', [App\Controllers\CalendarController::class, 'update']);
+
+// Link de vendas pessoal (Fase 93)
+$router->get('/painel/meu-link', [App\Controllers\SellerLinkController::class, 'index']);
+$router->get('/v/{slug}', [App\Controllers\SellerLandingController::class, 'show']);
+$router->post('/v/{slug}', [App\Controllers\SellerLandingController::class, 'submitLead']);
 $router->get('/painel/emails-profissionais/admin', [App\Controllers\LicenciadoEmailController::class, 'adminIndex']);
 $router->post('/painel/emails-profissionais/admin/{id}/aprovar', [App\Controllers\LicenciadoEmailController::class, 'approve']);
 $router->post('/painel/emails-profissionais/admin/{id}/recusar', [App\Controllers\LicenciadoEmailController::class, 'reject']);

@@ -399,6 +399,52 @@ class User
         return $code;
     }
 
+    /** Fase 93: slug pro link de vendas pessoal (ecodiffusorebrasil.com.br/v/{slug}) -- gerado a
+     *  partir do nome, so' na primeira vez que a pessoa acessa "Meu Link de Vendas" (nunca muda
+     *  depois, senao um link ja distribuido em panfleto/QR code pararia de funcionar). */
+    public static function assignPublicSlug(int $userId): string
+    {
+        $existing = self::find($userId)['public_slug'] ?? null;
+        if ($existing) {
+            return $existing;
+        }
+
+        $name = self::find($userId)['name'] ?? 'vendedor';
+        $transliterated = @iconv('UTF-8', 'ASCII//TRANSLIT', $name) ?: $name;
+        $base = strtolower(trim($transliterated));
+        $base = preg_replace('/[^a-z0-9]+/', '-', $base);
+        $base = trim($base, '-') ?: 'vendedor';
+        $base = substr($base, 0, 40);
+
+        $db = Database::connection();
+        $slug = $base;
+        $suffix = 1;
+        $check = $db->prepare('SELECT id FROM users WHERE public_slug = :slug');
+        while (true) {
+            $check->execute(['slug' => $slug]);
+            if (!$check->fetch()) {
+                break;
+            }
+            $suffix++;
+            $slug = $base . '-' . $suffix;
+        }
+
+        $db->prepare('UPDATE users SET public_slug = :slug WHERE id = :id')->execute(['slug' => $slug, 'id' => $userId]);
+
+        return $slug;
+    }
+
+    public static function findBySlug(string $slug): ?array
+    {
+        $stmt = Database::connection()->prepare(
+            "SELECT u.*, r.slug AS role_slug FROM users u JOIN roles r ON r.id = u.role_id
+             WHERE u.public_slug = :slug AND u.status = 'active'"
+        );
+        $stmt->execute(['slug' => $slug]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
     public static function setVerificationCode(int $id, string $code): void
     {
         $stmt = Database::connection()->prepare(
