@@ -234,6 +234,63 @@ class OrderController
         ], $orders)]);
     }
 
+    private const DOCUMENT_APPROVER_ROLES = ['supervisor', 'gerente', 'admin'];
+
+    /** Fase 99b: mesma fila de "Aprovar Documentos" do painel web, pro app -- Supervisor/Gerente/
+     *  Admin (nunca Licenciado, parte interessada na propria venda). */
+    public function pendingDocuments(): void
+    {
+        $user = ApiAuth::requireUser();
+        if (!in_array($user['role_slug'], self::DOCUMENT_APPROVER_ROLES, true)) {
+            ApiResponse::error('Papel sem acesso a essa fila.', 403);
+        }
+
+        $sellerIds = match ($user['role_slug']) {
+            'admin' => null,
+            'gerente' => User::nationalIds((int) $user['id']),
+            'supervisor' => User::supervisedIds((int) $user['id']),
+            default => [],
+        };
+
+        $orders = array_map(fn ($o) => [
+            'id' => (int) $o['id'],
+            'order_date' => $o['order_date'],
+            'client_name' => $o['client_name'],
+            'seller_name' => $o['seller_name'] ?: 'Sem vendedor',
+        ], Order::pendingDocumentApproval($sellerIds));
+
+        ApiResponse::json(['orders' => $orders]);
+    }
+
+    public function approveDocuments(string $id): void
+    {
+        $user = ApiAuth::requireUser();
+        if (!in_array($user['role_slug'], self::DOCUMENT_APPROVER_ROLES, true)) {
+            ApiResponse::error('Papel sem acesso a essa fila.', 403);
+        }
+
+        $id = (int) $id;
+        $order = Order::find($id);
+        if (!$order || $order['status'] !== 'verificado' || !empty($order['is_cost_price']) || !empty($order['documents_approved_at'])) {
+            ApiResponse::error('Pedido nao esta esperando aprovacao.', 422);
+        }
+        if (!Order::hasRequiredDocuments($order)) {
+            ApiResponse::error('Documentos incompletos.', 422);
+        }
+        if ($user['role_slug'] !== 'admin' && !$this->canAccessSeller($user, (int) ($order['seller_id'] ?? 0))) {
+            ApiResponse::error('Pedido fora do seu escopo.', 403);
+        }
+
+        Order::approveDocuments($id, (int) $user['id']);
+        AuditLog::record((int) $user['id'], 'pedido_documentos_aprovados', 'order', $id, ['documents_approved_at' => null], ['documents_approved_at' => date('Y-m-d H:i:s')]);
+
+        $freshOrder = Order::find($id);
+        Notifier::pedidoDocumentosAprovadosFabrica($freshOrder);
+        Notifier::documentosAprovadosCliente($freshOrder);
+
+        ApiResponse::json(['ok' => true]);
+    }
+
     private function scopeFilters(array $user): array
     {
         if ($user['role_slug'] === 'admin') {

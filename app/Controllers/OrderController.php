@@ -27,10 +27,13 @@ use App\Models\User;
 
 class OrderController
 {
-    private const DOCUMENT_APPROVER_ROLES = ['licenciado', 'gerente', 'admin'];
+    // Fase 99b: pedido explicito do usuario -- Licenciado tirado da lista de aprovadores ("pode
+    // errar", e' parte interessada na propria venda). So' Supervisor/Gerente/Admin, papeis de
+    // suporte/fiscalizacao, nunca donos da venda que estao aprovando.
+    private const DOCUMENT_APPROVER_ROLES = ['supervisor', 'gerente', 'admin'];
 
     /** Fase 99: fila de pedidos pagos com documento do veiculo completo, esperando revisao antes
-     *  de ir pra fabrica -- Licenciado ve so' a propria rede, Gerente a rede nacional, Admin tudo. */
+     *  de ir pra fabrica -- Supervisor ve a rede que cuida, Gerente a rede nacional, Admin tudo. */
     public function pendingDocuments(): void
     {
         Auth::requireRole(self::DOCUMENT_APPROVER_ROLES);
@@ -39,7 +42,8 @@ class OrderController
         $sellerIds = match ($user['role_slug']) {
             'admin' => null,
             'gerente' => User::nationalIds((int) $user['id']),
-            default => User::downlineIds((int) $user['id']),
+            'supervisor' => User::supervisedIds((int) $user['id']),
+            default => [],
         };
 
         View::render('painel/orders/pending_documents', [

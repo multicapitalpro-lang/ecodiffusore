@@ -77,11 +77,11 @@ if (in_array($role, ['gestor', 'licenciado', 'gerente', 'supervisor', 'admin'], 
     $pendingPriceApprovals = \App\Models\Approval::countPendingForUser($user);
 }
 $pendingDocumentApprovals = 0;
-if (in_array($role, ['licenciado', 'gerente', 'admin'], true)) {
+if (in_array($role, ['supervisor', 'gerente', 'admin'], true)) {
     $docScopeIds = match ($role) {
         'admin' => null,
         'gerente' => \App\Models\User::nationalIds((int) $user['id']),
-        default => \App\Models\User::downlineIds((int) $user['id']),
+        default => \App\Models\User::supervisedIds((int) $user['id']),
     };
     $pendingDocumentApprovals = count(\App\Models\Order::pendingDocumentApproval($docScopeIds));
 }
@@ -169,7 +169,7 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/desempen
                                 <?php if ($liberacaoBadge > 0): ?><span class="nav-badge"><?= (int) $liberacaoBadge ?></span><?php endif; ?>
                             </a>
                         <?php endif; ?>
-                        <?php if (in_array($role, ['licenciado', 'gerente', 'admin'], true)): ?>
+                        <?php if (in_array($role, ['supervisor', 'gerente', 'admin'], true)): ?>
                             <a href="/painel/pedidos/aprovar-documentos" class="<?= $isActive('/painel/pedidos/aprovar-documentos') ? 'is-active' : '' ?>">
                                 Aprovar Documentos
                                 <?php if ($pendingDocumentApprovals > 0): ?><span class="nav-badge"><?= (int) $pendingDocumentApprovals ?></span><?php endif; ?>

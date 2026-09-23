@@ -579,10 +579,13 @@ class Notifier
         );
     }
 
-    /** Fase 60: avisa Vendedor + Licenciado quando o CLIENTE termina de enviar CNH + documento do
-     *  veiculo pelo proprio painel dele -- so dispara quando os 2 ja estao completos (nao a cada
-     *  arquivo isolado), pra sinalizar "pode gerar a cobranca/mandar pra fabrica agora" de verdade.
-     *  So WhatsApp, mesmo padrao ja usado em liberacaoDescontoSolicitada. */
+    /** Fase 60: avisa Vendedor + quem precisa revisar quando o CLIENTE termina de enviar CNH +
+     *  documento do veiculo pelo proprio painel dele -- so dispara quando todos ja estao
+     *  completos (nao a cada arquivo isolado), pra sinalizar "tem pedido esperando aprovacao de
+     *  documentos" (ver /painel/pedidos/aprovar-documentos). Fase 99b: quem aprova NUNCA e' o
+     *  Licenciado (parte interessada na propria venda) -- User::responsibleFor() acha o
+     *  Supervisor responsavel pela rede desse vendedor (ou o Gerente, se ainda nao tiver
+     *  Supervisor atribuido). So WhatsApp+push, mesmo padrao ja usado em liberacaoDescontoSolicitada. */
     public static function pedidoDocumentosEnviados(array $order): void
     {
         if (empty($order['seller_id'])) {
@@ -603,8 +606,9 @@ class Notifier
         $recipients = [];
         self::addRecipient($recipients, $seller, 'self');
         $licenciado = User::licenciadoFor((int) $seller['id']);
-        if ($licenciado) {
-            self::addRecipient($recipients, $licenciado, 'network');
+        $approver = $licenciado ? User::responsibleFor($licenciado) : null;
+        if ($approver) {
+            self::addRecipient($recipients, $approver, 'network');
         }
 
         $pushBody = "Cliente {$vars['cliente']} enviou CNH/documento do veículo -- Pedido #{$vars['pedido']}.";

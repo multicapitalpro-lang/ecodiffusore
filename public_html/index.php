@@ -90,6 +90,8 @@ $router->post('/api/v1/leads/{id}/notas', [App\Controllers\Api\LeadController::c
 $router->get('/api/v1/aprovacoes', [App\Controllers\Api\ApprovalController::class, 'index']);
 $router->post('/api/v1/aprovacoes/{id}/decidir', [App\Controllers\Api\ApprovalController::class, 'decide']);
 $router->get('/api/v1/pedidos', [App\Controllers\Api\OrderController::class, 'index']);
+$router->get('/api/v1/pedidos/aprovar-documentos', [App\Controllers\Api\OrderController::class, 'pendingDocuments']);
+$router->post('/api/v1/pedidos/{id}/aprovar-documentos', [App\Controllers\Api\OrderController::class, 'approveDocuments']);
 $router->get('/api/v1/pedidos/{id}', [App\Controllers\Api\OrderController::class, 'show']);
 $router->post('/api/v1/pedidos/{id}/status', [App\Controllers\Api\OrderController::class, 'markStatus']);
 $router->post('/api/v1/pedidos/{id}/rastreio', [App\Controllers\Api\OrderController::class, 'updateTracking']);

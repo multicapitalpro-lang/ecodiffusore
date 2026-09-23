@@ -126,7 +126,7 @@ $situation = $order['payment_situation'] ?? ['label' => '—', 'badge' => 'novo'
     </div>
 <?php endif; ?>
 
-<?php $canApproveDocs = in_array($user['role_slug'] ?? '', ['licenciado', 'gerente', 'admin'], true); ?>
+<?php $canApproveDocs = in_array($user['role_slug'] ?? '', ['supervisor', 'gerente', 'admin'], true); ?>
 <?php if (empty($order['is_cost_price']) && $order['status'] === 'verificado' && !\App\Models\Order::missingDocumentLabels($order) && $canApproveDocs): ?>
     <div class="dash-card" style="text-align:left;max-width:520px;margin-bottom:16px;">
         <?php if (empty($order['documents_approved_at'])): ?>
