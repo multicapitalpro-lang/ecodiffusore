@@ -130,6 +130,9 @@ class CalendarEvent
             return [];
         }
 
+        // So' placeholders posicionais (?) aqui -- PDO nao aceita misturar nomeados (:from) com
+        // posicionais na mesma query preparada (SQLSTATE[HY093], derrubava com erro 500 antes
+        // desse fix, encontrado testando com dado descartavel na producao).
         $placeholders = implode(',', array_fill(0, count($userIds), '?'));
         $stmt = Database::connection()->prepare(
             "SELECT DISTINCT ce.*, u.name AS owner_name, l.name AS lead_name, c.name AS client_name
@@ -139,10 +142,10 @@ class CalendarEvent
              LEFT JOIN clients c ON c.id = ce.client_id
              LEFT JOIN calendar_event_participants p ON p.event_id = ce.id
              WHERE (ce.owner_id IN ({$placeholders}) OR p.user_id IN ({$placeholders}))
-               AND ce.starts_at >= :from AND ce.starts_at <= :to
+               AND ce.starts_at >= ? AND ce.starts_at <= ?
              ORDER BY ce.starts_at ASC"
         );
-        $stmt->execute(array_merge($userIds, $userIds, ['from' => $from, 'to' => $to]));
+        $stmt->execute(array_merge($userIds, $userIds, [$from, $to]));
         return $stmt->fetchAll();
     }
 
