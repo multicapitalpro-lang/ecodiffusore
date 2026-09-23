@@ -15,6 +15,8 @@ use App\Core\View;
 use App\Models\Approval;
 use App\Models\AuditLog;
 use App\Models\Client;
+use App\Models\FinancialAccount;
+use App\Models\FinancialTransaction;
 use App\Models\LeadRoutingSettings;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -154,7 +156,10 @@ class OrderController
 
         $user = Auth::user();
         $items = $this->parseItems($_POST);
-        $errors = $this->validate($_POST, $items, $user['role_slug']);
+        // Fase 98: pedido a preco de custo (mostruario) -- so' Admin, sem vendedor/comissao/
+        // aprovacao, e o piso de preco normal (PricingTier::forPrice) nao se aplica.
+        $isCostPrice = $user['role_slug'] === 'admin' && !empty($_POST['is_cost_price']);
+        $errors = $this->validate($_POST, $items, $user['role_slug'], $isCostPrice);
 
         if ($errors) {
             if (Response::isAjax()) {
@@ -177,7 +182,7 @@ class OrderController
             return;
         }
 
-        $sellerId = $user['role_slug'] === Roles::SELLER ? $user['id'] : ($_POST['seller_id'] ?: null);
+        $sellerId = $isCostPrice ? null : ($user['role_slug'] === Roles::SELLER ? $user['id'] : ($_POST['seller_id'] ?: null));
 
         $vehicleDocument = null;
         try {
@@ -206,6 +211,7 @@ class OrderController
             'vehicle_plate' => $_POST['vehicle_plate'] ?? '',
             'vehicle_document_path' => $vehicleDocument['stored_name'] ?? null,
             'cnh_document_path' => $cnhDocument['stored_name'] ?? null,
+            'is_cost_price' => $isCostPrice,
         ], $items);
 
         if ($sellerId) {
@@ -299,7 +305,11 @@ class OrderController
 
         $user = Auth::user();
         $items = $this->parseItems($_POST);
-        $errors = $this->validate($_POST, $items, $user['role_slug']);
+        // Fase 98: is_cost_price e' definido so' na criacao (nunca via POST de edicao) -- reusa o
+        // valor ja gravado no pedido, senao uma edicao de quantidade num pedido de custo ja
+        // existente esbarraria de novo no piso de preco normal.
+        $isCostPrice = !empty($order['is_cost_price']);
+        $errors = $this->validate($_POST, $items, $user['role_slug'], $isCostPrice);
 
         if ($errors) {
             if (Response::isAjax()) {
@@ -319,7 +329,7 @@ class OrderController
             return;
         }
 
-        $sellerId = $user['role_slug'] === Roles::SELLER ? $order['seller_id'] : ($_POST['seller_id'] ?: null);
+        $sellerId = $isCostPrice ? null : ($user['role_slug'] === Roles::SELLER ? $order['seller_id'] : ($_POST['seller_id'] ?: null));
 
         $orderData = [
             'client_id' => (int) $_POST['client_id'],
@@ -393,6 +403,74 @@ class OrderController
         }
 
         Router::redirect($target);
+    }
+
+    /** Fase 98: Admin anexa o comprovante do Pix que mandou pra Fabrica, num pedido a preco de
+     *  custo ja verificado -- so' depois disso o pedido entra na fila de despacho dela (ver
+     *  Order::forFactory()) e ela recebe o aviso (Notifier::pedidoCustoProntoParaFabrica()).
+     *  Tambem registra a saida ja paga em Caixas e Bancos, pra o fluxo de caixa bater sozinho. */
+    public function attachFactoryPaymentProof(string $id): void
+    {
+        Auth::requireRole(['admin']);
+        $id = (int) $id;
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            Router::redirect("/painel/pedidos/{$id}?erro=1");
+        }
+
+        $order = Order::find($id);
+        if (!$order || empty($order['is_cost_price']) || $order['status'] !== 'verificado') {
+            Router::redirect("/painel/pedidos/{$id}?erro=1");
+        }
+
+        $amount = is_numeric($_POST['factory_payment_amount'] ?? null) ? (float) $_POST['factory_payment_amount'] : 0.0;
+        if ($amount <= 0) {
+            Router::redirect("/painel/pedidos/{$id}?erro=1");
+        }
+
+        try {
+            $proof = FileUpload::storeFactoryPaymentProof($_FILES['factory_payment_proof'] ?? []);
+        } catch (\RuntimeException $e) {
+            Router::redirect("/painel/pedidos/{$id}?erro=1");
+        }
+        if (!$proof) {
+            Router::redirect("/painel/pedidos/{$id}?erro=1");
+        }
+
+        Order::setFactoryPaymentProof($id, $amount, $proof['stored_name'], $proof['original_name']);
+
+        $accountId = FinancialAccount::defaultAccountId();
+        if ($accountId) {
+            FinancialTransaction::createForFactoryPayment($id, $accountId, $amount, date('Y-m-d'));
+        }
+
+        Notifier::pedidoCustoProntoParaFabrica(Order::find($id));
+
+        Router::redirect("/painel/pedidos/{$id}?sucesso=1");
+    }
+
+    /** Download autenticado do comprovante -- so' Admin, nunca serve arquivo estatico direto
+     *  (mesmo padrao ja usado nos outros anexos do sistema). */
+    public function downloadFactoryPaymentProof(string $id): void
+    {
+        Auth::requireRole(['admin']);
+        $id = (int) $id;
+
+        $order = Order::find($id);
+        if (!$order || !$order['factory_payment_proof_path']) {
+            Router::redirect('/painel/pedidos');
+        }
+
+        $path = FileUpload::path('factory_payment_proofs', $order['factory_payment_proof_path']);
+        if (!file_exists($path)) {
+            Router::redirect('/painel/pedidos');
+        }
+
+        header('Content-Type: ' . (mime_content_type($path) ?: 'application/octet-stream'));
+        header('Content-Disposition: inline; filename="' . rawurlencode($order['factory_payment_proof_original_name'] ?: 'comprovante.pdf') . '"');
+        header('Content-Length: ' . filesize($path));
+        readfile($path);
+        exit;
     }
 
     public function markStatus(string $id): void
@@ -674,7 +752,7 @@ class OrderController
         return $items;
     }
 
-    private function validate(array $input, array $items, string $role = ''): array
+    private function validate(array $input, array $items, string $role = '', bool $isCostPrice = false): array
     {
         $errors = [];
 
@@ -690,9 +768,11 @@ class OrderController
 
         // Fase 31: preco unitario negociado livremente, mas com piso bloqueado -- mesma regra da
         // Proposta Facil (ver PropostaController::validate()), agora tambem pro Pedido manual.
+        // Fase 98: pedido a preco de custo (so' Admin) fica de fora desse piso de proposito -- e'
+        // exatamente pra isso que ele existe (compra a preco de fabrica, sem vendedor/comissao).
         $lowestPrice = null;
         foreach ($items as $item) {
-            if ($item['unit_price'] > 0 && !PricingTier::forPrice($item['unit_price'])) {
+            if (!$isCostPrice && $item['unit_price'] > 0 && !PricingTier::forPrice($item['unit_price'])) {
                 $floorTier = PricingTier::all()[0] ?? null;
                 $floor = $floorTier ? number_format((float) $floorTier['min_price'], 2, ',', '.') : '0,00';
                 $errors['items'] = "Preço unitário abaixo do mínimo negociável (R$ {$floor}).";

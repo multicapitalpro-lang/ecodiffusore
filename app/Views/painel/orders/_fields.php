@@ -36,16 +36,39 @@ use App\Core\View;
     </div>
 </div>
 
+<?php $isAdmin = ($user['role_slug'] ?? '') === 'admin'; $isEditingOrder = !empty($editing['id']); ?>
+<?php if ($isAdmin && !$isEditingOrder): ?>
+    <div style="margin:10px 0;padding:10px;border:1px dashed var(--border);border-radius:8px;">
+        <label style="display:flex;align-items:center;gap:8px;font-weight:600;">
+            <input type="checkbox" id="is_cost_price" name="is_cost_price" value="1">
+            🏷️ Pedido a preço de custo (mostruário) — sem vendedor, sem comissão
+        </label>
+        <p class="hint-text" style="margin-top:4px;">Pra compra interna a preço de fábrica (ex: peça de mostruário). Libera o preço abaixo do piso normal e não gera comissão pra ninguém. Depois de verificado, anexe o comprovante do Pix pra fábrica no detalhe do pedido.</p>
+    </div>
+    <script>
+    (function () {
+        var cb = document.getElementById('is_cost_price');
+        var wrap = document.getElementById('seller-field-wrap');
+        if (!cb || !wrap) return;
+        function sync() { wrap.style.display = cb.checked ? 'none' : ''; }
+        cb.addEventListener('change', sync);
+        sync();
+    })();
+    </script>
+<?php endif; ?>
+
 <?php if (!$isVendedor): ?>
-    <label for="seller_id">Vendedor</label>
-    <select id="seller_id" name="seller_id">
-        <option value="">Sem vendedor definido</option>
-        <?php foreach ($sellers as $s): ?>
-            <option value="<?= (int) $s['id'] ?>" <?= (int) ($values['seller_id'] ?? 0) === (int) $s['id'] ? 'selected' : '' ?>>
-                <?= View::e($s['name']) ?>
-            </option>
-        <?php endforeach; ?>
-    </select>
+    <div id="seller-field-wrap">
+        <label for="seller_id">Vendedor</label>
+        <select id="seller_id" name="seller_id">
+            <option value="">Sem vendedor definido</option>
+            <?php foreach ($sellers as $s): ?>
+                <option value="<?= (int) $s['id'] ?>" <?= (int) ($values['seller_id'] ?? 0) === (int) $s['id'] ? 'selected' : '' ?>>
+                    <?= View::e($s['name']) ?>
+                </option>
+            <?php endforeach; ?>
+        </select>
+    </div>
 <?php endif; ?>
 
 <h3 class="section-title">Veículo</h3>

@@ -67,7 +67,9 @@ $situation = $order['payment_situation'] ?? ['label' => '—', 'badge' => 'novo'
         <p><strong>Telefone:</strong> <a href="https://wa.me/55<?= preg_replace('/\D/', '', $order['client_whatsapp']) ?>" target="_blank" rel="noopener">💬 <?= View::e($order['client_whatsapp']) ?></a></p>
     <?php endif; ?>
     <p><strong>Cidade:</strong> <?= View::e($order['client_city'] ?: '—') ?><?= $order['client_state'] ? '/' . View::e($order['client_state']) : '' ?></p>
-    <p><strong>Vendedor:</strong> <?= View::e($order['seller_name'] ?: 'Sem vendedor') ?></p>
+    <p><strong>Vendedor:</strong> <?= View::e($order['seller_name'] ?: 'Sem vendedor') ?>
+        <?php if (!empty($order['is_cost_price'])): ?><span class="status-badge status-novo">🏷️ Preço de custo (mostruário) — sem comissão</span><?php endif; ?>
+    </p>
     <?php if (!empty($order['licenciado_name'])): ?>
         <p><strong>Licenciado:</strong> <?= View::e($order['licenciado_name']) ?></p>
     <?php endif; ?>
@@ -97,6 +99,32 @@ $situation = $order['payment_situation'] ?? ['label' => '—', 'badge' => 'novo'
     <?php endif; ?>
     <?php if ($order['notes']): ?><p><strong>Obs.:</strong> <?= nl2br(View::e($order['notes'])) ?></p><?php endif; ?>
 </div>
+
+<?php if (!empty($order['is_cost_price']) && $order['status'] === 'verificado' && ($user['role_slug'] ?? '') === 'admin'): ?>
+    <div class="dash-card <?= empty($order['factory_payment_proof_path']) ? 'dash-card-danger' : '' ?>" style="text-align:left;max-width:520px;margin-bottom:16px;">
+        <?php if (empty($order['factory_payment_proof_path'])): ?>
+            <span>Pagamento à fábrica</span>
+            <strong style="font-size:1rem;">Comprovante ainda não anexado</strong>
+            <p class="hint-text" style="margin:6px 0 10px;">A fábrica só vê esse pedido na fila de despacho depois que o comprovante do Pix pra ela for anexado aqui.</p>
+            <form action="/painel/pedidos/<?= (int) $order['id'] ?>/comprovante-fabrica" method="post" enctype="multipart/form-data" class="inline-form" style="display:flex;flex-direction:column;gap:8px;">
+                <?= Csrf::field() ?>
+                <label>Valor pago à fábrica (R$)
+                    <input type="number" step="0.01" name="factory_payment_amount" required>
+                </label>
+                <label class="file-drop" data-file-drop>
+                    <span data-file-drop-label>Solte o comprovante do Pix aqui ou clique para adicionar (PDF, JPG, PNG — até 5MB)</span>
+                    <input type="file" name="factory_payment_proof" accept=".pdf,.jpg,.jpeg,.png,.webp" required>
+                </label>
+                <ul class="file-list" data-file-list></ul>
+                <button type="submit" class="btn btn-primary" style="align-self:flex-start;">Anexar comprovante</button>
+            </form>
+        <?php else: ?>
+            <span>Pagamento à fábrica</span>
+            <strong style="font-size:1rem;">✅ R$ <?= number_format((float) $order['factory_payment_amount'], 2, ',', '.') ?> enviado em <?= View::e(date('d/m/Y', strtotime($order['factory_payment_sent_at']))) ?></strong>
+            <p style="margin-top:6px;"><a href="/painel/pedidos/<?= (int) $order['id'] ?>/comprovante-fabrica" target="_blank" rel="noopener" class="link-small">📄 Ver comprovante</a></p>
+        <?php endif; ?>
+    </div>
+<?php endif; ?>
 
 <?php if (!$isViewOnly): ?>
 <form action="/painel/pedidos/<?= (int) $order['id'] ?>/rastreio" method="post" class="inline-form" style="margin-bottom:16px">

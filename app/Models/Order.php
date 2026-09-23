@@ -248,8 +248,8 @@ class Order
 
         try {
             $stmt = $db->prepare(
-                'INSERT INTO orders (client_id, seller_id, influencer_id, status, order_date, total_value, notes, vehicle_type, vehicle_plate, vehicle_document_path, cnh_document_path, public_token)
-                 VALUES (:client_id, :seller_id, :influencer_id, :status, :order_date, 0, :notes, :vehicle_type, :vehicle_plate, :vehicle_document_path, :cnh_document_path, :public_token)'
+                'INSERT INTO orders (client_id, seller_id, influencer_id, status, order_date, total_value, notes, vehicle_type, vehicle_plate, vehicle_document_path, cnh_document_path, public_token, is_cost_price)
+                 VALUES (:client_id, :seller_id, :influencer_id, :status, :order_date, 0, :notes, :vehicle_type, :vehicle_plate, :vehicle_document_path, :cnh_document_path, :public_token, :is_cost_price)'
             );
             $stmt->execute([
                 'client_id' => $data['client_id'],
@@ -266,6 +266,10 @@ class Order
                 // pedido "sem link pra mandar" (bin2hex(20) = 40 hex chars, imprevisivel o
                 // suficiente pra nao precisar de outra camada de autenticacao nessa pagina).
                 'public_token' => bin2hex(random_bytes(20)),
+                // Fase 98: pedido a preco de custo (mostruario), so' Admin -- sem vendedor/comissao,
+                // e a Fabrica so' ve na fila dela depois que o comprovante do Pix pra ela for
+                // anexado (ver Order::forFactory()).
+                'is_cost_price' => !empty($data['is_cost_price']) ? 1 : 0,
             ]);
             $orderId = (int) $db->lastInsertId();
 
@@ -578,6 +582,10 @@ class Order
                 AND o.vehicle_document_path IS NOT NULL AND o.cnh_document_path IS NOT NULL
                 AND o.photo1_path IS NOT NULL AND o.photo2_path IS NOT NULL AND o.photo3_path IS NOT NULL
                 AND o.telemetry_path IS NOT NULL
+                -- Fase 98: pedido a preco de custo so' entra na fila da fabrica depois que o
+                -- comprovante do Pix pra ela for anexado (pedido normal, com vendedor, nunca
+                -- precisou disso -- so' afeta o caminho novo).
+                AND (o.is_cost_price = 0 OR o.factory_payment_proof_path IS NOT NULL)
              ORDER BY o.order_date DESC"
         )->fetchAll();
     }
@@ -820,6 +828,18 @@ class Order
     {
         $stmt = Database::connection()->prepare('UPDATE orders SET delivered_at = NOW() WHERE id = :id');
         $stmt->execute(['id' => $id]);
+    }
+
+    /** Fase 98: registra o comprovante do Pix que o Admin mandou pra Fabrica num pedido a preco
+     *  de custo -- so' depois disso o pedido entra na fila de despacho dela (ver forFactory()). */
+    public static function setFactoryPaymentProof(int $id, float $amount, string $storedName, string $originalName): void
+    {
+        $stmt = Database::connection()->prepare(
+            'UPDATE orders SET factory_payment_amount = :amount, factory_payment_proof_path = :path,
+                factory_payment_proof_original_name = :original, factory_payment_sent_at = NOW()
+             WHERE id = :id'
+        );
+        $stmt->execute(['amount' => $amount, 'path' => $storedName, 'original' => $originalName, 'id' => $id]);
     }
 
     /**

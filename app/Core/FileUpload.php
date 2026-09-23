@@ -86,6 +86,11 @@ class FileUpload
         return self::store($file, 'telemetry');
     }
 
+    public static function storeFactoryPaymentProof(array $file): ?array
+    {
+        return self::store($file, 'factory_payment_proofs');
+    }
+
     public static function storeLeadExtensionAttachment(array $file): ?array
     {
         return self::store($file, 'lead_extensions');

@@ -181,15 +181,42 @@ class Notifier
      *  WhatsApp, pra todo usuario do papel Fabrica -- avisa que caiu um pedido novo JA PAGO pra ela
      *  incluir o codigo de rastreio (Fase 28: fabrica so ve pedidos com status verificado). Ao
      *  contrario de pedidoAprovado(), dispara mesmo sem seller_id (ex: checkout publico sem
-     *  vendedor) -- a fabrica precisa saber de TODO pedido pago, tenha vendedor ou nao. */
+     *  vendedor) -- a fabrica precisa saber de TODO pedido pago, tenha vendedor ou nao.
+     *  Fase 98: EXCECAO -- pedido a preco de custo (is_cost_price) nao dispara aqui, so' quando o
+     *  comprovante do Pix pra fabrica for anexado (ver pedidoCustoProntoParaFabrica()), senao a
+     *  fabrica recebia aviso de um pedido que ainda nem aparece na fila dela. */
     public static function novoPedidoPagoFabrica(array $order): void
     {
+        if (!empty($order['is_cost_price'])) {
+            return;
+        }
+
         $produtos = OrderItem::forOrder((int) $order['id']);
         $produto = $produtos
             ? implode(', ', array_map(fn ($i) => $i['product_name'] . ' (x' . (int) $i['quantity'] . ')', $produtos))
             : '—';
 
         $text = "📦 Novo pedido pago #{$order['id']}! Cliente {$order['client_name']}, produto: {$produto}. Acesse o painel e inclua o código de rastreio: " . self::BASE_URL . '/painel/fabrica';
+
+        foreach (User::allByRole(Roles::FACTORY) as $fabrica) {
+            if (!empty($fabrica['whatsapp'])) {
+                self::sendWhatsApp($fabrica['whatsapp'], $text);
+            }
+        }
+    }
+
+    /** Fase 98: so' dispara quando o Admin anexa o comprovante do Pix pra fabrica num pedido a
+     *  preco de custo -- ate' la' o pedido fica invisivel pra ela (ver Order::forFactory()), entao
+     *  esse e' o UNICO aviso que ela recebe desse tipo de pedido (mesmo formato de
+     *  novoPedidoPagoFabrica(), so' que so' dispara depois do comprovante estar anexado). */
+    public static function pedidoCustoProntoParaFabrica(array $order): void
+    {
+        $produtos = OrderItem::forOrder((int) $order['id']);
+        $produto = $produtos
+            ? implode(', ', array_map(fn ($i) => $i['product_name'] . ' (x' . (int) $i['quantity'] . ')', $produtos))
+            : '—';
+
+        $text = "📦 Pedido #{$order['id']} pronto pra despacho! Cliente {$order['client_name']}, produto: {$produto}. Comprovante de pagamento já anexado. Acesse o painel e inclua o código de rastreio: " . self::BASE_URL . '/painel/fabrica';
 
         foreach (User::allByRole(Roles::FACTORY) as $fabrica) {
             if (!empty($fabrica['whatsapp'])) {

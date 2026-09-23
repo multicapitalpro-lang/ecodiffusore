@@ -190,6 +190,32 @@ class FinancialTransaction
         ]);
     }
 
+    /** Fase 98: saida ja paga, pro Pix que o Admin manda pra Fabrica num pedido a preco de custo
+     *  -- mesmo espirito de createForOrderReceivable() (idempotente, nunca duplica pro mesmo
+     *  pedido), so' que do lado de saida. Sem categoria fixa -- fica "sem categoria" mesmo, o
+     *  Admin reclassifica depois em Caixas e Bancos se quiser. */
+    public static function createForFactoryPayment(int $orderId, int $accountId, float $amount, string $date): void
+    {
+        $stmt = Database::connection()->prepare(
+            "SELECT id FROM financial_transactions WHERE order_id = :order_id AND type = 'saida' AND description LIKE 'Pagamento à fábrica%' LIMIT 1"
+        );
+        $stmt->execute(['order_id' => $orderId]);
+        if ($stmt->fetch()) {
+            return;
+        }
+
+        self::create([
+            'account_id' => $accountId,
+            'order_id' => $orderId,
+            'type' => 'saida',
+            'description' => 'Pagamento à fábrica referente ao pedido #' . $orderId,
+            'amount' => $amount,
+            'due_date' => $date,
+            'paid_date' => $date,
+            'status' => 'pago',
+        ]);
+    }
+
     /** Transferencia entre contas proprias: duas pernas (saida na origem, entrada no destino),
      *  sempre pagas na hora e marcadas is_transfer=1 pra nunca entrar em DRE/Balancete/Relatorios
      *  de pagamento e recebimento (nao e' receita nem despesa, so move dinheiro de um bolso pro

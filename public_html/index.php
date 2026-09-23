@@ -317,6 +317,8 @@ $router->post('/painel/pedidos/{id}', [App\Controllers\OrderController::class, '
 $router->post('/painel/pedidos/{id}/status', [App\Controllers\OrderController::class, 'markStatus']);
 $router->post('/painel/pedidos/{id}/reembolsar', [App\Controllers\OrderController::class, 'refundPayment']);
 $router->post('/painel/pedidos/{id}/rastreio', [App\Controllers\OrderController::class, 'updateTracking']);
+$router->post('/painel/pedidos/{id}/comprovante-fabrica', [App\Controllers\OrderController::class, 'attachFactoryPaymentProof']);
+$router->get('/painel/pedidos/{id}/comprovante-fabrica', [App\Controllers\OrderController::class, 'downloadFactoryPaymentProof']);
 $router->get('/painel/pedidos/{id}/documento-veiculo', [App\Controllers\OrderController::class, 'downloadVehicleDocument']);
 $router->get('/painel/pedidos/{id}/cnh', [App\Controllers\OrderController::class, 'downloadCnhDocument']);
 $router->get('/painel/pedidos/{id}/arquivo/{field}', [App\Controllers\OrderController::class, 'downloadOrderFile']);
