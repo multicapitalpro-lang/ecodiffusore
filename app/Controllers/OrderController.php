@@ -221,9 +221,9 @@ class OrderController
         $isCostPrice = $user['role_slug'] === 'admin' && !empty($_POST['is_cost_price']);
         $errors = $this->validate($_POST, $items, $user['role_slug'], $isCostPrice);
 
-        // Fase 101: pra quem a fabrica fatura e pra onde entrega -- so' exigido na CRIACAO de um
-        // pedido a preco de custo (nao reaproveita validate(), que tambem roda em update() de um
-        // pedido ja existente onde esses campos ainda nao aparecem no form de edicao).
+        // Fase 101/102: pra quem a fabrica fatura e pra onde entrega -- so' exigido na CRIACAO de
+        // um pedido a preco de custo (nao reaproveita validate(), que tambem roda em update() de
+        // um pedido ja existente onde esses campos ainda nao aparecem no form de edicao).
         if ($isCostPrice) {
             if (trim($_POST['cost_price_billing_name'] ?? '') === '') {
                 $errors['cost_price_billing_name'] = 'Informe pra quem a fábrica deve faturar.';
@@ -231,8 +231,10 @@ class OrderController
             if (trim($_POST['cost_price_billing_document'] ?? '') === '') {
                 $errors['cost_price_billing_document'] = 'Informe o CNPJ/CPF pra nota fiscal.';
             }
-            if (trim($_POST['cost_price_delivery_address'] ?? '') === '') {
-                $errors['cost_price_delivery_address'] = 'Informe o endereço de entrega.';
+            foreach (['cost_price_delivery_zip_code' => 'CEP', 'cost_price_delivery_street' => 'Rua', 'cost_price_delivery_number' => 'Número', 'cost_price_delivery_neighborhood' => 'Bairro', 'cost_price_delivery_city' => 'Cidade', 'cost_price_delivery_state' => 'Estado'] as $field => $label) {
+                if (trim($_POST[$field] ?? '') === '') {
+                    $errors[$field] = "Informe o campo \"{$label}\" do endereço de entrega.";
+                }
             }
         }
 
@@ -289,7 +291,13 @@ class OrderController
             'is_cost_price' => $isCostPrice,
             'cost_price_billing_name' => $isCostPrice ? trim($_POST['cost_price_billing_name'] ?? '') : null,
             'cost_price_billing_document' => $isCostPrice ? trim($_POST['cost_price_billing_document'] ?? '') : null,
-            'cost_price_delivery_address' => $isCostPrice ? trim($_POST['cost_price_delivery_address'] ?? '') : null,
+            'cost_price_delivery_zip_code' => $isCostPrice ? trim($_POST['cost_price_delivery_zip_code'] ?? '') : null,
+            'cost_price_delivery_street' => $isCostPrice ? trim($_POST['cost_price_delivery_street'] ?? '') : null,
+            'cost_price_delivery_number' => $isCostPrice ? trim($_POST['cost_price_delivery_number'] ?? '') : null,
+            'cost_price_delivery_complement' => $isCostPrice ? trim($_POST['cost_price_delivery_complement'] ?? '') : null,
+            'cost_price_delivery_neighborhood' => $isCostPrice ? trim($_POST['cost_price_delivery_neighborhood'] ?? '') : null,
+            'cost_price_delivery_city' => $isCostPrice ? trim($_POST['cost_price_delivery_city'] ?? '') : null,
+            'cost_price_delivery_state' => $isCostPrice ? trim($_POST['cost_price_delivery_state'] ?? '') : null,
         ], $items);
 
         if ($sellerId) {
@@ -508,7 +516,15 @@ class OrderController
             $id,
             trim($_POST['cost_price_billing_name'] ?? ''),
             trim($_POST['cost_price_billing_document'] ?? ''),
-            trim($_POST['cost_price_delivery_address'] ?? '')
+            [
+                'zip_code' => trim($_POST['cost_price_delivery_zip_code'] ?? ''),
+                'street' => trim($_POST['cost_price_delivery_street'] ?? ''),
+                'number' => trim($_POST['cost_price_delivery_number'] ?? ''),
+                'complement' => trim($_POST['cost_price_delivery_complement'] ?? ''),
+                'neighborhood' => trim($_POST['cost_price_delivery_neighborhood'] ?? ''),
+                'city' => trim($_POST['cost_price_delivery_city'] ?? ''),
+                'state' => trim($_POST['cost_price_delivery_state'] ?? ''),
+            ]
         );
 
         Router::redirect("/painel/pedidos/{$id}?sucesso=1");

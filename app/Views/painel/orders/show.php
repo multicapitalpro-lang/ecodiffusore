@@ -101,7 +101,7 @@ $situation = $order['payment_situation'] ?? ['label' => '—', 'badge' => 'novo'
 </div>
 
 <?php if (!empty($order['is_cost_price']) && ($user['role_slug'] ?? '') === 'admin'): ?>
-    <div class="dash-card <?= empty($order['cost_price_billing_name']) || empty($order['cost_price_delivery_address']) ? 'dash-card-danger' : '' ?>" style="text-align:left;max-width:520px;margin-bottom:16px;">
+    <div class="dash-card <?= empty($order['cost_price_billing_name']) || empty($order['cost_price_delivery_street']) ? 'dash-card-danger' : '' ?>" style="text-align:left;max-width:560px;margin-bottom:16px;">
         <span>Faturamento e entrega (pedido a preço de custo)</span>
         <p class="hint-text" style="margin:4px 0 10px;">Pra quem a fábrica deve emitir a nota fiscal e pra onde entregar — aparece pra ela em "Pedidos pra Despachar".</p>
         <form action="/painel/pedidos/<?= (int) $order['id'] ?>/faturamento-custo" method="post" class="inline-form" style="display:flex;flex-direction:column;gap:8px;">
@@ -112,9 +112,29 @@ $situation = $order['payment_situation'] ?? ['label' => '—', 'badge' => 'novo'
             <label>CNPJ/CPF pra nota fiscal
                 <input type="text" name="cost_price_billing_document" value="<?= View::e($order['cost_price_billing_document'] ?? '') ?>">
             </label>
-            <label>Endereço de entrega
-                <input type="text" name="cost_price_delivery_address" value="<?= View::e($order['cost_price_delivery_address'] ?? '') ?>">
-            </label>
+            <div class="form-grid-2">
+                <label>CEP
+                    <input type="text" name="cost_price_delivery_zip_code" value="<?= View::e($order['cost_price_delivery_zip_code'] ?? '') ?>">
+                </label>
+                <label>Rua
+                    <input type="text" name="cost_price_delivery_street" value="<?= View::e($order['cost_price_delivery_street'] ?? '') ?>">
+                </label>
+                <label>Número
+                    <input type="text" name="cost_price_delivery_number" value="<?= View::e($order['cost_price_delivery_number'] ?? '') ?>">
+                </label>
+                <label>Complemento (opcional)
+                    <input type="text" name="cost_price_delivery_complement" value="<?= View::e($order['cost_price_delivery_complement'] ?? '') ?>">
+                </label>
+                <label>Bairro
+                    <input type="text" name="cost_price_delivery_neighborhood" value="<?= View::e($order['cost_price_delivery_neighborhood'] ?? '') ?>">
+                </label>
+                <label>Cidade
+                    <input type="text" name="cost_price_delivery_city" value="<?= View::e($order['cost_price_delivery_city'] ?? '') ?>">
+                </label>
+                <label>UF
+                    <input type="text" name="cost_price_delivery_state" maxlength="2" style="text-transform:uppercase" value="<?= View::e($order['cost_price_delivery_state'] ?? '') ?>">
+                </label>
+            </div>
             <button type="submit" class="btn btn-primary" style="align-self:flex-start;">Salvar</button>
         </form>
     </div>

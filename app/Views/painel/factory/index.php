@@ -105,7 +105,8 @@ $erro = isset($_GET['erro']);
                     </td>
                     <td style="min-width:220px">
                         <?php if (!empty($o['is_cost_price'])): ?>
-                            <?= View::e($o['cost_price_delivery_address'] ?: '—') ?>
+                            <?= View::e($o['cost_price_delivery_street'] ?: '—') ?><?= $o['cost_price_delivery_number'] ? ', ' . View::e($o['cost_price_delivery_number']) : '' ?><?= $o['cost_price_delivery_complement'] ? ' - ' . View::e($o['cost_price_delivery_complement']) : '' ?><br>
+                            <small class="hint-text"><?= View::e($o['cost_price_delivery_neighborhood'] ?: '—') ?>, <?= View::e($o['cost_price_delivery_city'] ?: '—') ?>/<?= View::e($o['cost_price_delivery_state'] ?: '—') ?> · CEP <?= View::e($o['cost_price_delivery_zip_code'] ?: '—') ?></small>
                         <?php else: ?>
                             <?= View::e($o['street'] ?: '—') ?><?= $o['number'] ? ', ' . View::e($o['number']) : '' ?><?= $o['complement'] ? ' - ' . View::e($o['complement']) : '' ?><br>
                             <small class="hint-text"><?= View::e($o['neighborhood'] ?: '—') ?>, <?= View::e($o['city'] ?: '—') ?>/<?= View::e($o['state'] ?: '—') ?> · CEP <?= View::e($o['zip_code'] ?: '—') ?></small>

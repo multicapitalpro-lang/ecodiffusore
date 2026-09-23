@@ -248,8 +248,8 @@ class Order
 
         try {
             $stmt = $db->prepare(
-                'INSERT INTO orders (client_id, seller_id, influencer_id, status, order_date, total_value, notes, vehicle_type, vehicle_plate, vehicle_document_path, cnh_document_path, public_token, is_cost_price, cost_price_billing_name, cost_price_billing_document, cost_price_delivery_address)
-                 VALUES (:client_id, :seller_id, :influencer_id, :status, :order_date, 0, :notes, :vehicle_type, :vehicle_plate, :vehicle_document_path, :cnh_document_path, :public_token, :is_cost_price, :cost_price_billing_name, :cost_price_billing_document, :cost_price_delivery_address)'
+                'INSERT INTO orders (client_id, seller_id, influencer_id, status, order_date, total_value, notes, vehicle_type, vehicle_plate, vehicle_document_path, cnh_document_path, public_token, is_cost_price, cost_price_billing_name, cost_price_billing_document, cost_price_delivery_zip_code, cost_price_delivery_street, cost_price_delivery_number, cost_price_delivery_complement, cost_price_delivery_neighborhood, cost_price_delivery_city, cost_price_delivery_state)
+                 VALUES (:client_id, :seller_id, :influencer_id, :status, :order_date, 0, :notes, :vehicle_type, :vehicle_plate, :vehicle_document_path, :cnh_document_path, :public_token, :is_cost_price, :cost_price_billing_name, :cost_price_billing_document, :cost_price_delivery_zip_code, :cost_price_delivery_street, :cost_price_delivery_number, :cost_price_delivery_complement, :cost_price_delivery_neighborhood, :cost_price_delivery_city, :cost_price_delivery_state)'
             );
             $stmt->execute([
                 'client_id' => $data['client_id'],
@@ -270,12 +270,19 @@ class Order
                 // e a Fabrica so' ve na fila dela depois que o comprovante do Pix pra ela for
                 // anexado (ver Order::forFactory()).
                 'is_cost_price' => !empty($data['is_cost_price']) ? 1 : 0,
-                // Fase 101: pra quem a fabrica fatura (nota fiscal) e pra onde entrega -- so'
-                // preenchido/usado quando is_cost_price, ja que esse tipo de pedido pode nao usar
-                // o endereco do "cliente" normal do CRM.
+                // Fase 101/102: pra quem a fabrica fatura (nota fiscal) e pra onde entrega, em
+                // campos estruturados (mesmo padrao do endereco do cliente) -- so' preenchido/usado
+                // quando is_cost_price, ja que esse tipo de pedido pode nao usar o endereco do
+                // "cliente" normal do CRM.
                 'cost_price_billing_name' => $data['cost_price_billing_name'] ?? null,
                 'cost_price_billing_document' => $data['cost_price_billing_document'] ?? null,
-                'cost_price_delivery_address' => $data['cost_price_delivery_address'] ?? null,
+                'cost_price_delivery_zip_code' => $data['cost_price_delivery_zip_code'] ?? null,
+                'cost_price_delivery_street' => $data['cost_price_delivery_street'] ?? null,
+                'cost_price_delivery_number' => $data['cost_price_delivery_number'] ?? null,
+                'cost_price_delivery_complement' => $data['cost_price_delivery_complement'] ?? null,
+                'cost_price_delivery_neighborhood' => $data['cost_price_delivery_neighborhood'] ?? null,
+                'cost_price_delivery_city' => $data['cost_price_delivery_city'] ?? null,
+                'cost_price_delivery_state' => $data['cost_price_delivery_state'] ?? null,
             ]);
             $orderId = (int) $db->lastInsertId();
 
@@ -631,7 +638,10 @@ class Order
                     o.vehicle_document_path, o.cnh_document_path,
                     o.photo1_path, o.photo2_path, o.photo3_path, o.telemetry_path,
                     o.is_cost_price, o.factory_payment_proof_path, o.factory_payment_proof_original_name,
-                    o.cost_price_billing_name, o.cost_price_billing_document, o.cost_price_delivery_address,
+                    o.cost_price_billing_name, o.cost_price_billing_document,
+                    o.cost_price_delivery_zip_code, o.cost_price_delivery_street, o.cost_price_delivery_number,
+                    o.cost_price_delivery_complement, o.cost_price_delivery_neighborhood,
+                    o.cost_price_delivery_city, o.cost_price_delivery_state,
                     c.name AS client_name, c.whatsapp AS client_whatsapp, c.document AS client_document,
                     c.email AS client_email,
                     c.zip_code, c.street, c.number, c.complement, c.neighborhood, c.city, c.state,
@@ -902,16 +912,26 @@ class Order
     /** Fase 101b: preenche/corrige os dados de faturamento e entrega de um pedido a preco de
      *  custo -- separado do formulario de criacao pra dar pra preencher depois tambem (pedidos
      *  criados antes desse campo existir, ou pra corrigir um dado errado). */
-    public static function updateCostPriceBilling(int $id, string $billingName, string $billingDocument, string $deliveryAddress): void
+    public static function updateCostPriceBilling(int $id, string $billingName, string $billingDocument, array $delivery): void
     {
         $stmt = Database::connection()->prepare(
             'UPDATE orders SET cost_price_billing_name = :name, cost_price_billing_document = :document,
-                cost_price_delivery_address = :address WHERE id = :id'
+                cost_price_delivery_zip_code = :zip_code, cost_price_delivery_street = :street,
+                cost_price_delivery_number = :number, cost_price_delivery_complement = :complement,
+                cost_price_delivery_neighborhood = :neighborhood, cost_price_delivery_city = :city,
+                cost_price_delivery_state = :state
+             WHERE id = :id'
         );
         $stmt->execute([
             'name' => $billingName ?: null,
             'document' => $billingDocument ?: null,
-            'address' => $deliveryAddress ?: null,
+            'zip_code' => $delivery['zip_code'] ?: null,
+            'street' => $delivery['street'] ?: null,
+            'number' => $delivery['number'] ?: null,
+            'complement' => $delivery['complement'] ?: null,
+            'neighborhood' => $delivery['neighborhood'] ?: null,
+            'city' => $delivery['city'] ?: null,
+            'state' => $delivery['state'] ?: null,
             'id' => $id,
         ]);
     }

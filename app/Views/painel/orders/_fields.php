@@ -54,9 +54,43 @@ use App\Core\View;
             <input type="text" id="cost_price_billing_document" name="cost_price_billing_document">
             <p class="field-error" data-error-for="cost_price_billing_document"><?= View::e($errors['cost_price_billing_document'] ?? '') ?></p>
 
-            <label for="cost_price_delivery_address">Endereço de entrega</label>
-            <input type="text" id="cost_price_delivery_address" name="cost_price_delivery_address" placeholder="Rua, número, bairro, cidade/UF, CEP">
-            <p class="field-error" data-error-for="cost_price_delivery_address"><?= View::e($errors['cost_price_delivery_address'] ?? '') ?></p>
+            <p class="hint-text" style="margin:8px 0 2px;">Endereço de entrega</p>
+            <div class="form-grid-2">
+                <div>
+                    <label for="cost_price_delivery_zip_code">CEP</label>
+                    <input type="text" id="cost_price_delivery_zip_code" name="cost_price_delivery_zip_code" maxlength="9" placeholder="00000-000">
+                    <p class="field-error" data-error-for="cost_price_delivery_zip_code"><?= View::e($errors['cost_price_delivery_zip_code'] ?? '') ?></p>
+                </div>
+                <div>
+                    <label for="cost_price_delivery_street">Rua</label>
+                    <input type="text" id="cost_price_delivery_street" name="cost_price_delivery_street">
+                    <p class="field-error" data-error-for="cost_price_delivery_street"><?= View::e($errors['cost_price_delivery_street'] ?? '') ?></p>
+                </div>
+                <div>
+                    <label for="cost_price_delivery_number">Número</label>
+                    <input type="text" id="cost_price_delivery_number" name="cost_price_delivery_number">
+                    <p class="field-error" data-error-for="cost_price_delivery_number"><?= View::e($errors['cost_price_delivery_number'] ?? '') ?></p>
+                </div>
+                <div>
+                    <label for="cost_price_delivery_complement">Complemento (opcional)</label>
+                    <input type="text" id="cost_price_delivery_complement" name="cost_price_delivery_complement">
+                </div>
+                <div>
+                    <label for="cost_price_delivery_neighborhood">Bairro</label>
+                    <input type="text" id="cost_price_delivery_neighborhood" name="cost_price_delivery_neighborhood">
+                    <p class="field-error" data-error-for="cost_price_delivery_neighborhood"><?= View::e($errors['cost_price_delivery_neighborhood'] ?? '') ?></p>
+                </div>
+                <div>
+                    <label for="cost_price_delivery_city">Cidade</label>
+                    <input type="text" id="cost_price_delivery_city" name="cost_price_delivery_city">
+                    <p class="field-error" data-error-for="cost_price_delivery_city"><?= View::e($errors['cost_price_delivery_city'] ?? '') ?></p>
+                </div>
+                <div>
+                    <label for="cost_price_delivery_state">UF</label>
+                    <input type="text" id="cost_price_delivery_state" name="cost_price_delivery_state" maxlength="2" style="text-transform:uppercase">
+                    <p class="field-error" data-error-for="cost_price_delivery_state"><?= View::e($errors['cost_price_delivery_state'] ?? '') ?></p>
+                </div>
+            </div>
         </div>
     </div>
     <script>
@@ -65,7 +99,7 @@ use App\Core\View;
         var sellerWrap = document.getElementById('seller-field-wrap');
         var vehicleSection = document.getElementById('vehicle-section');
         var costPriceFields = document.getElementById('cost-price-fields');
-        var costPriceInputs = costPriceFields ? costPriceFields.querySelectorAll('input') : [];
+        var costPriceInputs = costPriceFields ? costPriceFields.querySelectorAll('input:not([name="cost_price_delivery_complement"])') : [];
         if (!cb) return;
         function sync() {
             if (sellerWrap) sellerWrap.style.display = cb.checked ? 'none' : '';
