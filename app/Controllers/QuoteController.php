@@ -451,7 +451,11 @@ class QuoteController
             Router::redirect('/painel/orcamentos');
         }
 
-        if (!$this->canAccessSeller($user, (int) ($quote['seller_id'] ?? 0))) {
+        // Fase 123: orcamento sem vendedor (seller_id NULL, agora permitido -- ver validate())
+        // usa o vendedor do CLIENTE como dono efetivo, senao ninguem alem do admin conseguiria
+        // nem abrir o proprio orcamento que acabou de criar (canAccessSeller nunca acha id 0).
+        $effectiveSellerId = $quote['seller_id'] !== null ? (int) $quote['seller_id'] : (int) ($quote['client_seller_id'] ?? 0);
+        if (!$this->canAccessSeller($user, $effectiveSellerId)) {
             http_response_code(403);
             require BASE_PATH . '/app/Views/errors/403.php';
             exit;

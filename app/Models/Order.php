@@ -34,17 +34,26 @@ class Order
             $params['to'] = $filters['to'];
         }
         if (!empty($filters['seller_id'])) {
-            $sql .= ' AND o.seller_id = :seller_id';
+            // Fase 123: pedido sem vendedor (seller_id NULL, agora permitido) precisa continuar
+            // visivel pra quem cadastrou o cliente -- SQL puro nunca casa NULL IN(...)/= , entao
+            // sem esse OR quem criou o pedido nunca o encontraria de volta.
+            $sql .= ' AND (o.seller_id = :seller_id OR (o.seller_id IS NULL AND c.seller_id = :seller_id_fallback))';
             $params['seller_id'] = $filters['seller_id'];
+            $params['seller_id_fallback'] = $filters['seller_id'];
         }
         if (!empty($filters['seller_ids'])) {
             $names = [];
+            $fallbackNames = [];
             foreach (array_values($filters['seller_ids']) as $i => $sid) {
                 $key = "sid{$i}";
+                $fallbackKey = "csid{$i}";
                 $names[] = ":{$key}";
+                $fallbackNames[] = ":{$fallbackKey}";
                 $params[$key] = $sid;
+                $params[$fallbackKey] = $sid;
             }
-            $sql .= ' AND o.seller_id IN (' . implode(',', $names) . ')';
+            $sql .= ' AND (o.seller_id IN (' . implode(',', $names) . ')
+                OR (o.seller_id IS NULL AND c.seller_id IN (' . implode(',', $fallbackNames) . ')))';
         }
         if (!empty($filters['client_id'])) {
             $sql .= ' AND o.client_id = :client_id';
@@ -206,6 +215,7 @@ class Order
     {
         $stmt = Database::connection()->prepare(
             'SELECT o.*, c.name AS client_name, c.whatsapp AS client_whatsapp, c.city AS client_city, c.state AS client_state,
+                    c.seller_id AS client_seller_id,
                     u.name AS seller_name, inf.name AS influencer_name
              FROM orders o
              JOIN clients c ON c.id = o.client_id

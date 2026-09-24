@@ -21,17 +21,26 @@ class Quote
         $params = [];
 
         if (!empty($filters['seller_id'])) {
-            $sql .= ' AND q.seller_id = :seller_id';
+            // Fase 123: orcamento sem vendedor (seller_id NULL, agora permitido) precisa continuar
+            // visivel pra quem cadastrou o cliente -- SQL puro nunca casa NULL IN(...)/= , entao
+            // sem esse OR o proprio Licenciado que criou o orcamento nunca o encontraria de volta.
+            $sql .= ' AND (q.seller_id = :seller_id OR (q.seller_id IS NULL AND c.seller_id = :seller_id_fallback))';
             $params['seller_id'] = $filters['seller_id'];
+            $params['seller_id_fallback'] = $filters['seller_id'];
         }
         if (!empty($filters['seller_ids'])) {
             $names = [];
+            $fallbackNames = [];
             foreach (array_values($filters['seller_ids']) as $i => $sid) {
                 $key = "sid{$i}";
+                $fallbackKey = "csid{$i}";
                 $names[] = ":{$key}";
+                $fallbackNames[] = ":{$fallbackKey}";
                 $params[$key] = $sid;
+                $params[$fallbackKey] = $sid;
             }
-            $sql .= ' AND q.seller_id IN (' . implode(',', $names) . ')';
+            $sql .= ' AND (q.seller_id IN (' . implode(',', $names) . ')
+                OR (q.seller_id IS NULL AND c.seller_id IN (' . implode(',', $fallbackNames) . ')))';
         }
         if (!empty($filters['status'])) {
             $sql .= ' AND q.status = :status';
@@ -161,6 +170,7 @@ class Quote
     {
         $stmt = Database::connection()->prepare(
             'SELECT q.*, c.name AS client_name, c.whatsapp AS client_whatsapp, c.city AS client_city, c.state AS client_state,
+                    c.seller_id AS client_seller_id,
                     u.name AS seller_name,
                     l.city AS lead_city, l.whatsapp AS lead_whatsapp, l.source AS lead_source,
                     l.vehicle_plate, l.vehicle_year, l.vehicle_brand, l.vehicle_model,
