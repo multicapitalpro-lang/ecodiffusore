@@ -285,6 +285,8 @@ a { text-decoration: none; color: inherit; }
     display: flex; flex-direction: column; gap: 5px; transition: box-shadow .18s ease, transform .18s ease;
 }
 .dash-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); }
+.dash-card-link { text-decoration: none; cursor: pointer; }
+.dash-card-link.is-active { border-top-color: var(--navy); background: #f3f6f4; box-shadow: 0 0 0 2px var(--green) inset; }
 .dash-card span { font-size: .74rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--gray-text); }
 .dash-card strong { font-size: 1.45rem; font-family: 'Poppins', sans-serif; color: var(--navy); line-height: 1.15; }
 .dash-card a { color: var(--green-dark); font-weight: 700; font-size: .86rem; }

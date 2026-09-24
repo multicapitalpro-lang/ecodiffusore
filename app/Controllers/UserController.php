@@ -35,8 +35,10 @@ class UserController
             $scoped = array_values(array_filter(User::all(), fn ($u) => in_array((int) $u['id'], $ids, true)));
         }
 
-        // Cards do topo contam sempre o total do escopo, sem aplicar os filtros abaixo.
-        $stats = ['cliente' => 0, 'licenciado' => 0, 'gestor' => 0, 'vendedor' => 0];
+        // Cards do topo contam sempre o total do escopo, sem aplicar os filtros abaixo -- cada
+        // card e' um link clicavel que aplica ?role=X (pedido explicito do usuario: clicar no
+        // card "Licenciados" so mostra Licenciados, card "Todos" limpa o filtro de papel, etc).
+        $stats = ['total' => count($scoped), 'cliente' => 0, 'licenciado' => 0, 'gestor' => 0, 'vendedor' => 0];
         foreach ($scoped as $u) {
             if (isset($stats[$u['role_slug']])) {
                 $stats[$u['role_slug']]++;
@@ -50,23 +52,9 @@ class UserController
             'onboarding' => $_GET['onboarding'] ?? '',
             'city' => trim($_GET['city'] ?? ''),
             'state' => trim($_GET['state'] ?? ''),
-            'licenciado_id' => $_GET['licenciado_id'] ?? '',
         ];
 
-        // Pedido explicito do usuario: Gestor/Vendedor nao devem aparecer misturados com
-        // Licenciados na listagem -- so entram na tabela depois que um Licenciado especifico e'
-        // selecionado no filtro acima. downlineIds() ja inclui o proprio licenciado + toda a rede
-        // (manager_id em cascata), mesmo helper usado no escopo de Financeiro/Pedidos.
-        $licenciadoNetworkIds = $filters['licenciado_id'] !== ''
-            ? User::downlineIds((int) $filters['licenciado_id'])
-            : [];
-
-        $users = array_values(array_filter($scoped, function ($u) use ($filters, $licenciadoNetworkIds) {
-            if (in_array($u['role_slug'], ['gestor', 'vendedor'], true)) {
-                if ($filters['licenciado_id'] === '' || !in_array((int) $u['id'], $licenciadoNetworkIds, true)) {
-                    return false;
-                }
-            }
+        $users = array_values(array_filter($scoped, function ($u) use ($filters) {
             if ($filters['q'] !== '' && stripos($u['name'] . ' ' . $u['email'], $filters['q']) === false) {
                 return false;
             }
@@ -102,9 +90,6 @@ class UserController
             $byManager[(int) ($u['manager_id'] ?? 0)][] = $u;
         }
 
-        $licenciadoOptions = array_values(array_filter($scoped, fn ($u) => $u['role_slug'] === 'licenciado'));
-        usort($licenciadoOptions, fn ($a, $b) => strcasecmp($a['name'], $b['name']));
-
         View::render('painel/users/index', [
             'user' => $user,
             'users' => $users,
@@ -112,7 +97,6 @@ class UserController
             'filters' => $filters,
             'roles' => Role::all(),
             'byManager' => $byManager,
-            'licenciadoOptions' => $licenciadoOptions,
         ]);
     }
 

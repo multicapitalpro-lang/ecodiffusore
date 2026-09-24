@@ -41,23 +41,37 @@ $erroLabels = [
     <p class="form-msg form-msg-erro">⚠️ O e-mail foi alterado, mas o contrato desse Licenciado no ClickSign ainda está com o e-mail ANTIGO (o token de assinatura continuaria indo pro endereço errado). Vá em <a href="/painel/licenciados/aprovacoes">Aprovação de Cadastros</a> e clique em "✍️ Pedir nova assinatura" pra gerar um envelope novo com o e-mail corrigido.</p>
 <?php endif; ?>
 
+<?php
+// Cards clicaveis -- cada um filtra a tabela abaixo por papel (pedido explicito do usuario: clicar
+// em "Licenciados" so mostra Licenciados, "Todos" limpa o filtro, etc), preservando os demais
+// filtros ja aplicados (busca/status/onboarding/cidade/UF).
+$cardLink = function (string $roleValue) use ($filters): string {
+    $qs = array_merge($filters, ['role' => $roleValue]);
+    return '/painel/usuarios?' . http_build_query(array_filter($qs, fn ($v) => $v !== ''));
+};
+$cardActive = fn (string $roleValue) => $filters['role'] === $roleValue ? ' is-active' : '';
+?>
 <div class="cards-grid">
-    <div class="dash-card">
-        <span>Total Clientes</span>
-        <strong><?= (int) $stats['cliente'] ?></strong>
-    </div>
-    <div class="dash-card">
+    <a class="dash-card dash-card-link<?= $cardActive('') ?>" href="<?= $cardLink('') ?>">
+        <span>Todos</span>
+        <strong><?= (int) $stats['total'] ?></strong>
+    </a>
+    <a class="dash-card dash-card-link<?= $cardActive('licenciado') ?>" href="<?= $cardLink('licenciado') ?>">
         <span>Licenciados</span>
         <strong><?= (int) $stats['licenciado'] ?></strong>
-    </div>
-    <div class="dash-card">
+    </a>
+    <a class="dash-card dash-card-link<?= $cardActive('gestor') ?>" href="<?= $cardLink('gestor') ?>">
         <span>Gestores</span>
         <strong><?= (int) $stats['gestor'] ?></strong>
-    </div>
-    <div class="dash-card">
+    </a>
+    <a class="dash-card dash-card-link<?= $cardActive('vendedor') ?>" href="<?= $cardLink('vendedor') ?>">
         <span>Vendedores</span>
         <strong><?= (int) $stats['vendedor'] ?></strong>
-    </div>
+    </a>
+    <a class="dash-card dash-card-link<?= $cardActive('cliente') ?>" href="<?= $cardLink('cliente') ?>">
+        <span>Total Clientes</span>
+        <strong><?= (int) $stats['cliente'] ?></strong>
+    </a>
 </div>
 
 <form method="get" class="filter-bar">
@@ -81,21 +95,11 @@ $erroLabels = [
     </select>
     <input type="text" name="city" placeholder="Cidade" value="<?= View::e($filters['city']) ?>">
     <input type="text" name="state" placeholder="UF" maxlength="2" style="width:60px;text-transform:uppercase" value="<?= View::e($filters['state']) ?>">
-    <select name="licenciado_id">
-        <option value="">Licenciado (selecione pra ver Gestores/Vendedores)</option>
-        <?php foreach ($licenciadoOptions as $lic): ?>
-            <option value="<?= (int) $lic['id'] ?>" <?= (string) $filters['licenciado_id'] === (string) $lic['id'] ? 'selected' : '' ?>><?= View::e($lic['name']) ?></option>
-        <?php endforeach; ?>
-    </select>
     <button type="submit" class="btn btn-outline">Filtrar</button>
     <?php if (array_filter($filters)): ?>
         <a href="/painel/usuarios" class="link-small">Limpar filtros</a>
     <?php endif; ?>
 </form>
-
-<?php if ($filters['licenciado_id'] === ''): ?>
-    <p class="hint-text">Gestores e Vendedores ficam ocultos por padrão pra não misturar com Licenciados. Selecione um Licenciado acima pra ver os Gestores/Vendedores da rede dele.</p>
-<?php endif; ?>
 
 <form method="post" action="/painel/usuarios/excluir-lote" id="bulk-delete-form">
     <?= Csrf::field() ?>
