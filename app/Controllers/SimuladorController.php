@@ -60,11 +60,17 @@ class SimuladorController
 
             // Comparativo visual das 3 faixas -- so numero em tabela e' menos convincente na hora
             // de mostrar pro cliente do que uma barra que ele bate o olho e ja entende a diferenca.
+            // Fase 111: passa um formatador proprio quando ha' moeda secundaria, senao o grafico
+            // (Chart::bar() usa R$ por padrao) ficaria com "R$" mesmo com Guarani selecionado.
+            $chartCurrency = $values['currency'];
+            $chartValueFormatter = $chartCurrency !== 'BRL'
+                ? fn (float $v) => Money::compact($v, $chartCurrency, $rate)
+                : null;
             $chartSvg = Chart::bar([
                 ['label' => '5% — Mínimo garantido', 'value' => $result['tiers']['min']['monthly']],
                 ['label' => '8% — Média real', 'value' => $result['tiers']['avg']['monthly']],
                 ['label' => '12% — Potencial máximo', 'value' => $result['tiers']['max']['monthly']],
-            ]);
+            ], 10, $chartValueFormatter);
         }
 
         View::render('painel/simulador/index', [

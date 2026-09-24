@@ -28,6 +28,29 @@ class Money
         return $value;
     }
 
+    /** Versao compacta ("₲ 2,4M"/"R$ 1,3k") -- usada no grafico de barras (App\Core\Chart::bar()),
+     *  onde o valor precisa caber num espaco pequeno. Guarani usa milhoes bem mais cedo que R$
+     *  (a moeda tem menos poder de compra por unidade), por isso o corte muda por moeda. */
+    public static function compact(float $brlValue, string $currency, float $rate): string
+    {
+        if ($currency === 'PYG' && $rate > 0) {
+            $pyg = $brlValue * $rate;
+            $symbol = self::symbol($currency);
+            if ($pyg >= 1000000) {
+                return $symbol . ' ' . rtrim(rtrim(number_format($pyg / 1000000, 1, ',', '.'), '0'), ',') . 'M';
+            }
+            if ($pyg >= 1000) {
+                return $symbol . ' ' . rtrim(rtrim(number_format($pyg / 1000, 1, ',', '.'), '0'), ',') . 'k';
+            }
+            return $symbol . ' ' . number_format($pyg, 0, ',', '.');
+        }
+
+        if ($brlValue >= 1000) {
+            return 'R$ ' . rtrim(rtrim(number_format($brlValue / 1000, 1, ',', '.'), '0'), ',') . 'k';
+        }
+        return 'R$ ' . number_format($brlValue, 0, ',', '.');
+    }
+
     public static function symbol(string $currency): string
     {
         return $currency === 'PYG' ? '₲' : 'R$';

@@ -72,8 +72,12 @@ class Chart
      * aqui, entao o SVG nunca fica "achatado" esticando: escala mantendo a propria proporcao.
      * @param array<int, array{label: string, value: float}> $items ja ordenado (maior primeiro)
      */
-    public static function bar(array $items, int $maxItems = 10): string
+    /** Fase 111: $valueFormatter opcional -- default continua compactCurrency() (R$), so'
+     *  passado quando o chamador precisa formatar em outra moeda (ex: SimuladorController com
+     *  users.secondary_currency configurado). */
+    public static function bar(array $items, int $maxItems = 10, ?callable $valueFormatter = null): string
     {
+        $valueFormatter ??= [self::class, 'compactCurrency'];
         $items = array_slice($items, 0, $maxItems);
 
         $width = 640;
@@ -124,7 +128,7 @@ class Chart
                 '<text x="%.1f" y="%.1f" class="bar-value" dominant-baseline="middle">%s</text>',
                 $labelWidth + $barWidth + 8,
                 $y + $barHeight / 2,
-                View::e(self::compactCurrency((float) $item['value']))
+                View::e($valueFormatter((float) $item['value']))
             );
         }
 
