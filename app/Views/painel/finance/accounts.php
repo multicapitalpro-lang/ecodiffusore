@@ -34,7 +34,7 @@ $hasSub = SubscriptionGate::hasAccess($user);
                     <span class="tag-default">padrão</span>
                 <?php endif; ?>
             </span>
-            <strong><?= SubscriptionGate::money($user, (float) $acc['balance']) ?></strong>
+            <strong class="<?= (float) $acc['balance'] < 0 ? 'text-red' : 'text-green' ?>"><?= SubscriptionGate::money($user, (float) $acc['balance']) ?></strong>
             <?php if ((float) $acc['initial_balance'] != 0): ?>
                 <small class="hint-inline">Saldo inicial: R$ <?= number_format((float) $acc['initial_balance'], 2, ',', '.') ?> + movimentações</small>
             <?php endif; ?>
@@ -57,15 +57,23 @@ $hasSub = SubscriptionGate::hasAccess($user);
             // changelog Fase 115) -- fica visualmente destacado quando isso acontece.
             $diff = $asaasApiBalance !== null ? round($asaasApiBalance - (float) $acc['balance'], 2) : null;
             ?>
-            <div class="dash-card <?= $diff !== null && abs($diff) > 0.01 ? 'dash-card-danger' : '' ?>">
+            <?php
+            // A cor do VALOR (verde/vermelho) reflete o SINAL do numero -- nao usar
+            // dash-card-danger/warning aqui (elas recolorem o <strong> pro tom de alerta, o que
+            // fazia um saldo POSITIVO aparecer em vermelho so' porque os cards divergiam,
+            // confundindo "negativo" com "atencao"). A divergencia vira so' uma borda amarela
+            // (inline, sem mexer na cor do valor) + o aviso no texto pequeno abaixo.
+            $diverge = $diff !== null && abs($diff) > 0.01;
+            ?>
+            <div class="dash-card" <?= $diverge ? 'style="border-top-color:#d69a1e"' : '' ?>>
                 <span>ASAAS API <span class="tag-default" title="Saldo puxado ao vivo da API do Asaas, não do livro-razão local">ao vivo</span></span>
                 <?php if ($asaasApiBalance === null): ?>
                     <strong>Indisponível</strong>
                     <small class="hint-inline">Não foi possível consultar a Asaas agora.</small>
                 <?php else: ?>
-                    <strong><?= SubscriptionGate::money($user, $asaasApiBalance) ?></strong>
-                    <?php if (abs($diff) > 0.01): ?>
-                        <small class="hint-inline">Diverge do card "ASAAS" em R$ <?= number_format(abs($diff), 2, ',', '.') ?> — confira se algum lançamento foi categorizado na conta errada.</small>
+                    <strong class="<?= $asaasApiBalance < 0 ? 'text-red' : 'text-green' ?>"><?= SubscriptionGate::money($user, $asaasApiBalance) ?></strong>
+                    <?php if ($diverge): ?>
+                        <small class="hint-inline" style="color:#b3790f;">⚠ Diverge do card "ASAAS" em R$ <?= number_format(abs($diff), 2, ',', '.') ?> — confira se algum lançamento foi categorizado na conta errada.</small>
                     <?php else: ?>
                         <small class="hint-inline">✔ Bate com o card "ASAAS" acima.</small>
                     <?php endif; ?>
