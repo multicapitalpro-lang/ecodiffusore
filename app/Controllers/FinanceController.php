@@ -55,7 +55,7 @@ class FinanceController
 
         $accounts = FinancialAccount::all();
         foreach ($accounts as &$account) {
-            $account['balance'] = FinancialAccount::currentBalance((int) $account['id']);
+            $account['balance'] = FinancialAccount::liveBalance($account);
         }
         unset($account);
 
@@ -846,7 +846,7 @@ class FinanceController
         $user = Auth::user();
         $accounts = FinancialAccount::all();
         foreach ($accounts as &$account) {
-            $account['balance'] = FinancialAccount::currentBalance((int) $account['id']);
+            $account['balance'] = FinancialAccount::liveBalance($account);
         }
         unset($account);
 

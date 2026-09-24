@@ -152,6 +152,16 @@ class AsaasClient
         return $this->request('GET', "/invoices/{$invoiceId}");
     }
 
+    /** Saldo REAL disponivel na conta Asaas agora (GET /v3/finance/balance, `{totalBalance}`) --
+     *  usado pra alimentar o card "ASAAS" em Caixas e Bancos ao vivo (Fase 115), em vez do calculo
+     *  local por financial_transactions (que so reflete o que foi lancado manualmente/automatico
+     *  aqui dentro, e pode divergir se algo for categorizado na conta errada). */
+    public function getBalance(): float
+    {
+        $result = $this->request('GET', '/finance/balance');
+        return (float) ($result['totalBalance'] ?? 0);
+    }
+
     public function registerWebhook(string $url, string $authToken): array
     {
         return $this->request('POST', '/webhooks', [

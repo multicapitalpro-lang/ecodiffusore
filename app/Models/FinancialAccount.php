@@ -90,4 +90,21 @@ class FinancialAccount
 
         return (float) $account['initial_balance'] + (float) $stmt->fetchColumn();
     }
+
+    /** Fase 115: pra conta com balance_source='asaas', busca o saldo REAL na API do Asaas em vez
+     *  do calculo local (que depende de todo recebimento/pagamento ter sido categorizado na conta
+     *  certa aqui dentro -- na pratica ja divergiu, ver Fase 115 no changelog). Best-effort: se a
+     *  API falhar (rede, chave invalida), cai pro calculo local em vez de quebrar a pagina. */
+    public static function liveBalance(array $account): float
+    {
+        if (($account['balance_source'] ?? 'manual') === 'asaas') {
+            try {
+                return (new \App\Core\AsaasClient())->getBalance();
+            } catch (\Throwable $e) {
+                // segue pro calculo local abaixo
+            }
+        }
+
+        return self::currentBalance((int) $account['id']);
+    }
 }

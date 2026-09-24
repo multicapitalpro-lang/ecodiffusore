@@ -33,8 +33,14 @@ $hasSub = SubscriptionGate::hasAccess($user);
                 <?php if (!empty($acc['is_default'])): ?>
                     <span class="tag-default">padrão</span>
                 <?php endif; ?>
+                <?php if (($acc['balance_source'] ?? 'manual') === 'asaas'): ?>
+                    <span class="tag-default" title="Saldo puxado ao vivo da API do Asaas, não do livro-razão local">ao vivo</span>
+                <?php endif; ?>
             </span>
             <strong><?= SubscriptionGate::money($user, (float) $acc['balance']) ?></strong>
+            <?php if (($acc['balance_source'] ?? 'manual') === 'manual' && (float) $acc['initial_balance'] != 0): ?>
+                <small class="hint-inline">Saldo inicial: R$ <?= number_format((float) $acc['initial_balance'], 2, ',', '.') ?> + movimentações</small>
+            <?php endif; ?>
             <?php if (empty($acc['is_default'])): ?>
                 <?php if ($hasSub): ?>
                     <form action="/painel/financeiro/caixas-bancos/<?= (int) $acc['id'] ?>/padrao" method="post" class="inline-form">
@@ -62,8 +68,9 @@ $hasSub = SubscriptionGate::hasAccess($user);
                 <option value="caixa">Caixa</option>
                 <option value="banco">Banco</option>
             </select>
-            <label for="initial_balance">Saldo inicial (R$)</label>
+            <label for="initial_balance">Saldo inicial / aporte (R$)</label>
             <input type="number" step="0.01" id="initial_balance" name="initial_balance" value="0">
+            <p class="hint-text" style="margin-top:-8px;">Valor que já existe nessa conta antes de começar a lançar movimentações aqui — soma direto no saldo mostrado no card, mesmo sem nenhum lançamento.</p>
             <label class="checkbox-inline"><input type="checkbox" name="is_default" value="1"> Tornar essa a conta padrão</label>
             <button type="submit" class="btn btn-primary">Adicionar conta</button>
         </form>
