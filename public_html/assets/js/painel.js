@@ -508,6 +508,7 @@ document.addEventListener('DOMContentLoaded', function () {
             var licenciadoNote = root.querySelector('#licenciado-commission-note');
             var influencerWrap = root.querySelector('#influencer-commission-wrap');
             var screensWrap = root.querySelector('#screens-permissions-wrap');
+            var secondaryCurrencyWrap = root.querySelector('#secondary-currency-wrap');
             var commissionHints = root.querySelectorAll('[data-commission-hint]');
 
             // Fase 83: a tabela por faixa (#vendedor-commission-wrap) agora serve pro Vendedor
@@ -545,6 +546,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (licenciadoNote) licenciadoNote.style.display = slug === 'licenciado' ? '' : 'none';
                 if (influencerWrap) influencerWrap.style.display = slug === 'influenciador' ? '' : 'none';
                 if (screensWrap) screensWrap.style.display = (slug === 'gestor' || slug === 'vendedor') ? '' : 'none';
+                if (secondaryCurrencyWrap) secondaryCurrencyWrap.style.display = slug === 'licenciado' ? '' : 'none';
 
                 var tierText = tierTextByRole[slug];
                 if (tierText) {

@@ -5,7 +5,9 @@ namespace App\Controllers;
 use App\Core\Auth;
 use App\Core\Csrf;
 use App\Core\EconomyCalculator;
+use App\Core\ExchangeRateClient;
 use App\Core\CardPricing;
+use App\Core\Money;
 use App\Core\Pdf;
 use App\Core\Response;
 use App\Core\Roles;
@@ -42,12 +44,14 @@ class PropostaController
         Auth::requireRole(Roles::STAFF);
         $user = Auth::user();
         $isFragment = isset($_GET['fragment']);
+        $secondaryCurrency = User::secondaryCurrencyForUser((int) $user['id']);
 
         View::render('painel/proposta/form', [
             'user' => $user,
             'isModal' => $isFragment,
             'isViewOnly' => in_array($user['role_slug'], Roles::NATIONAL_SUPPORT, true),
             'pricingTiers' => PricingTier::all(),
+            'secondaryCurrency' => $secondaryCurrency,
         ], $isFragment ? null : 'painel');
     }
 
@@ -110,6 +114,15 @@ class PropostaController
         $kmLitro = self::parseBrNumber($_POST['km_litro']);
         $precoDiesel = self::parseBrNumber($_POST['preco_diesel']);
 
+        // Fase 111: preco do diesel pode vir na moeda secundaria (Licenciado/rede com operacao
+        // fora do Brasil, ex: Guarani no Paraguai) -- converte pra R$ AQUI, antes de qualquer
+        // calculo, ja que EconomyCalculator so' entende R$. unit_price/comissao continuam sempre
+        // em R$ (piso/faixa da PricingTier e' um valor de tabela real, nao converte).
+        $secondaryCurrency = User::secondaryCurrencyForUser((int) $user['id']);
+        $currency = ($secondaryCurrency && ($_POST['currency'] ?? 'BRL') === $secondaryCurrency) ? $secondaryCurrency : 'BRL';
+        $rate = $secondaryCurrency ? ExchangeRateClient::brlToPyg() : 0.0;
+        $precoDieselBrl = Money::toBrl($precoDiesel, $currency, $rate);
+
         // Fase 31: preco unitario nao vem mais de tabela automatica por quantidade -- e' negociado
         // livremente pelo Vendedor/Licenciado (validate() ja bloqueou abaixo do piso da faixa mais
         // baixa). A faixa que cobre esse preco so define a % de comissao do Licenciado (ver
@@ -119,7 +132,7 @@ class PropostaController
 
         $product = Product::findByBrandKeyword($brand) ?? Product::cheapest();
 
-        $payback = EconomyCalculator::estimate($kmMensal, $kmLitro, $precoDiesel, $totalPrice);
+        $payback = EconomyCalculator::estimate($kmMensal, $kmLitro, $precoDieselBrl, $totalPrice);
         // EconomyCalculator assume UM veiculo (o km/consumo informado e de 1 caminhao); com mais de
         // 1 placa, a economia total (e por isso o payback) escala pela quantidade -- ajuste feito
         // aqui no controller pra nao mexer no calculo por-veiculo em si (EconomyCalculator).
@@ -232,6 +245,8 @@ class PropostaController
             'product_price' => $totalPrice ?: null,
             'payback' => $payback,
             'installments' => $installments,
+            'currency' => $currency,
+            'rate' => $rate,
         ];
 
         $target = '/painel/proposta-facil/resultado';

@@ -1,11 +1,16 @@
 <?php
 use App\Core\Csrf;
+use App\Core\Money;
 use App\Core\View;
 /** @var array $products */
 /** @var array|null $result */
 /** @var array $values */
 /** @var array $errors */
+/** @var ?string $secondaryCurrency Fase 111: so' preenchido pro Licenciado/rede com operacao fora do Brasil */
+/** @var float $rate */
 $v = fn (string $k, string $default = '') => View::e((string) ($values[$k] ?? $default));
+$currency = $values['currency'] ?? 'BRL';
+$fmt = fn (float $brl) => Money::format($brl, $currency, $rate ?? 0.0);
 ?>
 <div class="page-header">
     <h1>Simulador de economia</h1>
@@ -62,9 +67,36 @@ $v = fn (string $k, string $default = '') => View::e((string) ($values[$k] ?? $d
         </div>
     </div>
 
-    <label for="preco_diesel">Preço do diesel (R$/litro)</label>
-    <input type="text" id="preco_diesel" name="preco_diesel" value="<?= $v('preco_diesel') ?>" placeholder="Ex: 6,10" style="max-width:220px;">
-    <p class="field-error"><?= View::e($errors['preco_diesel'] ?? '') ?></p>
+    <?php if ($secondaryCurrency): ?>
+        <div class="form-grid-2" style="max-width:460px;">
+            <div>
+                <label for="currency">Moeda</label>
+                <select id="currency" name="currency">
+                    <option value="BRL" <?= $currency === 'BRL' ? 'selected' : '' ?>>Real (R$)</option>
+                    <option value="<?= View::e($secondaryCurrency) ?>" <?= $currency === $secondaryCurrency ? 'selected' : '' ?>><?= View::e(Money::label($secondaryCurrency)) ?></option>
+                </select>
+            </div>
+            <div>
+                <label for="preco_diesel">Preço do diesel (<span id="diesel-unit-label"><?= $currency === 'BRL' ? 'R$' : Money::symbol($secondaryCurrency) ?></span>/litro)</label>
+                <input type="text" id="preco_diesel" name="preco_diesel" value="<?= $v('preco_diesel') ?>" placeholder="Ex: 6,10">
+                <p class="field-error"><?= View::e($errors['preco_diesel'] ?? '') ?></p>
+            </div>
+        </div>
+        <script>
+        (function () {
+            var select = document.getElementById('currency');
+            var label = document.getElementById('diesel-unit-label');
+            if (!select || !label) return;
+            select.addEventListener('change', function () {
+                label.textContent = select.value === 'BRL' ? 'R$' : <?= json_encode(Money::symbol($secondaryCurrency)) ?>;
+            });
+        })();
+        </script>
+    <?php else: ?>
+        <label for="preco_diesel">Preço do diesel (R$/litro)</label>
+        <input type="text" id="preco_diesel" name="preco_diesel" value="<?= $v('preco_diesel') ?>" placeholder="Ex: 6,10" style="max-width:220px;">
+        <p class="field-error"><?= View::e($errors['preco_diesel'] ?? '') ?></p>
+    <?php endif; ?>
 
     <button type="submit" class="btn btn-primary" style="margin-top:16px;">Calcular economia</button>
 </form>
@@ -72,7 +104,7 @@ $v = fn (string $k, string $default = '') => View::e((string) ($values[$k] ?? $d
 <?php if ($result && $result['tiers']['avg']['monthly'] > 0): ?>
     <h3 class="section-title" style="margin-top:32px;">Economia estimada<?= !empty($values['client_name']) ? ' — ' . View::e($values['client_name']) : '' ?></h3>
     <?php if ($productName): ?>
-        <p class="hint-text" style="margin-top:-8px;">Produto: <?= View::e($productName) ?> — R$ <?= number_format($productPrice, 2, ',', '.') ?></p>
+        <p class="hint-text" style="margin-top:-8px;">Produto: <?= View::e($productName) ?> — <?= $fmt($productPrice) ?></p>
     <?php endif; ?>
 
     <?php if (!empty($chartSvg)): ?>
@@ -84,18 +116,18 @@ $v = fn (string $k, string $default = '') => View::e((string) ($values[$k] ?? $d
     <div class="cards-grid">
         <div class="dash-card">
             <span>5% — Mínimo garantido</span>
-            <strong>R$ <?= number_format($result['tiers']['min']['monthly'], 2, ',', '.') ?>/mês</strong>
-            <small>R$ <?= number_format($result['tiers']['min']['yearly'], 2, ',', '.') ?>/ano · R$ <?= number_format($result['tiers']['min']['five_year'], 2, ',', '.') ?> em 5 anos</small>
+            <strong><?= $fmt($result['tiers']['min']['monthly']) ?>/mês</strong>
+            <small><?= $fmt($result['tiers']['min']['yearly']) ?>/ano · <?= $fmt($result['tiers']['min']['five_year']) ?> em 5 anos</small>
         </div>
         <div class="dash-card" style="border-top-color:var(--green-dark);">
             <span>8% — Média real</span>
-            <strong>R$ <?= number_format($result['tiers']['avg']['monthly'], 2, ',', '.') ?>/mês</strong>
-            <small>R$ <?= number_format($result['tiers']['avg']['yearly'], 2, ',', '.') ?>/ano · R$ <?= number_format($result['tiers']['avg']['five_year'], 2, ',', '.') ?> em 5 anos</small>
+            <strong><?= $fmt($result['tiers']['avg']['monthly']) ?>/mês</strong>
+            <small><?= $fmt($result['tiers']['avg']['yearly']) ?>/ano · <?= $fmt($result['tiers']['avg']['five_year']) ?> em 5 anos</small>
         </div>
         <div class="dash-card">
             <span>12% — Potencial máximo</span>
-            <strong>R$ <?= number_format($result['tiers']['max']['monthly'], 2, ',', '.') ?>/mês</strong>
-            <small>R$ <?= number_format($result['tiers']['max']['yearly'], 2, ',', '.') ?>/ano · R$ <?= number_format($result['tiers']['max']['five_year'], 2, ',', '.') ?> em 5 anos</small>
+            <strong><?= $fmt($result['tiers']['max']['monthly']) ?>/mês</strong>
+            <small><?= $fmt($result['tiers']['max']['yearly']) ?>/ano · <?= $fmt($result['tiers']['max']['five_year']) ?> em 5 anos</small>
         </div>
     </div>
 
@@ -113,12 +145,12 @@ $v = fn (string $k, string $default = '') => View::e((string) ($values[$k] ?? $d
                 <?php foreach ($result['yearly_breakdown'] as $row): ?>
                     <tr>
                         <td>Ano <?= (int) $row['year'] ?></td>
-                        <td>R$ <?= number_format($row['cumulative_savings'], 2, ',', '.') ?></td>
+                        <td><?= $fmt($row['cumulative_savings']) ?></td>
                         <td>
                             <?php if ($row['net_gain'] >= 0): ?>
-                                <span class="text-green">+ R$ <?= number_format($row['net_gain'], 2, ',', '.') ?></span>
+                                <span class="text-green">+ <?= $fmt($row['net_gain']) ?></span>
                             <?php else: ?>
-                                Faltam R$ <?= number_format(abs($row['net_gain']), 2, ',', '.') ?>
+                                Faltam <?= $fmt(abs($row['net_gain'])) ?>
                             <?php endif; ?>
                         </td>
                     </tr>
@@ -130,7 +162,7 @@ $v = fn (string $k, string $default = '') => View::e((string) ($values[$k] ?? $d
     <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:20px; max-width:640px;">
         <form method="post" action="/painel/simulador/pdf">
             <?= Csrf::field() ?>
-            <?php foreach (['client_name', 'client_whatsapp', 'product_id', 'manual_price', 'km_mensal', 'km_litro', 'preco_diesel'] as $field): ?>
+            <?php foreach (['client_name', 'client_whatsapp', 'product_id', 'manual_price', 'km_mensal', 'km_litro', 'preco_diesel', 'currency'] as $field): ?>
                 <input type="hidden" name="<?= $field ?>" value="<?= $v($field) ?>">
             <?php endforeach; ?>
             <button type="submit" class="btn btn-outline">📄 Baixar PDF</button>
@@ -140,7 +172,7 @@ $v = fn (string $k, string $default = '') => View::e((string) ($values[$k] ?? $d
             <?php
             $waNumber = '55' . preg_replace('/\D/', '', $values['client_whatsapp']);
             $waMessage = 'Olá' . (!empty($values['client_name']) ? ', ' . $values['client_name'] : '') . '! Simulei sua economia com o Ecodiffusore: '
-                . 'em média R$ ' . number_format($result['tiers']['avg']['monthly'], 2, ',', '.') . '/mês de economia no diesel'
+                . 'em média ' . $fmt($result['tiers']['avg']['monthly']) . '/mês de economia no diesel'
                 . ($result['payback_months'] ? ', com retorno do investimento em cerca de ' . ceil($result['payback_months']) . ' meses.' : '.');
             ?>
             <a href="https://wa.me/<?= $waNumber ?>?text=<?= rawurlencode($waMessage) ?>" target="_blank" rel="noopener" class="btn btn-whatsapp">💬 Enviar por WhatsApp</a>

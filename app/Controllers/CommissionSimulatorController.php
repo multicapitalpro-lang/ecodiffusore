@@ -3,10 +3,12 @@
 namespace App\Controllers;
 
 use App\Core\Auth;
+use App\Core\ExchangeRateClient;
 use App\Core\Roles;
 use App\Core\SubscriptionGate;
 use App\Core\View;
 use App\Models\PricingTier;
+use App\Models\User;
 use App\Models\UserCommissionTier;
 
 /**
@@ -79,12 +81,18 @@ class CommissionSimulatorController
             $simulation = ['unit_price' => $unitPrice, 'quantity' => $quantity, 'total' => $total, 'tier' => $tier, 'amount' => $amount];
         }
 
+        // Fase 111: so' pro Licenciado (e rede) com operacao fora do Brasil -- mostra a comissao
+        // TAMBEM convertida (alem do R$, que continua sendo o valor real), so' como referencia.
+        $secondaryCurrency = User::secondaryCurrencyForUser((int) $user['id']);
+
         View::render('painel/commission_simulator/index', [
             'user' => $user,
             'rows' => $rows,
             'simulation' => $simulation,
             'unitPrice' => $unitPrice,
             'quantity' => $quantity,
+            'secondaryCurrency' => $secondaryCurrency,
+            'rate' => $secondaryCurrency ? ExchangeRateClient::brlToPyg() : 0.0,
         ]);
     }
 }

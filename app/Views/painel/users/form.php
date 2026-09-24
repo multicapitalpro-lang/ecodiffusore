@@ -44,6 +44,17 @@ $values = $editing ?? ($old ?? []);
     </div>
     <p class="hint-text">Pra Licenciado: usado pra achar automaticamente o vendedor mais próximo de um cliente que pede orçamento pela landing page.</p>
 
+    <?php if ($user['role_slug'] === 'admin'): ?>
+        <div id="secondary-currency-wrap" style="display:none;">
+            <label for="secondary_currency">Segunda moeda (operação fora do Brasil)</label>
+            <select id="secondary_currency" name="secondary_currency">
+                <option value="" <?= empty($values['secondary_currency']) ? 'selected' : '' ?>>Nenhuma — só Real</option>
+                <option value="PYG" <?= ($values['secondary_currency'] ?? '') === 'PYG' ? 'selected' : '' ?>>Guarani paraguaio (₲) — Paraguai</option>
+            </select>
+            <p class="hint-text">Libera a opção de calcular em Guarani nas calculadoras (Simulador de Economia, Proposta Fácil, Simulador de Comissão) pra este Licenciado <strong>e toda a rede dele</strong> (Gestores/Vendedores). Deixe "Nenhuma" pra Licenciados que atuam só no Brasil.</p>
+        </div>
+    <?php endif; ?>
+
     <label for="role_id">Papel</label>
     <select id="role_id" name="role_id" required>
         <option value="">Selecione...</option>

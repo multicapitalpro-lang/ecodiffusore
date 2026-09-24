@@ -378,6 +378,13 @@ class UserController
             ? $_POST['influencer_commission_value']
             : ($before['influencer_commission_value'] ?? null);
 
+        // Fase 111: so' Admin define/altera a segunda moeda (hoje so' Guarani) -- qualquer outro
+        // editor preserva o valor que ja estava salvo, mesmo padrao da comissao do Influenciador
+        // acima (nunca zera sem querer).
+        $secondaryCurrency = $user['role_slug'] === 'admin'
+            ? trim($_POST['secondary_currency'] ?? '')
+            : ($before['secondary_currency'] ?? null);
+
         User::update($id, [
             'role_id' => (int) $_POST['role_id'],
             'manager_id' => $managerId,
@@ -391,6 +398,7 @@ class UserController
             'influencer_commission_value' => $influencerCommissionValue,
             'commission_type' => $vendorType,
             'discount_limit_pct' => $discountLimitPct,
+            'secondary_currency' => $secondaryCurrency,
         ]);
 
         if (in_array($editedRoleSlug, ['vendedor', 'supervisor'], true) && $this->canSetCommission($user)) {

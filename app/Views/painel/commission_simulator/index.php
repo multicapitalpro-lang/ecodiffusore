@@ -1,6 +1,9 @@
 <?php
+use App\Core\Money;
 use App\Core\View;
 $fmtBRL = fn ($v) => 'R$ ' . number_format((float) $v, 2, ',', '.');
+/** @var ?string $secondaryCurrency Fase 111 -- so' preenchido pro Licenciado/rede com operacao fora do Brasil */
+/** @var float $rate */
 ?>
 <div class="page-header">
     <h1>💰 Simulador de Comissão</h1>
@@ -29,6 +32,9 @@ $fmtBRL = fn ($v) => 'R$ ' . number_format((float) $v, 2, ',', '.');
         <?php else: ?>
             <span>Total da venda: <?= $fmtBRL($simulation['total']) ?> (<?= (int) $simulation['quantity'] ?> un. × <?= $fmtBRL($simulation['unit_price']) ?>)</span>
             <strong style="font-size:1.6rem;"><?= $fmtBRL($simulation['amount']) ?></strong>
+            <?php if ($secondaryCurrency): ?>
+                <strong style="font-size:1.1rem;color:var(--gray-text);">≈ <?= Money::format((float) $simulation['amount'], $secondaryCurrency, $rate) ?></strong>
+            <?php endif; ?>
             <span class="hint-inline">sua comissão estimada nessa faixa (R$ <?= number_format((float) $simulation['tier']['min_price'], 2, ',', '.') ?><?= $simulation['tier']['max_price'] ? ' a R$ ' . number_format((float) $simulation['tier']['max_price'], 2, ',', '.') : ' acima' ?>)</span>
         <?php endif; ?>
     </div>

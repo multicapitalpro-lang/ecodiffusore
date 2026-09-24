@@ -31,6 +31,16 @@ class User
         return $user ?: null;
     }
 
+    /** Fase 111: segunda moeda (hoje so' 'PYG') configurada no Licenciado dono da rede desse
+     *  usuario -- null pra praticamente todo mundo, so nao-null pro Licenciado que atua fora do
+     *  Brasil (e sua rede inteira, que herda automaticamente via licenciadoFor()). Usado pelas
+     *  calculadoras de economia/comissao pra saber se mostram a opcao de moeda alternativa. */
+    public static function secondaryCurrencyForUser(int $userId): ?string
+    {
+        $licenciado = self::licenciadoFor($userId);
+        return $licenciado['secondary_currency'] ?? null;
+    }
+
     /** Fase 109: Licenciado/Gestor/Vendedor com esse WhatsApp (so' digitos) -- usado pelo chat do
      *  site pra saber se quem esta conversando ja e' da propria equipe (nao deve virar Lead novo
      *  nem ser roteado por geolocalizacao). */
@@ -513,7 +523,8 @@ class User
                 whatsapp = :whatsapp, city = :city, state = :state, status = :status, commission_pct = :commission_pct,
                 influencer_commission_value = :influencer_commission_value,
                 commission_type = :commission_type,
-                discount_limit_pct = :discount_limit_pct WHERE id = :id'
+                discount_limit_pct = :discount_limit_pct,
+                secondary_currency = :secondary_currency WHERE id = :id'
         );
         $stmt->execute([
             'id' => $id,
@@ -528,6 +539,9 @@ class User
             'influencer_commission_value' => $data['influencer_commission_value'] ?? null,
             'commission_type' => $data['commission_type'] ?? null,
             'discount_limit_pct' => $data['discount_limit_pct'] ?? null,
+            // Fase 111: segunda moeda (hoje so' Guarani) -- so' faz sentido pro Licenciado, mas
+            // gravar null pra qualquer outro papel nao tem custo nenhum.
+            'secondary_currency' => ($data['secondary_currency'] ?? '') ?: null,
             'status' => $data['status'],
         ]);
     }

@@ -1,11 +1,18 @@
 <?php
 use App\Core\Csrf;
+use App\Core\Money;
 use App\Core\View;
 use App\Models\Approval;
 use App\Models\PricingTier;
 /** @var array $result */
 /** @var array|null $pendingApproval */
 $isModal = $isModal ?? false;
+// Fase 111: so' a secao de ECONOMIA (preco do diesel/payback) converte pra moeda secundaria --
+// preco negociado/comissao/parcelas do cartao continuam sempre em R$ (valor real da venda,
+// tabela de piso da PricingTier e' em R$).
+$economyCurrency = $result['currency'] ?? 'BRL';
+$economyRate = $result['rate'] ?? 0.0;
+$fmtEconomy = fn (float $brl) => Money::format($brl, $economyCurrency, $economyRate);
 ?>
 <?php if ($isModal): ?>
 <div class="modal-header">
@@ -49,7 +56,7 @@ $isModal = $isModal ?? false;
     $whatsappNumber = '55' . preg_replace('/\D/', '', $result['whatsapp']);
 
     $economyLine = $hasPayback
-        ? 'Com a economia média (R$ ' . number_format($payback['tiers']['avg']['monthly'], 2, ',', '.') . '/mês), o Ecodiffusore se paga em '
+        ? 'Com a economia média (' . $fmtEconomy($payback['tiers']['avg']['monthly']) . '/mês), o Ecodiffusore se paga em '
             . ($payback['payback_months'] < 1 ? 'menos de 1 mês' : ceil($payback['payback_months']) . ' meses') . '.'
         : '';
 
@@ -80,22 +87,22 @@ $isModal = $isModal ?? false;
         <div class="proposta-tiers">
             <div class="proposta-tier">
                 <span class="proposta-tier-title">🛡️ 5% — Mínimo garantido</span>
-                <strong>R$ <?= number_format($payback['tiers']['min']['monthly'], 2, ',', '.') ?></strong>
+                <strong><?= $fmtEconomy($payback['tiers']['min']['monthly']) ?></strong>
                 <small>por mês</small>
-                <small>R$ <?= number_format($payback['tiers']['min']['five_year'], 2, ',', '.') ?> em 5 anos</small>
+                <small><?= $fmtEconomy($payback['tiers']['min']['five_year']) ?> em 5 anos</small>
             </div>
             <div class="proposta-tier is-avg">
                 <span class="proposta-tier-badge">MAIS COMUM</span>
                 <span class="proposta-tier-title">📈 8% — Média real</span>
-                <strong>R$ <?= number_format($payback['tiers']['avg']['monthly'], 2, ',', '.') ?></strong>
+                <strong><?= $fmtEconomy($payback['tiers']['avg']['monthly']) ?></strong>
                 <small>por mês</small>
-                <small>R$ <?= number_format($payback['tiers']['avg']['five_year'], 2, ',', '.') ?> em 5 anos</small>
+                <small><?= $fmtEconomy($payback['tiers']['avg']['five_year']) ?> em 5 anos</small>
             </div>
             <div class="proposta-tier">
                 <span class="proposta-tier-title">🚀 12% — Potencial máximo</span>
-                <strong>R$ <?= number_format($payback['tiers']['max']['monthly'], 2, ',', '.') ?></strong>
+                <strong><?= $fmtEconomy($payback['tiers']['max']['monthly']) ?></strong>
                 <small>por mês</small>
-                <small>R$ <?= number_format($payback['tiers']['max']['five_year'], 2, ',', '.') ?> em 5 anos</small>
+                <small><?= $fmtEconomy($payback['tiers']['max']['five_year']) ?> em 5 anos</small>
             </div>
         </div>
 
@@ -119,7 +126,7 @@ $isModal = $isModal ?? false;
         <p>Pix, boleto ou cartão à vista pelo preço acima. Parcelado no cartão:</p>
 
         <?php if ($hasPayback): ?>
-            <p class="hint-text" style="margin-top:0;">Economia média estimada de diesel: <strong style="color:var(--green-dark);">R$ <?= number_format($payback['tiers']['avg']['monthly'], 2, ',', '.') ?>/mês</strong> — comparada com a parcela em "Diferença" abaixo.</p>
+            <p class="hint-text" style="margin-top:0;">Economia média estimada de diesel: <strong style="color:var(--green-dark);"><?= $fmtEconomy($payback['tiers']['avg']['monthly']) ?>/mês</strong> — comparada com a parcela em "Diferença" abaixo.</p>
         <?php endif; ?>
 
         <div class="proposta-list">
@@ -133,7 +140,7 @@ $isModal = $isModal ?? false;
                     </span>
                     <?php if ($hasPayback): ?>
                         <span class="proposta-list-tag <?= $diff >= 0 ? 'is-positive' : 'is-negative' ?>">
-                            <?= $diff >= 0 ? 'Sobra R$ ' . number_format($diff, 2, ',', '.') : 'Falta R$ ' . number_format(abs($diff), 2, ',', '.') ?>
+                            <?= $diff >= 0 ? 'Sobra ' . $fmtEconomy($diff) : 'Falta ' . $fmtEconomy(abs($diff)) ?>
                         </span>
                     <?php endif; ?>
                 </div>
@@ -150,10 +157,10 @@ $isModal = $isModal ?? false;
                     <span class="proposta-list-n">Ano <?= (int) $row['year'] ?></span>
                     <span class="proposta-list-main">
                         <small>Economia acumulada</small>
-                        R$ <?= number_format($row['cumulative_savings'], 2, ',', '.') ?>
+                        <?= $fmtEconomy($row['cumulative_savings']) ?>
                     </span>
                     <span class="proposta-list-tag <?= $row['net_gain'] >= 0 ? 'is-positive' : 'is-negative' ?>">
-                        <?= $row['net_gain'] >= 0 ? '+ R$ ' . number_format($row['net_gain'], 2, ',', '.') : '− R$ ' . number_format(abs($row['net_gain']), 2, ',', '.') ?>
+                        <?= $row['net_gain'] >= 0 ? '+ ' . $fmtEconomy($row['net_gain']) : '− ' . $fmtEconomy(abs($row['net_gain'])) ?>
                     </span>
                 </div>
             <?php endforeach; ?>

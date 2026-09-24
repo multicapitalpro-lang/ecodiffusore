@@ -1,7 +1,11 @@
 <?php
+use App\Core\Money;
 /** @var array $result */
 $payback = $result['payback'] ?? null;
 $hasPayback = $payback && $payback['tiers']['avg']['monthly'] > 0;
+// Fase 111: so' a secao de economia converte pra moeda secundaria -- investimento/parcelas
+// continuam sempre em R$ (valor real da venda).
+$fmtEconomy = fn (float $brl) => Money::format($brl, $result['currency'] ?? 'BRL', $result['rate'] ?? 0.0);
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -68,7 +72,7 @@ $hasPayback = $payback && $payback['tiers']['avg']['monthly'] > 0;
                 <td><?= $row['n'] ?>x</td>
                 <td>R$ <?= number_format($row['parcela'], 2, ',', '.') ?></td>
                 <td>R$ <?= number_format($row['total'], 2, ',', '.') ?></td>
-                <?php if ($hasPayback): ?><td>R$ <?= number_format($payback['tiers']['avg']['monthly'], 2, ',', '.') ?></td><?php endif; ?>
+                <?php if ($hasPayback): ?><td><?= $fmtEconomy($payback['tiers']['avg']['monthly']) ?></td><?php endif; ?>
             </tr>
         <?php endforeach; ?>
     </tbody>
@@ -81,9 +85,9 @@ $hasPayback = $payback && $payback['tiers']['avg']['monthly'] > 0;
 <table class="tiers-table">
     <thead><tr><th>Cenário</th><th>Economia mensal</th><th>Economia anual</th><th>Economia em 5 anos</th></tr></thead>
     <tbody>
-        <tr><td>5% — Mínimo garantido</td><td>R$ <?= number_format($payback['tiers']['min']['monthly'], 2, ',', '.') ?></td><td>R$ <?= number_format($payback['tiers']['min']['yearly'], 2, ',', '.') ?></td><td>R$ <?= number_format($payback['tiers']['min']['five_year'], 2, ',', '.') ?></td></tr>
-        <tr><td>8% — Média real</td><td>R$ <?= number_format($payback['tiers']['avg']['monthly'], 2, ',', '.') ?></td><td>R$ <?= number_format($payback['tiers']['avg']['yearly'], 2, ',', '.') ?></td><td>R$ <?= number_format($payback['tiers']['avg']['five_year'], 2, ',', '.') ?></td></tr>
-        <tr><td>12% — Potencial máximo</td><td>R$ <?= number_format($payback['tiers']['max']['monthly'], 2, ',', '.') ?></td><td>R$ <?= number_format($payback['tiers']['max']['yearly'], 2, ',', '.') ?></td><td>R$ <?= number_format($payback['tiers']['max']['five_year'], 2, ',', '.') ?></td></tr>
+        <tr><td>5% — Mínimo garantido</td><td><?= $fmtEconomy($payback['tiers']['min']['monthly']) ?></td><td><?= $fmtEconomy($payback['tiers']['min']['yearly']) ?></td><td><?= $fmtEconomy($payback['tiers']['min']['five_year']) ?></td></tr>
+        <tr><td>8% — Média real</td><td><?= $fmtEconomy($payback['tiers']['avg']['monthly']) ?></td><td><?= $fmtEconomy($payback['tiers']['avg']['yearly']) ?></td><td><?= $fmtEconomy($payback['tiers']['avg']['five_year']) ?></td></tr>
+        <tr><td>12% — Potencial máximo</td><td><?= $fmtEconomy($payback['tiers']['max']['monthly']) ?></td><td><?= $fmtEconomy($payback['tiers']['max']['yearly']) ?></td><td><?= $fmtEconomy($payback['tiers']['max']['five_year']) ?></td></tr>
     </tbody>
 </table>
 
@@ -101,8 +105,8 @@ $hasPayback = $payback && $payback['tiers']['avg']['monthly'] > 0;
         <?php foreach ($payback['yearly_breakdown'] as $row): ?>
             <tr>
                 <td>Ano <?= (int) $row['year'] ?></td>
-                <td>R$ <?= number_format($row['cumulative_savings'], 2, ',', '.') ?></td>
-                <td><?= $row['net_gain'] >= 0 ? '+ R$ ' . number_format($row['net_gain'], 2, ',', '.') : 'Faltam R$ ' . number_format(abs($row['net_gain']), 2, ',', '.') ?></td>
+                <td><?= $fmtEconomy($row['cumulative_savings']) ?></td>
+                <td><?= $row['net_gain'] >= 0 ? '+ ' . $fmtEconomy($row['net_gain']) : 'Faltam ' . $fmtEconomy(abs($row['net_gain'])) ?></td>
             </tr>
         <?php endforeach; ?>
     </tbody>

@@ -1,9 +1,13 @@
 <?php
+use App\Core\Money;
 /** @var string|null $clientName */
 /** @var string|null $productName */
 /** @var float $productPrice */
 /** @var array $result */
 /** @var string $sellerName */
+/** @var string $currency Fase 111 -- 'BRL' ou a moeda secundaria (ex: 'PYG') */
+/** @var float $rate */
+$fmt = fn (float $brl) => Money::format($brl, $currency ?? 'BRL', $rate ?? 0.0);
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -38,7 +42,7 @@
 <?php if ($productName || $productPrice > 0): ?>
 <h2>Investimento estimado</h2>
 <div class="price-box">
-    <strong>R$ <?= number_format($productPrice, 2, ',', '.') ?></strong>
+    <strong><?= $fmt($productPrice) ?></strong>
     <?= $productName ? '— ' . htmlspecialchars($productName, ENT_QUOTES, 'UTF-8') : '' ?>
 </div>
 <?php endif; ?>
@@ -47,9 +51,9 @@
 <table class="tiers-table">
     <thead><tr><th>Cenário</th><th>Economia mensal</th><th>Economia anual</th><th>Economia em 5 anos</th></tr></thead>
     <tbody>
-        <tr><td>5% — Mínimo garantido</td><td>R$ <?= number_format($result['tiers']['min']['monthly'], 2, ',', '.') ?></td><td>R$ <?= number_format($result['tiers']['min']['yearly'], 2, ',', '.') ?></td><td>R$ <?= number_format($result['tiers']['min']['five_year'], 2, ',', '.') ?></td></tr>
-        <tr><td>8% — Média real</td><td>R$ <?= number_format($result['tiers']['avg']['monthly'], 2, ',', '.') ?></td><td>R$ <?= number_format($result['tiers']['avg']['yearly'], 2, ',', '.') ?></td><td>R$ <?= number_format($result['tiers']['avg']['five_year'], 2, ',', '.') ?></td></tr>
-        <tr><td>12% — Potencial máximo</td><td>R$ <?= number_format($result['tiers']['max']['monthly'], 2, ',', '.') ?></td><td>R$ <?= number_format($result['tiers']['max']['yearly'], 2, ',', '.') ?></td><td>R$ <?= number_format($result['tiers']['max']['five_year'], 2, ',', '.') ?></td></tr>
+        <tr><td>5% — Mínimo garantido</td><td><?= $fmt($result['tiers']['min']['monthly']) ?></td><td><?= $fmt($result['tiers']['min']['yearly']) ?></td><td><?= $fmt($result['tiers']['min']['five_year']) ?></td></tr>
+        <tr><td>8% — Média real</td><td><?= $fmt($result['tiers']['avg']['monthly']) ?></td><td><?= $fmt($result['tiers']['avg']['yearly']) ?></td><td><?= $fmt($result['tiers']['avg']['five_year']) ?></td></tr>
+        <tr><td>12% — Potencial máximo</td><td><?= $fmt($result['tiers']['max']['monthly']) ?></td><td><?= $fmt($result['tiers']['max']['yearly']) ?></td><td><?= $fmt($result['tiers']['max']['five_year']) ?></td></tr>
     </tbody>
 </table>
 
@@ -67,8 +71,8 @@
         <?php foreach ($result['yearly_breakdown'] as $row): ?>
             <tr>
                 <td>Ano <?= (int) $row['year'] ?></td>
-                <td>R$ <?= number_format($row['cumulative_savings'], 2, ',', '.') ?></td>
-                <td><?= $row['net_gain'] >= 0 ? '+ R$ ' . number_format($row['net_gain'], 2, ',', '.') : 'Faltam R$ ' . number_format(abs($row['net_gain']), 2, ',', '.') . ' pra recuperar o investimento' ?></td>
+                <td><?= $fmt($row['cumulative_savings']) ?></td>
+                <td><?= $row['net_gain'] >= 0 ? '+ ' . $fmt($row['net_gain']) : 'Faltam ' . $fmt(abs($row['net_gain'])) . ' pra recuperar o investimento' ?></td>
             </tr>
         <?php endforeach; ?>
     </tbody>

@@ -6,10 +6,13 @@ use App\Core\Auth;
 use App\Core\Chart;
 use App\Core\Csrf;
 use App\Core\EconomyCalculator;
+use App\Core\ExchangeRateClient;
+use App\Core\Money;
 use App\Core\Pdf;
 use App\Core\Roles;
 use App\Core\View;
 use App\Models\Product;
+use App\Models\User;
 
 /**
  * Simulador de economia como ferramenta ATIVA do Vendedor -- o mesmo motor de calculo que ja
@@ -22,21 +25,28 @@ class SimuladorController
     public function index(): void
     {
         Auth::requireRole(Roles::STAFF);
+        $user = Auth::user();
+        $secondaryCurrency = User::secondaryCurrencyForUser((int) $user['id']);
 
         View::render('painel/simulador/index', [
-            'user' => Auth::user(),
+            'user' => $user,
             'products' => Product::all(true),
             'result' => null,
             'values' => [],
             'errors' => [],
+            'secondaryCurrency' => $secondaryCurrency,
+            'rate' => $secondaryCurrency ? ExchangeRateClient::brlToPyg() : 0.0,
         ]);
     }
 
     public function calcular(): void
     {
         Auth::requireRole(Roles::STAFF);
+        $user = Auth::user();
+        $secondaryCurrency = User::secondaryCurrencyForUser((int) $user['id']);
+        $rate = $secondaryCurrency ? ExchangeRateClient::brlToPyg() : 0.0;
 
-        [$values, $errors, $productPrice, $productName] = $this->parseAndValidate($_POST);
+        [$values, $errors, $productPrice, $productName] = $this->parseAndValidate($_POST, $secondaryCurrency, $rate);
 
         $result = null;
         $chartSvg = null;
@@ -44,7 +54,7 @@ class SimuladorController
             $result = EconomyCalculator::estimate(
                 (float) $values['km_mensal'],
                 (float) $values['km_litro'],
-                (float) $values['preco_diesel'],
+                (float) $values['preco_diesel_brl'],
                 $productPrice
             );
 
@@ -58,7 +68,7 @@ class SimuladorController
         }
 
         View::render('painel/simulador/index', [
-            'user' => Auth::user(),
+            'user' => $user,
             'products' => Product::all(true),
             'result' => $result,
             'chartSvg' => $chartSvg,
@@ -66,22 +76,29 @@ class SimuladorController
             'productName' => $productName,
             'values' => $values,
             'errors' => $errors,
+            'secondaryCurrency' => $secondaryCurrency,
+            'rate' => $rate,
         ]);
     }
 
     public function downloadPdf(): void
     {
         Auth::requireRole(Roles::STAFF);
+        $user = Auth::user();
+        $secondaryCurrency = User::secondaryCurrencyForUser((int) $user['id']);
+        $rate = $secondaryCurrency ? ExchangeRateClient::brlToPyg() : 0.0;
 
-        [$values, $errors, $productPrice, $productName] = $this->parseAndValidate($_POST);
+        [$values, $errors, $productPrice, $productName] = $this->parseAndValidate($_POST, $secondaryCurrency, $rate);
 
         if ($errors) {
             View::render('painel/simulador/index', [
-                'user' => Auth::user(),
+                'user' => $user,
                 'products' => Product::all(true),
                 'result' => null,
                 'values' => $values,
                 'errors' => $errors,
+                'secondaryCurrency' => $secondaryCurrency,
+                'rate' => $rate,
             ]);
             return;
         }
@@ -89,7 +106,7 @@ class SimuladorController
         $result = EconomyCalculator::estimate(
             (float) $values['km_mensal'],
             (float) $values['km_litro'],
-            (float) $values['preco_diesel'],
+            (float) $values['preco_diesel_brl'],
             $productPrice
         );
 
@@ -100,18 +117,28 @@ class SimuladorController
             'productPrice' => $productPrice,
             'result' => $result,
             'sellerName' => Auth::user()['name'],
+            'currency' => $values['currency'],
+            'rate' => $rate,
         ], null);
         $html = ob_get_clean();
 
         Pdf::download($html, 'simulacao-economia-ecodiffusore.pdf', 'portrait');
     }
 
-    /** @return array{0: array, 1: array, 2: float, 3: ?string} */
-    private function parseAndValidate(array $input): array
+    /** Fase 111: $secondaryCurrency/$rate so' vem preenchido pro Licenciado (e rede) com
+     *  operacao fora do Brasil -- preco_diesel e' digitado NA MOEDA ESCOLHIDA (campo 'currency'
+     *  do POST), convertido aqui pra R$ (preco_diesel_brl) antes de qualquer calculo, ja que
+     *  EconomyCalculator so' entende R$. Sem isso configurado, currency fica sempre 'BRL' e a
+     *  conversao e' um no-op (Money::toBrl() devolve o mesmo valor).
+     *  @return array{0: array, 1: array, 2: float, 3: ?string} */
+    private function parseAndValidate(array $input, ?string $secondaryCurrency = null, float $rate = 0.0): array
     {
         if (!Csrf::verify($input['csrf_token'] ?? null)) {
             return [[], ['geral' => 'Sessão expirada, recarregue a página.'], 0.0, null];
         }
+
+        $currency = ($secondaryCurrency && ($input['currency'] ?? 'BRL') === $secondaryCurrency) ? $secondaryCurrency : 'BRL';
+        $precoDieselInput = self::parseBrNumber($input['preco_diesel'] ?? '');
 
         $values = [
             'client_name' => trim($input['client_name'] ?? ''),
@@ -120,7 +147,9 @@ class SimuladorController
             'manual_price' => trim($input['manual_price'] ?? ''),
             'km_mensal' => self::parseBrNumber($input['km_mensal'] ?? ''),
             'km_litro' => self::parseBrNumber($input['km_litro'] ?? ''),
-            'preco_diesel' => self::parseBrNumber($input['preco_diesel'] ?? ''),
+            'currency' => $currency,
+            'preco_diesel' => $precoDieselInput,
+            'preco_diesel_brl' => Money::toBrl($precoDieselInput, $currency, $rate),
         ];
 
         $errors = [];
