@@ -81,11 +81,21 @@ $erroLabels = [
     </select>
     <input type="text" name="city" placeholder="Cidade" value="<?= View::e($filters['city']) ?>">
     <input type="text" name="state" placeholder="UF" maxlength="2" style="width:60px;text-transform:uppercase" value="<?= View::e($filters['state']) ?>">
+    <select name="licenciado_id">
+        <option value="">Licenciado (selecione pra ver Gestores/Vendedores)</option>
+        <?php foreach ($licenciadoOptions as $lic): ?>
+            <option value="<?= (int) $lic['id'] ?>" <?= (string) $filters['licenciado_id'] === (string) $lic['id'] ? 'selected' : '' ?>><?= View::e($lic['name']) ?></option>
+        <?php endforeach; ?>
+    </select>
     <button type="submit" class="btn btn-outline">Filtrar</button>
     <?php if (array_filter($filters)): ?>
         <a href="/painel/usuarios" class="link-small">Limpar filtros</a>
     <?php endif; ?>
 </form>
+
+<?php if ($filters['licenciado_id'] === ''): ?>
+    <p class="hint-text">Gestores e Vendedores ficam ocultos por padrão pra não misturar com Licenciados. Selecione um Licenciado acima pra ver os Gestores/Vendedores da rede dele.</p>
+<?php endif; ?>
 
 <form method="post" action="/painel/usuarios/excluir-lote" id="bulk-delete-form">
     <?= Csrf::field() ?>
