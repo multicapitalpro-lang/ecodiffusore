@@ -565,7 +565,17 @@ class FinanceController
         $role = $user['role_slug'];
 
         if ($role === 'admin') {
-            return array_map(fn ($u) => (int) $u['id'], User::all());
+            // Fase 114: Admin so' confirma pagamento do que a EMPRESA paga direto -- Licenciado
+            // (comissao da faixa de preco) e Gerente/Supervisor (comissao nacional, ver
+            // createCascadeForOrder()). Vendedor/Gestor sao pagos pelo proprio Licenciado da rede,
+            // com o dinheiro que sai do pool dele -- ja cobertos pelo ramo de licenciado/gestor
+            // logo abaixo. Pedido explicito do usuario: "eu, como admin, eu so dou baixa em
+            // comissao para o licenciado" (vendedor/gestor nunca aparecia com "dar baixa" pro
+            // admin antes desta fase por acaso -- era User::all() inteiro, incluindo vendedor).
+            return array_map(
+                fn ($u) => (int) $u['id'],
+                array_filter(User::all(), fn ($u) => in_array($u['role_slug'], ['licenciado', 'gerente', 'supervisor'], true))
+            );
         }
         if ($role === 'gerente') {
             return $this->licenciadoIdsWithin(User::nationalIds((int) $user['id']));
@@ -615,6 +625,15 @@ class FinanceController
             $summary['total'] += (float) $c['amount'];
             $summary[$c['status']] += (float) $c['amount'];
             $c['can_manage'] = in_array((int) $c['beneficiary_id'], $manageScope, true);
+            // Fase 114: `percentage` guardado no Licenciado e' a % INTEGRAL do pool da faixa de
+            // preco (ex: 20%), mas `amount` e' so' o que SOBROU depois de descontar Gestor/Vendedor
+            // (ver Commission::createCascadeForOrder()) -- exibir o % bruto ao lado de um valor que
+            // e' so' uma fracao dele confundia o usuario (2 linhas com % diferente e mesmo R$).
+            // effective_percentage e' sempre amount/order_total, o que o valor exibido REALMENTE
+            // representa do pedido -- usado so' na exibicao, nunca sobrescreve o percentage salvo.
+            $c['effective_percentage'] = (float) $c['order_total'] > 0
+                ? round((float) $c['amount'] / (float) $c['order_total'] * 100, 2)
+                : (float) $c['percentage'];
         }
         unset($c);
 
@@ -658,16 +677,25 @@ class FinanceController
 
         $roleLabels = ['licenciado' => 'Licenciado', 'gestor' => 'Gestor', 'vendedor' => 'Vendedor', 'gerente' => 'Gerente', 'supervisor' => 'Supervisor', 'influenciador' => 'Influenciador'];
 
-        $rows = array_map(fn ($c) => [
-            $c['order_id'],
-            $c['beneficiary_name'],
-            $roleLabels[$c['role_slug']] ?? $c['role_slug'],
-            $c['client_name'],
-            $c['order_date'],
-            number_format((float) $c['percentage'], 2, ',', '.'),
-            number_format((float) $c['amount'], 2, ',', '.'),
-            $c['status'] === 'pago' ? 'Pago' : 'Pendente',
-        ], Commission::all($filters));
+        $rows = array_map(function ($c) use ($roleLabels) {
+            // Fase 114: mesmo effective_percentage de commissions() -- amount/order_total, nao o
+            // percentage bruto salvo (que pro Licenciado e' a % do pool inteiro, nao do valor
+            // efetivamente mostrado). Ver comentario em commissions().
+            $effectivePct = (float) $c['order_total'] > 0
+                ? round((float) $c['amount'] / (float) $c['order_total'] * 100, 2)
+                : (float) $c['percentage'];
+
+            return [
+                $c['order_id'],
+                $c['beneficiary_name'],
+                $roleLabels[$c['role_slug']] ?? $c['role_slug'],
+                $c['client_name'],
+                $c['order_date'],
+                number_format($effectivePct, 2, ',', '.'),
+                number_format((float) $c['amount'], 2, ',', '.'),
+                $c['status'] === 'pago' ? 'Pago' : 'Pendente',
+            ];
+        }, Commission::all($filters));
 
         Csv::download('comissoes.csv', ['Pedido', 'Beneficiário', 'Papel', 'Cliente', 'Data', '%', 'Valor', 'Situação'], $rows);
     }

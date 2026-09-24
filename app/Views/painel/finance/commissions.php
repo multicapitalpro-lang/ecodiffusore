@@ -188,7 +188,7 @@ $presets = [
                     <td><?= View::e($roleLabels[$c['role_slug']] ?? $c['role_slug']) ?></td>
                     <td><?= View::e($c['client_name']) ?></td>
                     <td><?= View::e(date('d/m/Y', strtotime($c['order_date']))) ?></td>
-                    <td><?= number_format((float) $c['percentage'], 2, ',', '.') ?>%</td>
+                    <td><?= number_format((float) $c['effective_percentage'], 2, ',', '.') ?>%</td>
                     <td>R$ <?= number_format((float) $c['amount'], 2, ',', '.') ?></td>
                     <td><span class="status-badge status-<?= $c['status'] === 'pendente' ? 'contatado' : 'active' ?>"><?= $statusLabels[$c['status']] ?? $c['status'] ?></span></td>
                     <?php if ($canManageAny): ?>

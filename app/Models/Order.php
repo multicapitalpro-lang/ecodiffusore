@@ -975,6 +975,18 @@ class Order
             return false;
         }
 
+        // Fase 114: gerar uma cobranca no Asaas (boleto/pix/cartao) NAO e' pagamento -- so' o
+        // webhook (que ja chama Payment::markPaid() ANTES de chegar aqui, ver
+        // PaymentController::webhook()) confirma de verdade. Bloqueia o botao manual "Marcar como
+        // Verificado" se ainda houver uma cobranca gerada e pendente pra esse pedido -- pedido
+        // #56 foi marcado verificado manualmente 22s depois do boleto ser gerado, sem o Asaas ter
+        // confirmado nada ainda.
+        foreach (Payment::forPayable('order', $id) as $payment) {
+            if ($payment['status'] === 'pendente' && !empty($payment['asaas_charge_id'])) {
+                return false;
+            }
+        }
+
         self::updateStatus($id, 'verificado');
         Database::connection()->prepare('UPDATE orders SET verified_at = NOW() WHERE id = :id')->execute(['id' => $id]);
 
