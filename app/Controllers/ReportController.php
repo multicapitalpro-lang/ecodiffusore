@@ -40,7 +40,7 @@ class ReportController
         Auth::requireRole(Roles::STAFF);
         $user = Auth::user();
 
-        $catalog = FinancialReports::catalog();
+        $catalog = FinancialReports::catalog($user['role_slug']);
         $hasFinanceAccess = in_array($user['role_slug'], self::ALLOWED_ROLES, true);
         $hasNationalAccess = in_array($user['role_slug'], self::NATIONAL_ONLY_ROLES, true);
 
@@ -73,10 +73,10 @@ class ReportController
         View::render('painel/reports/show', [
             'user' => $user,
             'type' => $type,
-            'title' => FinancialReports::title($type),
+            'title' => FinancialReports::title($type, $user['role_slug']),
             'from' => $from,
             'to' => $to,
-            'report' => FinancialReports::generate($type, $from, $to, $this->scopeFor($user, $type)),
+            'report' => FinancialReports::generate($type, $from, $to, $this->scopeFor($user, $type), $user['role_slug']),
             'hasSub' => SubscriptionGate::hasAccess($user),
             'openSubscriptionModal' => SubscriptionGate::shouldAutoOpenModal($user),
         ]);
@@ -90,8 +90,8 @@ class ReportController
         $this->assertTypeAllowed($type, $user);
 
         [$from, $to] = DateRange::fromRequest();
-        $title = FinancialReports::title($type);
-        $report = FinancialReports::generate($type, $from, $to, $this->scopeFor($user, $type));
+        $title = FinancialReports::title($type, $user['role_slug']);
+        $report = FinancialReports::generate($type, $from, $to, $this->scopeFor($user, $type), $user['role_slug']);
 
         ob_start();
         View::render('painel/reports/pdf', compact('title', 'from', 'to', 'report'), null);
@@ -169,7 +169,7 @@ class ReportController
         View::render('painel/reports/schedules', [
             'user' => $user,
             'schedules' => ReportSchedule::all($user['role_slug'] === 'admin' ? null : (int) $user['id']),
-            'catalog' => FinancialReports::catalog(),
+            'catalog' => FinancialReports::catalog($user['role_slug']),
             'recipients' => $this->recipientOptions($user),
             'errors' => [],
         ]);

@@ -8,11 +8,18 @@ class FinancialTransaction
 {
     public static function all(array $filters = []): array
     {
-        $sql = 'SELECT ft.*, fa.name AS account_name, fc.name AS category_name, cl.name AS client_name
+        // Fase 114: lancamento gerado automaticamente por pedido (FinancialTransaction::
+        // createForOrderReceivable()) nunca grava client_id, so' order_id -- cl.name ficava
+        // sempre vazio na tabela pro Admin. COALESCE cai pro cliente do pedido vinculado (ford)
+        // quando client_id direto esta em branco.
+        $sql = 'SELECT ft.*, fa.name AS account_name, fc.name AS category_name,
+                    COALESCE(cl.name, fcl.name) AS client_name
                 FROM financial_transactions ft
                 JOIN financial_accounts fa ON fa.id = ft.account_id
                 LEFT JOIN financial_categories fc ON fc.id = ft.category_id
                 LEFT JOIN clients cl ON cl.id = ft.client_id
+                LEFT JOIN orders ford ON ford.id = ft.order_id
+                LEFT JOIN clients fcl ON fcl.id = ford.client_id
                 WHERE 1=1';
         $params = [];
 
@@ -79,11 +86,14 @@ class FinancialTransaction
     public static function find(int $id): ?array
     {
         $stmt = Database::connection()->prepare(
-            'SELECT ft.*, fa.name AS account_name, fc.name AS category_name, cl.name AS client_name
+            'SELECT ft.*, fa.name AS account_name, fc.name AS category_name,
+                    COALESCE(cl.name, fcl.name) AS client_name
              FROM financial_transactions ft
              JOIN financial_accounts fa ON fa.id = ft.account_id
              LEFT JOIN financial_categories fc ON fc.id = ft.category_id
              LEFT JOIN clients cl ON cl.id = ft.client_id
+             LEFT JOIN orders ford ON ford.id = ft.order_id
+             LEFT JOIN clients fcl ON fcl.id = ford.client_id
              WHERE ft.id = :id'
         );
         $stmt->execute(['id' => $id]);

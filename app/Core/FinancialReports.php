@@ -8,11 +8,21 @@ use App\Models\WarrantyRequest;
 
 class FinancialReports
 {
-    public static function catalog(): array
+    /** Fase 114: Admin/Gerente/Supervisor nao acompanham vendedor individual (isso e' tarefa do
+     *  Licenciado, que dirige a propria equipe) -- pedido explicito do usuario pra esses 3 papeis
+     *  verem "Vendas por Licença" em vez de "por Vendedor" (rotulo + agrupamento, ver
+     *  vendasPorVendedor() abaixo). Licenciado/Gestor/Vendedor continuam vendo por Vendedor. O
+     *  identificador interno (`vendas_por_vendedor`) NAO muda -- e' usado em report_schedules e
+     *  na URL, so o texto exibido troca por papel. */
+    private const LICENSE_VIEW_ROLES = ['admin', 'gerente', 'supervisor'];
+
+    public static function catalog(?string $role = null): array
     {
         return [
             'Vendas e CRM' => [
-                'vendas_por_vendedor' => 'Relatório de Vendas por Vendedor',
+                'vendas_por_vendedor' => in_array($role, self::LICENSE_VIEW_ROLES, true)
+                    ? 'Relatório de Vendas por Licença'
+                    : 'Relatório de Vendas por Vendedor',
                 'garantias' => 'Relatório de Pós-venda de Instalação',
             ],
             'Caixas e Bancos' => [
@@ -41,9 +51,9 @@ class FinancialReports
         ];
     }
 
-    public static function title(string $type): string
+    public static function title(string $type, ?string $role = null): string
     {
-        foreach (self::catalog() as $group) {
+        foreach (self::catalog($role) as $group) {
             if (isset($group[$type])) {
                 return $group[$type];
             }
@@ -60,10 +70,10 @@ class FinancialReports
      *  escopo: as contas sao um caixa real compartilhado (uma conta bancaria/Asaas so pra empresa
      *  inteira), so as MOVIMENTACOES sao escopadas por rede -- mesma limitacao ja aceita em
      *  FinanceController::scopeFilters(). */
-    public static function generate(string $type, string $from, string $to, ?array $sellerIds = null): array
+    public static function generate(string $type, string $from, string $to, ?array $sellerIds = null, ?string $role = null): array
     {
         return match ($type) {
-            'vendas_por_vendedor' => self::vendasPorVendedor($from, $to, $sellerIds),
+            'vendas_por_vendedor' => self::vendasPorVendedor($from, $to, $sellerIds, $role),
             'garantias' => self::garantiasReport($from, $to, $sellerIds),
             'balancete' => self::balancete($from, $to, $sellerIds),
             'dre' => self::dre($from, $to, $sellerIds),
@@ -112,9 +122,13 @@ class FinancialReports
     // ---- Vendas por Vendedor: mesmo motor de /painel/desempenho/vendedores (Order::sellerRanking),
     // reaproveitado aqui como relatorio exportavel -- gap real, nao existia nenhum relatorio de
     // vendas/CRM ate agora, so financeiro (Caixas/Contas/Comissoes/Fiscal). ----
-    private static function vendasPorVendedor(string $from, string $to, ?array $sellerIds): array
+    private static function vendasPorVendedor(string $from, string $to, ?array $sellerIds, ?string $role = null): array
     {
         $ranking = Order::sellerRanking($from, $to, $sellerIds);
+
+        if (in_array($role, self::LICENSE_VIEW_ROLES, true)) {
+            return self::vendasPorLicenciado($ranking);
+        }
 
         $rows = array_map(fn ($r) => [
             $r['name'],
@@ -129,6 +143,53 @@ class FinancialReports
         return [
             'kind' => 'simple',
             'columns' => ['Vendedor', 'Pedidos', 'Valor Vendido', 'Ticket Médio', 'Conversão'],
+            'rows' => $rows,
+            'totals' => ['Total de pedidos' => (string) $totalPedidos],
+        ];
+    }
+
+    /** Reagrupa o mesmo ranking (por vendedor) por Licenciado dono da rede -- soma pedidos/valor/
+     *  leads de cada vendedor sob o mesmo licenciado_id (Order::sellerRanking() ja calcula isso
+     *  por linha via User::responsibleFor()). Ticket medio e conversao sao recalculados a partir
+     *  das somas agregadas, nao uma media das medias -- resultado matematicamente correto. */
+    private static function vendasPorLicenciado(array $ranking): array
+    {
+        $grouped = [];
+        foreach ($ranking as $r) {
+            $key = $r['licenciado_id'] ?? 0;
+            if (!isset($grouped[$key])) {
+                $grouped[$key] = [
+                    'name' => $r['licenciado_name'] ?? 'Sem licenciado',
+                    'order_count' => 0,
+                    'total_value' => 0.0,
+                    'lead_count' => 0,
+                ];
+            }
+            $grouped[$key]['order_count'] += (int) $r['order_count'];
+            $grouped[$key]['total_value'] += (float) $r['total_value'];
+            $grouped[$key]['lead_count'] += (int) $r['lead_count'];
+        }
+
+        uasort($grouped, fn ($a, $b) => $b['total_value'] <=> $a['total_value']);
+
+        $rows = array_map(function ($g) {
+            $avgTicket = $g['order_count'] > 0 ? $g['total_value'] / $g['order_count'] : 0.0;
+            $conversionPct = $g['lead_count'] > 0 ? round($g['order_count'] / $g['lead_count'] * 100, 1) : null;
+
+            return [
+                $g['name'],
+                $g['order_count'],
+                'R$ ' . number_format($g['total_value'], 2, ',', '.'),
+                'R$ ' . number_format($avgTicket, 2, ',', '.'),
+                $conversionPct !== null ? $conversionPct . '%' : '—',
+            ];
+        }, array_values($grouped));
+
+        $totalPedidos = array_sum(array_column($grouped, 'order_count'));
+
+        return [
+            'kind' => 'simple',
+            'columns' => ['Licenciado', 'Pedidos', 'Valor Vendido', 'Ticket Médio', 'Conversão'],
             'rows' => $rows,
             'totals' => ['Total de pedidos' => (string) $totalPedidos],
         ];

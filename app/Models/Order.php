@@ -1231,6 +1231,7 @@ class Order
 
             $licenciado = User::responsibleFor($row);
             $row['licenciado_name'] = $licenciado['name'] ?? null;
+            $row['licenciado_id'] = $licenciado['id'] ?? null;
         }
         unset($row);
 

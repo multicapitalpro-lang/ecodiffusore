@@ -492,6 +492,7 @@ $router->post('/painel/financeiro/lancamentos', [App\Controllers\FinanceControll
 $router->get('/painel/financeiro/contas-a-pagar', [App\Controllers\FinanceController::class, 'payable']);
 $router->get('/painel/financeiro/contas-a-receber', [App\Controllers\FinanceController::class, 'receivable']);
 $router->post('/painel/financeiro/contas', [App\Controllers\FinanceController::class, 'storePayable']);
+$router->post('/painel/financeiro/categorias', [App\Controllers\FinanceController::class, 'storeCategory']);
 $router->get('/painel/financeiro/contas/{id}/editar', [App\Controllers\FinanceController::class, 'editTransaction']);
 $router->post('/painel/financeiro/contas/{id}/excluir', [App\Controllers\FinanceController::class, 'destroyTransaction']);
 $router->post('/painel/financeiro/contas/{id}/baixar', [App\Controllers\FinanceController::class, 'markPaid']);

@@ -85,6 +85,7 @@ $personLabel = $type === 'entrada' ? 'Cliente' : 'Fornecedor';
                 </optgroup>
             <?php endforeach; ?>
         </select>
+        <button type="button" class="link-small link-button" data-modal-open="modal-category-inline">+ Nova categoria</button>
     </div>
     <div>
         <label for="pay-doc">Nº documento</label>

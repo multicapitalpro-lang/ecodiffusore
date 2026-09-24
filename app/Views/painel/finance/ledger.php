@@ -4,10 +4,17 @@ use App\Core\SubscriptionGate;
 use App\Core\View;
 use App\Models\FinancialTransaction;
 $statusLabels = ['pendente' => 'Pendente', 'pago' => 'Pago', 'conciliado' => 'Conciliado'];
+// Fase 114: 'atrasada' nao existe no enum do banco (status so' tem pendente/pago/conciliado) --
+// e' virtual, calculado por linha (pendente + due_date < hoje). Entra so' no filtro/rotulo, nunca
+// e' o valor real de $t['status'].
+$filterStatusLabels = $statusLabels + ['atrasada' => 'Atrasada'];
 $sucesso = isset($_GET['sucesso']);
 $errors = $errors ?? [];
 $values = $values ?? [];
 $filters = $filters ?? [];
+if (!empty($_GET['categoria_id']) && empty($values['category_id'])) {
+    $values['category_id'] = (int) $_GET['categoria_id'];
+}
 $openModal = isset($_GET['novo']) || $errors;
 $personLabel = $type === 'entrada' ? 'Cliente' : 'Fornecedor';
 $today = date('Y-m-d');
@@ -47,7 +54,7 @@ $hasSub = SubscriptionGate::hasAccess($user);
     <input type="date" name="to" value="<?= View::e($filters['to'] ?? '') ?>">
     <select name="status">
         <option value="">Todas as situações</option>
-        <?php foreach ($statusLabels as $key => $label): ?>
+        <?php foreach ($filterStatusLabels as $key => $label): ?>
             <option value="<?= $key ?>" <?= ($filters['status'] ?? '') === $key ? 'selected' : '' ?>><?= $label ?></option>
         <?php endforeach; ?>
     </select>
@@ -84,7 +91,8 @@ $hasSub = SubscriptionGate::hasAccess($user);
                         <?= SubscriptionGate::money($user, FinancialTransaction::totalValue($t)) ?>
                         <?php if (!empty($t['recurrence_frequency'])): ?><span class="tag-default" title="Lançamento recorrente">🔁</span><?php endif; ?>
                     </td>
-                    <td><span class="status-badge status-<?= $t['status'] === 'pendente' ? 'contatado' : 'active' ?>"><?= $statusLabels[$t['status']] ?? $t['status'] ?></span></td>
+                    <?php $isOverdue = $t['status'] === 'pendente' && $t['due_date'] < $today; ?>
+                    <td><span class="status-badge status-<?= $isOverdue ? 'recusado' : ($t['status'] === 'pendente' ? 'contatado' : 'active') ?>"><?= $isOverdue ? 'Atrasada' : ($statusLabels[$t['status']] ?? $t['status']) ?></span></td>
                     <td><?php $items = $attachmentsByTransaction[$t['id']] ?? []; include __DIR__ . '/_attachments_cell.php'; ?></td>
                     <td class="table-actions">
                         <?php if ($t['status'] === 'pendente'): ?>
@@ -144,6 +152,15 @@ $hasSub = SubscriptionGate::hasAccess($user);
 
 <?php include __DIR__ . '/_edit_transaction_modal.php'; ?>
 
+<dialog class="modal" id="modal-order-detail">
+    <div id="modal-order-detail-content">
+        <div class="modal-header"><h2>Pedido</h2><button type="button" class="modal-close" data-modal-close aria-label="Fechar">&times;</button></div>
+        <div class="modal-body"><p class="hint-text">Carregando...</p></div>
+    </div>
+</dialog>
+
 <?php $redirectTo = $type === 'entrada' ? '/painel/financeiro/contas-a-receber' : '/painel/financeiro/contas-a-pagar'; include __DIR__ . '/../_client_quick_modal.php'; ?>
+
+<?php include __DIR__ . '/_category_quick_modal.php'; ?>
 
 <?php if (!$hasSub): ?><?php include __DIR__ . '/../subscription/_modal.php'; ?><?php endif; ?>

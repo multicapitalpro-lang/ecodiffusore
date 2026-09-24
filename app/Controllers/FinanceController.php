@@ -68,6 +68,7 @@ class FinanceController
             'transactions' => $transactions,
             'attachmentsByTransaction' => FinancialAttachment::forTransactions(array_column($transactions, 'id')),
             'categoryGroups' => FinancialCategory::grouped(),
+            'categoryParents' => FinancialCategory::parents(),
             'clients' => Client::all($this->scopeFilters(Auth::user())),
             'filters' => $filters,
             'errors' => [],
@@ -216,8 +217,21 @@ class FinanceController
             $this->requestFilters(),
             $this->scopeFilters($user)
         );
-        $transactions = FinancialTransaction::all($filters);
         $today = date('Y-m-d');
+
+        // Fase 114: 'atrasada' e' um status VIRTUAL (pendente + due_date < hoje), nao existe no
+        // enum do banco -- passar direto pro model quebraria o match exato de status em
+        // FinancialTransaction::all(). Busca como 'pendente' e refiltra por data aqui.
+        $overdueOnly = ($filters['status'] ?? null) === 'atrasada';
+        $queryFilters = $filters;
+        if ($overdueOnly) {
+            $queryFilters['status'] = 'pendente';
+        }
+
+        $transactions = FinancialTransaction::all($queryFilters);
+        if ($overdueOnly) {
+            $transactions = array_values(array_filter($transactions, fn ($t) => $t['due_date'] < $today));
+        }
 
         $summary = ['open_count' => 0, 'open_total' => 0.0, 'paid_total' => 0.0, 'overdue_count' => 0, 'overdue_total' => 0.0];
         foreach ($transactions as $t) {
@@ -243,6 +257,7 @@ class FinanceController
             'attachmentsByTransaction' => FinancialAttachment::forTransactions(array_column($transactions, 'id')),
             'accounts' => FinancialAccount::all(),
             'categoryGroups' => FinancialCategory::grouped($type),
+            'categoryParents' => FinancialCategory::parents(),
             'clients' => Client::all($this->scopeFilters(Auth::user())),
             'filters' => $filters,
             'errors' => $errors,
@@ -312,6 +327,58 @@ class FinanceController
         }
 
         $target = $backTo . '?sucesso=1';
+        if (Response::isAjax()) {
+            Response::json(['ok' => true, 'redirect' => $target]);
+        }
+        Router::redirect($target);
+    }
+
+    /** Fase 114: usuario pedia uma forma de incluir categoria propria na hora de lancar uma Conta
+     *  a Pagar/Receber -- lista vinha fixa (so' as seedadas no schema_fase3), sem nenhuma tela pra
+     *  cadastrar mais. Mesmo padrao do "+ Cadastrar cliente" (_client_quick_modal.php + redirect_to
+     *  ?novo=1) -- toda categoria nova entra como filha de um grupo (pai) ja existente. */
+    public function storeCategory(): void
+    {
+        Auth::requireRole(Roles::MANAGEMENT);
+        SubscriptionGate::requireAccess(Auth::user(), 'financeiro');
+
+        $redirectTo = $_GET['redirect_to'] ?? null;
+        $backTo = ($redirectTo && str_starts_with($redirectTo, '/painel/')) ? $redirectTo : '/painel/financeiro/contas-a-pagar';
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            if (Response::isAjax()) {
+                Response::json(['ok' => false, 'errors' => ['name' => 'Sessão expirada, recarregue a página.']]);
+            }
+            Router::redirect($backTo . '?erro=1');
+        }
+
+        $name = trim($_POST['name'] ?? '');
+        $parentId = (int) ($_POST['parent_id'] ?? 0);
+
+        $errors = [];
+        if ($name === '') {
+            $errors['name'] = 'Informe o nome da categoria.';
+        }
+        if (!$parentId || !FinancialCategory::find($parentId)) {
+            $errors['parent_id'] = 'Selecione um grupo.';
+        }
+
+        if ($errors) {
+            if (Response::isAjax()) {
+                Response::json(['ok' => false, 'errors' => $errors]);
+            }
+            Router::redirect($backTo . '?erro=1');
+        }
+
+        $categoryId = FinancialCategory::create([
+            'parent_id' => $parentId,
+            'name' => $name,
+            'type' => in_array($_POST['type'] ?? '', ['entrada', 'saida', 'ambos'], true) ? $_POST['type'] : 'ambos',
+        ]);
+
+        $sep = str_contains($backTo, '?') ? '&' : '?';
+        $target = $backTo . $sep . 'novo=1&categoria_id=' . $categoryId;
+
         if (Response::isAjax()) {
             Response::json(['ok' => true, 'redirect' => $target]);
         }

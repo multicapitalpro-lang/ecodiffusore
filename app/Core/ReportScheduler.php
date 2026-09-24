@@ -19,8 +19,12 @@ class ReportScheduler
         foreach (ReportSchedule::activeDue() as $schedule) {
             [$from, $to] = self::rangeFor($schedule['frequency']);
             $type = $schedule['report_type'];
-            $title = FinancialReports::title($type);
-            $report = FinancialReports::generate($type, $from, $to);
+            // Agendamento ja roda sem escopo de rede (sellerIds null, ver comentario da classe --
+            // e' um envio global, nao vinculado a hierarquia de quem criou o agendamento). Papel
+            // 'admin' aqui so' escolhe o MESMO rotulo/agrupamento que um Admin veria na tela (por
+            // Licenca, Fase 114) -- consistente com o escopo global que esse envio ja tinha antes.
+            $title = FinancialReports::title($type, 'admin');
+            $report = FinancialReports::generate($type, $from, $to, null, 'admin');
 
             ob_start();
             View::render('painel/reports/pdf', compact('title', 'from', 'to', 'report'), null);
