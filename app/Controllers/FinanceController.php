@@ -695,6 +695,16 @@ class FinanceController
         $period = $this->periodFilters();
         $filters = array_merge($this->commissionFilters($user), $period);
 
+        // Fase 120: Admin/Gerente/Supervisor veem varias redes de Licenciado misturadas na mesma
+        // tabela -- filtro isola so' a rede (Licenciado + Gestor/Vendedor dele) de UM Licenciado
+        // por vez. So aparece pra quem ve mais de 1 rede (ver licenciadoOptionsForCommissions()).
+        $licenciadoOptions = $this->licenciadoOptionsForCommissions($user);
+        $selectedLicenciadoId = (int) ($_GET['licenciado_id'] ?? 0);
+        if ($selectedLicenciadoId && isset($licenciadoOptions[$selectedLicenciadoId])) {
+            $filters['beneficiary_ids'] = User::downlineIds($selectedLicenciadoId);
+            unset($filters['beneficiary_id']);
+        }
+
         $commissions = Commission::all($filters);
         $summary = ['total' => 0.0, 'pago' => 0.0, 'pendente' => 0.0, 'count' => count($commissions)];
         $manageScope = $this->commissionManageScope($user);
@@ -743,7 +753,35 @@ class FinanceController
             'vendorOwnTiers' => $vendorOwnTiers,
             'vendorCommissionType' => $user['commission_type'] ?? null,
             'attachmentsByCommission' => CommissionAttachment::forCommissions(array_column($commissions, 'id')),
+            'licenciadoOptions' => $licenciadoOptions,
+            'selectedLicenciadoId' => $selectedLicenciadoId,
         ]);
+    }
+
+    /** @return array<int,string> id => nome, so' os Licenciados dentro do que esse usuario ja
+     *  pode ver (mesmo escopo de commissionFilters()) -- vazio pra quem ja ve so' 1 rede
+     *  (Licenciado/Gestor/Vendedor), o filtro nao faria diferenca pra eles. */
+    private function licenciadoOptionsForCommissions(array $user): array
+    {
+        $role = $user['role_slug'];
+
+        if ($role === 'admin') {
+            $licenciados = User::allByRole('licenciado');
+        } elseif ($role === 'gerente') {
+            $networkIds = User::nationalIds((int) $user['id']);
+            $licenciados = array_filter(User::allByRole('licenciado'), fn ($l) => in_array((int) $l['id'], $networkIds, true));
+        } elseif ($role === 'supervisor') {
+            $networkIds = User::supervisedIds((int) $user['id']);
+            $licenciados = array_filter(User::allByRole('licenciado'), fn ($l) => in_array((int) $l['id'], $networkIds, true));
+        } else {
+            return [];
+        }
+
+        $options = [];
+        foreach ($licenciados as $l) {
+            $options[(int) $l['id']] = $l['name'];
+        }
+        return $options;
     }
 
     public function exportCommissions(): void
@@ -752,6 +790,13 @@ class FinanceController
         $user = Auth::user();
 
         $filters = array_merge($this->commissionFilters($user), $this->periodFilters());
+
+        $licenciadoOptions = $this->licenciadoOptionsForCommissions($user);
+        $selectedLicenciadoId = (int) ($_GET['licenciado_id'] ?? 0);
+        if ($selectedLicenciadoId && isset($licenciadoOptions[$selectedLicenciadoId])) {
+            $filters['beneficiary_ids'] = User::downlineIds($selectedLicenciadoId);
+            unset($filters['beneficiary_id']);
+        }
 
         $roleLabels = ['licenciado' => 'Licenciado', 'gestor' => 'Gestor', 'vendedor' => 'Vendedor', 'gerente' => 'Gerente', 'supervisor' => 'Supervisor', 'influenciador' => 'Influenciador'];
 

@@ -18,10 +18,13 @@ $presets = [
     'Este mês' => ['from' => $monthStart, 'to' => $today],
     'Este ano' => ['from' => $yearStart, 'to' => $today],
 ];
+$licenciadoOptions = $licenciadoOptions ?? [];
+$selectedLicenciadoId = $selectedLicenciadoId ?? 0;
+$exportQuery = array_filter($period + ($selectedLicenciadoId ? ['licenciado_id' => $selectedLicenciadoId] : []));
 ?>
 <div class="page-header">
     <h1>Comissões</h1>
-    <a href="/painel/financeiro/comissoes/exportar?<?= http_build_query($period) ?>" class="btn btn-outline">Exportar CSV</a>
+    <a href="/painel/financeiro/comissoes/exportar?<?= http_build_query($exportQuery) ?>" class="btn btn-outline">Exportar CSV</a>
 </div>
 
 <?php if ($sucesso): ?>
@@ -31,11 +34,19 @@ $presets = [
 <form method="get" class="filter-bar">
     <input type="date" name="from" value="<?= View::e($period['from'] ?? '') ?>">
     <input type="date" name="to" value="<?= View::e($period['to'] ?? '') ?>">
+    <?php if ($licenciadoOptions): ?>
+        <select name="licenciado_id">
+            <option value="">Todos os licenciados</option>
+            <?php foreach ($licenciadoOptions as $id => $name): ?>
+                <option value="<?= (int) $id ?>" <?= $selectedLicenciadoId === $id ? 'selected' : '' ?>><?= View::e($name) ?></option>
+            <?php endforeach; ?>
+        </select>
+    <?php endif; ?>
     <button type="submit" class="btn btn-outline">Filtrar</button>
     <?php foreach ($presets as $label => $range): ?>
-        <a class="link-small" href="?from=<?= $range['from'] ?>&to=<?= $range['to'] ?>"><?= $label ?></a>
+        <a class="link-small" href="?from=<?= $range['from'] ?>&to=<?= $range['to'] ?><?= $selectedLicenciadoId ? '&licenciado_id=' . $selectedLicenciadoId : '' ?>"><?= $label ?></a>
     <?php endforeach; ?>
-    <?php if ($period): ?><a class="link-small" href="/painel/financeiro/comissoes">Tudo</a><?php endif; ?>
+    <?php if ($period || $selectedLicenciadoId): ?><a class="link-small" href="/painel/financeiro/comissoes">Tudo</a><?php endif; ?>
 </form>
 
 <div class="cards-grid">
