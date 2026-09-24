@@ -108,7 +108,13 @@ class Client
                 status = :status
              WHERE id = :id'
         );
-        $stmt->execute(array_merge(self::params($data), ['id' => $id]));
+        // user_id (conta de portal) nao faz parte deste UPDATE -- e' gerenciado a parte por
+        // linkUser(). Com PDO::ATTR_EMULATE_PREPARES=false, sobrar essa chave no array de params()
+        // (que tambem serve pro INSERT de create(), que usa user_id) faz o driver nativo rejeitar
+        // com "SQLSTATE[HY093]: Invalid parameter number" -- por isso precisa remover aqui.
+        $params = self::params($data);
+        unset($params['user_id']);
+        $stmt->execute(array_merge($params, ['id' => $id]));
     }
 
     public static function linkUser(int $clientId, int $userId): void
