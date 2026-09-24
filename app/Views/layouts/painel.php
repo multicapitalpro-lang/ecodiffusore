@@ -276,6 +276,9 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/desempen
             <?php if ($role === 'licenciado'): ?>
                 <a href="/painel/emails-profissionais" class="<?= $isActive('/painel/emails-profissionais') ? 'is-active' : '' ?>">✉️ E-mail Profissional</a>
             <?php endif; ?>
+            <?php if (in_array($role, Roles::PAYOUT_ROLES, true)): ?>
+                <a href="/painel/dados-bancarios" class="<?= $isActive('/painel/dados-bancarios') ? 'is-active' : '' ?>">🏦 Dados Bancários</a>
+            <?php endif; ?>
 
             <?php if (in_array($role, $userManagementRoles, true)): ?>
                 <a href="/painel/usuarios" class="<?= $isActive('/painel/usuarios') ? 'is-active' : '' ?>"><?= $icon('gear') ?> Usuários</a>

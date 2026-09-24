@@ -13,6 +13,7 @@ use App\Core\SubscriptionGate;
 use App\Core\View;
 use App\Models\Client;
 use App\Models\Commission;
+use App\Models\CommissionAttachment;
 use App\Models\FinancialAccount;
 use App\Models\FinancialAttachment;
 use App\Models\FinancialCategory;
@@ -398,6 +399,10 @@ class FinanceController
         $transaction = FinancialTransaction::find($id);
         if ($transaction) {
             FinancialTransaction::markPaid($id, date('Y-m-d'));
+            // Fase 116: comprovante de pagamento opcional ao dar baixa -- reaproveita o mesmo
+            // helper/model ja usados na criacao da conta (financial_transaction_id aqui e' o
+            // proprio $id, sempre existe).
+            $this->storeAttachments($id, $_FILES['attachments'] ?? null);
         }
 
         Router::redirect($_SERVER['HTTP_REFERER'] ?? '/painel/financeiro/contas-a-pagar');
@@ -732,6 +737,7 @@ class FinanceController
             'pricingTiersRef' => $pricingTiersRef,
             'vendorOwnTiers' => $vendorOwnTiers,
             'vendorCommissionType' => $user['commission_type'] ?? null,
+            'attachmentsByCommission' => CommissionAttachment::forCommissions(array_column($commissions, 'id')),
         ]);
     }
 
@@ -813,7 +819,75 @@ class FinanceController
             Commission::markPaid($id, $transactionId);
         }
 
+        // Fase 116: comprovante opcional, fora do if(status==='pendente') acima de proposito --
+        // se por algum motivo a comissao ja tiver sido dada baixa antes sem anexo, ainda da pra
+        // anexar depois reabrindo o mesmo modal.
+        $this->storeCommissionAttachments($id, $_FILES['attachments'] ?? null);
+
         Router::redirect('/painel/financeiro/comissoes?sucesso=1');
+    }
+
+    /** Comprovante de pagamento da comissao (Fase 116) -- tabela propria (commission_attachments),
+     *  nao financial_attachments: uma comissao pode nao ter financial_transaction_id (accountId
+     *  vazio acima), entao o comprovante nao pode depender de uma transacao ter sido criada. */
+    private function storeCommissionAttachments(int $commissionId, ?array $filesInput): void
+    {
+        if (!$filesInput) {
+            return;
+        }
+
+        $count = count($filesInput['name']);
+        for ($i = 0; $i < $count; $i++) {
+            if (($filesInput['error'][$i] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+                continue;
+            }
+            $file = [
+                'name' => $filesInput['name'][$i],
+                'type' => $filesInput['type'][$i],
+                'tmp_name' => $filesInput['tmp_name'][$i],
+                'error' => $filesInput['error'][$i],
+                'size' => $filesInput['size'][$i],
+            ];
+            $stored = FileUpload::storeCommissionProof($file);
+            if ($stored) {
+                CommissionAttachment::create($stored + ['commission_id' => $commissionId]);
+            }
+        }
+    }
+
+    /** Download autenticado do comprovante de comissao -- mesmo padrao de downloadAttachment()
+     *  (nunca serve arquivo estatico direto), so' que o escopo de quem pode ver e'
+     *  commissionManageScope() (quem podia dar baixa nessa comissao), nao scopeFilters(). */
+    public function downloadCommissionAttachment(string $id): void
+    {
+        Auth::requireRole(array_merge(Roles::MANAGEMENT, Roles::NATIONAL_SUPPORT));
+        $user = Auth::user();
+
+        $attachment = CommissionAttachment::find((int) $id);
+        if (!$attachment) {
+            http_response_code(404);
+            exit('Anexo não encontrado.');
+        }
+
+        $commission = Commission::find((int) $attachment['commission_id']);
+        $manageScope = $this->commissionManageScope($user);
+        if (!$commission || !in_array((int) $commission['beneficiary_id'], $manageScope, true)) {
+            http_response_code(403);
+            require BASE_PATH . '/app/Views/errors/403.php';
+            exit;
+        }
+
+        $path = FileUpload::path('commission_proofs', $attachment['stored_name']);
+        if (!file_exists($path)) {
+            http_response_code(404);
+            exit('Arquivo não encontrado.');
+        }
+
+        header('Content-Type: ' . $attachment['mime_type']);
+        header('Content-Disposition: inline; filename="' . rawurlencode($attachment['original_name']) . '"');
+        header('Content-Length: ' . filesize($path));
+        readfile($path);
+        exit;
     }
 
     private function storeAttachments(int $transactionId, ?array $filesInput): void

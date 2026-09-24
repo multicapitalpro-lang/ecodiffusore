@@ -627,6 +627,32 @@ class User
         $stmt->execute(['id' => $id]);
     }
 
+    /** Dados bancarios/Pix que o proprio usuario preenche no primeiro acesso (Fase 116) --
+     *  dedicado (nao reaproveita update()) pelo mesmo motivo de completeOnboardingProfile():
+     *  campos e contexto de quem chama (o proprio usuario, sempre editavel depois via
+     *  /painel/dados-bancarios) sao diferentes do formulario administrativo. */
+    public static function updateBankData(int $id, array $data): void
+    {
+        $stmt = Database::connection()->prepare(
+            'UPDATE users SET bank_code = :bank_code, bank_name = :bank_name, bank_agency = :bank_agency,
+                bank_account = :bank_account, bank_account_digit = :bank_account_digit,
+                bank_account_type = :bank_account_type, pix_key = :pix_key, payment_document = :payment_document,
+                bank_data_completed_at = NOW()
+             WHERE id = :id'
+        );
+        $stmt->execute([
+            'id' => $id,
+            'bank_code' => trim($data['bank_code']),
+            'bank_name' => trim($data['bank_name']),
+            'bank_agency' => trim($data['bank_agency']),
+            'bank_account' => trim($data['bank_account']),
+            'bank_account_digit' => trim($data['bank_account_digit']),
+            'bank_account_type' => $data['bank_account_type'],
+            'pix_key' => trim($data['pix_key']),
+            'payment_document' => preg_replace('/\D/', '', (string) $data['payment_document']),
+        ]);
+    }
+
     /**
      * Salva o perfil completo que o Licenciado preenche no primeiro acesso (pessoa juridica +
      * representante + comprovante) e avanca o onboarding pra "aguardando_assinatura". Metodo

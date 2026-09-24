@@ -61,6 +61,12 @@ class FileUpload
         return self::store($file, 'financial');
     }
 
+    /** Comprovante de pagamento ao dar baixa numa comissao (Fase 116). */
+    public static function storeCommissionProof(array $file): ?array
+    {
+        return self::store($file, 'commission_proofs');
+    }
+
     public static function storeLicenciadoDocument(array $file): ?array
     {
         return self::store($file, 'licenciados');

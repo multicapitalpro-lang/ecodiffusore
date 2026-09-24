@@ -795,6 +795,33 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         });
 
+        // Fase 116: "Dar baixa" com comprovante opcional -- um unico modal compartilhado pra
+        // tabela inteira (nao um por linha), a action do form e' trocada em cada clique pro id
+        // certo (mesmo espirito de openFragmentModal, so' que aqui nao busca fragmento nenhum).
+        document.querySelectorAll('[data-mark-paid]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var id = btn.getAttribute('data-mark-paid');
+                var form = document.getElementById('mark-paid-form');
+                var modal = document.getElementById('modal-mark-paid');
+                if (!form || !modal) return;
+                form.action = '/painel/financeiro/contas/' + id + '/baixar';
+                modal.showModal();
+                document.body.classList.add('modal-open');
+            });
+        });
+
+        document.querySelectorAll('[data-mark-commission-paid]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var id = btn.getAttribute('data-mark-commission-paid');
+                var form = document.getElementById('mark-commission-paid-form');
+                var modal = document.getElementById('modal-mark-commission-paid');
+                if (!form || !modal) return;
+                form.action = '/painel/financeiro/comissoes/' + id + '/baixar';
+                modal.showModal();
+                document.body.classList.add('modal-open');
+            });
+        });
+
         // Confirmacao antes de excluir -- data-confirm no botao de submit (nao no form), pra
         // poder escolher exatamente qual botao dispara o aviso quando o form tem mais de um.
         document.addEventListener('submit', function (e) {

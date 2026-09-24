@@ -171,7 +171,7 @@ $presets = [
 <h3 class="section-title">Lançamentos</h3>
 <div class="table-scroll">
     <table class="data-table">
-        <thead><tr><?php if ($showDirection): ?><th></th><?php endif; ?><th>Pedido</th><th>Beneficiário</th><th>Papel</th><th>Cliente</th><th>Data</th><th>%</th><th>Comissão</th><th>Situação</th><?php if ($canManageAny): ?><th></th><?php endif; ?></tr></thead>
+        <thead><tr><?php if ($showDirection): ?><th></th><?php endif; ?><th>Pedido</th><th>Beneficiário</th><th>Papel</th><th>Cliente</th><th>Data</th><th>%</th><th>Comissão</th><th>Situação</th><th>Anexos</th><?php if ($canManageAny): ?><th></th><?php endif; ?></tr></thead>
         <tbody>
             <?php foreach ($commissions as $c): ?>
                 <tr>
@@ -191,21 +191,46 @@ $presets = [
                     <td><?= number_format((float) $c['effective_percentage'], 2, ',', '.') ?>%</td>
                     <td>R$ <?= number_format((float) $c['amount'], 2, ',', '.') ?></td>
                     <td><span class="status-badge status-<?= $c['status'] === 'pendente' ? 'contatado' : 'active' ?>"><?= $statusLabels[$c['status']] ?? $c['status'] ?></span></td>
+                    <td>
+                        <?php $items = $attachmentsByCommission[$c['id']] ?? []; $downloadBase = '/painel/financeiro/comissoes/anexos/'; include __DIR__ . '/_attachments_cell.php'; ?>
+                    </td>
                     <?php if ($canManageAny): ?>
                         <td>
+                            <?php if ($c['can_manage']): ?>
+                                <details class="inline-details">
+                                    <summary>Dados p/ pagamento</summary>
+                                    <?= View::e($c['bank_name'] ?: '—') ?> (<?= View::e($c['bank_code'] ?: '—') ?>)<br>
+                                    Ag. <?= View::e($c['bank_agency'] ?: '—') ?> · Conta <?= View::e($c['bank_account'] ?: '—') ?>-<?= View::e($c['bank_account_digit'] ?: '—') ?>
+                                    (<?= $c['bank_account_type'] === 'corrente' ? 'Corrente' : ($c['bank_account_type'] === 'poupanca' ? 'Poupança' : '—') ?>)<br>
+                                    Pix: <?= View::e($c['pix_key'] ?: '—') ?><br>
+                                    CPF/CNPJ: <?= View::e($c['beneficiary_document'] ?: '—') ?>
+                                </details>
+                            <?php endif; ?>
                             <?php if ($c['status'] === 'pendente' && $c['can_manage']): ?>
-                                <form action="/painel/financeiro/comissoes/<?= (int) $c['id'] ?>/baixar" method="post" class="inline-form">
-                                    <?= Csrf::field() ?>
-                                    <button type="submit" class="link-button">Dar baixa</button>
-                                </form>
+                                <button type="button" class="link-button" data-mark-commission-paid="<?= (int) $c['id'] ?>">Dar baixa</button>
                             <?php endif; ?>
                         </td>
                     <?php endif; ?>
                 </tr>
             <?php endforeach; ?>
             <?php if (!$commissions): ?>
-                <tr><td colspan="<?= ($canManageAny ? 9 : 8) + ($showDirection ? 1 : 0) ?>">Nenhuma comissão gerada nesse período.</td></tr>
+                <tr><td colspan="<?= ($canManageAny ? 10 : 9) + ($showDirection ? 1 : 0) ?>">Nenhuma comissão gerada nesse período.</td></tr>
             <?php endif; ?>
         </tbody>
     </table>
 </div>
+
+<dialog class="modal" id="modal-mark-commission-paid">
+    <div class="modal-header">
+        <h2>Dar baixa</h2>
+        <button type="button" class="modal-close" data-modal-close aria-label="Fechar">&times;</button>
+    </div>
+    <div class="modal-body">
+        <form id="mark-commission-paid-form" method="post" enctype="multipart/form-data" class="panel-form">
+            <?= Csrf::field() ?>
+            <?php include __DIR__ . '/_attachment_field.php'; ?>
+            <p class="hint-text">O comprovante é opcional, mas recomendado.</p>
+            <button type="submit" class="btn btn-primary">Confirmar baixa</button>
+        </form>
+    </div>
+</dialog>

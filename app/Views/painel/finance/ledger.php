@@ -97,10 +97,7 @@ $hasSub = SubscriptionGate::hasAccess($user);
                     <td class="table-actions">
                         <?php if ($t['status'] === 'pendente'): ?>
                             <?php if ($hasSub): ?>
-                                <form action="/painel/financeiro/contas/<?= (int) $t['id'] ?>/baixar" method="post" class="inline-form">
-                                    <?= Csrf::field() ?>
-                                    <button type="submit" class="link-button">Dar baixa</button>
-                                </form>
+                                <button type="button" class="link-button" data-mark-paid="<?= (int) $t['id'] ?>">Dar baixa</button>
                             <?php else: ?>
                                 <button type="button" class="link-button" data-modal-open="modal-assinatura">Dar baixa</button>
                             <?php endif; ?>
@@ -151,6 +148,21 @@ $hasSub = SubscriptionGate::hasAccess($user);
 </dialog>
 
 <?php include __DIR__ . '/_edit_transaction_modal.php'; ?>
+
+<dialog class="modal" id="modal-mark-paid">
+    <div class="modal-header">
+        <h2>Dar baixa</h2>
+        <button type="button" class="modal-close" data-modal-close aria-label="Fechar">&times;</button>
+    </div>
+    <div class="modal-body">
+        <form id="mark-paid-form" method="post" enctype="multipart/form-data" class="panel-form">
+            <?= Csrf::field() ?>
+            <?php include __DIR__ . '/_attachment_field.php'; ?>
+            <p class="hint-text">O comprovante é opcional, mas recomendado.</p>
+            <button type="submit" class="btn btn-primary">Confirmar baixa</button>
+        </form>
+    </div>
+</dialog>
 
 <dialog class="modal" id="modal-order-detail">
     <div id="modal-order-detail-content">

@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Core\Auth;
 use App\Core\Csrf;
 use App\Core\Mailer;
+use App\Core\Roles;
 use App\Core\Router;
 use App\Core\View;
 use App\Models\PasswordReset;
@@ -50,6 +51,9 @@ class AuthController
         }
         if ($user['role_slug'] === 'vendedor' && empty($user['training_completed_at'])) {
             Router::redirect('/painel/treinamento');
+        }
+        if (in_array($user['role_slug'], Roles::PAYOUT_ROLES, true) && empty($user['bank_data_completed_at'])) {
+            Router::redirect('/painel/dados-bancarios');
         }
 
         Router::redirect('/painel');

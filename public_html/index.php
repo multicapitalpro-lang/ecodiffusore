@@ -324,6 +324,9 @@ $router->get('/painel/certificacao', [App\Controllers\CertificationController::c
 $router->get('/painel/certificacao/pdf', [App\Controllers\CertificationController::class, 'pdf']);
 $router->get('/painel/treinamento', [App\Controllers\SellerTrainingController::class, 'show']);
 $router->post('/painel/treinamento/progresso', [App\Controllers\SellerTrainingController::class, 'reportProgress']);
+
+$router->get('/painel/dados-bancarios', [App\Controllers\BankAccountController::class, 'show']);
+$router->post('/painel/dados-bancarios', [App\Controllers\BankAccountController::class, 'update']);
 $router->get('/painel/configuracoes/treinamento', [App\Controllers\SellerTrainingController::class, 'manage']);
 $router->post('/painel/configuracoes/treinamento', [App\Controllers\SellerTrainingController::class, 'storeVideo']);
 $router->post('/painel/configuracoes/treinamento/{id}/excluir', [App\Controllers\SellerTrainingController::class, 'destroyVideo']);
@@ -501,6 +504,7 @@ $router->get('/painel/financeiro/anexos/{id}', [App\Controllers\FinanceControlle
 $router->get('/painel/financeiro/comissoes', [App\Controllers\FinanceController::class, 'commissions']);
 $router->get('/painel/financeiro/comissoes/exportar', [App\Controllers\FinanceController::class, 'exportCommissions']);
 $router->post('/painel/financeiro/comissoes/{id}/baixar', [App\Controllers\FinanceController::class, 'markCommissionPaid']);
+$router->get('/painel/financeiro/comissoes/anexos/{id}', [App\Controllers\FinanceController::class, 'downloadCommissionAttachment']);
 
 $router->get('/painel/financeiro/impostos', [App\Controllers\TaxController::class, 'index']);
 

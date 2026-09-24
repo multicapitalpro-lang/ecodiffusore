@@ -68,6 +68,9 @@ class DashboardController
         if ($user['role_slug'] === 'vendedor' && empty($user['training_completed_at'])) {
             Router::redirect('/painel/treinamento');
         }
+        if (in_array($user['role_slug'], Roles::PAYOUT_ROLES, true) && empty($user['bank_data_completed_at'])) {
+            Router::redirect('/painel/dados-bancarios');
+        }
 
         $role = $user['role_slug'];
         $data = ['user' => $user];

@@ -33,6 +33,10 @@ class Roles
     /** Quem pode cadastrar/editar a qual Supervisor um Licenciado fica atribuido. */
     public const SUPERVISOR_ASSIGNMENT = ['admin', 'gerente'];
 
+    /** Fase 116: os 5 papeis que recebem comissao e precisam de dados bancarios/Pix cadastrados
+     *  no primeiro acesso (gate em Auth::requireRole()). Mesmo conjunto de STAFF menos admin. */
+    public const PAYOUT_ROLES = ['gestor', 'licenciado', 'vendedor', 'gerente', 'supervisor'];
+
     /** Quem efetivamente vende e aparece como "vendedor" em pedidos/orcamentos */
     public const SELLER = 'vendedor';
 

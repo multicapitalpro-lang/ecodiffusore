@@ -202,8 +202,12 @@ class Commission
 
     public static function all(array $filters = []): array
     {
+        // Fase 116: dados bancarios/Pix do beneficiario, pra quem pode dar baixa ja ter
+        // agencia/conta/Pix/CPF em maos -- ver exibicao condicional a can_manage em commissions.php.
         $sql = 'SELECT c.*, b.name AS beneficiary_name, s.name AS seller_name,
-                    o.order_date, o.total_value AS order_total, cl.name AS client_name
+                    o.order_date, o.total_value AS order_total, cl.name AS client_name,
+                    b.bank_code, b.bank_name, b.bank_agency, b.bank_account, b.bank_account_digit,
+                    b.bank_account_type, b.pix_key, b.payment_document AS beneficiary_document
                 FROM commissions c
                 JOIN users b ON b.id = c.beneficiary_id
                 JOIN users s ON s.id = c.seller_id
@@ -247,7 +251,9 @@ class Commission
     public static function find(int $id): ?array
     {
         $stmt = Database::connection()->prepare(
-            'SELECT c.*, b.name AS beneficiary_name, b.whatsapp AS beneficiary_whatsapp
+            'SELECT c.*, b.name AS beneficiary_name, b.whatsapp AS beneficiary_whatsapp,
+                    b.bank_code, b.bank_name, b.bank_agency, b.bank_account, b.bank_account_digit,
+                    b.bank_account_type, b.pix_key, b.payment_document AS beneficiary_document
              FROM commissions c JOIN users b ON b.id = c.beneficiary_id
              WHERE c.id = :id'
         );

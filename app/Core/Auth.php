@@ -111,5 +111,15 @@ class Auth
         if ($user['role_slug'] === Roles::REGIONAL_OWNER && in_array($user['licenciado_onboarding_status'], ['aguardando_assinatura', 'aguardando_aprovacao', 'assinatura_recusada', 'kyc_recusado'], true)) {
             Router::redirect('/painel/licenciados/aguardando-assinatura');
         }
+
+        // Gate central de dados bancarios/Pix (Fase 116) -- Gestor/Licenciado/Vendedor/Gerente/
+        // Supervisor recebem comissao e o sistema nunca coletou dados de pagamento de ninguem.
+        // Retroativo de proposito: bank_data_completed_at fica NULL tanto pra cadastro novo
+        // quanto pra conta que ja existia antes desta fase, entao todo mundo cai aqui no proximo
+        // acesso ate preencher. Mesmo padrao dos gates acima: a tela (/painel/dados-bancarios)
+        // usa so' requireLogin(), nunca requireRole(), fica sempre acessivel mesmo com isso aqui.
+        if (in_array($user['role_slug'], Roles::PAYOUT_ROLES, true) && empty($user['bank_data_completed_at'])) {
+            Router::redirect('/painel/dados-bancarios');
+        }
     }
 }
