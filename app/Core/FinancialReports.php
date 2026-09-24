@@ -276,8 +276,26 @@ class FinancialReports
             }
         }
 
+        // Fase 119: Saldo inicial de cada BUCKET precisa ser o Saldo final do bucket ANTERIOR
+        // (so o primeiro bucket usa o saldo do periodo inteiro) -- antes repetia o mesmo
+        // $saldoInicial (saldo antes do periodo TODO) em toda coluna, entao a ultima semana
+        // aparecia "começando" do mesmo valor da primeira mesmo depois de semanas com movimento.
+        $resultadoPorBucket = [];
+        foreach ($buckets as $i => $b) {
+            $resultadoPorBucket[$i] = $totaisEntrada[$i] - $totaisSaida[$i];
+        }
+        $saldoInicialPorBucket = [];
+        $saldoFinalPorBucket = [];
+        $running = $saldoInicial;
+        foreach ($buckets as $i => $b) {
+            $saldoInicialPorBucket[$i] = $running;
+            $running += $resultadoPorBucket[$i];
+            $saldoFinalPorBucket[$i] = $running;
+        }
+
         $rows = [];
-        $rows[] = self::matrixRow('Saldo inicial', array_fill(0, count($buckets), $saldoInicial), true);
+        // Total override = saldoInicial (do PERIODO inteiro, nao soma dos saldos de cada semana).
+        $rows[] = self::matrixRow('Saldo inicial', $saldoInicialPorBucket, true, false, $saldoInicial);
 
         if ($despesasPorCategoria) {
             $rows[] = self::matrixRow('Despesas', array_fill(0, count($buckets), null), true, true);
@@ -292,25 +310,14 @@ class FinancialReports
             }
         }
 
-        $resultadoPorBucket = [];
-        $saldoAcumulado = $saldoInicial;
-        foreach ($buckets as $i => $b) {
-            $resultadoPorBucket[$i] = $totaisEntrada[$i] - $totaisSaida[$i];
-            $saldoAcumulado += $resultadoPorBucket[$i];
-        }
-
         $rows[] = self::matrixRow('Resultado', array_fill(0, count($buckets), null), true, true);
         $rows[] = self::matrixRow('Total de receitas', $totaisEntrada);
         $rows[] = self::matrixRow('Total de despesas', $totaisSaida);
         $rows[] = self::matrixRow('Receitas - Despesas', $resultadoPorBucket);
 
-        $saldoFinalPorBucket = [];
-        $running = $saldoInicial;
-        foreach ($buckets as $i => $b) {
-            $running += $resultadoPorBucket[$i];
-            $saldoFinalPorBucket[$i] = $running;
-        }
-        $rows[] = self::matrixRow('Saldo final', $saldoFinalPorBucket, true);
+        // Total override = saldo final do ULTIMO bucket (o saldo final do periodo inteiro), nao
+        // soma dos saldos finais de cada semana.
+        $rows[] = self::matrixRow('Saldo final', $saldoFinalPorBucket, true, false, end($saldoFinalPorBucket));
 
         return [
             'kind' => 'matrix',
@@ -442,18 +449,22 @@ class FinancialReports
             }
         }
 
+        // Fase 119: mesmo fix do balancete() -- Saldo inicial de cada bucket e' o Saldo acumulado
+        // do bucket ANTERIOR, nao o mesmo saldo do periodo inteiro repetido em toda coluna.
+        $saldoInicialPorBucket = [];
         $saldoAcumulado = [];
         $running = $saldoInicial;
         foreach ($buckets as $i => $b) {
+            $saldoInicialPorBucket[$i] = $running;
             $running += $entradas[$i] - $saidas[$i];
             $saldoAcumulado[$i] = $running;
         }
 
         $rows = [
-            self::matrixRow('Saldo inicial', array_fill(0, count($buckets), $saldoInicial), true),
+            self::matrixRow('Saldo inicial', $saldoInicialPorBucket, true, false, $saldoInicial),
             self::matrixRow('Entradas', $entradas),
             self::matrixRow('Saídas', $saidas),
-            self::matrixRow('Saldo acumulado', $saldoAcumulado, true),
+            self::matrixRow('Saldo acumulado', $saldoAcumulado, true, false, end($saldoAcumulado)),
         ];
 
         return ['kind' => 'matrix', 'periods' => array_column($buckets, 'label'), 'rows' => $rows];
@@ -805,9 +816,14 @@ class FinancialReports
         return $buckets;
     }
 
-    private static function matrixRow(string $label, array $values, bool $bold = false, bool $isHeader = false): array
+    /** Fase 119: $totalOverride existe pra linhas de SALDO (estoque/ponto-no-tempo -- Saldo
+     *  inicial/final/acumulado), onde somar os valores de cada periodo NAO FAZ SENTIDO (a coluna
+     *  Total virava a soma de saldos repetidos/crescentes, um numero sem significado contabil --
+     *  bug real reportado pelo usuario). Linhas de FLUXO (receitas/despesas por periodo) continuam
+     *  usando a soma automatica, que e' o comportamento correto pra elas. */
+    private static function matrixRow(string $label, array $values, bool $bold = false, bool $isHeader = false, ?float $totalOverride = null): array
     {
-        $total = $isHeader ? null : array_sum(array_map(fn ($v) => $v ?? 0, $values));
+        $total = $isHeader ? null : ($totalOverride ?? array_sum(array_map(fn ($v) => $v ?? 0, $values)));
         return ['label' => $label, 'values' => $values, 'total' => $total, 'bold' => $bold, 'header' => $isHeader];
     }
 
