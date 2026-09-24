@@ -24,6 +24,10 @@
     .report-split { width: 100%; display: table; }
     .report-split-col { display: table-cell; width: 50%; vertical-align: top; padding-right: 10px; }
     .report-split-col h3 { font-size: 12px; margin: 0 0 6px; }
+    .cards-grid { margin-bottom: 14px; }
+    .dash-card { display: inline-block; border: 1px solid #ddd; border-radius: 6px; padding: 8px 12px; margin: 0 8px 8px 0; min-width: 130px; }
+    .dash-card span { display: block; font-size: 9px; color: #666; text-transform: uppercase; }
+    .dash-card strong { display: block; font-size: 13px; margin-top: 2px; }
 </style>
 </head>
 <body>

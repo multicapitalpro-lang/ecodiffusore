@@ -25,15 +25,21 @@ $presets = [
 
 $sucesso = isset($_GET['sucesso']);
 $erro = $_GET['erro'] ?? null;
+$statusGroup = $statusGroup ?? '';
+$situacaoLabels = ['' => 'Todas as situações', 'andamento' => 'Em andamento', 'concluida' => 'Concluída', 'cancelada' => 'Cancelada', 'rejeitada' => 'Rejeitada'];
 ?>
 <div class="page-header">
     <h1>Antecipações (Asaas)</h1>
     <form method="post" action="/painel/financeiro/antecipacoes/sincronizar" class="inline-form">
         <?= Csrf::field() ?>
-        <button type="submit" class="btn btn-primary">🔄 Atualizar do Asaas</button>
+        <button type="submit" class="btn btn-outline">🔄 Forçar atualização</button>
     </form>
 </div>
-<p class="hint-text" style="margin-top:0;">Espelho local das antecipações reais da conta Asaas — clique em "Atualizar do Asaas" pra buscar o que há de novo (não busca automaticamente a cada carregamento de página).</p>
+<p class="hint-text" style="margin-top:0;">Espelho local das antecipações reais da conta Asaas, atualizado automaticamente sempre que você abre essa página. Use "Forçar atualização" só se quiser confirmar algo que acabou de acontecer sem recarregar.</p>
+
+<?php if (!empty($syncError)): ?>
+    <p class="form-msg form-msg-erro">Não foi possível atualizar com a Asaas agora (mostrando os últimos dados sincronizados). Detalhe: <?= View::e($syncError) ?></p>
+<?php endif; ?>
 
 <?php if ($sucesso): ?>
     <p class="form-msg form-msg-ok">Sincronizado com sucesso<?= isset($_GET['importadas']) ? ' — ' . (int) $_GET['importadas'] . ' antecipação(ões) no total' : '' ?>.</p>
@@ -46,6 +52,11 @@ $erro = $_GET['erro'] ?? null;
 <form method="get" class="filter-bar">
     <input type="date" name="from" value="<?= View::e($from) ?>">
     <input type="date" name="to" value="<?= View::e($to) ?>">
+    <select name="situacao">
+        <?php foreach ($situacaoLabels as $key => $label): ?>
+            <option value="<?= $key ?>" <?= $statusGroup === $key ? 'selected' : '' ?>><?= $label ?></option>
+        <?php endforeach; ?>
+    </select>
     <button type="submit" class="btn btn-outline">Filtrar</button>
     <?php foreach ($presets as $label => $range): ?>
         <a class="link-small" href="?from=<?= $range['from'] ?>&to=<?= $range['to'] ?>"><?= $label ?></a>
@@ -75,7 +86,7 @@ $erro = $_GET['erro'] ?? null;
 <div class="table-scroll">
     <table class="data-table">
         <thead>
-            <tr><th>Solicitada em</th><th>Cliente</th><th>Situação</th><th>Valor</th><th>Taxa</th><th>Líquido</th><th>Dias antecipados</th><th>Vencimento original</th></tr>
+            <tr><th>Solicitada em</th><th>Pedido</th><th>Cliente</th><th>Licenciado</th><th>Situação</th><th>Valor</th><th>Taxa</th><th>Líquido</th><th>Dias antecipados</th><th>Vencimento original</th></tr>
         </thead>
         <tbody>
             <?php foreach ($rows as $r): ?>
@@ -83,11 +94,16 @@ $erro = $_GET['erro'] ?? null;
                 <tr>
                     <td><?= $r['request_date'] ? View::e(date('d/m/Y', strtotime($r['request_date']))) : '—' ?></td>
                     <td>
-                        <?= $r['client_name'] ? View::e($r['client_name']) : '—' ?>
-                        <?php if ($r['payable_type'] && $r['payable_id']): ?>
-                            <br><small class="hint-text"><?= $r['payable_type'] === 'order' ? 'Pedido' : 'Orçamento' ?> #<?= (int) $r['payable_id'] ?></small>
+                        <?php if ($r['order_id']): ?>
+                            <button type="button" class="link-small" data-view-order="<?= (int) $r['order_id'] ?>">Pedido #<?= (int) $r['order_id'] ?></button>
+                        <?php elseif ($r['payable_type'] && $r['payable_id']): ?>
+                            Orçamento #<?= (int) $r['payable_id'] ?>
+                        <?php else: ?>
+                            —
                         <?php endif; ?>
                     </td>
+                    <td><?= $r['client_name'] ? View::e($r['client_name']) : '—' ?></td>
+                    <td><?= $r['licenciado_name'] ? View::e($r['licenciado_name']) : '—' ?></td>
                     <td><span class="status-badge status-<?= $status[1] ?>"><?= View::e($status[0]) ?></span></td>
                     <td>R$ <?= number_format((float) $r['value'], 2, ',', '.') ?></td>
                     <td>R$ <?= number_format((float) $r['fee'], 2, ',', '.') ?></td>
@@ -97,8 +113,15 @@ $erro = $_GET['erro'] ?? null;
                 </tr>
             <?php endforeach; ?>
             <?php if (!$rows): ?>
-                <tr><td colspan="8">Nenhuma antecipação nesse período.</td></tr>
+                <tr><td colspan="10">Nenhuma antecipação nesse período.</td></tr>
             <?php endif; ?>
         </tbody>
     </table>
 </div>
+
+<dialog class="modal" id="modal-order-detail">
+    <div id="modal-order-detail-content">
+        <div class="modal-header"><h2>Pedido</h2><button type="button" class="modal-close" data-modal-close aria-label="Fechar">&times;</button></div>
+        <div class="modal-body"><p class="hint-text">Carregando...</p></div>
+    </div>
+</dialog>

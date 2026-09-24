@@ -11,6 +11,7 @@ use App\Core\Roles;
 use App\Core\Router;
 use App\Core\SubscriptionGate;
 use App\Core\View;
+use App\Models\FinancialAccount;
 use App\Models\ReportSchedule;
 use App\Models\User;
 
@@ -34,6 +35,11 @@ class ReportController
      *  Comissoes/Fiscal) continua exatamente como sempre foi, sem mudanca de acesso. */
     private const SALES_REPORT_TYPES = ['vendas_por_vendedor', 'garantias'];
     private const SALES_REPORT_GROUP = 'Vendas e CRM';
+
+    /** Fase 117: tipos que leem financial_transactions.account_id de verdade -- so esses ganham
+     *  o filtro "Conta" (Caixa Principal/ASAAS/Banco Sicredi/etc). Comissoes/Vendas/Fiscal/
+     *  Antecipacoes nao sao amarrados a uma conta financeira, filtro nao faria sentido neles. */
+    private const ACCOUNT_FILTERABLE_TYPES = ['balancete', 'dre', 'fluxo_caixa', 'por_categoria', 'por_cliente', 'pagamentos', 'recebimentos', 'controle_caixa'];
 
     public function index(): void
     {
@@ -69,6 +75,7 @@ class ReportController
         $this->assertTypeAllowed($type, $user);
 
         [$from, $to] = DateRange::fromRequest();
+        $accountId = in_array($type, self::ACCOUNT_FILTERABLE_TYPES, true) ? ($_GET['account_id'] ?? null) : null;
 
         View::render('painel/reports/show', [
             'user' => $user,
@@ -76,7 +83,9 @@ class ReportController
             'title' => FinancialReports::title($type, $user['role_slug']),
             'from' => $from,
             'to' => $to,
-            'report' => FinancialReports::generate($type, $from, $to, $this->scopeFor($user, $type), $user['role_slug']),
+            'accountId' => $accountId,
+            'accounts' => in_array($type, self::ACCOUNT_FILTERABLE_TYPES, true) ? FinancialAccount::all() : [],
+            'report' => FinancialReports::generate($type, $from, $to, $this->scopeFor($user, $type), $user['role_slug'], $accountId),
             'hasSub' => SubscriptionGate::hasAccess($user),
             'openSubscriptionModal' => SubscriptionGate::shouldAutoOpenModal($user),
         ]);
@@ -90,8 +99,9 @@ class ReportController
         $this->assertTypeAllowed($type, $user);
 
         [$from, $to] = DateRange::fromRequest();
+        $accountId = in_array($type, self::ACCOUNT_FILTERABLE_TYPES, true) ? ($_GET['account_id'] ?? null) : null;
         $title = FinancialReports::title($type, $user['role_slug']);
-        $report = FinancialReports::generate($type, $from, $to, $this->scopeFor($user, $type), $user['role_slug']);
+        $report = FinancialReports::generate($type, $from, $to, $this->scopeFor($user, $type), $user['role_slug'], $accountId);
 
         ob_start();
         View::render('painel/reports/pdf', compact('title', 'from', 'to', 'report'), null);

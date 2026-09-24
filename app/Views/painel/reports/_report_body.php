@@ -89,6 +89,16 @@ $maskReportValue = function ($value) use ($hasSub) {
         </div>
 
     <?php else: ?>
+        <?php if (!empty($report['totals'])): ?>
+            <div class="cards-grid" style="margin-bottom:16px;">
+                <?php foreach ($report['totals'] as $label => $value): ?>
+                    <div class="dash-card">
+                        <span><?= View::e($label) ?></span>
+                        <strong><?= View::e($maskReportValue($value)) ?></strong>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
         <div class="table-scroll">
             <table class="data-table">
                 <thead>

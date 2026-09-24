@@ -1,6 +1,8 @@
 <?php
 use App\Core\View;
-$qs = http_build_query(['from' => $from, 'to' => $to]);
+$accounts = $accounts ?? [];
+$accountId = $accountId ?? '';
+$qs = http_build_query(array_filter(['from' => $from, 'to' => $to, 'account_id' => $accountId]));
 ?>
 <div class="page-header">
     <h1><?= View::e($title) ?></h1>
@@ -21,6 +23,14 @@ $qs = http_build_query(['from' => $from, 'to' => $to]);
 <form method="get" class="filter-bar">
     <label>Período: <input type="date" name="from" value="<?= View::e($from) ?>"></label>
     <label>até <input type="date" name="to" value="<?= View::e($to) ?>"></label>
+    <?php if ($accounts): ?>
+        <select name="account_id">
+            <option value="">Todas as contas</option>
+            <?php foreach ($accounts as $acc): ?>
+                <option value="<?= (int) $acc['id'] ?>" <?= (string) $accountId === (string) $acc['id'] ? 'selected' : '' ?>><?= View::e($acc['name']) ?></option>
+            <?php endforeach; ?>
+        </select>
+    <?php endif; ?>
     <button type="submit" class="btn btn-outline">Visualizar</button>
 </form>
 

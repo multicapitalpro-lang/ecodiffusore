@@ -25,6 +25,18 @@ class AsaasAnticipation
             $sql .= ' AND a.status = :status';
             $params['status'] = $filters['status'];
         }
+        // Fase 117: filtro por GRUPO de situacao (em andamento/concluida/cancelada/rejeitada) --
+        // a Asaas devolve varios status brutos por grupo (ex: DONE e CREDITED sao "concluida"),
+        // entao precisa de um IN(), diferente do match exato de :status acima.
+        if (!empty($filters['statuses']) && is_array($filters['statuses'])) {
+            $names = [];
+            foreach (array_values($filters['statuses']) as $i => $s) {
+                $key = "st{$i}";
+                $names[] = ":{$key}";
+                $params[$key] = $s;
+            }
+            $sql .= ' AND a.status IN (' . implode(',', $names) . ')';
+        }
         if (!empty($filters['from'])) {
             $sql .= ' AND a.request_date >= :from';
             $params['from'] = $filters['from'];
