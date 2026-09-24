@@ -6,10 +6,14 @@ use App\Core\Database;
 
 class FinancialAccount
 {
+    /** Fase 119c: so' contas ATIVAS -- desativar uma conta (ex: "Caixa Principal", que o usuario
+     *  confirmou nao existir de verdade) precisa tira-la de toda tela de selecao/filtro/saldo,
+     *  nao so' do defaultAccountId(). Historico (transacoes antigas que referenciam a conta) nao
+     *  e' afetado -- essa query so' controla o que aparece pra ESCOLHER/exibir daqui pra frente. */
     public static function all(): array
     {
         return Database::connection()
-            ->query('SELECT * FROM financial_accounts ORDER BY name')
+            ->query("SELECT * FROM financial_accounts WHERE active = 1 ORDER BY name")
             ->fetchAll();
     }
 
