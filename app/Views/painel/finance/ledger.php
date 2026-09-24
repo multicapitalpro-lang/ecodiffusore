@@ -58,6 +58,12 @@ $hasSub = SubscriptionGate::hasAccess($user);
             <option value="<?= $key ?>" <?= ($filters['status'] ?? '') === $key ? 'selected' : '' ?>><?= $label ?></option>
         <?php endforeach; ?>
     </select>
+    <select name="account_id">
+        <option value="">Todas as contas</option>
+        <?php foreach ($accounts as $acc): ?>
+            <option value="<?= (int) $acc['id'] ?>" <?= (string) ($filters['account_id'] ?? '') === (string) $acc['id'] ? 'selected' : '' ?>><?= View::e($acc['name']) ?></option>
+        <?php endforeach; ?>
+    </select>
     <select name="category_id">
         <option value="">Todas as categorias</option>
         <?php foreach ($categoryGroups as $group): ?>
