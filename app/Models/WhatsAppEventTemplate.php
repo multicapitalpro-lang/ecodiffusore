@@ -38,6 +38,9 @@ class WhatsAppEventTemplate
         'pagamento_pendente_aviso',
         'email_profissional_solicitado',
         'email_profissional_decidido',
+        'vendedor_contrato_enviado',
+        'vendedor_contrato_aprovado',
+        'vendedor_contrato_reprovado',
     ];
 
     public const LABELS = [
@@ -66,6 +69,9 @@ class WhatsAppEventTemplate
         'pagamento_pendente_aviso' => 'Pagamento pendente há muito tempo (vendedor)',
         'email_profissional_solicitado' => 'Licenciado pediu e-mail profissional (admin)',
         'email_profissional_decidido' => 'Status do pedido de e-mail profissional (licenciado)',
+        'vendedor_contrato_enviado' => 'Vendedor enviou contrato assinado (licenciado)',
+        'vendedor_contrato_aprovado' => 'Contrato do vendedor aprovado',
+        'vendedor_contrato_reprovado' => 'Contrato do vendedor reprovado',
     ];
 
     /** Quais placeholders {chave} cada evento aceita -- so pra exibir dica na tela, nao valida nada. */
@@ -95,6 +101,9 @@ class WhatsAppEventTemplate
         'pagamento_pendente_aviso' => ['cliente', 'pedido', 'url'],
         'email_profissional_solicitado' => ['licenciado', 'endereco', 'url'],
         'email_profissional_decidido' => ['endereco', 'status', 'info', 'url'],
+        'vendedor_contrato_enviado' => ['vendedor', 'url'],
+        'vendedor_contrato_aprovado' => ['url'],
+        'vendedor_contrato_reprovado' => ['motivo', 'url'],
     ];
 
     /** Eventos que so usam UM dos dois textos (o outro fica sempre null/nao editavel). */
@@ -102,9 +111,9 @@ class WhatsAppEventTemplate
         'follow_up_lembrete', 'acesso_portal_criado', 'pedido_atualizacao_entrega', 'cobranca_gerada', 'orcamento_lembrete_lead',
         'garantia_estendida_lembrete_dia1', 'garantia_estendida_lembrete_dia5', 'garantia_estendida_lembrete_dia10', 'garantia_estendida_lembrete_dia15',
         'licenciado_contrato_pendente', 'liberacao_desconto_decidida', 'pagamento_confirmado_cliente',
-        'pagamento_pendente_aviso', 'email_profissional_decidido',
+        'pagamento_pendente_aviso', 'email_profissional_decidido', 'vendedor_contrato_aprovado', 'vendedor_contrato_reprovado',
     ];
-    public const NETWORK_ONLY = ['vendedor_inativo', 'licenciado_pendente_aprovacao', 'liberacao_desconto_solicitada', 'email_profissional_solicitado'];
+    public const NETWORK_ONLY = ['vendedor_inativo', 'licenciado_pendente_aprovacao', 'liberacao_desconto_solicitada', 'email_profissional_solicitado', 'vendedor_contrato_enviado'];
 
     /** Quem de fato recebe cada variante, POR EVENTO -- o alcance da "rede" varia bastante entre
      *  eventos (lead roteado so tem o Licenciado; pedido tem a cadeia inteira), entao um rotulo
@@ -131,6 +140,8 @@ class WhatsAppEventTemplate
         'pagamento_confirmado_cliente' => 'Cliente (dono do pedido)',
         'pagamento_pendente_aviso' => 'Vendedor (dono do pedido)',
         'email_profissional_decidido' => 'Licenciado (quem pediu o e-mail)',
+        'vendedor_contrato_aprovado' => 'Vendedor (dono do contrato)',
+        'vendedor_contrato_reprovado' => 'Vendedor (dono do contrato)',
     ];
 
     public const NETWORK_LABELS = [
@@ -145,6 +156,7 @@ class WhatsAppEventTemplate
         'liberacao_desconto_solicitada' => 'Quem pode aprovar (Gestor/Licenciado, ou Gerente/Supervisor/Admin conforme quem pediu)',
         'pedido_documentos_enviados' => 'Licenciado da rede',
         'email_profissional_solicitado' => 'Admin',
+        'vendedor_contrato_enviado' => 'Licenciado da rede',
     ];
 
     public static function all(): array

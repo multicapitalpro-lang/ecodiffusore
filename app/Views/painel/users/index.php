@@ -12,6 +12,12 @@ $onboardingLabels = [
     'assinatura_recusada' => ['Assinatura recusada', 'recusado'],
     'kyc_recusado' => ['KYC recusado', 'recusado'],
 ];
+$vendorContractLabels = [
+    'pendente_envio' => ['Contrato pendente de envio', 'aguardando-perfil'],
+    'aguardando_aprovacao' => ['Contrato aguardando aprovação', 'aguardando-assinatura'],
+    'aprovado' => ['Contrato aprovado', 'active'],
+    'reprovado' => ['Contrato reprovado', 'recusado'],
+];
 $erroLabels = [
     'csrf' => 'Sessão expirada, tente novamente.',
     'self' => 'Você não pode excluir seu próprio usuário.',
@@ -196,6 +202,9 @@ $cardActive = fn (string $roleValue) => $filters['role'] === $roleValue ? ' is-a
                         <td>
                             <?php if (($u['licenciado_onboarding_status'] ?? 'nao_aplicavel') !== 'nao_aplicavel'): ?>
                                 <?php [$label, $badge] = $onboardingLabels[$u['licenciado_onboarding_status']] ?? [$u['licenciado_onboarding_status'], 'novo']; ?>
+                                <span class="status-badge status-<?= View::e($badge) ?>"><?= View::e($label) ?></span>
+                            <?php elseif (($u['vendedor_contract_status'] ?? 'nao_aplicavel') !== 'nao_aplicavel'): ?>
+                                <?php [$label, $badge] = $vendorContractLabels[$u['vendedor_contract_status']] ?? [$u['vendedor_contract_status'], 'novo']; ?>
                                 <span class="status-badge status-<?= View::e($badge) ?>"><?= View::e($label) ?></span>
                             <?php else: ?>
                                 —

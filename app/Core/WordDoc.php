@@ -119,6 +119,73 @@ class WordDoc
         exit;
     }
 
+    /** Fase 105: contrato do Vendedor -- assinado via gov.br (fora do ClickSign, pra nao gerar
+     *  custo por envelope) e reenviado pelo proprio Vendedor em /painel/contrato-vendedor. Texto
+     *  ainda E' PROVISORIO (marcado como tal no proprio documento) -- o usuario disse que vai
+     *  mandar o contrato oficial depois; quando chegar, so' trocar o texto deste metodo (a
+     *  infraestrutura de upload/aprovacao ja fica pronta e nao muda). */
+    public static function downloadVendorContract(array $data): void
+    {
+        require_once BASE_PATH . '/vendor/autoload.php';
+
+        $phpWord = new PhpWord();
+        $phpWord->getSettings()->setThemeFontLang(new Language(Language::PT_BR));
+        $phpWord->setDefaultFontName('Calibri');
+        $phpWord->setDefaultFontSize(10);
+
+        $section = $phpWord->addSection([
+            'marginTop' => 900, 'marginBottom' => 900, 'marginLeft' => 1100, 'marginRight' => 1100,
+        ]);
+
+        $section->addText(
+            '⚠️ MODELO PROVISÓRIO — AGUARDANDO TEXTO OFICIAL',
+            ['bold' => true, 'size' => 10, 'color' => 'C53030'],
+            ['alignment' => Jc::CENTER, 'spaceAfter' => 200]
+        );
+        $section->addText('CONTRATO DE REPRESENTAÇÃO COMERCIAL', ['bold' => true, 'size' => 16, 'color' => '003254'], ['alignment' => Jc::CENTER]);
+        $section->addText('ECODIFFUSORE BRASIL', ['bold' => true, 'size' => 10, 'color' => '1A7A4C'], ['alignment' => Jc::CENTER, 'spaceAfter' => 300]);
+
+        $infoTable = $section->addTable(['borderSize' => 4, 'borderColor' => 'DDDDDD', 'cellMargin' => 80, 'width' => 100 * 50, 'unit' => 'pct']);
+        $infoTable->addRow();
+        self::infoCell($infoTable, 'Vendedor', $data['vendorName']);
+        self::infoCell($infoTable, 'Licenciado responsável', $data['licenciadoName'] ?: '—');
+        $infoTable->addRow();
+        self::infoCell($infoTable, 'E-mail', $data['vendorEmail'] ?: '—');
+        self::infoCell($infoTable, 'Comissão contratada', $data['commissionLabel'] ?: '—');
+        $section->addTextBreak(1);
+
+        $section->addText('CPF: ______________________________     RG: ______________________________', ['size' => 10], ['spaceAfter' => 300]);
+
+        $clauses = [
+            ['OBJETO', 'O presente contrato regula a relação de representação comercial entre o Vendedor acima identificado e o Licenciado Ecodiffusore Brasil responsável por sua rede, para fins de intermediação de vendas dos produtos e serviços Ecodiffusore Brasil.'],
+            ['COMISSÃO', 'O Vendedor fará jus à comissão informada acima sobre as vendas por ele intermediadas e efetivamente pagas pelo cliente, nos termos e condições vigentes definidos pelo Licenciado/Ecodiffusore Brasil.'],
+            ['CONFIDENCIALIDADE', 'O Vendedor compromete-se a manter sigilo sobre dados de clientes, preços, condições comerciais e demais informações a que tiver acesso em razão desta representação.'],
+            ['VIGÊNCIA E RESCISÃO', 'Este contrato vigora a partir da data de assinatura, podendo ser rescindido por qualquer das partes mediante aviso prévio, sem prejuízo das comissões já devidas por vendas efetivamente concluídas.'],
+        ];
+        foreach ($clauses as [$title, $text]) {
+            $section->addText($title, ['bold' => true, 'color' => '1A7A4C', 'size' => 10]);
+            $section->addText($text, ['size' => 9.5], ['alignment' => Jc::BOTH, 'spaceAfter' => 200]);
+        }
+
+        $section->addText('Data: ' . date('d/m/Y'), ['size' => 9], ['spaceAfter' => 600]);
+
+        $signTable = $section->addTable(['width' => 100 * 50, 'unit' => 'pct']);
+        $signTable->addRow();
+        $signTable->addCell(3000)->addText('ECODIFFUSORE BRASIL / LICENCIADO', ['bold' => true, 'color' => '1A7A4C', 'size' => 9], ['alignment' => Jc::CENTER]);
+        $signTable->addCell(3000)->addText('VENDEDOR', ['bold' => true, 'color' => '1A7A4C', 'size' => 9], ['alignment' => Jc::CENTER]);
+        $signTable->addRow();
+        $signTable->addCell(3000)->addText('Assinatura (gov.br)', ['size' => 8], ['alignment' => Jc::CENTER]);
+        $signTable->addCell(3000)->addText('Assinatura (gov.br)', ['size' => 8], ['alignment' => Jc::CENTER]);
+
+        $filename = 'contrato-vendedor-ecodiffusore.docx';
+        header('Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+        $writer = IOFactory::createWriter($phpWord, 'Word2007');
+        $writer->save('php://output');
+        exit;
+    }
+
     private static function infoCell($table, string $label, string $value): void
     {
         $cell = $table->addCell(3300);

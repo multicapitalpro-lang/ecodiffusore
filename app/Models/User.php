@@ -356,9 +356,11 @@ class User
 
         $stmt = Database::connection()->prepare(
             'INSERT INTO users (role_id, manager_id, name, email, whatsapp, city, state, password_hash, status, commission_pct,
-                influencer_commission_value, commission_type, must_change_password, email_verified_at, licenciado_onboarding_status)
+                influencer_commission_value, commission_type, must_change_password, email_verified_at, licenciado_onboarding_status,
+                vendedor_contract_status)
              VALUES (:role_id, :manager_id, :name, :email, :whatsapp, :city, :state, :password_hash, :status, :commission_pct,
-                :influencer_commission_value, :commission_type, :must_change_password, :email_verified_at, :licenciado_onboarding_status)'
+                :influencer_commission_value, :commission_type, :must_change_password, :email_verified_at, :licenciado_onboarding_status,
+                :vendedor_contract_status)'
         );
         $stmt->execute([
             'role_id' => $data['role_id'],
@@ -376,6 +378,7 @@ class User
             'must_change_password' => !empty($data['must_change_password']) ? 1 : 0,
             'email_verified_at' => $emailVerified ? date('Y-m-d H:i:s') : null,
             'licenciado_onboarding_status' => $data['licenciado_onboarding_status'] ?? 'nao_aplicavel',
+            'vendedor_contract_status' => $data['vendedor_contract_status'] ?? 'nao_aplicavel',
         ]);
 
         return (int) Database::connection()->lastInsertId();
@@ -685,5 +688,83 @@ class User
             return 0;
         }
         return count(self::pendingApproval($viewer));
+    }
+
+    /** Fase 105: Vendedores da rede de um Licenciado com contrato assinado enviado, aguardando
+     *  aprovar/reprovar. Admin ve todos (suporte); Licenciado ve so' a propria rede (downlineIds()
+     *  ja inclui ele mesmo + gestor/vendedor em cascata, mas so' vendedor entra nesse status). */
+    public static function pendingVendorContracts(array $viewer): array
+    {
+        if ($viewer['role_slug'] === 'admin') {
+            $stmt = Database::connection()->query(
+                "SELECT u.* FROM users u WHERE u.vendedor_contract_status = 'aguardando_aprovacao' ORDER BY u.vendedor_contract_sent_at ASC"
+            );
+            return $stmt->fetchAll();
+        }
+
+        if ($viewer['role_slug'] === 'licenciado') {
+            $network = self::downlineIds((int) $viewer['id']);
+            if (!$network) {
+                return [];
+            }
+            $placeholders = implode(',', array_fill(0, count($network), '?'));
+            $stmt = Database::connection()->prepare(
+                "SELECT u.* FROM users u WHERE u.vendedor_contract_status = 'aguardando_aprovacao'
+                 AND u.id IN ({$placeholders}) ORDER BY u.vendedor_contract_sent_at ASC"
+            );
+            $stmt->execute($network);
+            return $stmt->fetchAll();
+        }
+
+        return [];
+    }
+
+    public static function pendingVendorContractCount(array $viewer): int
+    {
+        if (!in_array($viewer['role_slug'], ['admin', 'licenciado'], true)) {
+            return 0;
+        }
+        return count(self::pendingVendorContracts($viewer));
+    }
+
+    /** Vendedor baixou o contrato, assinou via gov.br e enviou de volta -- volta a 'reprovado'
+     *  ou vem de 'pendente_envio', em ambos os casos limpa qualquer revisao anterior. */
+    public static function submitVendorContract(int $id, array $file): void
+    {
+        $stmt = Database::connection()->prepare(
+            "UPDATE users SET vendedor_contract_status = 'aguardando_aprovacao', vendedor_contract_path = :path,
+                vendedor_contract_original_name = :original_name, vendedor_contract_sent_at = NOW(),
+                vendedor_contract_reviewed_at = NULL, vendedor_contract_reviewed_by_user_id = NULL,
+                vendedor_contract_rejection_reason = NULL
+             WHERE id = :id"
+        );
+        $stmt->execute([
+            'path' => $file['stored_name'],
+            'original_name' => $file['original_name'],
+            'id' => $id,
+        ]);
+    }
+
+    public static function approveVendorContract(int $id, int $reviewerId): void
+    {
+        $stmt = Database::connection()->prepare(
+            "UPDATE users SET vendedor_contract_status = 'aprovado', vendedor_contract_reviewed_at = NOW(),
+                vendedor_contract_reviewed_by_user_id = :reviewer, vendedor_contract_rejection_reason = NULL
+             WHERE id = :id"
+        );
+        $stmt->execute(['reviewer' => $reviewerId, 'id' => $id]);
+    }
+
+    /** Reprovar volta pro estado inicial (pedido explicito do usuario: vendedor reenvia sem
+     *  limite) -- fica em 'reprovado' so' pra mostrar o motivo na tela dele; a tela de envio
+     *  aceita reenviar direto desse estado, sem precisar de um estado 'pendente_envio' intermediario. */
+    public static function rejectVendorContract(int $id, int $reviewerId, string $reason): void
+    {
+        $stmt = Database::connection()->prepare(
+            "UPDATE users SET vendedor_contract_status = 'reprovado', vendedor_contract_reviewed_at = NOW(),
+                vendedor_contract_reviewed_by_user_id = :reviewer, vendedor_contract_rejection_reason = :reason
+             WHERE id = :id"
+        );
+        $stmt->execute(['reviewer' => $reviewerId, 'reason' => $reason, 'id' => $id]);
     }
 }

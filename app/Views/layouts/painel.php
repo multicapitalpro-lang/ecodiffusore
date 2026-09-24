@@ -85,6 +85,7 @@ if (in_array($role, ['supervisor', 'gerente', 'admin'], true)) {
     };
     $pendingDocumentApprovals = count(\App\Models\Order::pendingDocumentApproval($docScopeIds));
 }
+$pendingVendorContracts = in_array($role, ['licenciado', 'admin'], true) ? User::pendingVendorContractCount($user) : 0;
 $myPendingPriceRequests = 0;
 if (in_array($role, ['vendedor', 'gestor', 'licenciado'], true)) {
     $myPendingPriceRequests = \App\Models\Approval::countMyPendingRequests((int) $user['id']);
@@ -277,6 +278,12 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/desempen
 
             <?php if (in_array($role, $userManagementRoles, true)): ?>
                 <a href="/painel/usuarios" class="<?= $isActive('/painel/usuarios') ? 'is-active' : '' ?>"><?= $icon('gear') ?> Usuários</a>
+            <?php endif; ?>
+            <?php if (in_array($role, ['licenciado', 'admin'], true)): ?>
+                <a href="/painel/contrato-vendedor/aprovar" class="<?= $isActive('/painel/contrato-vendedor') ? 'is-active' : '' ?>">
+                    <?= $icon('users') ?> Aprovar Vendedores
+                    <?php if ($pendingVendorContracts > 0): ?><span class="nav-badge"><?= (int) $pendingVendorContracts ?></span><?php endif; ?>
+                </a>
             <?php endif; ?>
             <?php if (in_array($role, $supervisorAssignmentRoles, true)): ?>
                 <a href="/painel/licenciados" class="<?= $isActive('/painel/licenciados') && !$isActive('/painel/licenciados/aprovacoes') ? 'is-active' : '' ?>"><?= $icon('users') ?> Licenciados</a>

@@ -429,6 +429,48 @@ class Notifier
         }
     }
 
+    /** Fase 105: Vendedor enviou o contrato assinado (gov.br) de volta -- avisa o Licenciado da
+     *  rede dele (User::licenciadoFor(), nunca o proprio Vendedor) que ha' uma aprovacao pendente.
+     *  So WhatsApp+push, mesmo padrao de pedidoDocumentosEnviados (fluxo interno, sem e-mail). */
+    public static function vendedorContratoEnviado(array $vendedor): void
+    {
+        $licenciado = User::licenciadoFor((int) $vendedor['id']);
+        if (!$licenciado) {
+            return;
+        }
+
+        $vars = ['vendedor' => $vendedor['name'] ?? '—', 'url' => self::BASE_URL . '/painel/contrato-vendedor/aprovar'];
+        [, $waNetwork] = self::waTexts('vendedor_contrato_enviado', $vars);
+        if ($waNetwork && !empty($licenciado['whatsapp'])) {
+            self::sendWhatsApp($licenciado['whatsapp'], $waNetwork);
+        }
+        self::sendPush((int) $licenciado['id'], 'Contrato de vendedor pra aprovar', "{$vars['vendedor']} enviou o contrato assinado.", ['type' => 'vendedor_contrato_aguardando_aprovacao'], 'urgent');
+    }
+
+    /** @param array $vendedor precisa de id/name/whatsapp */
+    public static function vendedorContratoAprovado(array $vendedor): void
+    {
+        $url = self::BASE_URL . '/painel';
+        $vars = ['url' => $url];
+        [$waSelf] = self::waTexts('vendedor_contrato_aprovado', $vars);
+        if ($waSelf && !empty($vendedor['whatsapp'])) {
+            self::sendWhatsApp($vendedor['whatsapp'], $waSelf);
+        }
+        self::sendPush((int) $vendedor['id'], 'Contrato aprovado!', 'Seu acesso completo ao painel foi liberado.', ['type' => 'vendedor_contrato_aprovado'], 'urgent');
+    }
+
+    /** @param array $vendedor precisa de id/name/whatsapp */
+    public static function vendedorContratoReprovado(array $vendedor, string $reason): void
+    {
+        $url = self::BASE_URL . '/painel/contrato-vendedor';
+        $vars = ['motivo' => $reason, 'url' => $url];
+        [$waSelf] = self::waTexts('vendedor_contrato_reprovado', $vars);
+        if ($waSelf && !empty($vendedor['whatsapp'])) {
+            self::sendWhatsApp($vendedor['whatsapp'], $waSelf);
+        }
+        self::sendPush((int) $vendedor['id'], 'Contrato reprovado', $reason, ['type' => 'vendedor_contrato_reprovado'], 'urgent');
+    }
+
     /**
      * Fase 57b: avisa por WhatsApp quem PODE decidir uma pendencia de preco abaixo do piso, na
      * hora que ela e' criada (App\Models\Approval::checkAndRequest()) -- pedido explicito do

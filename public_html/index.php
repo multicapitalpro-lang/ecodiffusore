@@ -330,6 +330,15 @@ $router->post('/painel/configuracoes/treinamento/modulos', [App\Controllers\Sell
 $router->post('/painel/configuracoes/treinamento/modulos/{id}/excluir', [App\Controllers\SellerTrainingController::class, 'destroyModule']);
 $router->post('/painel/configuracoes/treinamento/modulos/{id}/{direction}', [App\Controllers\SellerTrainingController::class, 'moveModule']);
 
+// Contrato do Vendedor (Fase 105)
+$router->get('/painel/contrato-vendedor', [App\Controllers\VendorContractController::class, 'show']);
+$router->get('/painel/contrato-vendedor/baixar', [App\Controllers\VendorContractController::class, 'download']);
+$router->post('/painel/contrato-vendedor/enviar', [App\Controllers\VendorContractController::class, 'upload']);
+$router->get('/painel/contrato-vendedor/aprovar', [App\Controllers\VendorContractController::class, 'pendingApprovals']);
+$router->post('/painel/contrato-vendedor/{id}/aprovar', [App\Controllers\VendorContractController::class, 'approve']);
+$router->post('/painel/contrato-vendedor/{id}/reprovar', [App\Controllers\VendorContractController::class, 'reject']);
+$router->get('/painel/contrato-vendedor/{id}/arquivo', [App\Controllers\VendorContractController::class, 'downloadSigned']);
+
 // Pedidos
 $router->get('/painel/pedidos', [App\Controllers\OrderController::class, 'index']);
 $router->get('/painel/pedidos/novo', [App\Controllers\OrderController::class, 'create']);

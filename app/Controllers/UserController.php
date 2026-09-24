@@ -226,6 +226,7 @@ class UserController
             'commission_type' => $vendorType,
             'must_change_password' => true,
             'licenciado_onboarding_status' => $createdRoleSlug === 'licenciado' ? 'aguardando_perfil' : 'nao_aplicavel',
+            'vendedor_contract_status' => $createdRoleSlug === 'vendedor' ? 'pendente_envio' : 'nao_aplicavel',
         ]);
 
         if (in_array($createdRoleSlug, ['vendedor', 'supervisor'], true) && $this->canSetCommission($user)) {

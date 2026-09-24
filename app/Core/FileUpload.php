@@ -111,6 +111,11 @@ class FileUpload
         return self::store($file, 'warranties');
     }
 
+    public static function storeVendorContract(array $file): ?array
+    {
+        return self::store($file, 'vendor_contracts');
+    }
+
     /** Fotos da cotacao publica de maquina agricola (Fase 45) -- enviadas por visitante anonimo
      *  em /comprar, sem sessao de painel. store() nao depende de auth, entao funciona igual. */
     public static function storeMachineQuotePhoto(array $file): ?array
