@@ -247,6 +247,10 @@ $router->get('/painel/simulador', [App\Controllers\SimuladorController::class, '
 $router->post('/painel/simulador', [App\Controllers\SimuladorController::class, 'calcular']);
 $router->post('/painel/simulador/pdf', [App\Controllers\SimuladorController::class, 'downloadPdf']);
 
+$router->get('/painel/calculadora-locacao', [App\Controllers\LeaseCalculatorController::class, 'index']);
+$router->post('/painel/calculadora-locacao', [App\Controllers\LeaseCalculatorController::class, 'calcular']);
+$router->post('/painel/calculadora-locacao/pdf', [App\Controllers\LeaseCalculatorController::class, 'downloadPdf']);
+
 $router->get('/painel/materiais', [App\Controllers\MaterialController::class, 'index']);
 $router->post('/painel/materiais/scripts', [App\Controllers\MaterialController::class, 'storeScript']);
 $router->post('/painel/materiais/scripts/{id}/excluir', [App\Controllers\MaterialController::class, 'deleteScript']);
