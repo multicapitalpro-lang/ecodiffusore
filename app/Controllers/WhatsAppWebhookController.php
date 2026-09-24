@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Core\WhatsAppBot;
 use App\Core\WhatsAppSync;
 use App\Models\WhatsAppChat;
 use App\Models\WhatsAppInstance;
@@ -51,6 +52,16 @@ class WhatsAppWebhookController
 
         $fromMe = !empty($data['key']['fromMe']);
         WhatsAppSync::importMessage($chatId, $data, !$fromMe);
+
+        // Fase 106: menu automatico -- so roda pra mensagem de VERDADE recebida (nunca a que o
+        // proprio sistema/humano mandou) na instancia CENTRAL (numero principal do site). As
+        // instancias pessoais de Licenciado/Gestor/Vendedor continuam 100% manuais.
+        if (!$fromMe && ($instance['type'] ?? 'pessoal') === 'central') {
+            $text = WhatsAppSync::extractBody($data);
+            if ($text !== null && $text !== '') {
+                WhatsAppBot::handleIncoming($instance, $chatId, $remoteJid, $text, $data['pushName'] ?? null);
+            }
+        }
     }
 
     private function handleConnectionUpdate(array $instance, array $data): void

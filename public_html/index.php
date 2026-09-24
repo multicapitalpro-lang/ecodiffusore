@@ -299,6 +299,7 @@ $router->post('/painel/configuracoes/roteamento', [App\Controllers\LeadRoutingSe
 $router->get('/painel/configuracoes/whatsapp', [App\Controllers\WhatsAppSettingsController::class, 'index']);
 $router->get('/painel/configuracoes/whatsapp/status', [App\Controllers\WhatsAppSettingsController::class, 'status']);
 $router->post('/painel/configuracoes/whatsapp/desconectar', [App\Controllers\WhatsAppSettingsController::class, 'disconnect']);
+$router->post('/painel/configuracoes/whatsapp/bot', [App\Controllers\WhatsAppSettingsController::class, 'toggleBot']);
 $router->post('/painel/configuracoes/whatsapp/evento/{eventKey}', [App\Controllers\WhatsAppSettingsController::class, 'updateTemplate']);
 
 $router->get('/painel/email', [App\Controllers\EmailInboxController::class, 'index']);

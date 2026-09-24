@@ -117,7 +117,9 @@ class WhatsAppSync
      *  documento/figurinha) fica com um resumo textual (icone + legenda, ou um rotulo generico sem
      *  legenda) usado como preview na lista de conversas; a THREAD (_thread.php) renderiza a midia de
      *  verdade e usa esse mesmo corpo so como legenda (com o icone removido na exibicao). */
-    private static function extractBody(array $m): ?string
+    /** Publico (Fase 106) -- reaproveitado por WhatsAppWebhookController pra pegar o texto puro da
+     *  mensagem recebida na instancia CENTRAL antes de repassar pro App\Core\WhatsAppBot. */
+    public static function extractBody(array $m): ?string
     {
         $msg = $m['message'] ?? [];
 

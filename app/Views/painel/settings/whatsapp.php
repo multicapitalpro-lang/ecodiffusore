@@ -20,6 +20,7 @@ $errors = $errors ?? [];
 <?php if ($user['role_slug'] === 'admin'): ?>
 <div class="settings-card" style="max-width:480px">
     <h3 class="section-title">Conexão do aparelho</h3>
+    <p class="hint-text">Esse é o número principal usado no site (o mesmo que envia os avisos automáticos do sistema). Conecte aqui o WhatsApp/WhatsApp Business desse número — assim que conectado, o <strong>menu de atendimento automático</strong> passa a responder sozinho quem mandar mensagem pra ele.</p>
     <p>Status: <strong id="wa-status">Verificando...</strong></p>
 
     <div id="wa-qr-wrap" hidden style="text-align:center;margin:16px 0">
@@ -29,6 +30,15 @@ $errors = $errors ?? [];
 
     <div id="wa-connected-wrap" hidden>
         <p class="form-msg form-msg-ok">Aparelho conectado e pronto pra enviar mensagens.</p>
+
+        <form method="post" action="/painel/configuracoes/whatsapp/bot" class="inline-form" style="margin-bottom:10px">
+            <?= Csrf::field() ?>
+            <label style="display:flex;align-items:center;gap:8px;font-weight:400">
+                <input type="checkbox" name="enabled" value="1" id="wa-bot-toggle" onchange="this.form.submit()">
+                Menu automático ativo (responde quem manda mensagem com o menu de opções)
+            </label>
+        </form>
+
         <form method="post" action="/painel/configuracoes/whatsapp/desconectar" class="inline-form" onsubmit="return confirm('Desconectar o aparelho atual? Vai precisar escanear o QR Code de novo.');">
             <?= Csrf::field() ?>
             <button type="submit" class="btn btn-outline">Desconectar</button>
@@ -47,6 +57,7 @@ $errors = $errors ?? [];
     var qrImg = document.getElementById('wa-qr');
     var connectedWrap = document.getElementById('wa-connected-wrap');
     var errorWrap = document.getElementById('wa-error-wrap');
+    var botToggle = document.getElementById('wa-bot-toggle');
 
     function poll() {
         fetch('/painel/configuracoes/whatsapp/status')
@@ -58,6 +69,7 @@ $errors = $errors ?? [];
                     statusEl.textContent = 'Conectado';
                     qrWrap.hidden = true;
                     connectedWrap.hidden = false;
+                    botToggle.checked = !!data.bot_enabled;
                 } else {
                     statusEl.textContent = data.state === 'connecting' ? 'Aguardando leitura do QR Code' : 'Desconectado';
                     connectedWrap.hidden = true;

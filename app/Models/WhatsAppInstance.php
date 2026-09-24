@@ -5,7 +5,9 @@ namespace App\Models;
 use App\Core\Database;
 
 /** Instancia Evolution API de um Licenciado/Gestor/Vendedor (Fase 33) -- 1 usuario = no maximo 1
- *  instancia (UNIQUE em user_id), nome gerado a partir do id do usuario pra nunca colidir. */
+ *  instancia (UNIQUE em user_id), nome gerado a partir do id do usuario pra nunca colidir.
+ *  Fase 106: user_id passa a aceitar NULL pra representar a instancia CENTRAL (type='central',
+ *  sem dono -- o numero principal do site, ver central()), que roda o menu automatico. */
 class WhatsAppInstance
 {
     public static function forUser(int $userId): ?array
@@ -30,6 +32,24 @@ class WhatsAppInstance
         $stmt->execute(['name' => $instanceName]);
         $row = $stmt->fetch();
         return $row ?: null;
+    }
+
+    /** Fase 106: instancia unica sem dono (user_id NULL), o numero principal do site -- a mesma
+     *  ja usada hoje pra ENVIAR as notificacoes automaticas do sistema (App\Core\Notifier), agora
+     *  tambem registrada aqui pra RECEBER mensagem de cliente e responder com o menu (App\Core\
+     *  WhatsAppBot). Semeada uma vez na migracao da Fase 106 (schema_fase106.sql), nunca criada em
+     *  runtime. */
+    public static function central(): ?array
+    {
+        $stmt = Database::connection()->query("SELECT * FROM whatsapp_instances WHERE type = 'central' LIMIT 1");
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
+    public static function setBotEnabled(int $id, bool $enabled): void
+    {
+        $stmt = Database::connection()->prepare('UPDATE whatsapp_instances SET bot_enabled = :enabled WHERE id = :id');
+        $stmt->execute(['enabled' => $enabled ? 1 : 0, 'id' => $id]);
     }
 
     /** Nome estavel e sem colisao -- "u{id}" (o mesmo usuario sempre gera o mesmo nome, entao
