@@ -132,7 +132,7 @@ $pricingTiers = $pricingTiers ?? [];
                 <div class="form-grid-2">
                     <div>
                         <label for="currency">Moeda do diesel</label>
-                        <select id="currency" name="currency">
+                        <select id="currency" name="currency" data-currency-symbol="<?= View::e($currencySymbol) ?>">
                             <option value="BRL">Real (R$)</option>
                             <option value="<?= View::e($secondaryCurrency) ?>"><?= View::e(\App\Core\Money::label($secondaryCurrency)) ?></option>
                         </select>
@@ -143,16 +143,6 @@ $pricingTiers = $pricingTiers ?? [];
                         <p class="field-error" data-error-for="preco_diesel"></p>
                     </div>
                 </div>
-                <script>
-                (function () {
-                    var select = document.getElementById('currency');
-                    var label = document.getElementById('diesel-unit-label');
-                    if (!select || !label) return;
-                    select.addEventListener('change', function () {
-                        label.textContent = select.value === 'BRL' ? 'R$' : <?= json_encode($currencySymbol) ?>;
-                    });
-                })();
-                </script>
             <?php else: ?>
                 <label for="preco_diesel">Preço médio do diesel na região (R$/litro)</label>
                 <input type="text" id="preco_diesel" name="preco_diesel" placeholder="Ex: 6,10" required>

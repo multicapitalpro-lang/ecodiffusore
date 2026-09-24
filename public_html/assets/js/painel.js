@@ -710,6 +710,20 @@ document.addEventListener('DOMContentLoaded', function () {
                     openFragmentModal('modal-proposta-facil', 'modal-proposta-facil-content', '/painel/proposta-facil?fragment=1', 'Proposta Fácil');
                 });
             }
+
+            // Fase 113: troca o rotulo "(R$/litro)"/"(₲/litro)" do preco do diesel conforme a
+            // moeda escolhida -- precisa estar aqui dentro (bindavel) e nao num <script> inline na
+            // view, pelo mesmo motivo do resto desta funcao (innerHTML do modal nao executa
+            // <script>, era exatamente esse o bug: o rotulo nunca trocava quando aberto pelo botao
+            // "⚡ Proposta Fácil").
+            var currencySelect = root.querySelector('#currency');
+            var dieselUnitLabel = root.querySelector('#diesel-unit-label');
+            if (currencySelect && dieselUnitLabel) {
+                var secondarySymbol = currencySelect.dataset.currencySymbol || '';
+                currencySelect.addEventListener('change', function () {
+                    dieselUnitLabel.textContent = currencySelect.value === 'BRL' ? 'R$' : secondarySymbol;
+                });
+            }
         }
 
         var propostaFacilBtn = document.getElementById('btn-proposta-facil');

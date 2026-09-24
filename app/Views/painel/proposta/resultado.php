@@ -7,12 +7,15 @@ use App\Models\PricingTier;
 /** @var array $result */
 /** @var array|null $pendingApproval */
 $isModal = $isModal ?? false;
-// Fase 111: so' a secao de ECONOMIA (preco do diesel/payback) converte pra moeda secundaria --
-// preco negociado/comissao/parcelas do cartao continuam sempre em R$ (valor real da venda,
-// tabela de piso da PricingTier e' em R$).
-$economyCurrency = $result['currency'] ?? 'BRL';
-$economyRate = $result['rate'] ?? 0.0;
-$fmtEconomy = fn (float $brl) => Money::format($brl, $economyCurrency, $economyRate);
+// Fase 113: TODA a proposta (investimento/parcelas/economia) converte pra moeda secundaria
+// quando escolhida -- pedido explicito do usuario ("se eu selecionei Guarani, deveria considerar
+// toda aquela situacao como Guarani"). So' o BANNER de liberacao de preco pendente (uso interno,
+// compara contra a tabela fixa de PricingTier) continua em R$ de proposito. O registro em si
+// (Quote/Order) fica sempre em R$ no banco -- essa conversao e' so' de exibicao.
+$currency = $result['currency'] ?? 'BRL';
+$rate = $result['rate'] ?? 0.0;
+$fmt = fn (float $brl) => Money::format($brl, $currency, $rate);
+$fmtEconomy = $fmt;
 ?>
 <?php if ($isModal): ?>
 <div class="modal-header">
@@ -63,7 +66,7 @@ $fmtEconomy = fn (float $brl) => Money::format($brl, $economyCurrency, $economyR
     $message = "Olá, {$result['name']}! Segue a proposta do Ecodiffusore que preparei pra você.\n"
         . "Veículo: {$result['brand']}" . ($result['model'] ? " {$result['model']}" : '') . ", {$result['year']}.\n"
         . ($result['product_name'] ? 'Produto: ' . $result['product_name'] . "\n" : '')
-        . ($result['product_price'] ? 'Investimento: R$ ' . number_format((float) $result['product_price'], 2, ',', '.') . "\n" : '')
+        . ($result['product_price'] ? 'Investimento: ' . $fmt((float) $result['product_price']) . "\n" : '')
         . $economyLine . "\n"
         . 'Qualquer dúvida, me chama por aqui — ' . $result['seller_name'];
 
@@ -117,9 +120,9 @@ $fmtEconomy = fn (float $brl) => Money::format($brl, $economyCurrency, $economyR
     <?php if ($result['product_price']): ?>
         <h3>Investimento</h3>
         <p style="font-size:1.1rem;">
-            <strong style="font-size:1.3rem;color:var(--green-dark);">R$ <?= number_format((float) $result['product_price'], 2, ',', '.') ?></strong>
+            <strong style="font-size:1.3rem;color:var(--green-dark);"><?= $fmt((float) $result['product_price']) ?></strong>
             <?= $result['product_name'] ? '— ' . View::e($result['product_name']) : '' ?>
-            <span class="tag-default"><?= (int) $result['quantidade'] ?>x R$ <?= number_format((float) $result['unit_price'], 2, ',', '.') ?></span>
+            <span class="tag-default"><?= (int) $result['quantidade'] ?>x <?= $fmt((float) $result['unit_price']) ?></span>
         </p>
 
         <h3>Formas de pagamento</h3>
@@ -135,8 +138,8 @@ $fmtEconomy = fn (float $brl) => Money::format($brl, $economyCurrency, $economyR
                 <div class="proposta-list-row">
                     <span class="proposta-list-n"><?= $row['n'] ?>x</span>
                     <span class="proposta-list-main">
-                        <strong>R$ <?= number_format($row['parcela'], 2, ',', '.') ?></strong>
-                        <small>Total R$ <?= number_format($row['total'], 2, ',', '.') ?></small>
+                        <strong><?= $fmt($row['parcela']) ?></strong>
+                        <small>Total <?= $fmt($row['total']) ?></small>
                     </span>
                     <?php if ($hasPayback): ?>
                         <span class="proposta-list-tag <?= $diff >= 0 ? 'is-positive' : 'is-negative' ?>">

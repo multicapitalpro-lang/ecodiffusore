@@ -3,9 +3,10 @@ use App\Core\Money;
 /** @var array $result */
 $payback = $result['payback'] ?? null;
 $hasPayback = $payback && $payback['tiers']['avg']['monthly'] > 0;
-// Fase 111: so' a secao de economia converte pra moeda secundaria -- investimento/parcelas
-// continuam sempre em R$ (valor real da venda).
-$fmtEconomy = fn (float $brl) => Money::format($brl, $result['currency'] ?? 'BRL', $result['rate'] ?? 0.0);
+// Fase 113: PDF inteiro converte pra moeda secundaria quando escolhida (investimento/parcelas
+// inclusos) -- mesmo motivo do resultado.php.
+$fmt = fn (float $brl) => Money::format($brl, $result['currency'] ?? 'BRL', $result['rate'] ?? 0.0);
+$fmtEconomy = $fmt;
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -56,9 +57,9 @@ $fmtEconomy = fn (float $brl) => Money::format($brl, $result['currency'] ?? 'BRL
 <?php if (!empty($result['product_price'])): ?>
 <h2>Investimento estimado</h2>
 <div class="price-box">
-    <strong>R$ <?= number_format((float) $result['product_price'], 2, ',', '.') ?></strong>
+    <strong><?= $fmt((float) $result['product_price']) ?></strong>
     <?= $result['product_name'] ? '— ' . htmlspecialchars($result['product_name'], ENT_QUOTES, 'UTF-8') : '' ?>
-    (<?= (int) $result['quantidade'] ?>x R$ <?= number_format((float) $result['unit_price'], 2, ',', '.') ?>)<br>
+    (<?= (int) $result['quantidade'] ?>x <?= $fmt((float) $result['unit_price']) ?>)<br>
     À vista (Pix ou cartão) ou parcelado — ver tabela abaixo.
 </div>
 
@@ -70,8 +71,8 @@ $fmtEconomy = fn (float $brl) => Money::format($brl, $result['currency'] ?? 'BRL
         <?php foreach ($result['installments'] as $row): ?>
             <tr>
                 <td><?= $row['n'] ?>x</td>
-                <td>R$ <?= number_format($row['parcela'], 2, ',', '.') ?></td>
-                <td>R$ <?= number_format($row['total'], 2, ',', '.') ?></td>
+                <td><?= $fmt($row['parcela']) ?></td>
+                <td><?= $fmt($row['total']) ?></td>
                 <?php if ($hasPayback): ?><td><?= $fmtEconomy($payback['tiers']['avg']['monthly']) ?></td><?php endif; ?>
             </tr>
         <?php endforeach; ?>
