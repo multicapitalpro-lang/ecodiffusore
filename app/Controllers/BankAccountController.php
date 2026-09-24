@@ -25,7 +25,7 @@ class BankAccountController
             Router::redirect('/painel');
         }
 
-        View::render('painel/bank_account/show', ['user' => $user, 'errors' => []]);
+        View::render('painel/bank_account/show', ['user' => $user, 'errors' => []], null);
     }
 
     public function update(): void
@@ -47,7 +47,7 @@ class BankAccountController
             View::render('painel/bank_account/show', [
                 'user' => array_merge($user, $_POST),
                 'errors' => $errors,
-            ]);
+            ], null);
             return;
         }
 
