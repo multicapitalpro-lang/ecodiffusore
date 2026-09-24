@@ -271,6 +271,7 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/desempen
             <?php endif; ?>
             <?php if ($role === 'vendedor'): ?>
                 <a href="/painel/certificacao" class="<?= $isActive('/painel/certificacao') ? 'is-active' : '' ?>">🏅 Minha Certificação</a>
+                <a href="/painel/treinamento" class="<?= $isActive('/painel/treinamento') ? 'is-active' : '' ?>">🎓 Treinamento</a>
             <?php endif; ?>
             <?php if ($role === 'licenciado'): ?>
                 <a href="/painel/emails-profissionais" class="<?= $isActive('/painel/emails-profissionais') ? 'is-active' : '' ?>">✉️ E-mail Profissional</a>

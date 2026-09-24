@@ -2,19 +2,27 @@
 use App\Core\Csrf;
 use App\Core\View;
 use App\Models\SellerTrainingProgress;
+/** @var bool $isReview Fase 112 -- true quando o Vendedor ja completou antes e voltou aqui so pra
+ *  rever (nav "🎓 Treinamento"), nao pelo gate de primeiro acesso. */
+$isReview = $isReview ?? false;
 ?><!doctype html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Treinamento obrigatório — Ecodiffusore Brasil</title>
+    <title><?= $isReview ? 'Meu treinamento' : 'Treinamento obrigatório' ?> — Ecodiffusore Brasil</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="<?= View::asset('/assets/css/painel.css') ?>">
 </head>
 <body class="auth-body">
 <div class="auth-box" style="max-width:760px;">
     <img src="<?= View::asset('/assets/img/logo-full-navy.png') ?>" alt="Ecodiffusore Brasil" class="auth-logo">
-    <h1>Treinamento obrigatório</h1>
-    <p class="auth-hint">Antes de liberar o acesso completo ao painel, assista aos vídeos abaixo até o fim. É obrigatório pra garantir que você sabe vender e atender o cliente do jeito certo.</p>
+    <?php if ($isReview): ?>
+        <h1>Meu treinamento</h1>
+        <p class="auth-hint">✔ Você já concluiu o treinamento. Pode rever os vídeos abaixo quando quiser.</p>
+    <?php else: ?>
+        <h1>Treinamento obrigatório</h1>
+        <p class="auth-hint">Antes de liberar o acesso completo ao painel, assista aos vídeos abaixo até o fim. É obrigatório pra garantir que você sabe vender e atender o cliente do jeito certo.</p>
+    <?php endif; ?>
 
     <div id="training-videos">
         <?php
@@ -56,9 +64,13 @@ use App\Models\SellerTrainingProgress;
         <?php endforeach; ?>
     </div>
 
-    <button type="button" class="btn btn-primary" id="training-continue" style="width:100%;margin-top:8px;" disabled>
-        Assista todos os vídeos até o fim (mín. 90%) pra continuar
-    </button>
+    <?php if ($isReview): ?>
+        <a href="/painel" class="btn btn-primary" style="width:100%;margin-top:8px;display:block;text-align:center;">← Voltar pro painel</a>
+    <?php else: ?>
+        <button type="button" class="btn btn-primary" id="training-continue" style="width:100%;margin-top:8px;" disabled>
+            Assista todos os vídeos até o fim (mín. 90%) pra continuar
+        </button>
+    <?php endif; ?>
 
     <a class="auth-back" href="/painel/logout">Sair</a>
 </div>
@@ -110,7 +122,7 @@ use App\Models\SellerTrainingProgress;
                     badge.textContent = '✔ Concluído';
                     badge.className = 'status-badge status-active';
                 }
-                if (data.allCompleted) {
+                if (data.allCompleted && continueBtn) {
                     continueBtn.disabled = false;
                     continueBtn.textContent = 'Ir para o painel';
                     continueBtn.onclick = function () { window.location.href = '/painel'; };

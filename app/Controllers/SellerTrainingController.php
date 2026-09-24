@@ -30,18 +30,23 @@ class SellerTrainingController
             Router::redirect('/painel');
         }
 
-        if (!empty($user['training_completed_at'])) {
-            Router::redirect('/painel');
-        }
-
         $videos = SellerTrainingVideo::all();
         if (!$videos) {
             // Nenhum video cadastrado ainda -- nao ha' o que assistir, entao nao faz sentido
             // travar o Vendedor numa tela vazia sem saida (mesma logica de
             // SellerTrainingProgress::hasCompletedAll() aplicada aqui na entrada do gate).
-            User::markTrainingCompleted((int) $user['id']);
+            if (empty($user['training_completed_at'])) {
+                User::markTrainingCompleted((int) $user['id']);
+            }
             Router::redirect('/painel');
         }
+
+        // Fase 112: quem ja completou pode voltar aqui pra REVER os videos (nav "🎓 Treinamento"
+        // no menu do Vendedor) -- antes essa tela so existia como gate de primeiro acesso e
+        // redirecionava embora pra quem ja tinha completado, deixando o Vendedor sem nenhum jeito
+        // de assistir de novo depois. $isReview so muda o texto da view, a logica de progresso/
+        // player continua igual (reportProgress() ja e' seguro de chamar de novo, ver docblock la).
+        $isReview = !empty($user['training_completed_at']);
 
         // Fase 83: agrupa por modulo pra exibir em blocos, na sequencia definida pelo admin/
         // gerente -- videos sem modulo (module_id null) caem no bucket 0, mostrado por ultimo.
@@ -56,6 +61,7 @@ class SellerTrainingController
             'modules' => $modules,
             'byModule' => $byModule,
             'progress' => SellerTrainingProgress::forUser((int) $user['id']),
+            'isReview' => $isReview,
         ], null);
     }
 
