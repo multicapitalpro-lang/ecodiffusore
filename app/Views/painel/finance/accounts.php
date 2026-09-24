@@ -33,12 +33,9 @@ $hasSub = SubscriptionGate::hasAccess($user);
                 <?php if (!empty($acc['is_default'])): ?>
                     <span class="tag-default">padrão</span>
                 <?php endif; ?>
-                <?php if (($acc['balance_source'] ?? 'manual') === 'asaas'): ?>
-                    <span class="tag-default" title="Saldo puxado ao vivo da API do Asaas, não do livro-razão local">ao vivo</span>
-                <?php endif; ?>
             </span>
             <strong><?= SubscriptionGate::money($user, (float) $acc['balance']) ?></strong>
-            <?php if (($acc['balance_source'] ?? 'manual') === 'manual' && (float) $acc['initial_balance'] != 0): ?>
+            <?php if ((float) $acc['initial_balance'] != 0): ?>
                 <small class="hint-inline">Saldo inicial: R$ <?= number_format((float) $acc['initial_balance'], 2, ',', '.') ?> + movimentações</small>
             <?php endif; ?>
             <?php if (empty($acc['is_default'])): ?>
@@ -52,6 +49,29 @@ $hasSub = SubscriptionGate::hasAccess($user);
                 <?php endif; ?>
             <?php endif; ?>
         </div>
+        <?php if (($acc['balance_source'] ?? 'manual') === 'asaas'): ?>
+            <?php
+            // Fase 118: card A MAIS (nunca substitui o de cima) -- saldo real puxado ao vivo da
+            // API, pra comparar com o calculado localmente por financial_transactions. Se
+            // divergirem, e' sinal de lancamento categorizado na conta errada (ja aconteceu, ver
+            // changelog Fase 115) -- fica visualmente destacado quando isso acontece.
+            $diff = $asaasApiBalance !== null ? round($asaasApiBalance - (float) $acc['balance'], 2) : null;
+            ?>
+            <div class="dash-card <?= $diff !== null && abs($diff) > 0.01 ? 'dash-card-danger' : '' ?>">
+                <span>ASAAS API <span class="tag-default" title="Saldo puxado ao vivo da API do Asaas, não do livro-razão local">ao vivo</span></span>
+                <?php if ($asaasApiBalance === null): ?>
+                    <strong>Indisponível</strong>
+                    <small class="hint-inline">Não foi possível consultar a Asaas agora.</small>
+                <?php else: ?>
+                    <strong><?= SubscriptionGate::money($user, $asaasApiBalance) ?></strong>
+                    <?php if (abs($diff) > 0.01): ?>
+                        <small class="hint-inline">Diverge do card "ASAAS" em R$ <?= number_format(abs($diff), 2, ',', '.') ?> — confira se algum lançamento foi categorizado na conta errada.</small>
+                    <?php else: ?>
+                        <small class="hint-inline">✔ Bate com o card "ASAAS" acima.</small>
+                    <?php endif; ?>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
     <?php endforeach; ?>
 </div>
 <p class="hint-text">A conta padrão é pra onde vão automaticamente o recebimento de um pedido pago e a saída de uma comissão dada baixa.</p>

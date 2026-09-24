@@ -91,20 +91,19 @@ class FinancialAccount
         return (float) $account['initial_balance'] + (float) $stmt->fetchColumn();
     }
 
-    /** Fase 115: pra conta com balance_source='asaas', busca o saldo REAL na API do Asaas em vez
-     *  do calculo local (que depende de todo recebimento/pagamento ter sido categorizado na conta
-     *  certa aqui dentro -- na pratica ja divergiu, ver Fase 115 no changelog). Best-effort: se a
-     *  API falhar (rede, chave invalida), cai pro calculo local em vez de quebrar a pagina. */
-    public static function liveBalance(array $account): float
+    /** Fase 118: card "ASAAS API" -- saldo real da Asaas, exibido AO LADO do card calculado
+     *  localmente (currentBalance(), a partir de financial_transactions), nunca no lugar dele
+     *  (a Fase 115 substituia o card local pelo da API, o que escondia divergencia de lancamento
+     *  categorizado na conta errada em vez de expor -- pedido explicito do usuario: os dois cards
+     *  precisam aparecer lado a lado "pra bater os valores"). Best-effort: null se a API falhar
+     *  (rede, chave invalida) -- a view mostra "indisponivel" em vez de quebrar a pagina.
+     *  So' chamado pra conta com balance_source='asaas'; caller decide quando chamar. */
+    public static function asaasApiBalance(): ?float
     {
-        if (($account['balance_source'] ?? 'manual') === 'asaas') {
-            try {
-                return (new \App\Core\AsaasClient())->getBalance();
-            } catch (\Throwable $e) {
-                // segue pro calculo local abaixo
-            }
+        try {
+            return (new \App\Core\AsaasClient())->getBalance();
+        } catch (\Throwable $e) {
+            return null;
         }
-
-        return self::currentBalance((int) $account['id']);
     }
 }

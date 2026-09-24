@@ -54,11 +54,15 @@ class FinanceController
         Auth::requireRole(Roles::MANAGEMENT);
         $user = Auth::user();
 
+        // Fase 118: card local (currentBalance, calculado por financial_transactions) SEMPRE
+        // aparece -- o card "ASAAS API" (saldo real, ao vivo) e' um card A MAIS, nunca substitui
+        // o local, pra dar pra comparar os dois e pegar lancamento categorizado na conta errada.
         $accounts = FinancialAccount::all();
         foreach ($accounts as &$account) {
-            $account['balance'] = FinancialAccount::liveBalance($account);
+            $account['balance'] = FinancialAccount::currentBalance((int) $account['id']);
         }
         unset($account);
+        $asaasApiBalance = FinancialAccount::asaasApiBalance();
 
         $filters = array_merge($this->requestFilters(), $this->scopeFilters($user));
         $transactions = FinancialTransaction::all($filters);
@@ -66,6 +70,7 @@ class FinanceController
         View::render('painel/finance/accounts', [
             'user' => $user,
             'accounts' => $accounts,
+            'asaasApiBalance' => $asaasApiBalance,
             'transactions' => $transactions,
             'attachmentsByTransaction' => FinancialAttachment::forTransactions(array_column($transactions, 'id')),
             'categoryGroups' => FinancialCategory::grouped(),
@@ -920,7 +925,7 @@ class FinanceController
         $user = Auth::user();
         $accounts = FinancialAccount::all();
         foreach ($accounts as &$account) {
-            $account['balance'] = FinancialAccount::liveBalance($account);
+            $account['balance'] = FinancialAccount::currentBalance((int) $account['id']);
         }
         unset($account);
 
@@ -929,9 +934,11 @@ class FinanceController
         View::render('painel/finance/accounts', [
             'user' => $user,
             'accounts' => $accounts,
+            'asaasApiBalance' => FinancialAccount::asaasApiBalance(),
             'transactions' => $transactions,
             'attachmentsByTransaction' => FinancialAttachment::forTransactions(array_column($transactions, 'id')),
             'categoryGroups' => FinancialCategory::grouped(),
+            'categoryParents' => FinancialCategory::parents(),
             'clients' => Client::all($this->scopeFilters(Auth::user())),
             'errors' => $errors,
             'values' => $values,
