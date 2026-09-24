@@ -311,11 +311,64 @@ span.beneficio-icon { font-size: 2.1rem; }
 .site-lgpd-badge svg { flex-shrink: 0; }
 .site-lgpd-badge span { font-size: .78rem; color: #b9c1d9; }
 
-/* WhatsApp float */
+/* WhatsApp float (legado, ver .site-chat-* abaixo pro widget novo) */
 .whatsapp-float {
     position: fixed; bottom: 22px; right: 22px; width: 58px; height: 58px; border-radius: 50%;
     background: #25D366; display: flex; align-items: center; justify-content: center;
     box-shadow: 0 6px 18px rgba(0,0,0,.25); z-index: 60;
+}
+
+/* Chat widget do site (Fase 107) -- substitui o botao "chamar no WhatsApp" que tirava o
+   visitante da pagina na hora do clique. Bolha fixa no mesmo lugar do antigo whatsapp-float;
+   clicar abre um painel de conversa que fica DENTRO do site, so' vira link de WhatsApp de
+   verdade no passo final (ver App\Controllers\SiteChatController). */
+.site-chat-bubble {
+    position: fixed; bottom: 22px; right: 22px; width: 58px; height: 58px; border-radius: 50%;
+    background: var(--green-dark); border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 6px 18px rgba(0,0,0,.25); z-index: 60; transition: transform .15s ease;
+}
+.site-chat-bubble:hover { transform: scale(1.06); }
+.site-chat-bubble-icon-close { display: none; }
+.site-chat-bubble.is-open .site-chat-bubble-icon-chat { display: none; }
+.site-chat-bubble.is-open .site-chat-bubble-icon-close { display: block; }
+
+.site-chat-panel {
+    position: fixed; bottom: 92px; right: 22px; width: 340px; max-width: calc(100vw - 32px);
+    height: 480px; max-height: calc(100vh - 140px); background: var(--white); border-radius: 16px;
+    box-shadow: 0 16px 44px rgba(0,0,0,.28); z-index: 60; display: flex; flex-direction: column;
+    overflow: hidden;
+}
+.site-chat-header {
+    background: var(--navy); color: var(--white); padding: 14px 16px; display: flex; align-items: center; gap: 10px;
+    font-weight: 700; font-size: .95rem;
+}
+.site-chat-header-logo { height: 22px; width: auto; }
+.site-chat-close {
+    margin-left: auto; background: none; border: none; color: var(--white); font-size: 1.4rem;
+    line-height: 1; cursor: pointer; opacity: .8;
+}
+.site-chat-close:hover { opacity: 1; }
+.site-chat-messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; background: var(--gray-bg); }
+.site-chat-msg { max-width: 85%; padding: 10px 13px; border-radius: 12px; font-size: .88rem; line-height: 1.4; }
+.site-chat-msg-bot { align-self: flex-start; background: var(--white); color: var(--navy); border-bottom-left-radius: 3px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+.site-chat-msg-user { align-self: flex-end; background: var(--green); color: var(--navy); border-bottom-right-radius: 3px; font-weight: 600; }
+.site-chat-input-area { padding: 12px; border-top: 1px solid #e7ebf1; background: var(--white); }
+.site-chat-form { display: grid; gap: 8px; }
+.site-chat-form input {
+    padding: 10px 13px; border-radius: 9px; border: 1.5px solid #dde2ec; font-family: inherit; font-size: .88rem;
+}
+.site-chat-form button { padding: 10px; font-size: .88rem; }
+.site-chat-options { display: grid; gap: 8px; }
+.site-chat-option {
+    text-align: left; padding: 10px 13px; border-radius: 9px; border: 1.5px solid #dde2ec; background: var(--white);
+    font-family: inherit; font-size: .86rem; font-weight: 600; color: var(--navy); cursor: pointer; transition: border-color .15s ease, background .15s ease;
+}
+.site-chat-option:hover { border-color: var(--green-dark); background: #f3fbe9; }
+.site-chat-wa-btn { display: flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; border-radius: 9px; font-weight: 700; padding: 11px; margin-bottom: 8px; }
+#site-chat-restart { background: none; border: none; width: 100%; text-align: center; cursor: pointer; padding: 4px; }
+@media (max-width: 420px) {
+    .site-chat-panel { right: 16px; bottom: 84px; width: calc(100vw - 32px); }
 }
 
 /* Modal (popup de captura de lead antes do checkout) */

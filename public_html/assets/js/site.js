@@ -419,4 +419,233 @@ function initCarousel(carouselId, trackSelector, slideSelector, options) {
     }
 }
 
+// Chat widget do site (Fase 107) -- roda em toda pagina publica (layouts/site.php). Mesmo roteiro
+// de decisao do bot de WhatsApp (Fase 106): coleta nome/WhatsApp, menu de 4 opcoes, pede cidade
+// quando precisa rotear por regiao (GeoMatch, mesmo endpoint /cidades/buscar do autocomplete que
+// ja existe em /comprar), e so mostra um link de WhatsApp de verdade no passo final -- o visitante
+// nunca sai da pagina sozinho, so' quando ele mesmo toca no botao.
+(function () {
+    var widget = document.getElementById('site-chat-widget');
+    if (!widget) return;
+
+    var csrfToken = widget.dataset.csrf;
+    var bubble = document.getElementById('site-chat-bubble');
+    var panel = document.getElementById('site-chat-panel');
+    var closeBtn = document.getElementById('site-chat-close');
+    var messagesEl = document.getElementById('site-chat-messages');
+    var inputArea = document.getElementById('site-chat-input-area');
+    var greeted = false;
+
+    function esc(text) {
+        return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function formatText(text) {
+        return esc(text).replace(/\*(.+?)\*/g, '<strong>$1</strong>');
+    }
+
+    function addBotMessage(text) {
+        var el = document.createElement('div');
+        el.className = 'site-chat-msg site-chat-msg-bot';
+        el.innerHTML = formatText(text);
+        messagesEl.appendChild(el);
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function addUserMessage(text) {
+        var el = document.createElement('div');
+        el.className = 'site-chat-msg site-chat-msg-user';
+        el.textContent = text;
+        messagesEl.appendChild(el);
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function post(step, data) {
+        return fetch('/chat/mensagem', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(Object.assign({ step: step, csrf_token: csrfToken }, data || {}))
+        })
+            .then(function (r) { return r.json(); })
+            .catch(function () { return { ok: false, error: 'Não consegui falar com o servidor, tenta de novo.' }; });
+    }
+
+    function showContatoForm() {
+        inputArea.innerHTML =
+            '<form id="site-chat-contato-form" class="site-chat-form">' +
+                '<input type="text" name="name" placeholder="Seu nome" required>' +
+                '<input type="text" name="whatsapp" placeholder="WhatsApp com DDD" required>' +
+                '<button type="submit" class="btn btn-primary">Continuar</button>' +
+            '</form>';
+
+        document.getElementById('site-chat-contato-form').addEventListener('submit', function (e) {
+            e.preventDefault();
+            var name = this.name.value.trim();
+            var whatsapp = this.whatsapp.value.trim();
+            if (!name || !whatsapp) return;
+            addUserMessage(name + ' — ' + whatsapp);
+            post('contato', { name: name, whatsapp: whatsapp }).then(function (res) {
+                if (!res.ok) {
+                    addBotMessage(res.error || 'Algo deu errado, tenta de novo.');
+                    showContatoForm();
+                    return;
+                }
+                addBotMessage('Prazer, ' + name.split(' ')[0] + '! 🌱 Como posso te ajudar?');
+                showMenu();
+            });
+        });
+    }
+
+    function showMenu() {
+        inputArea.innerHTML =
+            '<div class="site-chat-options">' +
+                '<button type="button" class="site-chat-option" data-choice="1">1️⃣ Quero comprar / pedir um orçamento</button>' +
+                '<button type="button" class="site-chat-option" data-choice="2">2️⃣ Já sou cliente — suporte</button>' +
+                '<button type="button" class="site-chat-option" data-choice="3">3️⃣ Sou Licenciado ou Vendedor</button>' +
+                '<button type="button" class="site-chat-option" data-choice="4">4️⃣ Falar com um atendente</button>' +
+            '</div>';
+
+        inputArea.querySelectorAll('.site-chat-option').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                addUserMessage(btn.textContent);
+                post('opcao', { choice: btn.dataset.choice }).then(handleOpcaoResponse);
+            });
+        });
+    }
+
+    function handleOpcaoResponse(res) {
+        if (!res.ok) {
+            addBotMessage(res.error || 'Algo deu errado, tenta de novo.');
+            showMenu();
+            return;
+        }
+        if (res.next === 'ask_city') {
+            addBotMessage('Me diga o nome da sua cidade, pra eu te conectar com o representante certo. 📍');
+            showCityInput();
+        } else if (res.next === 'final') {
+            addBotMessage(res.message);
+            showFinal(res.whatsapp_link);
+        } else {
+            addBotMessage('Não entendi 🤔 Escolha uma das opções abaixo:');
+            showMenu();
+        }
+    }
+
+    function showCityInput() {
+        inputArea.innerHTML =
+            '<form id="site-chat-city-form" class="site-chat-form">' +
+                '<div class="city-autocomplete-wrap">' +
+                    '<input type="text" id="site-chat-city-input" placeholder="Cidade" autocomplete="off">' +
+                    '<div class="autocomplete-results" id="site-chat-city-results" hidden></div>' +
+                '</div>' +
+                '<button type="submit" class="btn btn-primary">Enviar</button>' +
+            '</form>';
+
+        bindCityAutocomplete();
+
+        document.getElementById('site-chat-city-form').addEventListener('submit', function (e) {
+            e.preventDefault();
+            var city = document.getElementById('site-chat-city-input').value.trim();
+            if (!city) return;
+            addUserMessage(city);
+            post('cidade', { city: city }).then(function (res) {
+                if (!res.ok) {
+                    addBotMessage(res.error || 'Algo deu errado, tenta de novo.');
+                    return;
+                }
+                addBotMessage(res.message);
+                showFinal(res.whatsapp_link);
+            });
+        });
+    }
+
+    function bindCityAutocomplete() {
+        var input = document.getElementById('site-chat-city-input');
+        var results = document.getElementById('site-chat-city-results');
+        var timer = null;
+
+        input.addEventListener('input', function () {
+            clearTimeout(timer);
+            var q = input.value.trim();
+            if (q.length < 2) {
+                results.hidden = true;
+                results.innerHTML = '';
+                return;
+            }
+            timer = setTimeout(function () {
+                fetch('/cidades/buscar?q=' + encodeURIComponent(q))
+                    .then(function (r) { return r.json(); })
+                    .then(function (res) {
+                        results.innerHTML = '';
+                        var cities = (res && res.data) || [];
+                        if (!cities.length) {
+                            results.innerHTML = '<div class="autocomplete-empty">Nenhuma cidade encontrada.</div>';
+                            results.hidden = false;
+                            return;
+                        }
+                        cities.forEach(function (c) {
+                            var item = document.createElement('div');
+                            item.className = 'autocomplete-item';
+                            item.textContent = c.name + ' - ' + c.uf;
+                            item.addEventListener('click', function () {
+                                input.value = c.name;
+                                results.hidden = true;
+                            });
+                            results.appendChild(item);
+                        });
+                        results.hidden = false;
+                    })
+                    .catch(function () { results.hidden = true; });
+            }, 300);
+        });
+
+        document.addEventListener('click', function (e) {
+            if (e.target !== input && !results.contains(e.target)) {
+                results.hidden = true;
+            }
+        });
+    }
+
+    function showFinal(waLink) {
+        var html = '';
+        if (waLink) {
+            html += '<a href="' + waLink + '" target="_blank" rel="noopener" class="btn btn-whatsapp site-chat-wa-btn">💬 Abrir WhatsApp</a>';
+        }
+        html += '<button type="button" id="site-chat-restart">↺ Recomeçar conversa</button>';
+        inputArea.innerHTML = html;
+
+        var restart = document.getElementById('site-chat-restart');
+        if (restart) {
+            restart.addEventListener('click', function () {
+                addBotMessage('🌱 Como mais posso te ajudar?');
+                showMenu();
+            });
+        }
+    }
+
+    function openChat() {
+        panel.hidden = false;
+        bubble.classList.add('is-open');
+        if (!greeted) {
+            greeted = true;
+            addBotMessage('🌱 Olá! Bem-vindo(a) à Ecodiffusore Brasil. Pra começar, me conta seu nome e WhatsApp:');
+            showContatoForm();
+        }
+    }
+
+    function closeChat() {
+        panel.hidden = true;
+        bubble.classList.remove('is-open');
+    }
+
+    bubble.addEventListener('click', function () {
+        if (panel.hidden) {
+            openChat();
+        } else {
+            closeChat();
+        }
+    });
+    closeBtn.addEventListener('click', closeChat);
+})();
+
 initCarousel('depoimentos-carousel', '.depoimentos-carousel-track', '.depoimento-slide', { autoplay: 4500 });

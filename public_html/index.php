@@ -51,6 +51,7 @@ $router->get('/economia-de-diesel-parana', [App\Controllers\LocalController::cla
 $router->get('/economia-de-diesel-goias', [App\Controllers\LocalController::class, 'goias']);
 $router->get('/economia-de-diesel-mato-grosso', [App\Controllers\LocalController::class, 'matoGrosso']);
 $router->get('/cidades/buscar', [App\Controllers\CityController::class, 'search']);
+$router->post('/chat/mensagem', [App\Controllers\SiteChatController::class, 'message']);
 $router->post('/contato', [App\Controllers\PublicController::class, 'submitLead']);
 $router->get('/comprar', [App\Controllers\PublicController::class, 'buy']);
 $router->post('/comprar/iniciar', [App\Controllers\PublicController::class, 'startCheckout']);
