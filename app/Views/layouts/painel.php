@@ -89,7 +89,7 @@ $myPendingPriceRequests = 0;
 if (in_array($role, ['vendedor', 'gestor', 'licenciado'], true)) {
     $myPendingPriceRequests = \App\Models\Approval::countMyPendingRequests((int) $user['id']);
 }
-$vendasOpen = $anyActive(['/painel/pedidos', '/painel/orcamentos', '/painel/produtos', '/painel/tabela-precos', '/painel/configuracoes/pagamento', '/painel/simulador', '/painel/materiais', '/painel/garantias', '/painel/entregas', '/painel/cotacoes-maquina', '/painel/liberacoes', '/painel/pedidos/aprovar-documentos']);
+$vendasOpen = $anyActive(['/painel/pedidos', '/painel/orcamentos', '/painel/produtos', '/painel/tabela-precos', '/painel/configuracoes/pagamento', '/painel/simulador', '/painel/materiais', '/painel/garantias', '/painel/entregas', '/painel/cotacoes-maquina', '/painel/liberacoes', '/painel/pedidos/aprovar-documentos', '/painel/proposta-comercial']);
 $leadsOpen = $anyActive(['/painel/leads', '/painel/clientes', '/painel/configuracoes/roteamento']);
 $financeiroOpen = $anyActive(['/painel/financeiro']);
 $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/desempenho/funil', '/painel/meu-ranking', '/painel/metas']);
@@ -152,6 +152,9 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/desempen
                     <div class="nav-subitems">
                         <?php if ($canScreen('simulador')): ?>
                             <a href="/painel/simulador" class="<?= $isActive('/painel/simulador') ? 'is-active' : '' ?>">Simulador de Economia</a>
+                        <?php endif; ?>
+                        <?php if (in_array($role, $staffRoles, true)): ?>
+                            <a href="/painel/proposta-comercial" class="<?= $isActive('/painel/proposta-comercial') ? 'is-active' : '' ?>">📄 Proposta Comercial</a>
                         <?php endif; ?>
                         <?php if ($canScreen('materiais')): ?>
                             <a href="/painel/materiais" class="<?= $isActive('/painel/materiais') ? 'is-active' : '' ?>">Materiais de Venda</a>

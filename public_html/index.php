@@ -369,6 +369,9 @@ $router->post('/painel/proposta-facil', [App\Controllers\PropostaController::cla
 $router->get('/painel/proposta-facil/resultado', [App\Controllers\PropostaController::class, 'show']);
 $router->get('/painel/proposta-facil/pdf', [App\Controllers\PropostaController::class, 'pdf']);
 $router->post('/painel/proposta-facil/concluir', [App\Controllers\PropostaController::class, 'conclude']);
+$router->get('/painel/proposta-comercial', [App\Controllers\PropostaComercialController::class, 'create']);
+$router->post('/painel/proposta-comercial/pdf', [App\Controllers\PropostaComercialController::class, 'pdf']);
+$router->post('/painel/proposta-comercial/docx', [App\Controllers\PropostaComercialController::class, 'docx']);
 
 $router->get('/painel/auditoria', [App\Controllers\AuditController::class, 'index']);
 
