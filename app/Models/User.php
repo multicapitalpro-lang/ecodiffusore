@@ -31,6 +31,27 @@ class User
         return $user ?: null;
     }
 
+    /** Fase 109: Licenciado/Gestor/Vendedor com esse WhatsApp (so' digitos) -- usado pelo chat do
+     *  site pra saber se quem esta conversando ja e' da propria equipe (nao deve virar Lead novo
+     *  nem ser roteado por geolocalizacao). */
+    public static function findByWhatsapp(string $whatsapp): ?array
+    {
+        $digits = preg_replace('/\D/', '', $whatsapp);
+        if ($digits === '') {
+            return null;
+        }
+
+        $stmt = Database::connection()->prepare(
+            "SELECT u.*, r.slug AS role_slug FROM users u JOIN roles r ON r.id = u.role_id
+             WHERE r.slug IN ('licenciado','gestor','vendedor')
+                AND REGEXP_REPLACE(u.whatsapp, '[^0-9]', '') = :wa
+             LIMIT 1"
+        );
+        $stmt->execute(['wa' => $digits]);
+        $user = $stmt->fetch();
+        return $user ?: null;
+    }
+
     /**
      * Quem "cuida" de um usuario na hierarquia comercial, pra exibicao (ex: coluna Responsavel
      * na tela de Usuarios). Regras dadas pelo cliente: Vendedor/Gestor -> o Licenciado da regiao

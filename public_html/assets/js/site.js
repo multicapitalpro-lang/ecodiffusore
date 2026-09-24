@@ -475,16 +475,23 @@ function initCarousel(carouselId, trackSelector, slideSelector, options) {
             '<form id="site-chat-contato-form" class="site-chat-form">' +
                 '<input type="text" name="name" placeholder="Seu nome" required>' +
                 '<input type="text" name="whatsapp" placeholder="WhatsApp com DDD" required>' +
+                '<div class="city-autocomplete-wrap">' +
+                    '<input type="text" id="site-chat-city-input" name="city" placeholder="Sua cidade" autocomplete="off" required>' +
+                    '<div class="autocomplete-results" id="site-chat-city-results" hidden></div>' +
+                '</div>' +
                 '<button type="submit" class="btn btn-primary">Continuar</button>' +
             '</form>';
+
+        bindCityAutocomplete();
 
         document.getElementById('site-chat-contato-form').addEventListener('submit', function (e) {
             e.preventDefault();
             var name = this.name.value.trim();
             var whatsapp = this.whatsapp.value.trim();
-            if (!name || !whatsapp) return;
-            addUserMessage(name + ' — ' + whatsapp);
-            post('contato', { name: name, whatsapp: whatsapp }).then(function (res) {
+            var city = this.city.value.trim();
+            if (!name || !whatsapp || !city) return;
+            addUserMessage(name + ' — ' + whatsapp + ' — ' + city);
+            post('contato', { name: name, whatsapp: whatsapp, city: city }).then(function (res) {
                 if (!res.ok) {
                     addBotMessage(res.error || 'Algo deu errado, tenta de novo.');
                     showContatoForm();
@@ -519,10 +526,7 @@ function initCarousel(carouselId, trackSelector, slideSelector, options) {
             showMenu();
             return;
         }
-        if (res.next === 'ask_city') {
-            addBotMessage('Me diga o nome da sua cidade, pra eu te conectar com o representante certo. 📍');
-            showCityInput();
-        } else if (res.next === 'final') {
+        if (res.next === 'final') {
             addBotMessage(res.message);
             showFinal(res.whatsapp_link);
         } else {
@@ -531,34 +535,10 @@ function initCarousel(carouselId, trackSelector, slideSelector, options) {
         }
     }
 
-    function showCityInput() {
-        inputArea.innerHTML =
-            '<form id="site-chat-city-form" class="site-chat-form">' +
-                '<div class="city-autocomplete-wrap">' +
-                    '<input type="text" id="site-chat-city-input" placeholder="Cidade" autocomplete="off">' +
-                    '<div class="autocomplete-results" id="site-chat-city-results" hidden></div>' +
-                '</div>' +
-                '<button type="submit" class="btn btn-primary">Enviar</button>' +
-            '</form>';
-
-        bindCityAutocomplete();
-
-        document.getElementById('site-chat-city-form').addEventListener('submit', function (e) {
-            e.preventDefault();
-            var city = document.getElementById('site-chat-city-input').value.trim();
-            if (!city) return;
-            addUserMessage(city);
-            post('cidade', { city: city }).then(function (res) {
-                if (!res.ok) {
-                    addBotMessage(res.error || 'Algo deu errado, tenta de novo.');
-                    return;
-                }
-                addBotMessage(res.message);
-                showFinal(res.whatsapp_link);
-            });
-        });
-    }
-
+    // Nome/WhatsApp/Cidade sao pedidos juntos logo no 1o passo (Fase 109) -- o roteamento por
+    // regiao roda ali mesmo, antes do menu aparecer, entao esta funcao so' precisa ligar o
+    // autocomplete no campo de cidade do formulario de contato (reaproveita o mesmo endpoint
+    // /cidades/buscar do autocomplete que ja existe em /comprar).
     function bindCityAutocomplete() {
         var input = document.getElementById('site-chat-city-input');
         var results = document.getElementById('site-chat-city-results');
@@ -628,7 +608,7 @@ function initCarousel(carouselId, trackSelector, slideSelector, options) {
         bubble.classList.add('is-open');
         if (!greeted) {
             greeted = true;
-            addBotMessage('🌱 Olá! Bem-vindo(a) à Ecodiffusore Brasil. Pra começar, me conta seu nome e WhatsApp:');
+            addBotMessage('🌱 Olá! Bem-vindo(a) à Ecodiffusore Brasil. Pra começar, me conta seu nome, WhatsApp e cidade:');
             showContatoForm();
         }
     }

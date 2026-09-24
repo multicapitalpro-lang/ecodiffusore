@@ -19,6 +19,14 @@ use App\Models\User;
  *  encontrado/roteado) e' que aparece um botao de verdade pro WhatsApp -- o visitante decide
  *  clicar, nunca e' redirecionado sozinho.
  *
+ *  Fase 109: a cidade passou a ser pedida JUNTO com nome/WhatsApp, logo no primeiro passo (antes
+ *  so' era pedida se a pessoa escolhesse "quero comprar") -- pedido explicito do usuario: TODO
+ *  contato que chega pelo chat e ainda nao esta em nenhum CRM (nunca foi Licenciado/Gestor/
+ *  Vendedor nem virou Cliente) precisa ser roteado igual ao popup de /comprar (GeoMatch::
+ *  nearestSeller(), raio de 100km, fallback pro Licenciado central) e entrar no CRM de algum
+ *  vendedor na hora -- nao so' quando ela clica em "quero comprar". Quem ja e' conhecido (cliente
+ *  ou da propria equipe) nao gera Lead duplicado.
+ *
  *  Estado da conversa fica na sessao PHP (namespace 'site_chat_*', separado de 'checkout_*' que a
  *  pagina /comprar ja usa -- fluxos independentes de proposito, pra um nunca interferir no outro).
  *  Sem tabela nova: diferente do WhatsApp (onde a conversa e' assincrona, chega por webhook em
@@ -45,27 +53,78 @@ class SiteChatController
             case 'opcao':
                 $this->handleOpcao($body);
                 break;
-            case 'cidade':
-                $this->handleCidade($body);
-                break;
             default:
                 Response::json(['ok' => false, 'error' => 'Passo inválido.'], 400);
         }
     }
 
+    /** Nome + WhatsApp + Cidade, tudo de uma vez -- ja' roteia por regiao aqui mesmo, antes de
+     *  mostrar o menu, pra garantir que ninguem passa pelo chat sem ficar registrado no CRM de
+     *  algum vendedor (ou do Licenciado central, se ninguem estiver no raio de 100km). */
     private function handleContato(array $body): void
     {
         $name = trim($body['name'] ?? '');
         $whatsapp = preg_replace('/\D/', '', $body['whatsapp'] ?? '');
+        $city = trim($body['city'] ?? '');
 
         if ($name === '' || strlen($whatsapp) < 10) {
             Response::json(['ok' => false, 'error' => 'Preencha nome e um WhatsApp válido (com DDD).']);
         }
+        if ($city === '' || mb_strlen($city) < 2) {
+            Response::json(['ok' => false, 'error' => 'Selecione uma cidade válida da lista.']);
+        }
 
         $_SESSION['site_chat_name'] = $name;
         $_SESSION['site_chat_whatsapp'] = $whatsapp;
+        $_SESSION['site_chat_city'] = $city;
+        $_SESSION['site_chat_seller'] = $this->resolveAndRouteContact($name, $whatsapp, $city);
 
         Response::json(['ok' => true]);
+    }
+
+    /** Se o WhatsApp ja pertence a um Cliente com vendedor -- usa o vendedor dele direto (nunca
+     *  cria Lead pra quem ja e' cliente). Se ja pertence a um Licenciado/Gestor/Vendedor da propria
+     *  equipe -- nao e' Lead nenhum, so nao roteia (fica null, cai no atendimento central se
+     *  precisar). So' quando NENHum dos dois bate e' que roda o mesmo GeoMatch::nearestSeller() do
+     *  popup de /comprar, cria (ou reaproveita, se ja existia de uma visita anterior) o Lead e
+     *  garante que ele fica atribuido a alguem.
+     *  @return array{id:int,name:string,whatsapp:string}|null */
+    private function resolveAndRouteContact(string $name, string $whatsapp, string $city): ?array
+    {
+        $existingClient = Client::findDuplicate(null, $whatsapp);
+        if ($existingClient) {
+            if (!empty($existingClient['seller_id'])) {
+                $seller = User::find((int) $existingClient['seller_id']);
+                if ($seller && !empty($seller['whatsapp'])) {
+                    return ['id' => (int) $seller['id'], 'name' => $seller['name'], 'whatsapp' => $seller['whatsapp']];
+                }
+            }
+            return null;
+        }
+
+        if (User::findByWhatsapp($whatsapp)) {
+            // Ja e' Licenciado/Gestor/Vendedor -- nao e' lead, nao roteia por geolocalizacao.
+            return null;
+        }
+
+        $geo = GeoMatch::nearestSeller($city);
+        $ownerId = $geo['id'] ?? LeadRoutingSettings::centralLicenciadoId();
+
+        $existingLead = Lead::findByWhatsapp($whatsapp);
+        if ($existingLead) {
+            if (empty($existingLead['assigned_to_user_id']) && $ownerId) {
+                Lead::assignTo((int) $existingLead['id'], $ownerId);
+                Notifier::leadRoteado(['name' => $name, 'whatsapp' => $whatsapp, 'city' => $city], $ownerId);
+            }
+        } else {
+            $leadId = Lead::create(['name' => $name, 'whatsapp' => $whatsapp, 'city' => $city, 'source' => 'site_chat']);
+            if ($ownerId) {
+                Lead::assignTo($leadId, $ownerId);
+                Notifier::leadRoteado(['name' => $name, 'whatsapp' => $whatsapp, 'city' => $city], $ownerId);
+            }
+        }
+
+        return $geo; // null quando ninguem esta no raio de 100km -- cai no fallback central.
     }
 
     private function handleOpcao(array $body): void
@@ -75,29 +134,26 @@ class SiteChatController
         }
 
         $choice = $body['choice'] ?? '';
+        $seller = $_SESSION['site_chat_seller'] ?? null;
 
         switch ($choice) {
             case '1':
-                $_SESSION['site_chat_intent'] = 'compra';
-                Response::json(['ok' => true, 'next' => 'ask_city']);
-                break;
-
             case '2':
-                $existing = Client::findDuplicate(null, $_SESSION['site_chat_whatsapp']);
-                if ($existing && !empty($existing['seller_id'])) {
-                    $seller = User::find((int) $existing['seller_id']);
-                    if ($seller && !empty($seller['whatsapp'])) {
-                        Response::json([
-                            'ok' => true,
-                            'next' => 'final',
-                            'message' => "Olá, {$existing['name']}! Seu representante é *{$seller['name']}*. Toque no botão abaixo pra falar direto com ele.",
-                            'whatsapp_link' => self::waLink($seller['whatsapp']),
-                        ]);
-                        return;
-                    }
+                if ($seller) {
+                    Response::json([
+                        'ok' => true,
+                        'next' => 'final',
+                        'message' => "Encontrei! O representante da sua região é *{$seller['name']}*. Toque no botão abaixo pra falar direto com ele.",
+                        'whatsapp_link' => self::waLink($seller['whatsapp']),
+                    ]);
+                } else {
+                    Response::json([
+                        'ok' => true,
+                        'next' => 'final',
+                        'message' => 'Registrei seu contato! Um de nossos representantes vai falar com você em breve. Se preferir, já toque no botão abaixo pra adiantar.',
+                        'whatsapp_link' => self::waLink(self::CENTRAL_WHATSAPP),
+                    ]);
                 }
-                $_SESSION['site_chat_intent'] = 'suporte';
-                Response::json(['ok' => true, 'next' => 'ask_city']);
                 break;
 
             case '3':
@@ -120,53 +176,6 @@ class SiteChatController
 
             default:
                 Response::json(['ok' => true, 'next' => 'invalid']);
-        }
-    }
-
-    private function handleCidade(array $body): void
-    {
-        $intent = $_SESSION['site_chat_intent'] ?? null;
-        if (!$intent || empty($_SESSION['site_chat_whatsapp'])) {
-            Response::json(['ok' => false, 'error' => 'Sessão expirada, recarregue a página.'], 419);
-        }
-
-        $city = trim($body['city'] ?? '');
-        if ($city === '' || mb_strlen($city) < 2) {
-            Response::json(['ok' => false, 'error' => 'Selecione uma cidade válida da lista.']);
-        }
-
-        $name = $_SESSION['site_chat_name'];
-        $whatsapp = $_SESSION['site_chat_whatsapp'];
-        $seller = GeoMatch::nearestSeller($city);
-
-        if ($intent === 'compra') {
-            $ownerId = $seller['id'] ?? LeadRoutingSettings::centralLicenciadoId();
-            $leadId = Lead::create([
-                'name' => $name,
-                'whatsapp' => $whatsapp,
-                'city' => $city,
-                'source' => 'site_chat',
-            ]);
-            if ($ownerId) {
-                Lead::assignTo($leadId, $ownerId);
-                Notifier::leadRoteado(['name' => $name, 'whatsapp' => $whatsapp, 'city' => $city], $ownerId);
-            }
-        }
-
-        if ($seller) {
-            Response::json([
-                'ok' => true,
-                'next' => 'final',
-                'message' => "Encontrei! O representante da sua região é *{$seller['name']}*. Toque no botão abaixo pra falar direto com ele.",
-                'whatsapp_link' => self::waLink($seller['whatsapp']),
-            ]);
-        } else {
-            Response::json([
-                'ok' => true,
-                'next' => 'final',
-                'message' => 'Registrei seu contato! Um de nossos representantes vai falar com você em breve. Se preferir, já toque no botão abaixo pra adiantar.',
-                'whatsapp_link' => self::waLink(self::CENTRAL_WHATSAPP),
-            ]);
         }
     }
 
