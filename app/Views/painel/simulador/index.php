@@ -68,7 +68,7 @@ $fmt = fn (float $brl) => Money::format($brl, $currency, $rate ?? 0.0);
     </div>
 
     <?php if ($secondaryCurrency): ?>
-        <div class="form-grid-2" style="max-width:460px;">
+        <div class="form-grid-2">
             <div>
                 <label for="currency">Moeda</label>
                 <select id="currency" name="currency">
@@ -108,37 +108,41 @@ $fmt = fn (float $brl) => Money::format($brl, $currency, $rate ?? 0.0);
     <?php endif; ?>
 
     <?php if (!empty($chartSvg)): ?>
-        <div class="chart-box" style="max-width:640px; margin-bottom:20px;">
+        <div class="chart-box" style="max-width:900px; margin-bottom:20px;">
             <div class="chart-bar-wrap"><?= $chartSvg ?></div>
         </div>
     <?php endif; ?>
 
-    <div class="cards-grid">
-        <div class="dash-card">
-            <span>5% — Mínimo garantido</span>
-            <strong><?= $fmt($result['tiers']['min']['monthly']) ?>/mês</strong>
-            <small><?= $fmt($result['tiers']['min']['yearly']) ?>/ano · <?= $fmt($result['tiers']['min']['five_year']) ?> em 5 anos</small>
+    <div class="proposta-tiers" style="max-width:900px;">
+        <div class="proposta-tier">
+            <span class="proposta-tier-title">🛡️ 5% — Mínimo garantido</span>
+            <strong><?= $fmt($result['tiers']['min']['monthly']) ?></strong>
+            <small>por mês</small>
+            <small><?= $fmt($result['tiers']['min']['five_year']) ?> em 5 anos</small>
         </div>
-        <div class="dash-card" style="border-top-color:var(--green-dark);">
-            <span>8% — Média real</span>
-            <strong><?= $fmt($result['tiers']['avg']['monthly']) ?>/mês</strong>
-            <small><?= $fmt($result['tiers']['avg']['yearly']) ?>/ano · <?= $fmt($result['tiers']['avg']['five_year']) ?> em 5 anos</small>
+        <div class="proposta-tier is-avg">
+            <span class="proposta-tier-badge">MAIS COMUM</span>
+            <span class="proposta-tier-title">📈 8% — Média real</span>
+            <strong><?= $fmt($result['tiers']['avg']['monthly']) ?></strong>
+            <small>por mês</small>
+            <small><?= $fmt($result['tiers']['avg']['five_year']) ?> em 5 anos</small>
         </div>
-        <div class="dash-card">
-            <span>12% — Potencial máximo</span>
-            <strong><?= $fmt($result['tiers']['max']['monthly']) ?>/mês</strong>
-            <small><?= $fmt($result['tiers']['max']['yearly']) ?>/ano · <?= $fmt($result['tiers']['max']['five_year']) ?> em 5 anos</small>
+        <div class="proposta-tier">
+            <span class="proposta-tier-title">🚀 12% — Potencial máximo</span>
+            <strong><?= $fmt($result['tiers']['max']['monthly']) ?></strong>
+            <small>por mês</small>
+            <small><?= $fmt($result['tiers']['max']['five_year']) ?> em 5 anos</small>
         </div>
     </div>
 
     <?php if ($result['payback_months']): ?>
-        <div class="dash-card dash-card-soon" style="margin-top:16px; max-width:640px;">
-            <span>💰 Com a economia média, o investimento se paga em aproximadamente</span>
+        <div class="proposta-payback" style="max-width:900px;">
+            💰 Com a economia média, o investimento se paga em aproximadamente
             <strong><?= $result['payback_months'] < 1 ? 'menos de 1 mês' : ceil($result['payback_months']) . ' meses' ?></strong>
         </div>
     <?php endif; ?>
 
-    <div class="table-scroll" style="max-width:700px; margin-top:20px;">
+    <div class="table-scroll" style="max-width:900px; margin-top:20px;">
         <table class="data-table">
             <thead><tr><th>Ano</th><th>Economia acumulada</th><th>Lucro líquido acumulado</th></tr></thead>
             <tbody>
@@ -159,7 +163,7 @@ $fmt = fn (float $brl) => Money::format($brl, $currency, $rate ?? 0.0);
         </table>
     </div>
 
-    <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:20px; max-width:640px;">
+    <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:20px; max-width:900px;">
         <form method="post" action="/painel/simulador/pdf">
             <?= Csrf::field() ?>
             <?php foreach (['client_name', 'client_whatsapp', 'product_id', 'manual_price', 'km_mensal', 'km_litro', 'preco_diesel', 'currency'] as $field): ?>
