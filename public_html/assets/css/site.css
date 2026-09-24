@@ -339,6 +339,7 @@ span.beneficio-icon { font-size: 2.1rem; }
     box-shadow: 0 16px 44px rgba(0,0,0,.28); z-index: 60; display: flex; flex-direction: column;
     overflow: hidden;
 }
+.site-chat-panel[hidden] { display: none; }
 .site-chat-header {
     background: var(--navy); color: var(--white); padding: 14px 16px; display: flex; align-items: center; gap: 10px;
     font-weight: 700; font-size: .95rem;
