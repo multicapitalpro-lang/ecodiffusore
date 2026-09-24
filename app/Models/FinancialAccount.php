@@ -28,12 +28,13 @@ class FinancialAccount
     public static function create(array $data): int
     {
         $stmt = Database::connection()->prepare(
-            'INSERT INTO financial_accounts (name, type, initial_balance) VALUES (:name, :type, :initial_balance)'
+            'INSERT INTO financial_accounts (name, type, initial_balance, overdraft_limit) VALUES (:name, :type, :initial_balance, :overdraft_limit)'
         );
         $stmt->execute([
             'name' => $data['name'],
             'type' => $data['type'],
             'initial_balance' => $data['initial_balance'] ?: 0,
+            'overdraft_limit' => $data['overdraft_limit'] ?: 0,
         ]);
         $id = (int) Database::connection()->lastInsertId();
 

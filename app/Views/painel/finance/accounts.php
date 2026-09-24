@@ -38,6 +38,17 @@ $hasSub = SubscriptionGate::hasAccess($user);
             <?php if ((float) $acc['initial_balance'] != 0): ?>
                 <small class="hint-inline">Saldo inicial: R$ <?= number_format((float) $acc['initial_balance'], 2, ',', '.') ?> + movimentações</small>
             <?php endif; ?>
+            <?php if ((float) ($acc['overdraft_limit'] ?? 0) > 0): ?>
+                <?php
+                // Fase 121: cheque especial NAO e' saldo real (nao entra em currentBalance()) --
+                // so' informativo, pra saber quanto credito ainda sobra. Disponivel = limite +
+                // saldo quando o saldo esta negativo (usando o cheque especial); se o saldo ja
+                // estiver positivo, o limite inteiro continua disponivel.
+                $overdraftUsed = min(0, (float) $acc['balance']);
+                $overdraftAvailable = (float) $acc['overdraft_limit'] + $overdraftUsed;
+                ?>
+                <small class="hint-inline">Cheque especial: R$ <?= number_format((float) $acc['overdraft_limit'], 2, ',', '.') ?> de limite — R$ <?= number_format($overdraftAvailable, 2, ',', '.') ?> disponível</small>
+            <?php endif; ?>
             <?php if (empty($acc['is_default'])): ?>
                 <?php if ($hasSub): ?>
                     <form action="/painel/financeiro/caixas-bancos/<?= (int) $acc['id'] ?>/padrao" method="post" class="inline-form">
@@ -99,6 +110,9 @@ $hasSub = SubscriptionGate::hasAccess($user);
             <label for="initial_balance">Saldo inicial / aporte (R$)</label>
             <input type="number" step="0.01" id="initial_balance" name="initial_balance" value="0">
             <p class="hint-text" style="margin-top:-8px;">Valor que já existe nessa conta antes de começar a lançar movimentações aqui — soma direto no saldo mostrado no card, mesmo sem nenhum lançamento.</p>
+            <label for="overdraft_limit">Limite de cheque especial (R$)</label>
+            <input type="number" step="0.01" id="overdraft_limit" name="overdraft_limit" value="0">
+            <p class="hint-text" style="margin-top:-8px;">Só informativo — nunca entra no saldo da conta, só mostra quanto de crédito ainda sobra.</p>
             <label class="checkbox-inline"><input type="checkbox" name="is_default" value="1"> Tornar essa a conta padrão</label>
             <button type="submit" class="btn btn-primary">Adicionar conta</button>
         </form>
