@@ -63,6 +63,12 @@ $router->get('/comprar/orcamento/pdf', [App\Controllers\PublicController::class,
 $router->post('/comprar/orcamento-maquina', [App\Controllers\PublicController::class, 'submitMachineQuote']);
 $router->get('/comprar/cotacao-maquina/recebida', [App\Controllers\PublicController::class, 'showMachineQuoteReceived']);
 
+// Fase 124: versao publica (sem login) da Calculadora de Locacao, pra qualquer vendedor acessar
+// direto por link, sem precisar de conta no sistema.
+$router->get('/calculadora-locacao', [App\Controllers\PublicLeaseCalculatorController::class, 'index']);
+$router->post('/calculadora-locacao', [App\Controllers\PublicLeaseCalculatorController::class, 'calcular']);
+$router->post('/calculadora-locacao/pdf', [App\Controllers\PublicLeaseCalculatorController::class, 'downloadPdf']);
+
 // Fase 63: link publico do Pedido (sem login) -- vendedor manda direto pro comprador.
 $router->get('/pedido/{token}', [App\Controllers\PublicOrderController::class, 'show']);
 $router->post('/pedido/{token}/aceitar-termos', [App\Controllers\PublicOrderController::class, 'acceptTerms']);
