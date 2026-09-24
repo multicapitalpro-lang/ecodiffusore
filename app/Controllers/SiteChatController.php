@@ -135,23 +135,31 @@ class SiteChatController
 
         $choice = $body['choice'] ?? '';
         $seller = $_SESSION['site_chat_seller'] ?? null;
+        $name = $_SESSION['site_chat_name'] ?? '';
+        $city = $_SESSION['site_chat_city'] ?? '';
 
         switch ($choice) {
             case '1':
             case '2':
+                // Fase 110: mensagem pre-preenchida no WhatsApp -- pedido explicito do usuario, quem
+                // recebe (o vendedor/Licenciado roteado, ou o atendimento central) precisa ja saber
+                // quem e' o contato e o motivo, sem depender do cliente digitar tudo de novo.
+                $intro = $choice === '1'
+                    ? "Olá! Meu nome é {$name}, sou de {$city} e vim pelo chat do site. Tenho interesse em economizar combustível com o Ecodiffusore e gostaria de um orçamento."
+                    : "Olá! Meu nome é {$name}, sou de {$city} e vim pelo chat do site. Já sou cliente e preciso de suporte.";
                 if ($seller) {
                     Response::json([
                         'ok' => true,
                         'next' => 'final',
                         'message' => "Encontrei! O representante da sua região é *{$seller['name']}*. Toque no botão abaixo pra falar direto com ele.",
-                        'whatsapp_link' => self::waLink($seller['whatsapp']),
+                        'whatsapp_link' => self::waLink($seller['whatsapp'], $intro),
                     ]);
                 } else {
                     Response::json([
                         'ok' => true,
                         'next' => 'final',
                         'message' => 'Registrei seu contato! Um de nossos representantes vai falar com você em breve. Se preferir, já toque no botão abaixo pra adiantar.',
-                        'whatsapp_link' => self::waLink(self::CENTRAL_WHATSAPP),
+                        'whatsapp_link' => self::waLink(self::CENTRAL_WHATSAPP, $intro),
                     ]);
                 }
                 break;
@@ -161,7 +169,7 @@ class SiteChatController
                     'ok' => true,
                     'next' => 'final',
                     'message' => 'Beleza! Encaminhando você pro nosso time interno de suporte.',
-                    'whatsapp_link' => self::waLink(self::CENTRAL_WHATSAPP),
+                    'whatsapp_link' => self::waLink(self::CENTRAL_WHATSAPP, "Olá! Meu nome é {$name}. Faço parte da equipe (Licenciado/Vendedor) e preciso falar com o time interno."),
                 ]);
                 break;
 
@@ -170,7 +178,7 @@ class SiteChatController
                     'ok' => true,
                     'next' => 'final',
                     'message' => 'Ok! Toque no botão abaixo pra falar com nossa equipe agora.',
-                    'whatsapp_link' => self::waLink(self::CENTRAL_WHATSAPP),
+                    'whatsapp_link' => self::waLink(self::CENTRAL_WHATSAPP, "Olá! Meu nome é {$name}, sou de {$city} e vim pelo chat do site. Gostaria de falar com um atendente."),
                 ]);
                 break;
 
@@ -179,12 +187,13 @@ class SiteChatController
         }
     }
 
-    private static function waLink(string $whatsapp): string
+    private static function waLink(string $whatsapp, string $text = ''): string
     {
         $digits = preg_replace('/\D/', '', $whatsapp);
         if (strlen($digits) <= 11) {
             $digits = '55' . $digits;
         }
-        return 'https://wa.me/' . $digits;
+        $link = 'https://wa.me/' . $digits;
+        return $text !== '' ? $link . '?text=' . rawurlencode($text) : $link;
     }
 }
