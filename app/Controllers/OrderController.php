@@ -291,6 +291,9 @@ class OrderController
             'is_cost_price' => $isCostPrice,
             'cost_price_billing_name' => $isCostPrice ? trim($_POST['cost_price_billing_name'] ?? '') : null,
             'cost_price_billing_document' => $isCostPrice ? trim($_POST['cost_price_billing_document'] ?? '') : null,
+            // Fase 108: opcional (nem toda empresa tem Inscricao Estadual) -- nunca validado como
+            // obrigatorio, ver validate() abaixo.
+            'cost_price_billing_state_registration' => $isCostPrice ? trim($_POST['cost_price_billing_state_registration'] ?? '') : null,
             'cost_price_delivery_zip_code' => $isCostPrice ? trim($_POST['cost_price_delivery_zip_code'] ?? '') : null,
             'cost_price_delivery_street' => $isCostPrice ? trim($_POST['cost_price_delivery_street'] ?? '') : null,
             'cost_price_delivery_number' => $isCostPrice ? trim($_POST['cost_price_delivery_number'] ?? '') : null,
@@ -516,6 +519,7 @@ class OrderController
             $id,
             trim($_POST['cost_price_billing_name'] ?? ''),
             trim($_POST['cost_price_billing_document'] ?? ''),
+            trim($_POST['cost_price_billing_state_registration'] ?? ''),
             [
                 'zip_code' => trim($_POST['cost_price_delivery_zip_code'] ?? ''),
                 'street' => trim($_POST['cost_price_delivery_street'] ?? ''),

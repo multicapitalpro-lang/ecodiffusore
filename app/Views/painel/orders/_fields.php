@@ -54,6 +54,9 @@ use App\Core\View;
             <input type="text" id="cost_price_billing_document" name="cost_price_billing_document">
             <p class="field-error" data-error-for="cost_price_billing_document"><?= View::e($errors['cost_price_billing_document'] ?? '') ?></p>
 
+            <label for="cost_price_billing_state_registration">Inscrição Estadual (opcional)</label>
+            <input type="text" id="cost_price_billing_state_registration" name="cost_price_billing_state_registration" placeholder="Isento, se não houver">
+
             <p class="hint-text" style="margin:8px 0 2px;">Endereço de entrega</p>
             <div class="form-grid-2">
                 <div>
@@ -99,7 +102,7 @@ use App\Core\View;
         var sellerWrap = document.getElementById('seller-field-wrap');
         var vehicleSection = document.getElementById('vehicle-section');
         var costPriceFields = document.getElementById('cost-price-fields');
-        var costPriceInputs = costPriceFields ? costPriceFields.querySelectorAll('input:not([name="cost_price_delivery_complement"])') : [];
+        var costPriceInputs = costPriceFields ? costPriceFields.querySelectorAll('input:not([name="cost_price_delivery_complement"]):not([name="cost_price_billing_state_registration"])') : [];
         if (!cb) return;
         function sync() {
             if (sellerWrap) sellerWrap.style.display = cb.checked ? 'none' : '';

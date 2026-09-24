@@ -248,8 +248,8 @@ class Order
 
         try {
             $stmt = $db->prepare(
-                'INSERT INTO orders (client_id, seller_id, influencer_id, status, order_date, total_value, notes, vehicle_type, vehicle_plate, vehicle_document_path, cnh_document_path, public_token, is_cost_price, cost_price_billing_name, cost_price_billing_document, cost_price_delivery_zip_code, cost_price_delivery_street, cost_price_delivery_number, cost_price_delivery_complement, cost_price_delivery_neighborhood, cost_price_delivery_city, cost_price_delivery_state)
-                 VALUES (:client_id, :seller_id, :influencer_id, :status, :order_date, 0, :notes, :vehicle_type, :vehicle_plate, :vehicle_document_path, :cnh_document_path, :public_token, :is_cost_price, :cost_price_billing_name, :cost_price_billing_document, :cost_price_delivery_zip_code, :cost_price_delivery_street, :cost_price_delivery_number, :cost_price_delivery_complement, :cost_price_delivery_neighborhood, :cost_price_delivery_city, :cost_price_delivery_state)'
+                'INSERT INTO orders (client_id, seller_id, influencer_id, status, order_date, total_value, notes, vehicle_type, vehicle_plate, vehicle_document_path, cnh_document_path, public_token, is_cost_price, cost_price_billing_name, cost_price_billing_document, cost_price_billing_state_registration, cost_price_delivery_zip_code, cost_price_delivery_street, cost_price_delivery_number, cost_price_delivery_complement, cost_price_delivery_neighborhood, cost_price_delivery_city, cost_price_delivery_state)
+                 VALUES (:client_id, :seller_id, :influencer_id, :status, :order_date, 0, :notes, :vehicle_type, :vehicle_plate, :vehicle_document_path, :cnh_document_path, :public_token, :is_cost_price, :cost_price_billing_name, :cost_price_billing_document, :cost_price_billing_state_registration, :cost_price_delivery_zip_code, :cost_price_delivery_street, :cost_price_delivery_number, :cost_price_delivery_complement, :cost_price_delivery_neighborhood, :cost_price_delivery_city, :cost_price_delivery_state)'
             );
             $stmt->execute([
                 'client_id' => $data['client_id'],
@@ -276,6 +276,9 @@ class Order
                 // "cliente" normal do CRM.
                 'cost_price_billing_name' => $data['cost_price_billing_name'] ?? null,
                 'cost_price_billing_document' => $data['cost_price_billing_document'] ?? null,
+                // Fase 108: opcional -- nem toda empresa tem Inscricao Estadual (isenta ou
+                // consumidor final), pedido explicito do usuario pra nunca exigir.
+                'cost_price_billing_state_registration' => $data['cost_price_billing_state_registration'] ?? null,
                 'cost_price_delivery_zip_code' => $data['cost_price_delivery_zip_code'] ?? null,
                 'cost_price_delivery_street' => $data['cost_price_delivery_street'] ?? null,
                 'cost_price_delivery_number' => $data['cost_price_delivery_number'] ?? null,
@@ -638,7 +641,7 @@ class Order
                     o.vehicle_document_path, o.cnh_document_path,
                     o.photo1_path, o.photo2_path, o.photo3_path, o.telemetry_path,
                     o.is_cost_price, o.factory_payment_proof_path, o.factory_payment_proof_original_name,
-                    o.cost_price_billing_name, o.cost_price_billing_document,
+                    o.cost_price_billing_name, o.cost_price_billing_document, o.cost_price_billing_state_registration,
                     o.cost_price_delivery_zip_code, o.cost_price_delivery_street, o.cost_price_delivery_number,
                     o.cost_price_delivery_complement, o.cost_price_delivery_neighborhood,
                     o.cost_price_delivery_city, o.cost_price_delivery_state,
@@ -912,10 +915,11 @@ class Order
     /** Fase 101b: preenche/corrige os dados de faturamento e entrega de um pedido a preco de
      *  custo -- separado do formulario de criacao pra dar pra preencher depois tambem (pedidos
      *  criados antes desse campo existir, ou pra corrigir um dado errado). */
-    public static function updateCostPriceBilling(int $id, string $billingName, string $billingDocument, array $delivery): void
+    public static function updateCostPriceBilling(int $id, string $billingName, string $billingDocument, ?string $billingStateRegistration, array $delivery): void
     {
         $stmt = Database::connection()->prepare(
             'UPDATE orders SET cost_price_billing_name = :name, cost_price_billing_document = :document,
+                cost_price_billing_state_registration = :state_registration,
                 cost_price_delivery_zip_code = :zip_code, cost_price_delivery_street = :street,
                 cost_price_delivery_number = :number, cost_price_delivery_complement = :complement,
                 cost_price_delivery_neighborhood = :neighborhood, cost_price_delivery_city = :city,
@@ -925,6 +929,7 @@ class Order
         $stmt->execute([
             'name' => $billingName ?: null,
             'document' => $billingDocument ?: null,
+            'state_registration' => $billingStateRegistration ?: null,
             'zip_code' => $delivery['zip_code'] ?: null,
             'street' => $delivery['street'] ?: null,
             'number' => $delivery['number'] ?: null,

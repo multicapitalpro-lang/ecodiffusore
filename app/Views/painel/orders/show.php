@@ -110,6 +110,9 @@ $situation = $order['payment_situation'] ?? ['label' => '—', 'badge' => 'novo'
             <label>CNPJ/CPF pra nota fiscal
                 <input type="text" name="cost_price_billing_document" value="<?= View::e($order['cost_price_billing_document'] ?? '') ?>">
             </label>
+            <label>Inscrição Estadual (opcional)
+                <input type="text" name="cost_price_billing_state_registration" placeholder="Isento, se não houver" value="<?= View::e($order['cost_price_billing_state_registration'] ?? '') ?>">
+            </label>
             <div class="form-grid-2">
                 <label>CEP
                     <input type="text" name="cost_price_delivery_zip_code" value="<?= View::e($order['cost_price_delivery_zip_code'] ?? '') ?>">

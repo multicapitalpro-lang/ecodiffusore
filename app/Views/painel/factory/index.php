@@ -97,7 +97,8 @@ $erro = isset($_GET['erro']);
                         <?php if (!empty($o['is_cost_price'])): ?>
                             <span class="status-badge status-novo">🏷️ Preço de custo</span><br>
                             <?= View::e($o['cost_price_billing_name'] ?: '—') ?><br>
-                            <small class="hint-text">CNPJ/CPF: <?= View::e($o['cost_price_billing_document'] ?: '—') ?></small>
+                            <small class="hint-text">CNPJ/CPF: <?= View::e($o['cost_price_billing_document'] ?: '—') ?></small><br>
+                            <small class="hint-text">IE: <?= View::e($o['cost_price_billing_state_registration'] ?: 'Isento/não informado') ?></small>
                         <?php else: ?>
                             <?= View::e($o['client_name']) ?><br>
                             <small class="hint-text"><?= View::e($o['client_document'] ?: '—') ?><?php if (!empty($o['client_whatsapp'])): ?> · <?= View::e($o['client_whatsapp']) ?><?php endif; ?><?php if (!empty($o['client_email'])): ?> · <?= View::e($o['client_email']) ?><?php endif; ?></small>
