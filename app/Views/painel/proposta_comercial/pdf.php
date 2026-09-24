@@ -23,18 +23,18 @@ $fmt = fn (float $v) => 'R$ ' . number_format($v, 2, ',', '.');
 <title>Proposta Comercial Ecodiffusore</title>
 <style>
     * { box-sizing: border-box; }
-    body { font-family: 'DejaVu Sans', sans-serif; color: #222; font-size: 10px; margin: 0; }
-    .hero { width: 100%; display: block; margin-bottom: 14px; }
-    .title { text-align: center; font-size: 22px; font-weight: bold; color: #003254; margin: 0 0 2px; }
+    body { font-family: 'DejaVu Sans', sans-serif; color: #222; font-size: 9.5px; margin: 0; }
+    .hero { width: 100%; display: block; margin-bottom: 8px; }
+    .title { text-align: center; font-size: 20px; font-weight: bold; color: #003254; margin: 0 0 2px; }
     .title strong { color: #1a7a4c; }
-    .subtitle { text-align: center; font-size: 9px; font-weight: bold; color: #1a7a4c; letter-spacing: 1px; margin: 0 0 14px; }
-    .info-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
-    .info-table td { width: 33.33%; border: 1px solid #ddd; padding: 6px 8px; vertical-align: top; }
-    .info-label { color: #1a7a4c; font-weight: bold; font-size: 9px; display: block; margin-bottom: 3px; }
+    .subtitle { text-align: center; font-size: 8.5px; font-weight: bold; color: #1a7a4c; letter-spacing: 1px; margin: 0 0 8px; }
+    .info-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+    .info-table td { width: 33.33%; border: 1px solid #ddd; padding: 5px 8px; vertical-align: top; }
+    .info-label { color: #1a7a4c; font-weight: bold; font-size: 9px; display: block; margin-bottom: 2px; }
     .info-value { font-size: 10px; }
-    .intro { font-size: 10px; line-height: 1.5; margin-bottom: 14px; text-align: justify; }
-    .benefits { width: 100%; display: block; margin-bottom: 14px; }
-    .bar { background: #003254; color: #fff; font-weight: bold; font-size: 12px; padding: 7px 10px; margin-bottom: 0; }
+    .intro { font-size: 9.5px; line-height: 1.4; margin-bottom: 8px; text-align: justify; }
+    .benefits { width: 100%; display: block; margin-bottom: 8px; }
+    .bar { background: #003254; color: #fff; font-weight: bold; font-size: 12px; padding: 6px 10px; margin-bottom: 0; }
     table.items { width: 100%; border-collapse: collapse; margin-bottom: 0; }
     table.items th { background: #003254; color: #fff; font-size: 9px; padding: 7px 8px; text-align: right; }
     table.items th:first-child { text-align: left; }
@@ -43,15 +43,15 @@ $fmt = fn (float $v) => 'R$ ' . number_format($v, 2, ',', '.');
     table.items tr:nth-child(even) td { background: #f6f6f6; }
     .total-row td { background: #003254; color: #fff; font-weight: bold; font-size: 11px; padding: 8px; }
     .total-row .total-value { background: #2c8f09; text-align: right; }
-    .cond-table { width: 100%; border-collapse: collapse; margin-bottom: 14px; }
-    .cond-table td { border: 1px solid #ddd; padding: 6px 8px; font-size: 10px; }
+    .cond-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+    .cond-table td { border: 1px solid #ddd; padding: 5px 8px; font-size: 9.5px; }
     .cond-table td.label { color: #1a7a4c; font-weight: bold; width: 32%; }
-    .notes-box { border: 1px solid #ddd; padding: 8px; min-height: 24px; font-size: 10px; margin-bottom: 14px; }
-    .agree { text-align: center; font-style: italic; font-size: 9.5px; margin-bottom: 26px; }
-    table.sign { width: 100%; border-collapse: collapse; margin-bottom: 18px; }
-    table.sign td { width: 50%; text-align: center; font-size: 9.5px; padding-top: 18px; border-top: 1px solid #333; }
-    table.sign .sign-name { font-weight: bold; color: #1a7a4c; margin-bottom: 14px; display: block; }
-    .footer { background: #003254; color: #fff; font-size: 8.5px; padding: 8px 10px; margin-top: 8px; }
+    .notes-box { border: 1px solid #ddd; padding: 6px 8px; min-height: 18px; font-size: 9.5px; margin-bottom: 8px; }
+    .agree { text-align: center; font-style: italic; font-size: 9px; margin-bottom: 14px; }
+    table.sign { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+    table.sign td { width: 50%; text-align: center; font-size: 9px; padding-top: 12px; border-top: 1px solid #333; }
+    table.sign .sign-name { font-weight: bold; color: #1a7a4c; margin-bottom: 10px; display: block; }
+    .footer { background: #003254; color: #fff; font-size: 8px; padding: 6px 10px; margin-top: 4px; }
 </style>
 </head>
 <body>
@@ -95,7 +95,7 @@ $fmt = fn (float $v) => 'R$ ' . number_format($v, 2, ',', '.');
         </tr>
     </tbody>
 </table>
-<div style="margin-bottom:14px;"></div>
+<div style="margin-bottom:8px;"></div>
 
 <div class="bar">CONDIÇÕES COMERCIAIS</div>
 <table class="cond-table">
