@@ -79,15 +79,16 @@ class Auth
             exit;
         }
 
-        // Gate central do treinamento obrigatorio (Fase 42) -- toda acao de verdade do painel
-        // passa por requireRole(), entao colocar a trava aqui (em vez de so' no login/Dashboard,
-        // como os outros gates de onboarding deste projeto) bloqueia de verdade mesmo se o
-        // Vendedor tentar navegar direto pra uma URL de funcao. A tela de treinamento em si usa
-        // so' requireLogin(), nunca requireRole(), entao fica sempre acessivel.
+        // Gate central do treinamento obrigatorio (Fase 42) -- DESATIVADO TEMPORARIAMENTE (Fase
+        // 131), pedido explicito do usuario: ainda nao existem videos de treinamento gravados,
+        // entao o gate so estava travando o primeiro acesso do Vendedor sem ter nada real pra
+        // mostrar. Recolocar assim que os videos existirem -- so descomentar o bloco abaixo (o
+        // resto do fluxo continua intacto: SellerTrainingController, tela /painel/treinamento e
+        // o link no menu continuam funcionando normalmente, so pararam de ser OBRIGATORIOS).
         $user = self::user();
-        if ($user['role_slug'] === Roles::SELLER && empty($user['training_completed_at'])) {
-            Router::redirect('/painel/treinamento');
-        }
+        // if ($user['role_slug'] === Roles::SELLER && empty($user['training_completed_at'])) {
+        //     Router::redirect('/painel/treinamento');
+        // }
 
         // Gate central do contrato do Vendedor (Fase 105) -- depois do treinamento, o Vendedor
         // precisa baixar o contrato, assinar via gov.br e enviar de volta pro Licenciado aprovar.

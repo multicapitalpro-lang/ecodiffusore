@@ -49,9 +49,10 @@ class AuthController
         if ($user['role_slug'] === 'licenciado' && in_array($user['licenciado_onboarding_status'], ['aguardando_assinatura', 'aguardando_aprovacao', 'assinatura_recusada', 'kyc_recusado'], true)) {
             Router::redirect('/painel/licenciados/aguardando-assinatura');
         }
-        if ($user['role_slug'] === 'vendedor' && empty($user['training_completed_at'])) {
-            Router::redirect('/painel/treinamento');
-        }
+        // Fase 131: gate de treinamento obrigatorio desativado temporariamente -- ver App\Core\Auth::requireRole().
+        // if ($user['role_slug'] === 'vendedor' && empty($user['training_completed_at'])) {
+        //     Router::redirect('/painel/treinamento');
+        // }
         if (in_array($user['role_slug'], Roles::PAYOUT_ROLES, true) && empty($user['bank_data_completed_at'])) {
             Router::redirect('/painel/dados-bancarios');
         }
