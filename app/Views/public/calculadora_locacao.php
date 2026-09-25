@@ -44,7 +44,7 @@ $pct = $values['pct_economia'] ?? '10';
             <p class="field-error"><?= View::e($errors['geral']) ?></p>
         <?php endif; ?>
 
-        <form method="post" action="/calculadora-locacao">
+        <form method="post" action="/calculadora-economia-diesel">
             <?= Csrf::field() ?>
 
             <div class="dc-card">
@@ -345,7 +345,7 @@ $pct = $values['pct_economia'] ?? '10';
         <div class="dc-disclaimer" style="max-width:900px; margin-top:16px;">Resultado líquido = economia gerada em diesel menos o custo da locação (mensalidade e, no ano 1, a adesão — à vista ou parcelada no cartão). A tabela de 5 anos assume gasto, consumo, preço do diesel, % de economia e mensalidade constantes ao longo do período (sem reajuste ou inflação). Valores contratuais do Ecodiffusore garantem faixa de 5% a 30% de melhora.</div>
 
         <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:20px; max-width:900px;">
-            <form method="post" action="/calculadora-locacao/pdf">
+            <form method="post" action="/calculadora-economia-diesel/pdf">
                 <?= Csrf::field() ?>
                 <?php foreach (['client_name', 'currency', 'modo', 'gasto_diesel', 'km_rodados', 'media_kml', 'preco_diesel', 'pct_economia', 'valor_adesao', 'mensalidade', 'veiculos', 'parcelar_adesao', 'parcelas_adesao'] as $field): ?>
                     <input type="hidden" name="<?= $field ?>" value="<?= $v($field) ?>">

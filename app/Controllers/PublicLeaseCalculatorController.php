@@ -7,18 +7,26 @@ use App\Core\ExchangeRateClient;
 use App\Core\LeaseCalculator;
 use App\Core\Money;
 use App\Core\Pdf;
+use App\Core\Router;
 use App\Core\View;
 
 /**
- * Versao PUBLICA (sem login) da Calculadora de Locacao (Fase 124) -- pedido explicito do
- * usuario: "quero o link fora do painel pra qualquer vendedor acessar", sem precisar de conta
+ * Versao PUBLICA (sem login) da Calculadora de Economia de Diesel (Fase 124) -- pedido explicito
+ * do usuario: "quero o link fora do painel pra qualquer vendedor acessar", sem precisar de conta
  * no sistema. Mesmo motor de calculo (App\Core\LeaseCalculator) e mesmo layout visual da versao
- * autenticada (/painel/calculadora-locacao) -- a diferenca e' so' o gate de acesso e o seletor
+ * autenticada (/painel/calculadora-economia-diesel) -- a diferenca e' so' o gate de acesso e o seletor
  * de moeda, que aqui fica SEMPRE disponivel (Real/Guarani) em vez de depender da configuracao de
  * secondary_currency de um usuario logado especifico.
  */
 class PublicLeaseCalculatorController
 {
+    /** Fase 129: /calculadora-locacao virou /calculadora-economia-diesel -- redirect pra nao
+     *  quebrar o link publico que ja foi compartilhado com vendedores. */
+    public function redirectLegacySlug(): void
+    {
+        Router::redirect('/calculadora-economia-diesel');
+    }
+
     public function index(): void
     {
         View::render('public/calculadora_locacao', [
@@ -96,7 +104,7 @@ class PublicLeaseCalculatorController
         ], null);
         $html = ob_get_clean();
 
-        Pdf::download($html, 'calculadora-locacao-ecodiffusore.pdf', 'portrait');
+        Pdf::download($html, 'calculadora-economia-diesel-ecodiffusore.pdf', 'portrait');
     }
 
     /** @return array{0: array, 1: array} */

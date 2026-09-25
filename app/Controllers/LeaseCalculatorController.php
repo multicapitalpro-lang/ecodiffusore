@@ -9,6 +9,7 @@ use App\Core\LeaseCalculator;
 use App\Core\Money;
 use App\Core\Pdf;
 use App\Core\Roles;
+use App\Core\Router;
 use App\Core\View;
 use App\Models\User;
 
@@ -19,6 +20,12 @@ use App\Models\User;
  */
 class LeaseCalculatorController
 {
+    /** Fase 129: /painel/calculadora-locacao virou /painel/calculadora-economia-diesel. */
+    public function redirectLegacySlug(): void
+    {
+        Router::redirect('/painel/calculadora-economia-diesel');
+    }
+
     public function index(): void
     {
         Auth::requireRole(Roles::STAFF);
@@ -114,7 +121,7 @@ class LeaseCalculatorController
         ], null);
         $html = ob_get_clean();
 
-        Pdf::download($html, 'calculadora-locacao-ecodiffusore.pdf', 'portrait');
+        Pdf::download($html, 'calculadora-economia-diesel-ecodiffusore.pdf', 'portrait');
     }
 
     /** @return array{0: array, 1: array} */

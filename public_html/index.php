@@ -63,11 +63,14 @@ $router->get('/comprar/orcamento/pdf', [App\Controllers\PublicController::class,
 $router->post('/comprar/orcamento-maquina', [App\Controllers\PublicController::class, 'submitMachineQuote']);
 $router->get('/comprar/cotacao-maquina/recebida', [App\Controllers\PublicController::class, 'showMachineQuoteReceived']);
 
-// Fase 124: versao publica (sem login) da Calculadora de Locacao, pra qualquer vendedor acessar
-// direto por link, sem precisar de conta no sistema.
-$router->get('/calculadora-locacao', [App\Controllers\PublicLeaseCalculatorController::class, 'index']);
-$router->post('/calculadora-locacao', [App\Controllers\PublicLeaseCalculatorController::class, 'calcular']);
-$router->post('/calculadora-locacao/pdf', [App\Controllers\PublicLeaseCalculatorController::class, 'downloadPdf']);
+// Fase 124: versao publica (sem login) da Calculadora de Economia de Diesel, pra qualquer
+// vendedor acessar direto por link, sem precisar de conta no sistema.
+$router->get('/calculadora-economia-diesel', [App\Controllers\PublicLeaseCalculatorController::class, 'index']);
+$router->post('/calculadora-economia-diesel', [App\Controllers\PublicLeaseCalculatorController::class, 'calcular']);
+$router->post('/calculadora-economia-diesel/pdf', [App\Controllers\PublicLeaseCalculatorController::class, 'downloadPdf']);
+// Fase 129: /calculadora-locacao virou /calculadora-economia-diesel (o nome antigo nao fazia mais
+// sentido -- a locacao e' opcional agora). Redirect pra nao quebrar o link ja compartilhado.
+$router->get('/calculadora-locacao', [App\Controllers\PublicLeaseCalculatorController::class, 'redirectLegacySlug']);
 
 // Fase 63: link publico do Pedido (sem login) -- vendedor manda direto pro comprador.
 $router->get('/pedido/{token}', [App\Controllers\PublicOrderController::class, 'show']);
@@ -253,9 +256,10 @@ $router->get('/painel/simulador', [App\Controllers\SimuladorController::class, '
 $router->post('/painel/simulador', [App\Controllers\SimuladorController::class, 'calcular']);
 $router->post('/painel/simulador/pdf', [App\Controllers\SimuladorController::class, 'downloadPdf']);
 
-$router->get('/painel/calculadora-locacao', [App\Controllers\LeaseCalculatorController::class, 'index']);
-$router->post('/painel/calculadora-locacao', [App\Controllers\LeaseCalculatorController::class, 'calcular']);
-$router->post('/painel/calculadora-locacao/pdf', [App\Controllers\LeaseCalculatorController::class, 'downloadPdf']);
+$router->get('/painel/calculadora-economia-diesel', [App\Controllers\LeaseCalculatorController::class, 'index']);
+$router->post('/painel/calculadora-economia-diesel', [App\Controllers\LeaseCalculatorController::class, 'calcular']);
+$router->post('/painel/calculadora-economia-diesel/pdf', [App\Controllers\LeaseCalculatorController::class, 'downloadPdf']);
+$router->get('/painel/calculadora-locacao', [App\Controllers\LeaseCalculatorController::class, 'redirectLegacySlug']);
 
 $router->get('/painel/materiais', [App\Controllers\MaterialController::class, 'index']);
 $router->post('/painel/materiais/scripts', [App\Controllers\MaterialController::class, 'storeScript']);
