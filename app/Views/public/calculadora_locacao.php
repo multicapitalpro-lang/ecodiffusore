@@ -146,6 +146,14 @@ $pct = $values['pct_economia'] ?? '10';
                 parcelasField.style.display = parcelarCheckbox.checked ? '' : 'none';
             });
         }
+        var currencySelect = document.getElementById('currency');
+        if (currencySelect) {
+            currencySelect.addEventListener('change', function () {
+                var symbol = currencySelect.value === 'PYG' ? '₲' : 'R$';
+                document.getElementById('cl-currency-symbol').textContent = symbol;
+                document.getElementById('cl-currency-symbol-2').textContent = symbol;
+            });
+        }
     })();
     </script>
 
