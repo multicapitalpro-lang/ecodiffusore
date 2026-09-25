@@ -29,6 +29,10 @@ $situacaoPagamento = $situacaoPagamento ?? null;
     </div>
 </div>
 
+<?php if (isset($_GET['excluido'])): ?>
+    <p class="form-msg form-msg-ok">Pedido excluído.</p>
+<?php endif; ?>
+
 <?php if ($situacaoPagamento === 'pendente'): ?>
     <p class="form-msg form-msg-erro">Mostrando só pedidos com pagamento pendente ou expirado. <a href="/painel/pedidos">Limpar filtro</a></p>
 <?php elseif ($situacaoPagamento === 'pago'): ?>
@@ -101,6 +105,12 @@ $situacaoPagamento = $situacaoPagamento ?? null;
                         <button type="button" class="link-button" data-view-order="<?= (int) $o['id'] ?>">Ver</button>
                         <?php if ($o['status'] === 'em_andamento' && !$isViewOnly): ?>
                             · <button type="button" class="link-button" data-edit-order="<?= (int) $o['id'] ?>">Editar</button>
+                        <?php endif; ?>
+                        <?php if (($user['role_slug'] ?? '') === 'admin'): ?>
+                            · <form action="/painel/pedidos/<?= (int) $o['id'] ?>/excluir" method="post" style="display:inline;">
+                                <?= Csrf::field() ?>
+                                <button type="submit" class="link-button" style="color:#c53030;" data-confirm="Excluir o pedido #<?= (int) $o['id'] ?> definitivamente? Só é permitido se ele ainda não tiver comissão ou lançamento financeiro gerado. Essa ação não pode ser desfeita.">Excluir</button>
+                            </form>
                         <?php endif; ?>
                     </td>
                 </tr>

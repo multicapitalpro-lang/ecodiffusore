@@ -37,6 +37,8 @@ $situation = $order['payment_situation'] ?? ['label' => '—', 'badge' => 'novo'
     <p class="form-msg form-msg-erro">Só é possível editar pedidos em andamento.</p>
 <?php elseif ($erro === '3'): ?>
     <p class="form-msg form-msg-erro">Não foi possível marcar como verificado: há uma aprovação de desconto pendente ou uma cobrança gerada no Asaas ainda não confirmada como paga. Aguarde a confirmação do pagamento (ou resolva a aprovação pendente) antes de verificar o pedido.</p>
+<?php elseif ($erro === 'ja_liquidado'): ?>
+    <p class="form-msg form-msg-erro">Não é possível excluir: esse pedido já gerou comissão ou lançamento financeiro real. Use "Cancelar" em vez de excluir, pra preservar o histórico.</p>
 <?php elseif (isset($_GET['erro_documentos'])): ?>
     <p class="form-msg form-msg-erro">Anexe a CNH e o documento do veículo, ou peça pro cliente enviar no painel dele — a fábrica precisa do documento do veículo pra montar o pedido certo.</p>
 <?php endif; ?>

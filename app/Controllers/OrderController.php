@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Core\Auth;
+use App\Core\AsaasClient;
 use App\Core\CorreiosClient;
 use App\Core\Csrf;
 use App\Core\Csv;
@@ -695,6 +696,46 @@ class OrderController
         }
 
         Router::redirect("/painel/pedidos/{$id}?sucesso=1");
+    }
+
+    /** Fase 130: exclusao definitiva -- pedido explicito do usuario pra limpar pedido de teste/
+     *  lancado errado que ainda nao gerou comissao nem lancamento financeiro real (ver
+     *  Order::isFinanciallySettled()); pedido ja verificado/pago usa "Cancelar" (status), que
+     *  preserva o historico -- nao existe hoje regra de como desfazer comissao/financeiro ja
+     *  gerado, entao excluir nesse caso seria perigoso. So' admin, dado o quao definitivo e'. */
+    public function destroy(string $id): void
+    {
+        Auth::requireRole(['admin']);
+        $id = (int) $id;
+        $order = Order::find($id);
+        if (!$order) {
+            Router::redirect('/painel/pedidos');
+        }
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            Router::redirect("/painel/pedidos/{$id}?erro=1");
+        }
+
+        if (Order::isFinanciallySettled($id)) {
+            Router::redirect("/painel/pedidos/{$id}?erro=ja_liquidado");
+        }
+
+        // Best-effort: cancela cobranca Asaas pendente antes de excluir a linha local, senao o
+        // boleto/pix/cartao continua cobravel do lado de fora mesmo com o pedido apagado aqui.
+        foreach (Payment::forPayable('order', $id) as $payment) {
+            if ($payment['status'] === 'pendente' && !empty($payment['asaas_charge_id'])) {
+                try {
+                    (new AsaasClient())->cancel($payment['asaas_charge_id']);
+                } catch (\Throwable $e) {
+                    // Charge pode ja ter sido cancelada/paga do lado do Asaas -- nao bloqueia a exclusao local.
+                }
+            }
+        }
+
+        AuditLog::record((int) Auth::user()['id'], 'pedido_excluido', 'order', $id, [], $order);
+        Order::delete($id);
+
+        Router::redirect('/painel/pedidos?excluido=1');
     }
 
     public function downloadVehicleDocument(string $id): void

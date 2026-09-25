@@ -587,6 +587,48 @@ class Order
         $stmt->execute(['status' => $status, 'id' => $id]);
     }
 
+    /** Fase 130: guarda usada pelo OrderController::destroy() antes de excluir -- um pedido que
+     *  ja gerou comissao ou lancamento financeiro real nao pode ser apagado (nao existe hoje
+     *  regra de como desfazer isso, ver comentario em delete()); tem que usar status='cancelado'
+     *  em vez de excluir, pra preservar o historico. */
+    public static function isFinanciallySettled(int $id): bool
+    {
+        $pdo = Database::connection();
+        $stmt = $pdo->prepare('SELECT 1 FROM commissions WHERE order_id = ? LIMIT 1');
+        $stmt->execute([$id]);
+        if ($stmt->fetchColumn()) {
+            return true;
+        }
+        $stmt = $pdo->prepare('SELECT 1 FROM financial_transactions WHERE order_id = ? LIMIT 1');
+        $stmt->execute([$id]);
+        return (bool) $stmt->fetchColumn();
+    }
+
+    /** Fase 130: exclusao definitiva (pedido de teste/lancado errado -- nao existe hoje regra
+     *  pra "cancelar" desfazer comissao/lancamento ja gerado, entao isso e' so' pra pedido que
+     *  ainda NAO tem comissao/financeiro reais -- ver OrderController::destroy(), que bloqueia
+     *  antes de chegar aqui se o pedido ja foi verificado/pago). order_items e commissions (+
+     *  commission_attachments) tem ON DELETE CASCADE no schema, saem sozinhos. financial_transactions
+     *  e payments NAO tem cascade real (SET NULL ou nenhuma FK) -- limpos explicitamente aqui pra
+     *  nao deixar lancamento/cobranca orfa apontando pra um pedido que nao existe mais. Cobranca
+     *  Asaas em si (se houver) precisa ser cancelada ANTES via API pelo controller -- excluir a
+     *  linha local nao cancela nada do lado de fora. */
+    public static function delete(int $id): void
+    {
+        $pdo = Database::connection();
+        $pdo->beginTransaction();
+        try {
+            $pdo->prepare('DELETE FROM payments WHERE payable_type = ? AND payable_id = ?')->execute(['order', $id]);
+            $pdo->prepare('DELETE FROM financial_transactions WHERE order_id = ?')->execute([$id]);
+            $pdo->prepare("UPDATE quotes SET status = 'pendente', converted_order_id = NULL WHERE converted_order_id = ?")->execute([$id]);
+            $pdo->prepare('DELETE FROM orders WHERE id = ?')->execute([$id]);
+            $pdo->commit();
+        } catch (\Throwable $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
+    }
+
     public static function updateTracking(int $id, ?string $trackingCode, ?string $trackingCarrier, ?string $prazoEntrega = null): void
     {
         $current = self::find($id);

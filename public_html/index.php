@@ -369,6 +369,7 @@ $router->get('/painel/pedidos/{id}/editar', [App\Controllers\OrderController::cl
 $router->post('/painel/pedidos/{id}', [App\Controllers\OrderController::class, 'update']);
 $router->post('/painel/pedidos/{id}/status', [App\Controllers\OrderController::class, 'markStatus']);
 $router->post('/painel/pedidos/{id}/reembolsar', [App\Controllers\OrderController::class, 'refundPayment']);
+$router->post('/painel/pedidos/{id}/excluir', [App\Controllers\OrderController::class, 'destroy']);
 $router->post('/painel/pedidos/{id}/rastreio', [App\Controllers\OrderController::class, 'updateTracking']);
 $router->post('/painel/pedidos/{id}/aprovar-documentos', [App\Controllers\OrderController::class, 'approveDocuments']);
 $router->post('/painel/pedidos/{id}/faturamento-custo', [App\Controllers\OrderController::class, 'updateCostPriceBilling']);
