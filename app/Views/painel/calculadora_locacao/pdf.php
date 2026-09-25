@@ -11,7 +11,7 @@ $fmt = fn (float $brl) => Money::format($brl, $currency ?? 'BRL', $rate ?? 0.0);
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Calculadora de Locação Ecodiffusore</title>
+<title>Calculadora de Economia de Diesel Ecodiffusore</title>
 <style>
     body { font-family: 'DejaVu Sans', sans-serif; font-size: 11px; color: #222; }
     .letterhead { border-bottom: 2px solid #1a7a4c; padding-bottom: 10px; margin-bottom: 18px; }
@@ -32,7 +32,7 @@ $fmt = fn (float $brl) => Money::format($brl, $currency ?? 'BRL', $rate ?? 0.0);
 <body>
 <div class="letterhead">
     <div class="letterhead-brand">Ecodiffusore Brasil</div>
-    <div class="letterhead-title">Calculadora de Locação<?= $clientName ? ' — ' . htmlspecialchars($clientName, ENT_QUOTES, 'UTF-8') : '' ?></div>
+    <div class="letterhead-title">Calculadora de Economia de Diesel<?= $clientName ? ' — ' . htmlspecialchars($clientName, ENT_QUOTES, 'UTF-8') : '' ?></div>
     <div class="letterhead-meta">Gerado em <?= date('d/m/Y') ?> às <?= date('H:i') ?> por <?= htmlspecialchars($sellerName, ENT_QUOTES, 'UTF-8') ?> · ecodiffusorebrasil.com.br</div>
 </div>
 

@@ -155,7 +155,7 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/desempen
                             <a href="/painel/simulador" class="<?= $isActive('/painel/simulador') ? 'is-active' : '' ?>">Simulador de Economia</a>
                         <?php endif; ?>
                         <?php if (in_array($role, $staffRoles, true)): ?>
-                            <a href="/painel/calculadora-locacao" class="<?= $isActive('/painel/calculadora-locacao') ? 'is-active' : '' ?>">Calculadora de Locação</a>
+                            <a href="/painel/calculadora-locacao" class="<?= $isActive('/painel/calculadora-locacao') ? 'is-active' : '' ?>">Calculadora de Economia de Diesel</a>
                         <?php endif; ?>
                         <?php if (in_array($role, $staffRoles, true)): ?>
                             <a href="/painel/proposta-comercial" class="<?= $isActive('/painel/proposta-comercial') ? 'is-active' : '' ?>">📄 Proposta Comercial</a>
