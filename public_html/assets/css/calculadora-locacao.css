@@ -1,0 +1,137 @@
+/* Fase 126: reskin da Calculadora de Economia de Diesel pra bater com o visual da calculadora
+   original (Google Apps Script) que o usuario mandou como referencia -- header navy de marca,
+   selos numerados, cards de resultado ao vivo, comparativo antes/depois riscado. Escopado embaixo
+   de .dc-page pra nao vazar pro resto do painel.css. */
+.dc-page {
+    --dc-navy: #101a35;
+    --dc-navy-2: #182449;
+    --dc-green: #8dc63f;
+    --dc-green-dark: #6ea62c;
+    --dc-bg: #eef1ee;
+    --dc-border: #dde2dc;
+    --dc-gray: #6b7280;
+    --dc-red: #b3483c;
+    font-family: 'Space Mono', ui-monospace, monospace;
+    background: var(--dc-bg);
+    color: var(--dc-navy);
+    max-width: none;
+    margin: 0;
+    padding: 0 0 48px;
+}
+/* Versao dentro do painel (layout ja tem 24px de padding em .painel-content) -- puxa a hero pra
+   virar full-bleed dentro do card do painel; a publica fica sem isso (body ja comeca sem padding). */
+.dc-page.dc-embedded { margin: -24px; }
+@media (max-width: 900px) {
+    .dc-page.dc-embedded { margin: -18px; }
+}
+.dc-page * { box-sizing: border-box; }
+.dc-page h1, .dc-page h2, .dc-page h3, .dc-page .dc-title-font {
+    font-family: 'Oswald', 'Space Mono', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: .02em;
+}
+
+.dc-hero {
+    background: linear-gradient(160deg, var(--dc-navy) 0%, var(--dc-navy-2) 100%);
+    color: #fff;
+    padding: 32px 24px 26px;
+}
+.dc-hero-brand { display: flex; align-items: center; gap: 10px; margin-bottom: 22px; }
+.dc-hero-brand img { height: 34px; }
+.dc-hero h1 { font-size: 2rem; font-weight: 700; line-height: 1.15; margin: 0 0 14px; max-width: 760px; }
+.dc-hero p { color: #b7bfd6; font-size: .92rem; max-width: 620px; margin: 0; line-height: 1.5; }
+
+.dc-strip {
+    background: var(--dc-navy);
+    color: #fff;
+    padding: 14px 24px;
+    display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap;
+    border-top: 4px solid var(--dc-green);
+}
+.dc-strip strong { font-family: 'Oswald', sans-serif; text-transform: uppercase; letter-spacing: .06em; font-size: .95rem; }
+.dc-strip span { color: #9aa3bd; font-size: .82rem; }
+
+.dc-body { max-width: 900px; margin: 0 auto; padding: 24px 20px 0; }
+
+.dc-card {
+    background: #fff; border: 1px solid var(--dc-border); border-radius: 10px;
+    padding: 20px; margin-bottom: 18px;
+}
+.dc-card-title { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.dc-badge {
+    background: var(--dc-navy); color: var(--dc-green); font-family: 'Oswald', sans-serif; font-weight: 700;
+    width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; font-size: .95rem;
+}
+.dc-card-title h3 { margin: 0; font-size: 1rem; color: var(--dc-navy); }
+
+.dc-field { margin-bottom: 14px; }
+.dc-field label { display: block; font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--dc-gray); margin-bottom: 6px; }
+.dc-field-wrap { position: relative; }
+.dc-field input[type="text"], .dc-field input[type="number"] {
+    width: 100%; background: var(--dc-bg); border: 1.5px solid var(--dc-border); border-radius: 8px;
+    padding: 12px 68px 12px 14px; font-family: 'Space Mono', monospace; font-size: .95rem; color: var(--dc-navy);
+}
+.dc-field input:focus { outline: none; border-color: var(--dc-green-dark); background: #fff; }
+.dc-unit {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    font-size: .72rem; color: var(--dc-gray); text-transform: uppercase; letter-spacing: .03em; pointer-events: none;
+}
+.dc-radio-row { display: flex; gap: 22px; margin-bottom: 12px; font-size: .88rem; }
+.dc-radio-row label { display: flex; align-items: center; gap: 7px; cursor: pointer; font-weight: 600; color: var(--dc-navy); }
+.dc-radio-row input { accent-color: var(--dc-navy); width: 17px; height: 17px; }
+
+.dc-result-card { background: var(--dc-navy); color: #fff; border-radius: 10px 10px 0 0; padding: 18px 20px; margin-bottom: 0; }
+.dc-result-card span { display: block; color: var(--dc-green); font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; margin-bottom: 6px; }
+.dc-result-card strong { font-family: 'Oswald', sans-serif; font-size: 1.9rem; font-weight: 700; }
+.dc-result-below { background: #fff; border: 1px solid var(--dc-border); border-top: none; border-radius: 0 0 10px 10px; padding: 4px 20px 16px; margin-bottom: 18px; }
+.dc-result-row { padding: 12px 0; border-bottom: 1px solid var(--dc-border); }
+.dc-result-row:last-child { border-bottom: none; }
+.dc-result-row span { display: block; font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; color: var(--dc-gray); font-weight: 700; margin-bottom: 4px; }
+.dc-result-row strong { font-family: 'Oswald', sans-serif; font-size: 1.4rem; color: var(--dc-navy); }
+
+.dc-slider-row { display: flex; align-items: center; gap: 14px; margin-bottom: 4px; }
+.dc-slider-row input[type="range"] { flex: 1; accent-color: var(--dc-green); height: 6px; }
+.dc-slider-row strong { font-family: 'Oswald', sans-serif; color: var(--dc-green-dark); font-size: 1.5rem; min-width: 60px; text-align: right; }
+
+.dc-compare-row { display: flex; align-items: center; gap: 12px; margin: 6px 0; font-size: .85rem; }
+.dc-compare-row label { min-width: 130px; color: var(--dc-gray); font-weight: 700; text-transform: uppercase; font-size: .72rem; }
+.dc-compare-row .dc-readonly { flex: 1; background: var(--dc-bg); border: 1.5px solid var(--dc-border); border-radius: 8px; padding: 10px 12px; color: var(--dc-navy); }
+.dc-compare-row .dc-unit-inline { color: var(--dc-gray); font-size: .8rem; min-width: 44px; }
+
+.dc-gasto-compare { display: grid; grid-template-columns: 1fr auto 1fr; align-items: stretch; gap: 0; margin-top: 14px; border-radius: 8px; overflow: hidden; }
+.dc-gasto-box { padding: 16px; text-align: center; }
+.dc-gasto-box.dc-before { background: #f3e6e3; }
+.dc-gasto-box.dc-after { background: #e7f2da; }
+.dc-gasto-box span { display: block; font-size: .7rem; text-transform: uppercase; letter-spacing: .04em; color: var(--dc-gray); font-weight: 700; margin-bottom: 6px; }
+.dc-gasto-box strong { font-family: 'Oswald', sans-serif; font-size: 1.6rem; }
+.dc-before strong { color: var(--dc-red); text-decoration: line-through; text-decoration-thickness: 2px; }
+.dc-after strong { color: var(--dc-green-dark); }
+.dc-gasto-arrow { background: var(--dc-navy); color: var(--dc-green); display: flex; align-items: center; justify-content: center; width: 40px; font-size: 1.1rem; }
+
+.dc-check-row { display: flex; align-items: center; gap: 8px; padding-top: 12px; border-top: 1px dashed var(--dc-border); margin-top: 14px; font-size: .82rem; font-weight: 600; }
+.dc-check-row input { width: 17px; height: 17px; accent-color: var(--dc-navy); }
+
+.dc-hint-box { border: 1.5px dashed var(--dc-border); border-radius: 8px; padding: 20px; text-align: center; color: var(--dc-gray); font-size: .88rem; margin-bottom: 18px; }
+.dc-disclaimer { background: #eaf3de; border-radius: 8px; padding: 16px 18px; font-size: .8rem; color: #3f5a26; line-height: 1.6; margin-bottom: 24px; }
+
+.dc-btn {
+    font-family: 'Oswald', sans-serif; text-transform: uppercase; letter-spacing: .04em; font-weight: 700;
+    background: var(--dc-green); color: var(--dc-navy); border: none; border-radius: 8px;
+    padding: 14px 28px; font-size: .95rem; cursor: pointer;
+}
+.dc-btn:hover { background: var(--dc-green-dark); }
+.dc-btn-outline { background: #fff; border: 1.5px solid var(--dc-navy); color: var(--dc-navy); }
+.dc-btn-outline:hover { background: var(--dc-navy); color: #fff; }
+
+.dc-footer { text-align: center; color: var(--dc-gray); font-size: .72rem; text-transform: uppercase; letter-spacing: .12em; padding: 24px 0 4px; }
+
+.dc-page .field-error { color: var(--dc-red); font-size: .78rem; margin: 4px 0 0; font-family: 'Space Mono', monospace; }
+.dc-page .dc-table-wrap table { font-family: 'Space Mono', monospace; font-size: .84rem; }
+.dc-page .section-title { font-family: 'Oswald', sans-serif; text-transform: uppercase; letter-spacing: .03em; color: var(--dc-navy); }
+
+@media (max-width: 640px) {
+    .dc-hero h1 { font-size: 1.4rem; }
+    .dc-gasto-compare { grid-template-columns: 1fr; }
+    .dc-gasto-arrow { width: 100%; height: 28px; }
+}
