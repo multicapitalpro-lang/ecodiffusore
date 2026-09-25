@@ -168,12 +168,9 @@ class LeaseCalculatorController
         if ($values['pct_economia'] < 5 || $values['pct_economia'] > 30) {
             $errors['pct_economia'] = 'O percentual de economia contratual fica entre 5% e 30%.';
         }
-        if ($values['valor_adesao'] <= 0) {
-            $errors['valor_adesao'] = 'Informe o valor de adesão.';
-        }
-        if ($values['mensalidade'] <= 0) {
-            $errors['mensalidade'] = 'Informe a mensalidade da locação.';
-        }
+        // Fase 128: adesao/mensalidade viraram opcionais -- pedido explicito do usuario, nem toda
+        // negociacao e' locacao (as vezes e' so' a economia de diesel que importa), e travar o
+        // calculo por causa de um campo comercial que nao se aplica nao fazia sentido.
 
         return [$values, $errors];
     }

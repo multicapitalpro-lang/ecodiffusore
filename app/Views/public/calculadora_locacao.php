@@ -11,7 +11,6 @@ $currency = $values['currency'] ?? 'BRL';
 $fmt = fn (float $brl) => Money::format($brl, $currency, $rate ?? 0.0);
 $modo = $values['modo'] ?? 'km_rodados';
 $pct = $values['pct_economia'] ?? '10';
-$adesaoDefault = $values['valor_adesao'] ?? '4.490,00';
 ?><!doctype html>
 <html lang="pt-BR">
 <head>
@@ -164,12 +163,13 @@ $adesaoDefault = $values['valor_adesao'] ?? '4.490,00';
             <div class="dc-card">
                 <div class="dc-card-title">
                     <div class="dc-badge">3</div>
-                    <h3>Condições comerciais da locação</h3>
+                    <h3>Condições comerciais da locação (opcional)</h3>
                 </div>
+                <p style="font-size:.8rem; color:var(--dc-gray); margin:-6px 0 14px;">Só preencha se a negociação envolver locação. Sem adesão/mensalidade, o resultado mostra apenas a economia de diesel.</p>
                 <div class="dc-field">
                     <label for="valor_adesao">Valor de adesão (único, por veículo)</label>
                     <div class="dc-field-wrap">
-                        <input type="text" id="valor_adesao" name="valor_adesao" value="<?= $v('valor_adesao', $adesaoDefault) ?>" placeholder="Ex: 4.490,00">
+                        <input type="text" id="valor_adesao" name="valor_adesao" value="<?= $v('valor_adesao') ?>" placeholder="Ex: 4.490,00">
                         <span class="dc-unit">único</span>
                     </div>
                     <p class="field-error"><?= View::e($errors['valor_adesao'] ?? '') ?></p>

@@ -82,7 +82,7 @@ class LeaseCalculator
         // inteiro, não o resultado "regime" (mês 2 em diante). As duas contas divergem quando a
         // adesão é grande em relação à mensalidade, e a original usa a média.
         $mediaMensalAno1 = $resultadoAno1 / 12;
-        $paybackMeses = $mediaMensalAno1 > 0 ? $adesaoTotalFrota / $mediaMensalAno1 : null;
+        $paybackMeses = ($adesaoTotalFrota > 0 && $mediaMensalAno1 > 0) ? $adesaoTotalFrota / $mediaMensalAno1 : null;
 
         $economiaAnualFrota = $economiaMensalFrota * 12;
         $mensalidadeAnualFrota = $mensalidadeTotalFrota * 12;
