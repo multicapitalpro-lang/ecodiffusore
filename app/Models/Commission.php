@@ -29,12 +29,15 @@ class Commission
      *         sem mudanca nesta fase.
      *      b) Sem commission_type configurado, ou sem valor pra essa faixa especifica: cai no
      *         esquema simples, commission_pct do Vendedor = % do TOTAL DO PEDIDO, igual Gestor.
-     *    O que sobra do pool (pool menos as fatias de Gestor/Vendedor, nunca negativo -- se as
-     *    fatias configuradas ultrapassarem o pool, o Licenciado simplesmente fica sem sobra nesse
-     *    pedido, mas Gestor/Vendedor recebem o valor CHEIO que foi configurado pra eles, sem
-     *    corte) fica com o Licenciado. Pedido sem itens (quantidade zero) ou com preco unitario
-     *    medio abaixo do piso da faixa mais baixa (forPrice devolve null) nao gera pool nenhum --
-     *    na pratica isso so aconteceria se algum preco escapasse da validacao de piso.
+     *    Fase 137: o Licenciado recebe o POOL CHEIO da Ecodiffusore, sempre -- Gestor/Vendedor/
+     *    Influenciador sao pagos POR ELE (do proprio bolso, com o dinheiro que a Ecodiffusore ja
+     *    repassou), nunca diretamente pela Ecodiffusore. Antes desta fase o valor do Licenciado
+     *    era o pool MENOS essas fatias (como se a Ecodiffusore pagasse todo mundo separadamente) --
+     *    pedido explicito do usuario, encontrado revisando um pedido real: "a Ecodiffusore... tem
+     *    que pagar o licenciado [o pool inteiro]... o valor do vendedor, quem vai pagar é o
+     *    licenciado". Pedido sem itens (quantidade zero) ou com preco unitario medio abaixo do
+     *    piso da faixa mais baixa (forPrice devolve null) nao gera pool nenhum -- na pratica isso
+     *    so aconteceria se algum preco escapasse da validacao de piso.
      *
      * 2) Comissao nacional: se o Licenciado tiver um Supervisor atribuido (supervisor_id, definido
      *    pelo Gerente em /painel/licenciados), Supervisor e Gerente recebem um % do TOTAL do
@@ -70,8 +73,16 @@ class Commission
 
         if ($licenciado && $tier) {
             $pool = round($orderTotal * (float) $tier['licenciado_commission_pct'] / 100, 2);
-            $distribuido = 0.0;
 
+            // Fase 137: o Licenciado recebe o POOL CHEIO da Ecodiffusore -- Gestor/Vendedor/
+            // Influenciador sao pagos POR ELE, do proprio bolso, nao pela Ecodiffusore diretamente
+            // (o sistema ja tratava isso certo na hora de "dar baixa" -- ver commissionManageScope,
+            // "Vendedor/Gestor sao pagos pelo proprio Licenciado da rede" -- mas o VALOR mostrado
+            // pro Licenciado ainda descontava essas fatias do pool, como se a Ecodiffusore so lhe
+            // devesse a sobra. Pedido explicito do usuario: "para o licenciado tem que mostrar o
+            // valor completo" -- Gestor/Vendedor/Influenciador continuam com o MESMO valor de
+            // sempre (dinheiro que o Licenciado repassa a eles), so' deixou de ser SUBTRAIDO do
+            // que a Ecodiffusore registra como devido ao Licenciado.
             foreach ($chain as $p) {
                 if ((int) $p['id'] === (int) $licenciado['id']) {
                     continue;
@@ -81,7 +92,6 @@ class Commission
 
                 if ($tierAmount !== null) {
                     $effectivePct = $orderTotal > 0 ? round($tierAmount / $orderTotal * 100, 2) : 0.0;
-                    $distribuido += $tierAmount;
                     self::insertRow($orderId, $sellerId, (int) $p['id'], $p['role_slug'], $effectivePct, $tierAmount);
                     continue;
                 }
@@ -92,36 +102,28 @@ class Commission
                 }
 
                 // Fase 43: commission_pct de Gestor/Vendedor (esquema simples, sem tabela por
-                // faixa) e' % do TOTAL DO PEDIDO, nao mais % do pool -- so' o que sobra do pool
-                // depois de subtrair essas fatias (nunca negativo, ver $restante abaixo) e' que
-                // continua sendo a comissao do Licenciado.
+                // faixa) e' % do TOTAL DO PEDIDO.
                 $amount = round($orderTotal * $sharePct / 100, 2);
-                $distribuido += $amount;
                 self::insertRow($orderId, $sellerId, (int) $p['id'], $p['role_slug'], $sharePct, $amount);
             }
 
-            $restante = max(0, round($pool - $distribuido, 2));
-
             // Fase 56: indicacao de Influenciador -- comissao FIXA (nao %, valor configurado por
-            // admin em users.influencer_commission_value, R$100 default), descontada do que SOBRA
-            // pro Licenciado (nao do pool inteiro nem do total do pedido -- pedido explicito do
-            // usuario, com o exemplo "dos R$900 do licenciado, desconta R$100 pro influenciador").
-            // min() com $restante evita comissao negativa se a sobra do licenciado for menor que o
-            // valor do influenciador nesse pedido especifico.
+            // admin em users.influencer_commission_value, R$100 default). Fase 137: paga pelo
+            // Licenciado (mesmo espirito de Gestor/Vendedor acima), entao usa o valor CHEIO
+            // configurado, sem mais depender de sobrar espaco no pool do Licenciado.
             $order = Order::find($orderId);
             if ($order && !empty($order['influencer_id'])) {
                 $influencer = User::find((int) $order['influencer_id']);
                 if ($influencer && $influencer['role_slug'] === Roles::INFLUENCER) {
-                    $influencerValue = min($restante, (float) ($influencer['influencer_commission_value'] ?? 100));
+                    $influencerValue = (float) ($influencer['influencer_commission_value'] ?? 100);
                     if ($influencerValue > 0) {
                         self::insertRow($orderId, $sellerId, (int) $influencer['id'], Roles::INFLUENCER, 0, $influencerValue);
-                        $restante = max(0, round($restante - $influencerValue, 2));
                     }
                 }
             }
 
-            if ($restante > 0) {
-                self::insertRow($orderId, $sellerId, (int) $licenciado['id'], 'licenciado', (float) $tier['licenciado_commission_pct'], $restante);
+            if ($pool > 0) {
+                self::insertRow($orderId, $sellerId, (int) $licenciado['id'], 'licenciado', (float) $tier['licenciado_commission_pct'], $pool);
             }
         }
 

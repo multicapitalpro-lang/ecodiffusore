@@ -852,7 +852,15 @@ class FinanceController
 
         if ($commission['status'] === 'pendente') {
             $transactionId = null;
-            $accountId = FinancialAccount::defaultAccountId();
+            // Fase 137: so registra saida real no Caixa/Banco da Ecodiffusore quando ela PAGA
+            // esse papel diretamente (Licenciado recebe o pool; Gerente/Supervisor recebem a
+            // comissao nacional, ver docblock de Commission::createCascadeForOrder()). Gestor/
+            // Vendedor/Influenciador sao pagos pelo proprio Licenciado, do bolso dele -- dar baixa
+            // nesses so marca o status, sem mexer no financeiro da empresa (senao contava o mesmo
+            // dinheiro duas vezes: uma na saida do Licenciado, outra aqui).
+            $accountId = in_array($commission['role_slug'], ['licenciado', 'gerente', 'supervisor'], true)
+                ? FinancialAccount::defaultAccountId()
+                : null;
             if ($accountId) {
                 $transactionId = FinancialTransaction::create([
                     'account_id' => $accountId,
