@@ -41,6 +41,26 @@ class SubscriptionPlans
         'anual' => 167.00,
     ];
 
+    /** Fase 138: pacotes de credito pre-pago da ferramenta "Nota Fiscal Automatica" -- R$3,00 por
+     *  nota unitario (valor de exemplo dado pelo usuario), com desconto crescente nos pacotes
+     *  maiores pro mesmo espirito de incentivo dos planos semestral/anual acima. */
+    public const NFE_CREDIT_PACKAGES = [
+        10 => 30.00,
+        25 => 70.00,
+        50 => 130.00,
+    ];
+
+    /** % de desconto comparado a pagar nota por nota a R$3,00. */
+    public static function nfeCreditDiscountPct(int $quantity): float
+    {
+        if (!isset(self::NFE_CREDIT_PACKAGES[$quantity])) {
+            return 0.0;
+        }
+        $unitPrice = 3.00;
+        $fullPrice = $unitPrice * $quantity;
+        return round((1 - self::NFE_CREDIT_PACKAGES[$quantity] / $fullPrice) * 100);
+    }
+
     /** % de desconto comparado a pagar o plano mensal repetidamente pelo mesmo periodo. */
     public static function discountPct(string $plan): float
     {

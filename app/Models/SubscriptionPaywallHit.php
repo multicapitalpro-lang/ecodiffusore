@@ -20,6 +20,7 @@ class SubscriptionPaywallHit
         'indicacao_premiada' => 'Indicações Premiadas',
         'certificacao_vendedor' => 'Certificação do Vendedor',
         'mural_conquistas' => 'Mural de Conquistas',
+        'nota_fiscal' => 'Nota Fiscal Automática',
     ];
 
     public static function record(int $userId, ?int $licenciadoId, string $feature): void

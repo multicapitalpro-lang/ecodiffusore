@@ -293,6 +293,7 @@ $configuracoesOpen = $anyActive(['/painel/configuracoes/nfe', '/painel/configura
             <?php endif; ?>
             <?php if ($role === 'licenciado'): ?>
                 <a href="/painel/emails-profissionais" class="<?= $isActive('/painel/emails-profissionais') ? 'is-active' : '' ?>">✉️ E-mail Profissional</a>
+                <a href="/painel/nota-fiscal" class="<?= $isActive('/painel/nota-fiscal') ? 'is-active' : '' ?>">🧾 Nota Fiscal Automática</a>
             <?php endif; ?>
             <?php if (in_array($role, Roles::PAYOUT_ROLES, true)): ?>
                 <a href="/painel/dados-bancarios" class="<?= $isActive('/painel/dados-bancarios') ? 'is-active' : '' ?>">🏦 Dados Bancários</a>

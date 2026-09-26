@@ -435,6 +435,10 @@ $router->get('/painel/assinatura', [App\Controllers\SubscriptionController::clas
 $router->post('/painel/assinatura/comprar', [App\Controllers\SubscriptionController::class, 'purchase']);
 $router->post('/painel/assinatura/vagas/comprar', [App\Controllers\SubscriptionController::class, 'purchaseSeats']);
 
+$router->get('/painel/nota-fiscal', [App\Controllers\NfeController::class, 'show']);
+$router->post('/painel/nota-fiscal/dados', [App\Controllers\NfeController::class, 'saveFiscalData']);
+$router->post('/painel/nota-fiscal/creditos', [App\Controllers\NfeController::class, 'purchaseCredits']);
+
 $router->get('/painel/emails-profissionais', [App\Controllers\LicenciadoEmailController::class, 'index']);
 $router->post('/painel/emails-profissionais', [App\Controllers\LicenciadoEmailController::class, 'store']);
 

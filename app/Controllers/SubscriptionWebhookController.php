@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Core\Config;
 use App\Core\MercadoPagoClient;
+use App\Models\LicenciadoNfeCreditPurchase;
 use App\Models\LicenciadoSeatAddon;
 use App\Models\LicenciadoSubscription;
 
@@ -53,6 +54,13 @@ class SubscriptionWebhookController
         $seatAddon = LicenciadoSeatAddon::findByExternalReference($payment['external_reference']);
         if ($seatAddon) {
             LicenciadoSeatAddon::markPaid((int) $seatAddon['id'], (string) $paymentId);
+        }
+
+        // Fase 138: credito de Nota Fiscal Automatica -- mesmo external_reference unico
+        // (bin2hex(random_bytes(16))), nunca colide com os outros dois modelos acima.
+        $nfeCredit = LicenciadoNfeCreditPurchase::findByExternalReference($payment['external_reference']);
+        if ($nfeCredit) {
+            LicenciadoNfeCreditPurchase::markPaid((int) $nfeCredit['id'], (string) $paymentId);
         }
 
         http_response_code(200);
