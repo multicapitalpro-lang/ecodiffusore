@@ -92,6 +92,13 @@ $router->post('/api/v1/logout', [App\Controllers\Api\AuthController::class, 'log
 $router->get('/api/v1/me', [App\Controllers\Api\AuthController::class, 'me']);
 $router->get('/api/v1/dashboard', [App\Controllers\Api\DashboardController::class, 'summary']);
 $router->get('/api/v1/badges', [App\Controllers\Api\BadgeController::class, 'summary']);
+$router->post('/api/v1/esqueci-senha', [App\Controllers\Api\ProfileController::class, 'forgotPassword']);
+$router->post('/api/v1/resetar-senha', [App\Controllers\Api\ProfileController::class, 'resetPassword']);
+$router->get('/api/v1/perfil', [App\Controllers\Api\ProfileController::class, 'show']);
+$router->get('/api/v1/perfil/eventos', [App\Controllers\Api\ProfileController::class, 'events']);
+$router->post('/api/v1/perfil/revisado', [App\Controllers\Api\ProfileController::class, 'markReviewed']);
+$router->post('/api/v1/perfil/notificacoes', [App\Controllers\Api\ProfileController::class, 'updateNotifications']);
+$router->post('/api/v1/perfil/senha', [App\Controllers\Api\ProfileController::class, 'changePassword']);
 $router->get('/api/v1/leads', [App\Controllers\Api\LeadController::class, 'index']);
 $router->get('/api/v1/leads/opcoes', [App\Controllers\Api\LeadController::class, 'options']);
 $router->get('/api/v1/leads/{id}', [App\Controllers\Api\LeadController::class, 'show']);
