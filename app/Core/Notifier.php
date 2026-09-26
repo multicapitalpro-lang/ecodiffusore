@@ -53,7 +53,7 @@ class Notifier
         [$subject, $title, $body] = self::eventBody('lead_roteado', $vars, $details, $url);
 
         [$waSelf, $waNetwork] = self::waTexts('lead_roteado', $vars + ['url' => $url]);
-        self::sendToSellerAndLicenciado($assigneeId, $subject, $title, $body, $waSelf, $waNetwork);
+        self::sendToSellerAndLicenciado($assigneeId, $subject, $title, $body, $waSelf, $waNetwork, ['type' => 'lead', 'lead_id' => (int) ($lead['id'] ?? 0)]);
     }
 
     /** @param array $quote precisa de id/seller_id/total_value/client_name */
@@ -70,7 +70,7 @@ class Notifier
             self::BASE_URL . '/painel/orcamentos/' . (int) $quote['id']
         );
 
-        self::sendToSellerAndLicenciado((int) $quote['seller_id'], $subject, $title, $body);
+        self::sendToSellerAndLicenciado((int) $quote['seller_id'], $subject, $title, $body, null, null, ['type' => 'quote', 'quote_id' => (int) $quote['id']]);
     }
 
     /** @param array $request precisa de id/machine_type/client_name/assigned_user_id (retorno de
@@ -159,7 +159,7 @@ class Notifier
         [$subject, $title, $body] = self::eventBody('pedido_registrado', $vars, self::pedidoDetails($vars), $url);
 
         [$waSelf, $waNetwork] = self::waTexts('pedido_registrado', $vars + ['url' => $url]);
-        self::sendToFullChain((int) $order['seller_id'], $subject, $title, $body, $waSelf, $waNetwork);
+        self::sendToFullChain((int) $order['seller_id'], $subject, $title, $body, $waSelf, $waNetwork, ['type' => 'order', 'order_id' => (int) $order['id']]);
     }
 
     /** @param array $order precisa de id/seller_id/total_value/client_name */
@@ -174,7 +174,7 @@ class Notifier
         [$subject, $title, $body] = self::eventBody('pedido_aprovado', $vars, self::pedidoDetails($vars), $url);
 
         [$waSelf, $waNetwork] = self::waTexts('pedido_aprovado', $vars + ['url' => $url]);
-        self::sendToFullChain((int) $order['seller_id'], $subject, $title, $body, $waSelf, $waNetwork);
+        self::sendToFullChain((int) $order['seller_id'], $subject, $title, $body, $waSelf, $waNetwork, ['type' => 'order', 'order_id' => (int) $order['id']]);
     }
 
     /** @param array $order precisa de id/client_name/total_value (retorno de Order::find()). So
@@ -1324,7 +1324,7 @@ class Notifier
 
     /** Vendedor responsavel + Licenciado da rede dele -- ver docblock da classe. $waSelf vai pro
      *  vendedor, $waNetwork pro licenciado (null = nao manda WhatsApp pra aquele papel). */
-    private static function sendToSellerAndLicenciado(int $sellerId, string $subject, string $title, string $body, ?string $waSelf = null, ?string $waNetwork = null): void
+    private static function sendToSellerAndLicenciado(int $sellerId, string $subject, string $title, string $body, ?string $waSelf = null, ?string $waNetwork = null, array $pushData = []): void
     {
         $seller = User::find($sellerId);
         if (!$seller) {
@@ -1339,7 +1339,7 @@ class Notifier
             self::addRecipient($recipients, $licenciado, 'network');
         }
 
-        self::dispatch($recipients, $subject, $title, $body, $waSelf, $waNetwork);
+        self::dispatch($recipients, $subject, $title, $body, $waSelf, $waNetwork, $pushData);
     }
 
     /** Vendedor, Gestor (se houver), Licenciado, Supervisor, Gerente e todo Admin -- ver docblock
@@ -1348,7 +1348,7 @@ class Notifier
      *  intermediario -- licenciadoFor() so devolve o Licenciado final). $waSelf vai so pro
      *  vendedor (primeiro da cadeia), $waNetwork pro resto (gestor/licenciado/supervisor/gerente/
      *  admin). */
-    private static function sendToFullChain(int $sellerId, string $subject, string $title, string $body, ?string $waSelf = null, ?string $waNetwork = null): void
+    private static function sendToFullChain(int $sellerId, string $subject, string $title, string $body, ?string $waSelf = null, ?string $waNetwork = null, array $pushData = []): void
     {
         $recipients = [];
         $current = User::find($sellerId);
@@ -1369,7 +1369,7 @@ class Notifier
         }
 
         self::addNetworkChain($recipients, $licenciado);
-        self::dispatch($recipients, $subject, $title, $body, $waSelf, $waNetwork);
+        self::dispatch($recipients, $subject, $title, $body, $waSelf, $waNetwork, $pushData);
     }
 
     /** Licenciado + Supervisor dele + Gerente do Supervisor + todo Admin -- usado tanto por
@@ -1417,7 +1417,11 @@ class Notifier
     }
 
     /** @param array<int,array{email:?string,whatsapp:?string,bucket:string}> $recipients ja sem duplicata */
-    private static function dispatch(array $recipients, string $subject, string $title, string $body, ?string $waSelf = null, ?string $waNetwork = null): void
+    /** Fase 133: $pushData agora e' repassavel (antes ia sempre vazio) -- leadRoteado/
+     *  orcamentoRealizado/pedidoRealizado/pedidoAprovado (os eventos mais comuns que passam por
+     *  aqui) tocavam a notificacao mas nunca abriam a tela certa no app, ja que data.type nunca
+     *  vinha preenchido. Pedido explicito do usuario testando ao vivo. */
+    private static function dispatch(array $recipients, string $subject, string $title, string $body, ?string $waSelf = null, ?string $waNetwork = null, array $pushData = []): void
     {
         $html = self::template($title, $body);
         // Fase 77: push pra todo evento que passa pelo dispatch central (leadRoteado,
@@ -1436,7 +1440,7 @@ class Notifier
             if ($waText && !empty($r['whatsapp'])) {
                 self::sendWhatsApp($r['whatsapp'], $waText);
             }
-            self::sendPush((int) $id, $title, $pushBody, [], 'normal');
+            self::sendPush((int) $id, $title, $pushBody, $pushData, 'normal');
         }
     }
 
