@@ -363,6 +363,7 @@ $configuracoesOpen = $anyActive(['/painel/configuracoes/nfe', '/painel/configura
                 </form>
                 <button type="button" id="btn-proposta-facil" class="btn-proposta-facil">⚡ Proposta Fácil</button>
             <?php endif; ?>
+            <a class="painel-logout" href="/painel/perfil">Meu Perfil</a>
             <a class="painel-logout" href="/painel/logout">Sair</a>
         </header>
         <main class="painel-content">

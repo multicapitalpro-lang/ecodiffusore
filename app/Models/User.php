@@ -568,6 +568,42 @@ class User
         ]);
     }
 
+    /** Fase 136: preferencias de notificacao -- opt-OUT (JSON esparso, so guarda o que a pessoa
+     *  desativou). Sem linha/chave = habilitado, assim um evento novo criado no futuro nasce
+     *  ligado pra todo mundo sem precisar de migracao ou backfill. */
+    public static function notificationPrefs(int $id): array
+    {
+        $stmt = Database::connection()->prepare('SELECT notification_prefs FROM users WHERE id = :id');
+        $stmt->execute(['id' => $id]);
+        $raw = $stmt->fetchColumn();
+        if (!$raw) {
+            return [];
+        }
+        $decoded = json_decode((string) $raw, true);
+        return is_array($decoded) ? $decoded : [];
+    }
+
+    /** @param string[] $disabledKeys */
+    public static function updateNotificationPrefs(int $id, array $disabledKeys): void
+    {
+        $disabledKeys = array_values(array_intersect($disabledKeys, array_keys(\App\Core\Notifier::EVENTS)));
+        $stmt = Database::connection()->prepare(
+            'UPDATE users SET notification_prefs = :prefs, profile_reviewed_at = COALESCE(profile_reviewed_at, NOW()) WHERE id = :id'
+        );
+        $stmt->execute([
+            'prefs' => $disabledKeys ? json_encode(array_fill_keys($disabledKeys, false)) : null,
+            'id' => $id,
+        ]);
+    }
+
+    /** Fase 136: marca que o usuario ja viu a tela de Perfil ao menos uma vez, mesmo sem mudar
+     *  nenhuma preferencia (senao o gate de primeiro acesso do app ia insistir pra sempre). */
+    public static function markProfileReviewed(int $id): void
+    {
+        $stmt = Database::connection()->prepare('UPDATE users SET profile_reviewed_at = NOW() WHERE id = :id AND profile_reviewed_at IS NULL');
+        $stmt->execute(['id' => $id]);
+    }
+
     /** Gera (ou renova) o token do link de aceite de comissao (Fase 32) -- Gestor/Vendedor recebe
      *  esse link por WhatsApp quando o Licenciado cadastra/edita as condicoes dele. Zera
      *  commission_accepted_at -- um token novo significa condicoes novas, precisa aceitar de novo. */

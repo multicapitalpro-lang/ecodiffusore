@@ -169,6 +169,9 @@ $router->post('/painel/login', [App\Controllers\AuthController::class, 'login'])
 $router->get('/painel/logout', [App\Controllers\AuthController::class, 'logout']);
 $router->get('/painel/trocar-senha', [App\Controllers\AuthController::class, 'showChangePassword']);
 $router->post('/painel/trocar-senha', [App\Controllers\AuthController::class, 'changePassword']);
+$router->get('/painel/perfil', [App\Controllers\ProfileController::class, 'show']);
+$router->post('/painel/perfil/senha', [App\Controllers\ProfileController::class, 'updatePassword']);
+$router->post('/painel/perfil/notificacoes', [App\Controllers\ProfileController::class, 'updateNotifications']);
 $router->get('/painel/cadastro', [App\Controllers\AuthController::class, 'showRegister']);
 $router->post('/painel/cadastro', [App\Controllers\AuthController::class, 'register']);
 $router->get('/painel/esqueci-senha', [App\Controllers\AuthController::class, 'showForgotPassword']);

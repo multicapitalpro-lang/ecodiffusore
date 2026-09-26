@@ -44,6 +44,41 @@ class Notifier
 {
     private const BASE_URL = 'https://ecodiffusorebrasil.com.br';
 
+    /** Fase 136: catalogo de eventos que podem virar push -- fonte de verdade pra tela de Perfil
+     *  (cada um vira um checkbox "quero receber isso") e pro filtro em wantsPush(). Agrupado so
+     *  pra organizar a tela; a chave (nao o grupo) e' o que fica salvo em notification_prefs. */
+    public const EVENTS = [
+        'lead_roteado' => ['group' => 'Vendas', 'label' => 'Novo lead direcionado a mim'],
+        'orcamento_realizado' => ['group' => 'Vendas', 'label' => 'Orçamento registrado'],
+        'pedido_realizado' => ['group' => 'Vendas', 'label' => 'Novo pedido registrado'],
+        'pedido_aprovado' => ['group' => 'Vendas', 'label' => 'Pedido aprovado (pagamento confirmado)'],
+        'pedido_cancelado' => ['group' => 'Vendas', 'label' => 'Pedido cancelado'],
+        'pedido_documentos_enviados' => ['group' => 'Vendas', 'label' => 'Documentos do pedido enviados'],
+        'pagamento_pendente_aviso' => ['group' => 'Vendas', 'label' => 'Pagamento ainda pendente (lembrete)'],
+        'machine_quote_solicitada' => ['group' => 'Vendas', 'label' => 'Cotação de máquina agrícola'],
+        'liberacao_desconto' => ['group' => 'Aprovações', 'label' => 'Desconto pendente de aprovação'],
+        'licenciado_pendente_aprovacao' => ['group' => 'Aprovações', 'label' => 'Licenciado pendente de aprovação'],
+        'cadastro_aprovado' => ['group' => 'Aprovações', 'label' => 'Meu cadastro foi aprovado'],
+        'vendedor_contrato_enviado' => ['group' => 'Aprovações', 'label' => 'Contrato de vendedor pra aprovar'],
+        'vendedor_contrato_aprovado' => ['group' => 'Aprovações', 'label' => 'Meu contrato foi aprovado'],
+        'vendedor_contrato_reprovado' => ['group' => 'Aprovações', 'label' => 'Meu contrato foi reprovado'],
+        'licenciado_contrato_pendente' => ['group' => 'Aprovações', 'label' => 'Contrato pendente de assinatura'],
+        'email_profissional' => ['group' => 'Aprovações', 'label' => 'E-mail profissional (solicitado/decidido)'],
+        'garantia_solicitada' => ['group' => 'Pós-venda', 'label' => 'Pós-venda de instalação enviada'],
+        'vendedor_inativo' => ['group' => 'Equipe e lembretes', 'label' => 'Vendedor inativo há dias'],
+        'follow_up_lembrete' => ['group' => 'Equipe e lembretes', 'label' => 'Follow-up de lead pendente'],
+        'calendar_event_reminder' => ['group' => 'Equipe e lembretes', 'label' => 'Lembrete de calendário'],
+        'meta_fora_ritmo' => ['group' => 'Equipe e lembretes', 'label' => 'Meta fora do ritmo'],
+        'indicacao_ativada' => ['group' => 'Equipe e lembretes', 'label' => 'Indicação premiada ativada'],
+    ];
+
+    /** Fase 136: gate central antes de qualquer push -- sem preferencia salva = habilitado
+     *  (opt-out, nao opt-in, senao todo mundo ficaria mudo ate' entrar e configurar). */
+    private static function wantsPush(int $userId, string $eventKey): bool
+    {
+        return (User::notificationPrefs($userId)[$eventKey] ?? true) !== false;
+    }
+
     /** @param array $lead precisa de name/whatsapp/city */
     public static function leadRoteado(array $lead, int $assigneeId): void
     {
@@ -53,7 +88,7 @@ class Notifier
         [$subject, $title, $body] = self::eventBody('lead_roteado', $vars, $details, $url);
 
         [$waSelf, $waNetwork] = self::waTexts('lead_roteado', $vars + ['url' => $url]);
-        self::sendToSellerAndLicenciado($assigneeId, $subject, $title, $body, $waSelf, $waNetwork, ['type' => 'lead', 'lead_id' => (int) ($lead['id'] ?? 0)]);
+        self::sendToSellerAndLicenciado($assigneeId, $subject, $title, $body, $waSelf, $waNetwork, ['type' => 'lead', 'lead_id' => (int) ($lead['id'] ?? 0)], 'lead_roteado');
     }
 
     /** @param array $quote precisa de id/seller_id/total_value/client_name */
@@ -70,7 +105,7 @@ class Notifier
             self::BASE_URL . '/painel/orcamentos/' . (int) $quote['id']
         );
 
-        self::sendToSellerAndLicenciado((int) $quote['seller_id'], $subject, $title, $body, null, null, ['type' => 'quote', 'quote_id' => (int) $quote['id']]);
+        self::sendToSellerAndLicenciado((int) $quote['seller_id'], $subject, $title, $body, null, null, ['type' => 'quote', 'quote_id' => (int) $quote['id']], 'orcamento_realizado');
     }
 
     /** @param array $request precisa de id/machine_type/client_name/assigned_user_id (retorno de
@@ -122,7 +157,7 @@ class Notifier
         $pushBody = "Cliente {$request['client_name']} ({$request['machine_type']}) aguardando preço.";
         foreach ($recipients as $id => $whatsapp) {
             self::sendWhatsApp($whatsapp, $text);
-            self::sendPush((int) $id, 'Nova cotação de máquina agrícola', $pushBody, ['type' => 'machine_quote', 'machine_quote_id' => (int) $request['id']], 'urgent');
+            self::sendPush((int) $id, 'Nova cotação de máquina agrícola', $pushBody, ['type' => 'machine_quote', 'machine_quote_id' => (int) $request['id']], 'urgent', 'machine_quote_solicitada');
         }
     }
 
@@ -159,7 +194,7 @@ class Notifier
         [$subject, $title, $body] = self::eventBody('pedido_registrado', $vars, self::pedidoDetails($vars), $url);
 
         [$waSelf, $waNetwork] = self::waTexts('pedido_registrado', $vars + ['url' => $url]);
-        self::sendToFullChain((int) $order['seller_id'], $subject, $title, $body, $waSelf, $waNetwork, ['type' => 'order', 'order_id' => (int) $order['id']]);
+        self::sendToFullChain((int) $order['seller_id'], $subject, $title, $body, $waSelf, $waNetwork, ['type' => 'order', 'order_id' => (int) $order['id']], 'pedido_realizado');
     }
 
     /** @param array $order precisa de id/seller_id/total_value/client_name */
@@ -174,7 +209,7 @@ class Notifier
         [$subject, $title, $body] = self::eventBody('pedido_aprovado', $vars, self::pedidoDetails($vars), $url);
 
         [$waSelf, $waNetwork] = self::waTexts('pedido_aprovado', $vars + ['url' => $url]);
-        self::sendToFullChain((int) $order['seller_id'], $subject, $title, $body, $waSelf, $waNetwork, ['type' => 'order', 'order_id' => (int) $order['id']]);
+        self::sendToFullChain((int) $order['seller_id'], $subject, $title, $body, $waSelf, $waNetwork, ['type' => 'order', 'order_id' => (int) $order['id']], 'pedido_aprovado');
     }
 
     /** @param array $order precisa de id/client_name/total_value (retorno de Order::find()). So
@@ -274,7 +309,7 @@ class Notifier
             self::sendWhatsApp($seller['whatsapp'], $waSelf);
         }
         if ($seller) {
-            self::sendPush($sellerId, 'Pedido cancelado', "Pedido #{$orderId} ({$vars['cliente']}) foi cancelado.", ['type' => 'order', 'order_id' => $orderId], 'urgent');
+            self::sendPush($sellerId, 'Pedido cancelado', "Pedido #{$orderId} ({$vars['cliente']}) foi cancelado.", ['type' => 'order', 'order_id' => $orderId], 'urgent', 'pedido_cancelado');
         }
 
         $licenciado = User::licenciadoFor($sellerId);
@@ -282,7 +317,7 @@ class Notifier
             self::sendWhatsApp($licenciado['whatsapp'], $waNetwork);
         }
         if ($licenciado && (int) $licenciado['id'] !== $sellerId) {
-            self::sendPush((int) $licenciado['id'], 'Pedido cancelado', "Pedido #{$orderId} ({$vars['cliente']}) foi cancelado.", ['type' => 'order', 'order_id' => $orderId], 'urgent');
+            self::sendPush((int) $licenciado['id'], 'Pedido cancelado', "Pedido #{$orderId} ({$vars['cliente']}) foi cancelado.", ['type' => 'order', 'order_id' => $orderId], 'urgent', 'pedido_cancelado');
         }
     }
 
@@ -322,7 +357,7 @@ class Notifier
             if (!empty($r['whatsapp'])) {
                 self::sendWhatsApp($r['whatsapp'], $text);
             }
-            self::sendPush((int) $id, 'Vendedor inativo', $pushBody, ['type' => 'team'], 'normal');
+            self::sendPush((int) $id, 'Vendedor inativo', $pushBody, ['type' => 'team'], 'normal', 'vendedor_inativo');
         }
     }
 
@@ -349,7 +384,7 @@ class Notifier
             if (!empty($r['whatsapp'])) {
                 self::sendWhatsApp($r['whatsapp'], $text);
             }
-            self::sendPush((int) $id, 'Novo Licenciado pendente de aprovação', $pushBody, ['type' => 'licenciado_approval'], 'urgent');
+            self::sendPush((int) $id, 'Novo Licenciado pendente de aprovação', $pushBody, ['type' => 'licenciado_approval'], 'urgent', 'licenciado_pendente_aprovacao');
         }
     }
 
@@ -425,7 +460,7 @@ class Notifier
             self::sendWhatsApp($licenciado['whatsapp'], $text);
         }
         if (!empty($licenciado['id'])) {
-            self::sendPush((int) $licenciado['id'], 'Contrato pendente de assinatura', 'Seu contrato de Licenciado está pronto -- falta só assinar.', ['type' => 'licenciado_contract'], 'normal');
+            self::sendPush((int) $licenciado['id'], 'Contrato pendente de assinatura', 'Seu contrato de Licenciado está pronto -- falta só assinar.', ['type' => 'licenciado_contract'], 'normal', 'licenciado_contrato_pendente');
         }
     }
 
@@ -444,7 +479,7 @@ class Notifier
         if ($waNetwork && !empty($licenciado['whatsapp'])) {
             self::sendWhatsApp($licenciado['whatsapp'], $waNetwork);
         }
-        self::sendPush((int) $licenciado['id'], 'Contrato de vendedor pra aprovar', "{$vars['vendedor']} enviou o contrato assinado.", ['type' => 'vendedor_contrato_aguardando_aprovacao'], 'urgent');
+        self::sendPush((int) $licenciado['id'], 'Contrato de vendedor pra aprovar', "{$vars['vendedor']} enviou o contrato assinado.", ['type' => 'vendedor_contrato_aguardando_aprovacao'], 'urgent', 'vendedor_contrato_enviado');
     }
 
     /** @param array $vendedor precisa de id/name/whatsapp */
@@ -456,7 +491,7 @@ class Notifier
         if ($waSelf && !empty($vendedor['whatsapp'])) {
             self::sendWhatsApp($vendedor['whatsapp'], $waSelf);
         }
-        self::sendPush((int) $vendedor['id'], 'Contrato aprovado!', 'Seu acesso completo ao painel foi liberado.', ['type' => 'vendedor_contrato_aprovado'], 'urgent');
+        self::sendPush((int) $vendedor['id'], 'Contrato aprovado!', 'Seu acesso completo ao painel foi liberado.', ['type' => 'vendedor_contrato_aprovado'], 'urgent', 'vendedor_contrato_aprovado');
     }
 
     /** @param array $vendedor precisa de id/name/whatsapp */
@@ -468,7 +503,7 @@ class Notifier
         if ($waSelf && !empty($vendedor['whatsapp'])) {
             self::sendWhatsApp($vendedor['whatsapp'], $waSelf);
         }
-        self::sendPush((int) $vendedor['id'], 'Contrato reprovado', $reason, ['type' => 'vendedor_contrato_reprovado'], 'urgent');
+        self::sendPush((int) $vendedor['id'], 'Contrato reprovado', $reason, ['type' => 'vendedor_contrato_reprovado'], 'urgent', 'vendedor_contrato_reprovado');
     }
 
     /**
@@ -530,7 +565,7 @@ class Notifier
             if (!empty($r['whatsapp'])) {
                 self::sendWhatsApp($r['whatsapp'], $text);
             }
-            self::sendPush((int) $id, 'Desconto pendente de aprovação', "{$seller['name']} pediu {$vars['preco_solicitado']} pro cliente {$vars['cliente']}.", $pushData);
+            self::sendPush((int) $id, 'Desconto pendente de aprovação', "{$seller['name']} pediu {$vars['preco_solicitado']} pro cliente {$vars['cliente']}.", $pushData, 'urgent', 'liberacao_desconto');
         }
     }
 
@@ -576,7 +611,7 @@ class Notifier
                 if (!empty($p['whatsapp'])) {
                     self::sendWhatsApp($p['whatsapp'], $text);
                 }
-                self::sendPush((int) $p['id'], 'Desconto pendente de aprovação final', "{$seller['name']} pediu {$vars['preco_solicitado']} pro cliente {$vars['cliente']}.", $pushData);
+                self::sendPush((int) $p['id'], 'Desconto pendente de aprovação final', "{$seller['name']} pediu {$vars['preco_solicitado']} pro cliente {$vars['cliente']}.", $pushData, 'urgent', 'liberacao_desconto');
             }
         }
     }
@@ -617,7 +652,9 @@ class Notifier
             (int) $seller['id'],
             'Sua solicitação de desconto foi decidida',
             "Cliente {$vars['cliente']}: {$status}.",
-            ['type' => 'approval', 'approvable_type' => $approval['approvable_type'], 'approvable_id' => (int) $approval['approvable_id']]
+            ['type' => 'approval', 'approvable_type' => $approval['approvable_type'], 'approvable_id' => (int) $approval['approvable_id']],
+            'urgent',
+            'liberacao_desconto'
         );
     }
 
@@ -659,7 +696,7 @@ class Notifier
             if ($text && !empty($r['whatsapp'])) {
                 self::sendWhatsApp($r['whatsapp'], $text);
             }
-            self::sendPush((int) $id, 'Documentos do pedido enviados', $pushBody, ['type' => 'order', 'order_id' => (int) $order['id']], 'urgent');
+            self::sendPush((int) $id, 'Documentos do pedido enviados', $pushBody, ['type' => 'order', 'order_id' => (int) $order['id']], 'urgent', 'pedido_documentos_enviados');
         }
     }
 
@@ -690,7 +727,9 @@ class Notifier
             (int) $seller['id'],
             'Pagamento pendente há mais de 1h',
             "Cliente {$vars['cliente']} ainda não pagou o Pedido #{$vars['pedido']}.",
-            ['type' => 'order', 'order_id' => (int) $order['id']]
+            ['type' => 'order', 'order_id' => (int) $order['id']],
+            'urgent',
+            'pagamento_pendente_aviso'
         );
     }
 
@@ -714,7 +753,7 @@ class Notifier
             if (!empty($admin['whatsapp'])) {
                 self::sendWhatsApp($admin['whatsapp'], $text);
             }
-            self::sendPush((int) $admin['id'], 'E-mail profissional solicitado', $pushBody, ['type' => 'email_profissional_admin'], 'urgent');
+            self::sendPush((int) $admin['id'], 'E-mail profissional solicitado', $pushBody, ['type' => 'email_profissional_admin'], 'urgent', 'email_profissional');
         }
     }
 
@@ -738,7 +777,7 @@ class Notifier
         if ($text) {
             self::sendWhatsApp($licenciado['whatsapp'], $text);
         }
-        self::sendPush((int) $licenciado['id'], 'E-mail profissional: ' . $status, "{$vars['endereco']} -- {$status}.", ['type' => 'email_profissional'], 'normal');
+        self::sendPush((int) $licenciado['id'], 'E-mail profissional: ' . $status, "{$vars['endereco']} -- {$status}.", ['type' => 'email_profissional'], 'normal', 'email_profissional');
     }
 
     /** @param array $licenciado precisa de id/name/email */
@@ -749,7 +788,7 @@ class Notifier
         [$subject, $title, $body] = self::eventBody('cadastro_aprovado', $vars, '', $url);
 
         [$waSelf, $waNetwork] = self::waTexts('cadastro_aprovado', $vars + ['url' => $url]);
-        self::sendToNetworkChain((int) $licenciado['id'], $subject, $title, $body, $waSelf, $waNetwork);
+        self::sendToNetworkChain((int) $licenciado['id'], $subject, $title, $body, $waSelf, $waNetwork, 'cadastro_aprovado');
     }
 
     /** @param array $client precisa de id/name/email/whatsapp. Dispara e-mail (direto, fora do
@@ -1013,7 +1052,7 @@ class Notifier
             self::sendWhatsApp($seller['whatsapp'], $waSelf);
         }
         if ($seller) {
-            self::sendPush($sellerId, 'Pós-venda enviada', "Pedido #{$vars['id']} ({$vars['cliente']}) -- confirmação enviada pra análise.", ['type' => 'warranty', 'warranty_id' => (int) $warranty['id']], 'normal');
+            self::sendPush($sellerId, 'Pós-venda enviada', "Pedido #{$vars['id']} ({$vars['cliente']}) -- confirmação enviada pra análise.", ['type' => 'warranty', 'warranty_id' => (int) $warranty['id']], 'normal', 'garantia_solicitada');
         }
 
         $licenciado = User::licenciadoFor($sellerId);
@@ -1021,7 +1060,7 @@ class Notifier
             self::sendWhatsApp($licenciado['whatsapp'], $waNetwork);
         }
         if ($licenciado && (int) $licenciado['id'] !== $sellerId) {
-            self::sendPush((int) $licenciado['id'], 'Pós-venda enviada', "Pedido #{$vars['id']} ({$vars['cliente']}) -- confirmação enviada pra análise.", ['type' => 'warranty', 'warranty_id' => (int) $warranty['id']], 'normal');
+            self::sendPush((int) $licenciado['id'], 'Pós-venda enviada', "Pedido #{$vars['id']} ({$vars['cliente']}) -- confirmação enviada pra análise.", ['type' => 'warranty', 'warranty_id' => (int) $warranty['id']], 'normal', 'garantia_solicitada');
         }
 
         $urgentText = "⚠️ Nova confirmação de Pós-venda de Instalação aguardando análise -- cliente {$vars['cliente']}, pedido #{$vars['id']}. Quanto antes analisar, mais rápido a fábrica recebe o comprovante pra despachar junto. Analise aqui: {$vars['url']}";
@@ -1029,7 +1068,7 @@ class Notifier
             if (!empty($approver['whatsapp'])) {
                 self::sendWhatsApp($approver['whatsapp'], $urgentText);
             }
-            self::sendPush((int) $approver['id'], 'Pós-venda aguardando análise', "Cliente {$vars['cliente']}, pedido #{$vars['id']}.", ['type' => 'warranty', 'warranty_id' => (int) $warranty['id']], 'urgent');
+            self::sendPush((int) $approver['id'], 'Pós-venda aguardando análise', "Cliente {$vars['cliente']}, pedido #{$vars['id']}.", ['type' => 'warranty', 'warranty_id' => (int) $warranty['id']], 'urgent', 'garantia_solicitada');
         }
     }
 
@@ -1046,7 +1085,7 @@ class Notifier
             self::sendWhatsApp($seller['whatsapp'], $text);
         }
         if (!empty($seller['id'])) {
-            self::sendPush((int) $seller['id'], 'Follow-up de lead pendente', "Retorno combinado pra hoje: {$vars['leads']}.", ['type' => 'leads'], 'normal');
+            self::sendPush((int) $seller['id'], 'Follow-up de lead pendente', "Retorno combinado pra hoje: {$vars['leads']}.", ['type' => 'leads'], 'normal', 'follow_up_lembrete');
         }
     }
 
@@ -1069,7 +1108,7 @@ class Notifier
             if ($user && !empty($user['whatsapp'])) {
                 self::sendWhatsApp($user['whatsapp'], $text . ' ' . $url);
             }
-            self::sendPush($userId, "Lembrete: {$tipo} às {$when}", $event['title'], ['type' => 'calendar', 'calendar_event_id' => (int) $event['id']], 'urgent');
+            self::sendPush($userId, "Lembrete: {$tipo} às {$when}", $event['title'], ['type' => 'calendar', 'calendar_event_id' => (int) $event['id']], 'urgent', 'calendar_event_reminder');
         }
     }
 
@@ -1099,14 +1138,14 @@ class Notifier
         if (!empty($seller['whatsapp'])) {
             self::sendWhatsApp($seller['whatsapp'], $text);
         }
-        self::sendPush((int) $seller['id'], '⚠️ Meta fora do ritmo', "Faltam {$falta} em {$goal['remaining_days']} dia(s)", ['type' => 'goal_pace', 'goal_id' => (int) $goal['id']], 'urgent');
+        self::sendPush((int) $seller['id'], '⚠️ Meta fora do ritmo', "Faltam {$falta} em {$goal['remaining_days']} dia(s)", ['type' => 'goal_pace', 'goal_id' => (int) $goal['id']], 'urgent', 'meta_fora_ritmo');
 
         $licenciado = User::licenciadoFor((int) $seller['id']);
         if ($licenciado && (int) $licenciado['id'] !== (int) $seller['id']) {
             if (!empty($licenciado['whatsapp'])) {
                 self::sendWhatsApp($licenciado['whatsapp'], "⚠️ {$seller['name']} está fora do ritmo pra bater a meta \"{$goal['name']}\" ({$goal['pct']}% de {$goal['expected_pct']}% esperado).");
             }
-            self::sendPush((int) $licenciado['id'], '⚠️ Vendedor fora do ritmo', "{$seller['name']}: {$goal['pct']}% da meta \"{$goal['name']}\"", ['type' => 'goal_pace', 'goal_id' => (int) $goal['id']], 'normal');
+            self::sendPush((int) $licenciado['id'], '⚠️ Vendedor fora do ritmo', "{$seller['name']}: {$goal['pct']}% da meta \"{$goal['name']}\"", ['type' => 'goal_pace', 'goal_id' => (int) $goal['id']], 'normal', 'meta_fora_ritmo');
         }
     }
 
@@ -1128,7 +1167,7 @@ class Notifier
         if (!empty($referrer['whatsapp'])) {
             self::sendWhatsApp($referrer['whatsapp'], $text);
         }
-        self::sendPush((int) $referrer['id'], '🎉 Indicação ativada!', "{$referral['name']} agora é {$roleLabel}. Registre seu prêmio.", ['type' => 'referral', 'referral_id' => (int) $referral['id']], 'urgent');
+        self::sendPush((int) $referrer['id'], '🎉 Indicação ativada!', "{$referral['name']} agora é {$roleLabel}. Registre seu prêmio.", ['type' => 'referral', 'referral_id' => (int) $referral['id']], 'urgent', 'indicacao_ativada');
     }
 
     /** @param array $row precisa de client_name/total_value */
@@ -1300,9 +1339,14 @@ class Notifier
      *  token em /api/v1/device-token); sem token, simplesmente nao manda nada -- nunca falha o
      *  fluxo que chamou. */
     /** Fase 91: $priority 'urgent' (com som, precisa agir) ou 'normal' (silencioso, so' pra
-     *  ficar sabendo) -- ver App\Core\PushClient::send(). */
-    private static function sendPush(int $userId, string $title, string $body, array $data = [], string $priority = 'urgent'): void
+     *  ficar sabendo) -- ver App\Core\PushClient::send(). Fase 136: $eventKey (chave de
+     *  self::EVENTS) filtra pela preferencia da pessoa antes de mandar -- '' (default) sempre
+     *  manda, pros poucos casos sem evento catalogado ainda. */
+    private static function sendPush(int $userId, string $title, string $body, array $data = [], string $priority = 'urgent', string $eventKey = ''): void
     {
+        if ($eventKey !== '' && !self::wantsPush($userId, $eventKey)) {
+            return;
+        }
         try {
             $tokens = DeviceToken::tokensForUser($userId);
             if ($tokens) {
@@ -1324,7 +1368,7 @@ class Notifier
 
     /** Vendedor responsavel + Licenciado da rede dele -- ver docblock da classe. $waSelf vai pro
      *  vendedor, $waNetwork pro licenciado (null = nao manda WhatsApp pra aquele papel). */
-    private static function sendToSellerAndLicenciado(int $sellerId, string $subject, string $title, string $body, ?string $waSelf = null, ?string $waNetwork = null, array $pushData = []): void
+    private static function sendToSellerAndLicenciado(int $sellerId, string $subject, string $title, string $body, ?string $waSelf = null, ?string $waNetwork = null, array $pushData = [], string $eventKey = ''): void
     {
         $seller = User::find($sellerId);
         if (!$seller) {
@@ -1339,7 +1383,7 @@ class Notifier
             self::addRecipient($recipients, $licenciado, 'network');
         }
 
-        self::dispatch($recipients, $subject, $title, $body, $waSelf, $waNetwork, $pushData);
+        self::dispatch($recipients, $subject, $title, $body, $waSelf, $waNetwork, $pushData, $eventKey);
     }
 
     /** Vendedor, Gestor (se houver), Licenciado, Supervisor, Gerente e todo Admin -- ver docblock
@@ -1348,7 +1392,7 @@ class Notifier
      *  intermediario -- licenciadoFor() so devolve o Licenciado final). $waSelf vai so pro
      *  vendedor (primeiro da cadeia), $waNetwork pro resto (gestor/licenciado/supervisor/gerente/
      *  admin). */
-    private static function sendToFullChain(int $sellerId, string $subject, string $title, string $body, ?string $waSelf = null, ?string $waNetwork = null, array $pushData = []): void
+    private static function sendToFullChain(int $sellerId, string $subject, string $title, string $body, ?string $waSelf = null, ?string $waNetwork = null, array $pushData = [], string $eventKey = ''): void
     {
         $recipients = [];
         $current = User::find($sellerId);
@@ -1369,13 +1413,13 @@ class Notifier
         }
 
         self::addNetworkChain($recipients, $licenciado);
-        self::dispatch($recipients, $subject, $title, $body, $waSelf, $waNetwork, $pushData);
+        self::dispatch($recipients, $subject, $title, $body, $waSelf, $waNetwork, $pushData, $eventKey);
     }
 
     /** Licenciado + Supervisor dele + Gerente do Supervisor + todo Admin -- usado tanto por
      *  sendToFullChain() (a partir de um Vendedor) quanto direto por cadastroAprovado(). $waSelf
      *  vai pro licenciado, $waNetwork pro resto (supervisor/gerente/admin). */
-    private static function sendToNetworkChain(int $licenciadoId, string $subject, string $title, string $body, ?string $waSelf = null, ?string $waNetwork = null): void
+    private static function sendToNetworkChain(int $licenciadoId, string $subject, string $title, string $body, ?string $waSelf = null, ?string $waNetwork = null, string $eventKey = ''): void
     {
         $recipients = [];
         $licenciado = User::find($licenciadoId);
@@ -1384,7 +1428,7 @@ class Notifier
         }
 
         self::addNetworkChain($recipients, $licenciado);
-        self::dispatch($recipients, $subject, $title, $body, $waSelf, $waNetwork);
+        self::dispatch($recipients, $subject, $title, $body, $waSelf, $waNetwork, [], $eventKey);
     }
 
     private static function addNetworkChain(array &$recipients, ?array $licenciado): void
@@ -1421,7 +1465,7 @@ class Notifier
      *  orcamentoRealizado/pedidoRealizado/pedidoAprovado (os eventos mais comuns que passam por
      *  aqui) tocavam a notificacao mas nunca abriam a tela certa no app, ja que data.type nunca
      *  vinha preenchido. Pedido explicito do usuario testando ao vivo. */
-    private static function dispatch(array $recipients, string $subject, string $title, string $body, ?string $waSelf = null, ?string $waNetwork = null, array $pushData = []): void
+    private static function dispatch(array $recipients, string $subject, string $title, string $body, ?string $waSelf = null, ?string $waNetwork = null, array $pushData = [], string $eventKey = ''): void
     {
         $html = self::template($title, $body);
         // Fase 77: push pra todo evento que passa pelo dispatch central (leadRoteado,
@@ -1440,7 +1484,7 @@ class Notifier
             if ($waText && !empty($r['whatsapp'])) {
                 self::sendWhatsApp($r['whatsapp'], $waText);
             }
-            self::sendPush((int) $id, $title, $pushBody, $pushData, 'normal');
+            self::sendPush((int) $id, $title, $pushBody, $pushData, 'normal', $eventKey);
         }
     }
 
