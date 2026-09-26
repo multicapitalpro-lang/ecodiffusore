@@ -4,6 +4,7 @@ use App\Core\Roles;
 use App\Core\View;
 $statusLabels = ['aberto' => 'Aberto', 'aprovado' => 'Aprovado', 'recusado' => 'Recusado', 'convertido' => 'Convertido'];
 $sucesso = isset($_GET['sucesso']);
+$erro = $_GET['erro'] ?? null;
 $isViewOnly = in_array($user['role_slug'] ?? '', Roles::NATIONAL_SUPPORT, true);
 $isModal = $isModal ?? false;
 $situation = $quote['payment_situation'] ?? ['label' => '—', 'badge' => 'novo'];
@@ -25,6 +26,8 @@ $situation = $quote['payment_situation'] ?? ['label' => '—', 'badge' => 'novo'
 
 <?php if ($sucesso): ?>
     <p class="form-msg form-msg-ok">Atualizado com sucesso.</p>
+<?php elseif ($erro === 'ja_convertido'): ?>
+    <p class="form-msg form-msg-erro">Não é possível excluir: esse orçamento já foi convertido em pedido. Se quiser desfazer, exclua o pedido correspondente na tela de Pedidos.</p>
 <?php endif; ?>
 
 <div class="order-summary">

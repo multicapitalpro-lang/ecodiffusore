@@ -26,6 +26,10 @@ $csrfToken = Csrf::token();
     </div>
 </div>
 
+<?php if (isset($_GET['excluido'])): ?>
+    <p class="form-msg form-msg-ok">Orçamento excluído.</p>
+<?php endif; ?>
+
 <div class="cards-grid">
     <div class="dash-card">
         <span>Total de orçamentos</span>
@@ -111,6 +115,12 @@ $csrfToken = Csrf::token();
                         <button type="button" class="link-button" data-view-quote="<?= (int) $q['id'] ?>">Ver</button>
                         <?php if ($q['status'] === 'aberto' && !$isViewOnly): ?>
                             · <button type="button" class="link-button" data-edit-quote="<?= (int) $q['id'] ?>">Editar</button>
+                        <?php endif; ?>
+                        <?php if (($user['role_slug'] ?? '') === 'admin' && $q['status'] !== 'convertido'): ?>
+                            · <form action="/painel/orcamentos/<?= (int) $q['id'] ?>/excluir" method="post" style="display:inline;">
+                                <?= Csrf::field() ?>
+                                <button type="submit" class="link-button" style="color:#c53030;" data-confirm="Excluir o orçamento #<?= (int) $q['id'] ?> definitivamente? Essa ação não pode ser desfeita.">Excluir</button>
+                            </form>
                         <?php endif; ?>
                     </td>
                 </tr>

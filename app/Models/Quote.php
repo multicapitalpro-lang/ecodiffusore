@@ -186,6 +186,17 @@ class Quote
         return $row ?: null;
     }
 
+    /** Fase 132: exclusao definitiva (orcamento de teste/lancado errado), pedido explicito do
+     *  usuario -- mesmo espirito da Fase 130 (Order::delete()). quote_items tem ON DELETE CASCADE
+     *  no schema, sai sozinho. Nada mais no sistema referencia quote_id como dono (so' leituras
+     *  via JOIN), entao nao precisa de limpeza manual como orders precisou. Guarda de "ja
+     *  convertido" fica no controller (QuoteController::destroy()), antes de chegar aqui. */
+    public static function delete(int $id): void
+    {
+        $stmt = Database::connection()->prepare('DELETE FROM quotes WHERE id = ?');
+        $stmt->execute([$id]);
+    }
+
     public static function create(array $data, array $items): int
     {
         $db = Database::connection();

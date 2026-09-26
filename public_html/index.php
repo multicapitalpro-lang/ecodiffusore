@@ -390,6 +390,7 @@ $router->get('/painel/orcamentos/{id}/editar', [App\Controllers\QuoteController:
 $router->post('/painel/orcamentos/{id}', [App\Controllers\QuoteController::class, 'update']);
 $router->post('/painel/orcamentos/{id}/status', [App\Controllers\QuoteController::class, 'markStatus']);
 $router->post('/painel/orcamentos/{id}/converter', [App\Controllers\QuoteController::class, 'convert']);
+$router->post('/painel/orcamentos/{id}/excluir', [App\Controllers\QuoteController::class, 'destroy']);
 $router->post('/painel/orcamentos/{id}/cobranca', [App\Controllers\PaymentController::class, 'generateForQuote']);
 
 // Proposta Facil

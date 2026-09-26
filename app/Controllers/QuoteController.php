@@ -441,6 +441,34 @@ class QuoteController
         Router::redirect("/painel/pedidos/{$orderId}?sucesso=1");
     }
 
+    /** Fase 132: exclusao definitiva -- pedido de teste/lancado errado. So' admin. Orcamento ja
+     *  convertido em pedido nao pode ser excluido por aqui (o pedido real que veio dele continua
+     *  existindo e precisa da propria tela de Pedidos pra ser tratado -- ver OrderController::
+     *  destroy()); apagar o orcamento nesse caso so' perderia o rastro de qual orcamento gerou
+     *  qual pedido, sem trazer nenhum beneficio real. */
+    public function destroy(string $id): void
+    {
+        Auth::requireRole(['admin']);
+        $id = (int) $id;
+        $quote = Quote::find($id);
+        if (!$quote) {
+            Router::redirect('/painel/orcamentos');
+        }
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            Router::redirect("/painel/orcamentos/{$id}?erro=1");
+        }
+
+        if ($quote['status'] === 'convertido') {
+            Router::redirect("/painel/orcamentos/{$id}?erro=ja_convertido");
+        }
+
+        AuditLog::record((int) Auth::user()['id'], 'orcamento_excluido', 'quote', $id, [], $quote);
+        Quote::delete($id);
+
+        Router::redirect('/painel/orcamentos?excluido=1');
+    }
+
     private function authorize(int $id): array
     {
         Auth::requireRole(Roles::STAFF);
