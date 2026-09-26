@@ -91,6 +91,7 @@ $router->post('/api/v1/login', [App\Controllers\Api\AuthController::class, 'logi
 $router->post('/api/v1/logout', [App\Controllers\Api\AuthController::class, 'logout']);
 $router->get('/api/v1/me', [App\Controllers\Api\AuthController::class, 'me']);
 $router->get('/api/v1/dashboard', [App\Controllers\Api\DashboardController::class, 'summary']);
+$router->get('/api/v1/badges', [App\Controllers\Api\BadgeController::class, 'summary']);
 $router->get('/api/v1/leads', [App\Controllers\Api\LeadController::class, 'index']);
 $router->get('/api/v1/leads/opcoes', [App\Controllers\Api\LeadController::class, 'options']);
 $router->get('/api/v1/leads/{id}', [App\Controllers\Api\LeadController::class, 'show']);
