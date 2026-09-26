@@ -84,6 +84,39 @@ class Lead
         return $stmt->fetchAll();
     }
 
+    /** Fase 133: contagem de leads "novos" (status ainda no estagio inicial) pro badge do menu --
+     *  mesma logica de escopo de forScope()/scopedLeads(). $userIds null = sem restricao (admin,
+     *  ve tudo); array vazio + $includeUnassigned false = nao ve nada. */
+    public static function countNew(?array $userIds, bool $includeUnassigned): int
+    {
+        if ($userIds === null) {
+            $stmt = Database::connection()->prepare("SELECT COUNT(*) FROM leads WHERE status = 'novo'");
+            $stmt->execute();
+            return (int) $stmt->fetchColumn();
+        }
+
+        if (!$userIds && !$includeUnassigned) {
+            return 0;
+        }
+
+        $conditions = [];
+        $params = ['novo'];
+
+        if ($userIds) {
+            $placeholders = implode(',', array_fill(0, count($userIds), '?'));
+            $conditions[] = "assigned_to_user_id IN ({$placeholders})";
+            $params = array_merge($params, $userIds);
+        }
+        if ($includeUnassigned) {
+            $conditions[] = 'assigned_to_user_id IS NULL';
+        }
+
+        $sql = 'SELECT COUNT(*) FROM leads WHERE status = ? AND (' . implode(' OR ', $conditions) . ')';
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
+        return (int) $stmt->fetchColumn();
+    }
+
     public static function updateStatus(int $id, string $status): void
     {
         $stmt = Database::connection()->prepare('UPDATE leads SET status = :status WHERE id = :id');

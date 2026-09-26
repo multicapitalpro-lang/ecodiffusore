@@ -86,6 +86,16 @@ if (in_array($role, ['supervisor', 'gerente', 'admin'], true)) {
     $pendingDocumentApprovals = count(\App\Models\Order::pendingDocumentApproval($docScopeIds));
 }
 $pendingVendorContracts = in_array($role, ['licenciado', 'admin'], true) ? User::pendingVendorContractCount($user) : 0;
+$newLeadsCount = 0;
+if (in_array($role, Roles::STAFF, true)) {
+    $newLeadsCount = match (true) {
+        $role === 'admin' => \App\Models\Lead::countNew(null, true),
+        $role === Roles::SELLER => \App\Models\Lead::countNew(\App\Models\User::downlineIds((int) $user['id']), false),
+        $role === 'supervisor' => \App\Models\Lead::countNew(\App\Models\User::supervisedIds((int) $user['id']), false),
+        $role === 'gerente' => \App\Models\Lead::countNew(\App\Models\User::nationalIds((int) $user['id']), false),
+        default => \App\Models\Lead::countNew(\App\Models\User::downlineIds((int) $user['id']), \App\Models\LeadRoutingSettings::canSeeUnassigned($user)),
+    };
+}
 $myPendingPriceRequests = 0;
 if (in_array($role, ['vendedor', 'gestor', 'licenciado'], true)) {
     $myPendingPriceRequests = \App\Models\Approval::countMyPendingRequests((int) $user['id']);
@@ -134,7 +144,10 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/desempen
                     <summary><?= $icon('pin') ?> Leads</summary>
                     <div class="nav-subitems">
                         <?php if ($canScreen('leads')): ?>
-                            <a href="/painel/leads" class="<?= $isActive('/painel/leads') ? 'is-active' : '' ?>">Leads</a>
+                            <a href="/painel/leads" class="<?= $isActive('/painel/leads') ? 'is-active' : '' ?>">
+                                Leads
+                                <?php if ($newLeadsCount > 0): ?><span class="nav-badge"><?= (int) $newLeadsCount ?></span><?php endif; ?>
+                            </a>
                         <?php endif; ?>
                         <?php if (in_array($role, array_merge($managerRoles, Roles::NATIONAL_SUPPORT), true)): ?>
                             <a href="/painel/leads/extensoes" class="<?= $isActive('/painel/leads/extensoes') ? 'is-active' : '' ?>">Extensões de Prazo</a>
