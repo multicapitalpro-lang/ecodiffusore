@@ -104,6 +104,8 @@ $vendasOpen = $anyActive(['/painel/pedidos', '/painel/orcamentos', '/painel/prod
 $leadsOpen = $anyActive(['/painel/leads', '/painel/clientes', '/painel/configuracoes/roteamento']);
 $financeiroOpen = $anyActive(['/painel/financeiro']);
 $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/desempenho/funil', '/painel/meu-ranking', '/painel/metas']);
+$gestaoOpen = $anyActive(['/painel/usuarios', '/painel/contrato-vendedor', '/painel/licenciados', '/painel/auditoria']);
+$configuracoesOpen = $anyActive(['/painel/configuracoes/nfe', '/painel/configuracoes/email', '/painel/configuracoes/empresa', '/painel/emails-profissionais/admin', '/painel/email', '/painel/configuracoes/whatsapp', '/painel/configuracoes/tutoriais', '/painel/configuracoes/treinamento']);
 ?><!doctype html>
 <html lang="pt-BR">
 <head>
@@ -296,37 +298,51 @@ $desempenhoOpen = $anyActive(['/painel/desempenho/vendedores', '/painel/desempen
                 <a href="/painel/dados-bancarios" class="<?= $isActive('/painel/dados-bancarios') ? 'is-active' : '' ?>">🏦 Dados Bancários</a>
             <?php endif; ?>
 
-            <?php if (in_array($role, $userManagementRoles, true)): ?>
-                <a href="/painel/usuarios" class="<?= $isActive('/painel/usuarios') ? 'is-active' : '' ?>"><?= $icon('gear') ?> Usuários</a>
-            <?php endif; ?>
-            <?php if (in_array($role, ['licenciado', 'admin'], true)): ?>
-                <a href="/painel/contrato-vendedor/aprovar" class="<?= $isActive('/painel/contrato-vendedor') ? 'is-active' : '' ?>">
-                    <?= $icon('users') ?> Aprovar Vendedores
-                    <?php if ($pendingVendorContracts > 0): ?><span class="nav-badge"><?= (int) $pendingVendorContracts ?></span><?php endif; ?>
-                </a>
-            <?php endif; ?>
-            <?php if (in_array($role, $supervisorAssignmentRoles, true)): ?>
-                <a href="/painel/licenciados" class="<?= $isActive('/painel/licenciados') && !$isActive('/painel/licenciados/aprovacoes') ? 'is-active' : '' ?>"><?= $icon('users') ?> Licenciados</a>
-                <a href="/painel/licenciados/aprovacoes" class="<?= $isActive('/painel/licenciados/aprovacoes') ? 'is-active' : '' ?>">
-                    <?= $icon('users') ?> Aprovação de Cadastros
-                    <?php if ($pendingApprovals > 0): ?><span class="nav-badge"><?= (int) $pendingApprovals ?></span><?php endif; ?>
-                </a>
-            <?php endif; ?>
-            <?php if ($role === 'admin'): ?>
-                <a href="/painel/auditoria" class="<?= $isActive('/painel/auditoria') ? 'is-active' : '' ?>"><?= $icon('chart') ?> Auditoria</a>
+            <?php if (in_array($role, $userManagementRoles, true) || in_array($role, ['licenciado', 'admin'], true) || in_array($role, $supervisorAssignmentRoles, true)): ?>
+                <details class="nav-group" <?= $gestaoOpen ? 'open' : '' ?>>
+                    <summary><?= $icon('users') ?> Gestão</summary>
+                    <div class="nav-subitems">
+                        <?php if (in_array($role, $userManagementRoles, true)): ?>
+                            <a href="/painel/usuarios" class="<?= $isActive('/painel/usuarios') ? 'is-active' : '' ?>">Usuários</a>
+                        <?php endif; ?>
+                        <?php if (in_array($role, ['licenciado', 'admin'], true)): ?>
+                            <a href="/painel/contrato-vendedor/aprovar" class="<?= $isActive('/painel/contrato-vendedor') ? 'is-active' : '' ?>">
+                                Aprovar Vendedores
+                                <?php if ($pendingVendorContracts > 0): ?><span class="nav-badge"><?= (int) $pendingVendorContracts ?></span><?php endif; ?>
+                            </a>
+                        <?php endif; ?>
+                        <?php if (in_array($role, $supervisorAssignmentRoles, true)): ?>
+                            <a href="/painel/licenciados" class="<?= $isActive('/painel/licenciados') && !$isActive('/painel/licenciados/aprovacoes') ? 'is-active' : '' ?>">Licenciados</a>
+                            <a href="/painel/licenciados/aprovacoes" class="<?= $isActive('/painel/licenciados/aprovacoes') ? 'is-active' : '' ?>">
+                                Aprovação de Cadastros
+                                <?php if ($pendingApprovals > 0): ?><span class="nav-badge"><?= (int) $pendingApprovals ?></span><?php endif; ?>
+                            </a>
+                        <?php endif; ?>
+                        <?php if ($role === 'admin'): ?>
+                            <a href="/painel/auditoria" class="<?= $isActive('/painel/auditoria') ? 'is-active' : '' ?>">Auditoria</a>
+                        <?php endif; ?>
+                    </div>
+                </details>
             <?php endif; ?>
 
-            <?php if ($role === 'admin'): ?>
-                <a href="/painel/configuracoes/nfe" class="<?= $isActive('/painel/configuracoes/nfe') ? 'is-active' : '' ?>"><?= $icon('wallet') ?> Config. de NF-e</a>
-                <a href="/painel/configuracoes/email" class="<?= $isActive('/painel/configuracoes/email') ? 'is-active' : '' ?>"><?= $icon('gear') ?> Config. de E-mail</a>
-                <a href="/painel/configuracoes/empresa" class="<?= $isActive('/painel/configuracoes/empresa') ? 'is-active' : '' ?>"><?= $icon('gear') ?> Dados da Empresa</a>
-                <a href="/painel/emails-profissionais/admin" class="<?= $isActive('/painel/emails-profissionais/admin') ? 'is-active' : '' ?>">✉️ E-mails Profissionais</a>
-            <?php endif; ?>
             <?php if (in_array($role, ['admin', 'gerente'], true)): ?>
-                <a href="/painel/email" class="<?= $isActive('/painel/email') ? 'is-active' : '' ?>"><?= $icon('megaphone') ?> Caixa de E-mail</a>
-                <a href="/painel/configuracoes/whatsapp" class="<?= $isActive('/painel/configuracoes/whatsapp') ? 'is-active' : '' ?>"><?= $icon('gear') ?> Config. de WhatsApp</a>
-                <a href="/painel/configuracoes/tutoriais" class="<?= $isActive('/painel/configuracoes/tutoriais') ? 'is-active' : '' ?>"><?= $icon('gear') ?> Vídeos Tutoriais</a>
-                <a href="/painel/configuracoes/treinamento" class="<?= $isActive('/painel/configuracoes/treinamento') ? 'is-active' : '' ?>"><?= $icon('gear') ?> Treinamento do Vendedor</a>
+                <details class="nav-group" <?= $configuracoesOpen ? 'open' : '' ?>>
+                    <summary><?= $icon('gear') ?> Configurações</summary>
+                    <div class="nav-subitems">
+                        <?php if ($role === 'admin'): ?>
+                            <a href="/painel/configuracoes/nfe" class="<?= $isActive('/painel/configuracoes/nfe') ? 'is-active' : '' ?>">Config. de NF-e</a>
+                            <a href="/painel/configuracoes/email" class="<?= $isActive('/painel/configuracoes/email') ? 'is-active' : '' ?>">Config. de E-mail</a>
+                            <a href="/painel/configuracoes/empresa" class="<?= $isActive('/painel/configuracoes/empresa') ? 'is-active' : '' ?>">Dados da Empresa</a>
+                            <a href="/painel/emails-profissionais/admin" class="<?= $isActive('/painel/emails-profissionais/admin') ? 'is-active' : '' ?>">E-mails Profissionais</a>
+                        <?php endif; ?>
+                        <?php if (in_array($role, ['admin', 'gerente'], true)): ?>
+                            <a href="/painel/email" class="<?= $isActive('/painel/email') ? 'is-active' : '' ?>">Caixa de E-mail</a>
+                            <a href="/painel/configuracoes/whatsapp" class="<?= $isActive('/painel/configuracoes/whatsapp') ? 'is-active' : '' ?>">Config. de WhatsApp</a>
+                            <a href="/painel/configuracoes/tutoriais" class="<?= $isActive('/painel/configuracoes/tutoriais') ? 'is-active' : '' ?>">Vídeos Tutoriais</a>
+                            <a href="/painel/configuracoes/treinamento" class="<?= $isActive('/painel/configuracoes/treinamento') ? 'is-active' : '' ?>">Treinamento do Vendedor</a>
+                        <?php endif; ?>
+                    </div>
+                </details>
             <?php endif; ?>
         </nav>
     </aside>
